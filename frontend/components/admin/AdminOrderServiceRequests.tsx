@@ -2,18 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
 
 import { formatMinorFromPaise } from "@/lib/money";
-import {
-  adminServiceRequestPhotoDownloadUrl,
-  adminServiceRequestPhotoViewUrl,
-  approveServiceRequest,
-  processServiceRequestRefund,
-  rejectServiceRequest
-} from "@/lib/order-service-request";
-import { AdminOrderAdjustmentPanel } from "@/components/admin/AdminOrderAdjustmentPanel";
-import { caseMerchandiseCeilingPaise } from "@/lib/return-refund-ui";
+import { adminServiceRequestPhotoDownloadUrl, adminServiceRequestPhotoViewUrl } from "@/lib/order-service-request";
 
 export type AdminServiceRequestItemRow = {
   id: string;
@@ -107,6 +98,13 @@ function PhotoThumb({
   );
 }
 
+function humanState(value: string | null | undefined): string {
+  return (value || "—")
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function providerLabel(provider: string | null): string {
   if (provider === "RAZORPAY") return "Razorpay";
   if (provider === "STRIPE") return "Stripe";
@@ -115,540 +113,190 @@ function providerLabel(provider: string | null): string {
   return provider ?? "Payment gateway";
 }
 
-function ServiceRequestRefundPanel({
-  orderId,
-  request,
-  orderCtx,
-  onDone
-}: {
-  orderId: string;
-  request: AdminServiceRequestRow;
-  orderCtx: AdminServiceRequestOrderContext;
-  onDone: () => void;
-}) {
-  const lineByOrderItemId = useMemo(
-    () => new Map(orderCtx.orderItems.map((i) => [i.id, i])),
-    [orderCtx.orderItems]
-  );
+function requestKind(req: AdminServiceRequestRow): string {
+  if (req.type === "ADJUST_BEFORE_DELIVERY") return "Order change";
+  if (req.type === "CANCEL_BEFORE_DELIVERY") return "Cancellation";
+  return "Return / refund";
+}
 
-  const items = request.items ?? [];
-  const isCod = orderCtx.paymentProvider === "COD";
-  const canRefundOnline =
-    !isCod &&
-    ["CAPTURED", "PARTIALLY_REFUNDED"].includes(orderCtx.paymentStatus) &&
-    !!orderCtx.paymentProvider;
-
-  const [selected, setSelected] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(items.map((i) => [i.id, true]))
-  );
-  const [amounts, setAmounts] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const item of items) {
-      const orderLine = lineByOrderItemId.get(item.orderItemId);
-      const remaining = caseMerchandiseCeilingPaise(
-        orderLine?.lineTotalInPaise ?? 0,
-        orderLine?.qtyOrdered ?? item.qtySelected,
-        item.qtySelected,
-        item.refundAmountInPaise ?? 0
-      );
-      init[item.id] = remaining > 0 ? String(remaining / 100) : "";
-    }
-    return init;
-  });
-  const [codNote, setCodNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-
-  const orderRemaining =
-    orderCtx.grandTotalInPaise - (orderCtx.paymentRefundedInPaise ?? 0);
-
-  function remainingForItem(item: AdminServiceRequestItemRow): number {
-    const orderLine = lineByOrderItemId.get(item.orderItemId);
-    return caseMerchandiseCeilingPaise(
-      orderLine?.lineTotalInPaise ?? 0,
-      orderLine?.qtyOrdered ?? item.qtySelected,
-      item.qtySelected,
-      item.refundAmountInPaise ?? 0
-    );
+function statusPillClass(status: string): string {
+  if (status === "PENDING_APPROVAL" || status === "NEEDS_DISCUSSION" || status === "MORE_INFO_REQUIRED") {
+    return "bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200";
   }
-
-  function setFullItem(item: AdminServiceRequestItemRow) {
-    const remaining = remainingForItem(item);
-    setSelected((s) => ({ ...s, [item.id]: true }));
-    setAmounts((a) => ({ ...a, [item.id]: String(remaining / 100) }));
+  if (status === "APPROVED" || status === "PARTIALLY_APPROVED") {
+    return "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200";
   }
-
-  function setFullOrderRemaining() {
-    const nextSelected: Record<string, boolean> = {};
-    const nextAmounts: Record<string, string> = {};
-    for (const item of items) {
-      const remaining = remainingForItem(item);
-      nextSelected[item.id] = remaining > 0;
-      nextAmounts[item.id] = remaining > 0 ? String(remaining / 100) : "";
-    }
-    setSelected(nextSelected);
-    setAmounts(nextAmounts);
+  if (status === "REJECTED") {
+    return "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200";
   }
+  return "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-200";
+}
 
-  const totalSelectedPaise = items.reduce((sum, item) => {
-    if (!selected[item.id]) return sum;
-    const rupees = Number.parseFloat(amounts[item.id] ?? "0");
-    if (!Number.isFinite(rupees) || rupees <= 0) return sum;
-    return sum + Math.round(rupees * 100);
-  }, 0);
-
-  const allItemsFullyRefunded = items.every((item) => remainingForItem(item) <= 0);
-
-  async function handleRefund() {
-    if (busy) return;
-    setBusy(true);
-    setMsg(null);
-    try {
-      const payloadItems = items
-        .filter((item) => selected[item.id])
-        .map((item) => {
-          const rupees = Number.parseFloat(amounts[item.id] ?? "0");
-          return {
-            requestItemId: item.id,
-            amountInPaise: Math.round(rupees * 100)
-          };
-        })
-        .filter((row) => row.amountInPaise > 0);
-
-      if (!payloadItems.length) {
-        throw new Error("Select at least one item with a refund amount");
-      }
-
-      const result = await processServiceRequestRefund(orderId, request.id, {
-        items: payloadItems,
-        codRefundNote: isCod ? codNote.trim() : undefined
-      });
-
-      setMsg({ text: result.message, ok: true });
-      onDone();
-    } catch (err) {
-      setMsg({ text: err instanceof Error ? err.message : "Refund failed", ok: false });
-    } finally {
-      setBusy(false);
-    }
+function resolutionText(req: AdminServiceRequestRow, currency: string): string {
+  if (req.resolutionStatus === "REFUNDED" && req.refundTotalInPaise != null) {
+    return `Refund processed — ${formatMinorFromPaise(req.refundTotalInPaise, currency)}`;
   }
-
-  if (request.status !== "APPROVED") return null;
-
-  return (
-    <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200">Process refund</p>
-          <p className="mt-0.5 text-xs text-emerald-800/80 dark:text-emerald-300/80">
-            Approve only sanctions the request — refund money separately below.
-          </p>
-        </div>
-        {request.refundTotalInPaise ? (
-          <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            Refunded so far: {formatMinorFromPaise(request.refundTotalInPaise, orderCtx.currency)}
-          </p>
-        ) : null}
-      </div>
-
-      {isCod ? (
-        <div className="mt-3 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-          <strong>Manual refund required (COD).</strong> No automatic payout. Collect the customer&apos;s UPI ID or
-          bank details, pay them offline, and save those details below. Accounting stays fail-closed without gateway
-          evidence.
-        </div>
-      ) : canRefundOnline ? (
-        <div className="mt-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
-          <strong>{providerLabel(orderCtx.paymentProvider)}</strong> refunds return to the customer&apos;s{" "}
-          <strong>original payment method</strong> (same card, UPI, or wallet used at checkout). Custom amounts are
-          supported — typically visible in 5–7 business days.
-        </div>
-      ) : (
-        <div className="mt-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-          Payment status is {orderCtx.paymentStatus.replaceAll("_", " ").toLowerCase()} — online refund may not be
-          available until payment is captured.
-        </div>
-      )}
-
-      {request.codRefundNote ? (
-        <div className="mt-3 rounded-md border border-stone-200 bg-white px-3 py-2 text-xs dark:border-stone-700 dark:bg-stone-950">
-          <p className="font-semibold text-stone-700 dark:text-stone-300">Saved COD refund details</p>
-          <p className="mt-1 whitespace-pre-wrap text-stone-600 dark:text-stone-400">{request.codRefundNote}</p>
-        </div>
-      ) : null}
-
-      {!allItemsFullyRefunded ? (
-        <>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={setFullOrderRemaining}
-              className="rounded-full border border-emerald-700/30 bg-white px-3 py-1 text-[11px] font-semibold text-emerald-900 hover:bg-emerald-100/50 dark:bg-stone-900 dark:text-emerald-200"
-            >
-              Full order remaining ({formatMinorFromPaise(orderRemaining, orderCtx.currency)})
-            </button>
-          </div>
-
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[32rem] text-left text-xs">
-              <thead>
-                <tr className="border-b border-emerald-200/80 text-stone-500 dark:border-emerald-900">
-                  <th className="px-2 py-1.5 font-semibold">Include</th>
-                  <th className="px-2 py-1.5 font-semibold">Item</th>
-                  <th className="px-2 py-1.5 font-semibold">Case merchandise</th>
-                  <th className="px-2 py-1.5 font-semibold">Already refunded</th>
-                  <th className="px-2 py-1.5 font-semibold">Refund amount</th>
-                  <th className="px-2 py-1.5" />
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => {
-                  const orderLine = lineByOrderItemId.get(item.orderItemId);
-                  const lineCeiling = caseMerchandiseCeilingPaise(
-                    orderLine?.lineTotalInPaise ?? 0,
-                    orderLine?.qtyOrdered ?? item.qtySelected,
-                    item.qtySelected,
-                    0
-                  );
-                  const remaining = remainingForItem(item);
-                  const done = remaining <= 0;
-                  return (
-                    <tr key={item.id} className="border-b border-emerald-100/80 dark:border-emerald-950">
-                      <td className="px-2 py-2 align-top">
-                        <input
-                          type="checkbox"
-                          checked={!!selected[item.id] && !done}
-                          disabled={done}
-                          onChange={(e) => setSelected((s) => ({ ...s, [item.id]: e.target.checked }))}
-                        />
-                      </td>
-                      <td className="px-2 py-2 align-top">
-                        <p className="font-medium text-stone-900 dark:text-stone-100">{item.nameSnapshot}</p>
-                        <p className="text-[10px] text-stone-500">
-                          {item.reasonLabel} ·{" "}
-                          {item.reviewDecision === "REJECTED"
-                            ? `rejected qty ${item.qtySelected}`
-                            : item.reviewDecision === "MORE_INFO_REQUIRED"
-                              ? `more info for ${item.qtySelected}`
-                              : item.reviewDecision === "PENDING"
-                                ? `pending qty ${item.qtySelected}`
-                                : `approved qty ${item.qtySelected}`}
-                          {orderLine?.qtyOrdered != null ? ` of ${orderLine.qtyOrdered}` : ""}
-                        </p>
-                      </td>
-                      <td className="px-2 py-2 align-top">
-                        {formatMinorFromPaise(lineCeiling, orderCtx.currency)}
-                        <span className="block text-[10px] font-normal text-stone-500">case merchandise</span>
-                      </td>
-                      <td className="px-2 py-2 align-top">
-                        {item.refundAmountInPaise
-                          ? formatMinorFromPaise(item.refundAmountInPaise, orderCtx.currency)
-                          : "—"}
-                      </td>
-                      <td className="px-2 py-2 align-top">
-                        {done ? (
-                          <span className="text-emerald-700 dark:text-emerald-400">Fully refunded</span>
-                        ) : (
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            max={remaining / 100}
-                            value={amounts[item.id] ?? ""}
-                            onChange={(e) => setAmounts((a) => ({ ...a, [item.id]: e.target.value }))}
-                            className="w-24 rounded border border-stone-300 px-2 py-1 dark:border-stone-600 dark:bg-stone-950"
-                          />
-                        )}
-                      </td>
-                      <td className="px-2 py-2 align-top">
-                        {!done ? (
-                          <button
-                            type="button"
-                            onClick={() => setFullItem(item)}
-                            className="text-[11px] font-semibold text-emerald-800 underline dark:text-emerald-300"
-                          >
-                            Full item
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="mt-2 text-xs font-semibold text-stone-700 dark:text-stone-300">
-            Total this refund: {formatMinorFromPaise(totalSelectedPaise, orderCtx.currency)}
-          </p>
-
-          {isCod ? (
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-stone-600 dark:text-stone-400">
-                Customer payout details (UPI / bank) — required for COD
-              </label>
-              <textarea
-                rows={3}
-                value={codNote}
-                onChange={(e) => setCodNote(e.target.value)}
-                placeholder="e.g. UPI: name@bank, Phone: +91…, Account: …"
-                className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm dark:border-stone-600 dark:bg-stone-950"
-              />
-            </div>
-          ) : null}
-
-          {msg ? (
-            <p
-              className={`mt-2 text-xs ${msg.ok ? "text-emerald-800 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}
-            >
-              {msg.text}
-            </p>
-          ) : null}
-
-          <button
-            type="button"
-            disabled={busy || (!isCod && !canRefundOnline) || totalSelectedPaise <= 0}
-            onClick={() => void handleRefund()}
-            className="mt-3 rounded-full bg-emerald-700 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
-          >
-            {busy ? "Processing…" : isCod ? "Record COD refund" : "Refund to original payment method"}
-          </button>
-        </>
-      ) : (
-        <p className="mt-3 text-xs font-medium text-emerald-800 dark:text-emerald-300">
-          All items in this request have been fully refunded.
-        </p>
-      )}
-    </div>
-  );
+  if (req.refundProcessedAt && req.refundTotalInPaise != null) {
+    return `Refund recorded — ${formatMinorFromPaise(req.refundTotalInPaise, currency)}`;
+  }
+  if (req.status === "APPROVED") return "Approved — complete next action in Returns desk";
+  if (req.status === "PENDING_APPROVAL") return "Waiting for admin review";
+  if (req.status === "REJECTED") return "Rejected";
+  return humanState(req.resolutionStatus || req.status);
 }
 
 export function AdminOrderServiceRequests({
   orderId,
   requests,
-  orderCtx,
-  onUpdated
+  orderCtx
 }: {
   orderId: string;
   requests: AdminServiceRequestRow[];
   orderCtx: AdminServiceRequestOrderContext;
   onUpdated: () => void;
 }) {
-  const [note, setNote] = useState("");
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   if (!requests.length) return null;
 
-  async function handleReview(requestId: string, approve: boolean) {
-    setBusyId(requestId);
-    setError(null);
-    try {
-      if (approve) {
-        await approveServiceRequest(orderId, requestId, note);
-      } else {
-        await rejectServiceRequest(orderId, requestId, note);
-      }
-      setNote("");
-      onUpdated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
-    <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-amber-900 dark:text-amber-200">
-        Cancel / refund requests
-      </h2>
-      <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/80">
-        <strong>Approve</strong> sanctions the customer&apos;s request only — it does <strong>not</strong> move money.
-        Use <strong>Process refund</strong> after approval to pay back per item.
-      </p>
-      {error ? <p className="mt-2 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
-      <ul className="mt-3 space-y-4">
+    <section className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div className="border-b border-stone-100 px-5 py-4 dark:border-stone-700">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Related cases</h2>
+            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              Summary only. Review, QC, replacement, and refund actions are handled from the Returns desk.
+            </p>
+          </div>
+          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700 dark:bg-stone-800 dark:text-stone-200">
+            {providerLabel(orderCtx.paymentProvider)} · {humanState(orderCtx.paymentStatus)}
+          </span>
+        </div>
+      </div>
+
+      <ul className="divide-y divide-stone-100 dark:divide-stone-700">
         {requests.map((req) => {
-          const pending = req.status === "PENDING_APPROVAL" || req.status === "NEEDS_DISCUSSION";
-          const isAdjust = req.type === "ADJUST_BEFORE_DELIVERY";
-          const kind = isAdjust
-            ? "Order change"
-            : req.type === "CANCEL_BEFORE_DELIVERY"
-              ? "Cancellation"
-              : "Return / refund";
+          const items = req.items ?? [];
+          const caseHref = req.caseNumber ? `/admin/returns/${encodeURIComponent(req.caseNumber)}` : null;
           return (
-            <li
-              key={req.id}
-              className="rounded-lg border border-amber-200/80 bg-white p-4 dark:border-amber-900 dark:bg-stone-900"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-stone-900 dark:text-stone-100">
-                    {kind} — {req.reasonLabel}
-                  </p>
-                  <p className="text-xs text-stone-500">
+            <li key={req.id} className="p-5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                      {requestKind(req)}{req.caseNumber ? ` — ${req.caseNumber}` : ""}
+                    </p>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusPillClass(req.status)}`}>
+                      {humanState(req.status)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500">
                     {req.customerEmail} · {new Date(req.createdAt).toLocaleString("en-IN")}
                   </p>
+                  <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
+                    <strong>Reason:</strong> {req.reasonLabel}
+                  </p>
+                  <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                    <strong>Status:</strong> {resolutionText(req, orderCtx.currency)}
+                  </p>
+                  {req.message ? (
+                    <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+                      <strong>Customer message:</strong> {req.message}
+                    </p>
+                  ) : null}
                 </div>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    req.status === "PENDING_APPROVAL"
-                      ? "bg-amber-100 text-amber-900"
-                      : req.status === "APPROVED"
-                        ? "bg-emerald-100 text-emerald-900"
-                        : "bg-stone-200 text-stone-700"
-                  }`}
-                >
-                  {req.status.replaceAll("_", " ")}
-                </span>
+
+                {caseHref ? (
+                  <Link
+                    href={caseHref}
+                    className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1c352a] px-4 py-2 text-xs font-semibold text-white hover:bg-[#15291f]"
+                  >
+                    Open case
+                  </Link>
+                ) : null}
               </div>
-              {req.message ? (
-                <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
-                  <strong>Overall message:</strong> {req.message}
-                </p>
+
+              {items.length ? (
+                <div className="mt-4 overflow-hidden rounded-lg border border-stone-100 dark:border-stone-800">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="bg-[#faf7f2] text-[#8a7060] dark:bg-stone-800 dark:text-stone-300">
+                      <tr>
+                        <th className="px-3 py-2 font-semibold">Item</th>
+                        <th className="px-3 py-2 font-semibold">Qty</th>
+                        <th className="px-3 py-2 font-semibold">Customer reason</th>
+                        <th className="px-3 py-2 font-semibold">Decision</th>
+                        <th className="px-3 py-2 font-semibold">Refunded</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                      {items.map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-3 py-2 align-top">
+                            <p className="font-medium text-stone-900 dark:text-stone-100">{item.nameSnapshot}</p>
+                            <p className="font-mono text-[11px] text-stone-500">{item.skuSnapshot}</p>
+                            {item.message ? <p className="mt-1 text-[11px] text-stone-500">{item.message}</p> : null}
+                          </td>
+                          <td className="px-3 py-2 align-top font-semibold">{item.qtySelected}</td>
+                          <td className="px-3 py-2 align-top text-stone-600 dark:text-stone-300">{item.reasonLabel}</td>
+                          <td className="px-3 py-2 align-top text-stone-600 dark:text-stone-300">
+                            {humanState(item.reviewDecision || req.status)}
+                          </td>
+                          <td className="px-3 py-2 align-top text-stone-600 dark:text-stone-300">
+                            {item.refundAmountInPaise
+                              ? formatMinorFromPaise(item.refundAmountInPaise, orderCtx.currency)
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : null}
 
-              {req.items?.length ? (
-                <ul className="mt-3 space-y-3">
-                  {req.items.map((item) => (
-                    <li
-                      key={item.id}
-                      className="rounded-lg border border-stone-100 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-950"
-                    >
-                      <p className="font-medium text-stone-900 dark:text-stone-100">
-                        {item.nameSnapshot}{" "}
-                        <span className="text-xs font-normal text-stone-500">
-                          × {item.qtySelected} · {item.skuSnapshot}
-                        </span>
-                      </p>
-                      <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
-                        <strong>Customer reason:</strong> {item.reasonLabel}
-                      </p>
-                      {item.message ? (
-                        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{item.message}</p>
-                      ) : null}
-                      {item.photos?.length ? (
-                        <ul className="mt-2 flex flex-wrap gap-2">
-                          {item.photos.map((photo) => (
-                            <PhotoThumb key={photo.id} orderId={orderId} photo={photo} />
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
+              {req.returnShipment ? (
+                <dl className="mt-4 grid gap-3 rounded-lg border border-stone-100 bg-stone-50 p-3 text-xs dark:border-stone-800 dark:bg-stone-950 sm:grid-cols-4">
+                  <div>
+                    <dt className="text-stone-500">Return AWB</dt>
+                    <dd className="font-mono font-semibold text-stone-900 dark:text-stone-100">{req.returnShipment.awb ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-stone-500">Courier</dt>
+                    <dd>{req.returnShipment.courier ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-stone-500">Physical status</dt>
+                    <dd>{humanState(req.returnShipment.physicalStatus)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-stone-500">Condition</dt>
+                    <dd>{humanState(req.returnShipment.disposition)}</dd>
+                  </div>
+                </dl>
               ) : null}
 
-              {!req.items?.length && req.photos?.length ? (
-                <div className="mt-3">
-                  <p className="text-xs font-semibold uppercase text-stone-500">Photos</p>
+              {req.refundTotalInPaise != null || req.codRefundNote || req.refundProviderReference ? (
+                <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-xs text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-100">
+                  <p className="font-semibold">Refund record</p>
+                  <p className="mt-1">
+                    Amount: {formatMinorFromPaise(req.refundTotalInPaise ?? 0, orderCtx.currency)}
+                    {req.refundProcessedAt ? ` · ${new Date(req.refundProcessedAt).toLocaleString("en-IN")}` : ""}
+                    {req.refundProviderReference ? ` · Ref: ${req.refundProviderReference}` : ""}
+                  </p>
+                  {req.codRefundNote ? <p className="mt-1 whitespace-pre-wrap">{req.codRefundNote}</p> : null}
+                </div>
+              ) : null}
+
+              {req.photos?.length || items.some((item) => item.photos?.length) ? (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Evidence</p>
                   <ul className="mt-2 flex flex-wrap gap-2">
-                    {req.photos.map((photo) => (
+                    {(req.photos ?? []).map((photo) => (
+                      <PhotoThumb key={photo.id} orderId={orderId} photo={photo} />
+                    ))}
+                    {items.flatMap((item) => item.photos ?? []).map((photo) => (
                       <PhotoThumb key={photo.id} orderId={orderId} photo={photo} />
                     ))}
                   </ul>
                 </div>
-              ) : null}
-
-              {req.reviewedAt ? (
-                <p className="mt-2 text-xs text-stone-500">
-                  Reviewed {new Date(req.reviewedAt).toLocaleString("en-IN")}
-                  {req.reviewedByEmail ? ` by ${req.reviewedByEmail}` : ""}
-                  {req.adminNote ? ` — ${req.adminNote}` : ""}
-                </p>
-              ) : null}
-              {isAdjust ? (
-                <AdminOrderAdjustmentPanel
-                  orderId={orderId}
-                  requestId={req.id}
-                  currency={orderCtx.currency}
-                  status={req.status}
-                  reasonLabel={req.reasonLabel}
-                  onUpdated={onUpdated}
-                />
-              ) : null}
-
-              {!isAdjust && pending && req.type !== "REFUND_AFTER_DELIVERY" ? (
-                <div className="mt-4 border-t border-stone-100 pt-3 dark:border-stone-800">
-                  <label className="block text-xs font-medium text-stone-600 dark:text-stone-400">
-                    Note to customer (optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm dark:border-stone-600 dark:bg-stone-950"
-                  />
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={busyId === req.id}
-                      onClick={() => void handleReview(req.id, true)}
-                      className="rounded-full bg-emerald-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
-                    >
-                      Approve (sanction only)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyId === req.id}
-                      onClick={() => void handleReview(req.id, false)}
-                      className="rounded-full border border-stone-400 px-4 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 dark:text-stone-200"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {req.type === "REFUND_AFTER_DELIVERY" ? (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-                  <p className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
-                    Return case
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-stone-900 dark:text-stone-100">
-                    {req.caseNumber || "Case"}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-                    {(req.items ?? [])
-                      .map((i) => `${i.nameSnapshot} × ${i.qtySelected}`)
-                      .join("; ") || req.reasonLabel}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-                    {req.reasonLabel}
-                    {req.resolutionStatus === "REFUNDED" && req.refundTotalInPaise != null
-                      ? ` · Refund processed — ${formatMinorFromPaise(req.refundTotalInPaise, orderCtx.currency)}`
-                      : req.status === "REJECTED"
-                        ? " · Rejected"
-                        : ` · ${req.resolutionStatus?.replace(/_/g, " ") || req.status}`}
-                  </p>
-                  {req.caseNumber ? (
-                    <Link
-                      href={`/admin/returns/${encodeURIComponent(req.caseNumber)}`}
-                      className="mt-3 inline-flex rounded-full bg-stone-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-stone-800"
-                    >
-                      View return case
-                    </Link>
-                  ) : null}
-                  <p className="mt-2 text-[11px] text-stone-500">
-                    Approval, logistics, QC, and refunds are managed on the Returns desk — not on this
-                    order page.
-                  </p>
-                </div>
-              ) : null}
-
-              {!isAdjust && req.type !== "REFUND_AFTER_DELIVERY" ? (
-                <>
-                  <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-stone-500">
-                    Pre-delivery / cancel refund (not a post-delivery return case)
-                  </p>
-                  <ServiceRequestRefundPanel
-                    orderId={orderId}
-                    request={req}
-                    orderCtx={orderCtx}
-                    onDone={onUpdated}
-                  />
-                </>
               ) : null}
             </li>
           );
