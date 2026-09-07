@@ -90,6 +90,7 @@ type OrderLoaded = {
     returnedQty?: number;
     unitPriceInPaise: number;
     lineTotalInPaise: number;
+    pickupLocation?: { id: string; label: string } | null;
   }>;
   addresses: Array<{
     type: string;
@@ -434,7 +435,9 @@ export default function AdminShipmentCreateLabelPage() {
               <thead className="border-b text-[11px] uppercase text-stone-500">
                 <tr>
                   <th className="py-2 pr-2">Item</th>
+                  <th className="py-2 pr-2">SKU</th>
                   <th className="py-2 pr-2">Qty</th>
+                  <th className="py-2 pr-2">Warehouse</th>
                   <th className="py-2 text-right">Line</th>
                 </tr>
               </thead>
@@ -454,16 +457,19 @@ export default function AdminShipmentCreateLabelPage() {
                       <tr key={it.id ?? `${it.skuSnapshot}-${qty}`}>
                         <td className="py-2 pr-2">
                           <div className="font-medium">{it.nameSnapshot}</div>
-                          <div className="font-mono text-[11px] text-stone-500">
-                            {it.skuSnapshot}
-                          </div>
                           {typeof it.returnedQty === "number" && it.returnedQty > 0 ? (
                             <div className="mt-0.5 text-[11px] text-amber-800">
                               Ordered {it.qtyOrdered}, restocked {it.returnedQty}
                             </div>
                           ) : null}
                         </td>
+                        <td className="py-2 pr-2 font-mono text-[11px] text-stone-500">
+                          {it.skuSnapshot}
+                        </td>
                         <td className="py-2 pr-2">{qty}</td>
+                        <td className="py-2 pr-2 text-stone-600">
+                          {it.pickupLocation?.label ?? "Warehouse"}
+                        </td>
                         <td className="py-2 text-right font-semibold">
                           {formatMinorFromPaise(linePaise, order.currency)}
                         </td>

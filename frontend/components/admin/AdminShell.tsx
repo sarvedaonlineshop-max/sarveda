@@ -80,7 +80,12 @@ function AdminShellInner({
   const reduceMotion = useReducedMotion();
   const [searchFocused, setSearchFocused] = useState(false);
   const suggestions = headerSlot?.searchSuggestions ?? [];
+  const hideSearch =
+    Boolean(headerSlot?.hideSearch) ||
+    pathname === "/admin/orders" ||
+    pathname.startsWith("/admin/orders/");
   const showSuggestions =
+    !hideSearch &&
     searchFocused &&
     Boolean(headerSlot?.onSearchChange) &&
     (headerSlot?.searchValue ?? "").trim().length > 0 &&
@@ -277,6 +282,7 @@ function AdminShellInner({
                 minWidth: 0
               }}
             >
+              {!hideSearch ? (
               <div
                 style={{
                   position: "relative",
@@ -425,6 +431,7 @@ function AdminShellInner({
                   </div>
                 ) : null}
               </div>
+              ) : null}
               {headerSlot?.afterSearch ? (
                 <div style={{ flex: "0 1 auto", minWidth: 0 }}>{headerSlot.afterSearch}</div>
               ) : null}

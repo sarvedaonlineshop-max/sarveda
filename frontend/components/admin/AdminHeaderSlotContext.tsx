@@ -26,6 +26,8 @@ export type AdminHeaderSlot = {
   onSelectSuggestion?: (suggestion: AdminHeaderSearchSuggestion) => void;
   /** Stretch the search field to ~half the header width. */
   wideSearch?: boolean;
+  /** Hide the header search field entirely (e.g. order detail). */
+  hideSearch?: boolean;
   afterSearch?: ReactNode;
   actions?: ReactNode;
 };

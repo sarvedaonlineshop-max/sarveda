@@ -134,6 +134,8 @@ type OrderItemRow = {
   dropShipFulfillmentQty?: number;
   unitPriceInPaise: number;
   lineTotalInPaise: number;
+  taxClass?: string | null;
+  gstPercent?: number | null;
   pickupLocationId?: string | null;
   pickupLocation?: { id: string; label: string } | null;
 };
@@ -164,6 +166,12 @@ type ShipmentRow = {
   carrierMeta?: ShipmentCarrierMeta | null;
 };
 
+type RefundAllocationRow = {
+  orderItemId: string;
+  quantity: number;
+  approvedRefundPaise: number;
+};
+
 type RefundRow = {
   id: string;
   amountInPaise: number;
@@ -171,6 +179,7 @@ type RefundRow = {
   providerRefundId?: string | null;
   status: string;
   createdAt: string;
+  allocations?: RefundAllocationRow[];
 };
 
 type PaymentRow = {
@@ -256,6 +265,9 @@ type OrderLoaded = {
   shippingInPaise: number;
   taxInPaise: number;
   discountInPaise: number;
+  /** Grand total minus refunds — what the order is worth now. */
+  netOrderTotalInPaise?: number;
+  refundedInPaise?: number;
   createdAt: string;
   items: OrderItemRow[];
   addresses: AddressRow[];
@@ -454,6 +466,8 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       row.dropShipFulfillmentQty != null ? Number(row.dropShipFulfillmentQty) : undefined,
     unitPriceInPaise: Number(row.unitPriceInPaise),
     lineTotalInPaise: Number(row.lineTotalInPaise),
+    taxClass: row.taxClass != null ? String(row.taxClass) : null,
+    gstPercent: row.gstPercent != null ? Number(row.gstPercent) : null,
     pickupLocationId: row.pickupLocationId != null ? String(row.pickupLocationId) : null,
     pickupLocation: row.pickupLocation as OrderItemRow["pickupLocation"]
   }));
@@ -483,7 +497,12 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       reason: r.reason != null ? String(r.reason) : null,
       providerRefundId: r.providerRefundId != null ? String(r.providerRefundId) : null,
       status: String(r.status),
-      createdAt: String(r.createdAt)
+      createdAt: String(r.createdAt),
+      allocations: ((r.allocations as Array<Record<string, unknown>>) ?? []).map((a) => ({
+        orderItemId: String(a.orderItemId),
+        quantity: Number(a.quantity),
+        approvedRefundPaise: Number(a.approvedRefundPaise)
+      }))
     }))
   }));
   const legacy = raw.wooLegacyMeta as { lineItemsNote?: string } | null | undefined;
@@ -569,6 +588,9 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     shippingInPaise: Number(raw.shippingInPaise),
     taxInPaise: Number(raw.taxInPaise),
     discountInPaise: Number(raw.discountInPaise ?? 0),
+    netOrderTotalInPaise:
+      raw.netOrderTotalInPaise != null ? Number(raw.netOrderTotalInPaise) : undefined,
+    refundedInPaise: raw.refundedInPaise != null ? Number(raw.refundedInPaise) : undefined,
     createdAt: String(raw.createdAt),
     items,
     addresses,
@@ -596,6 +618,78 @@ function humanState(value: string): string {
     .toLowerCase()
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function shipmentStatusLabel(status: string): string {
+  switch (status) {
+    case "CREATED":
+      return "Ready for pickup";
+    case "PICKED":
+      return "Picked";
+    case "PACKED":
+      return "Packed";
+    case "INTRANSIT":
+      return "In transit";
+    case "OUT_FOR_DELIVERY":
+      return "Out for delivery";
+    case "DELIVERED":
+      return "Delivered";
+    case "RTO":
+      return "RTO";
+    default:
+      return humanState(status);
+  }
+}
+
+const SHIPMENT_FLOW: Array<{ status: string; label: string }> = [
+  { status: "CREATED", label: "Ready for pickup" },
+  { status: "PICKED", label: "Picked" },
+  { status: "INTRANSIT", label: "In transit" },
+  { status: "OUT_FOR_DELIVERY", label: "Out for delivery" },
+  { status: "DELIVERED", label: "Delivered" }
+];
+
+function shipmentFlowIndex(status: string): number {
+  if (status === "RTO") return SHIPMENT_FLOW.length - 1;
+  const idx = SHIPMENT_FLOW.findIndex((s) => s.status === status);
+  return idx >= 0 ? idx : 0;
+}
+
+function orderShipmentHeadline(
+  orderStatus: string,
+  isCancelled: boolean,
+  awbStatuses: string[]
+): string {
+  if (isCancelled) return "Cancelled";
+  if (awbStatuses.length === 0) {
+    if (orderStatus === "PACKED") return "Packed";
+    if (orderStatus === "PROCESSING") return "Processing";
+    if (orderStatus === "SHIPPED") return "Shipped";
+    if (orderStatus === "DELIVERED") return "Delivered";
+    return "Not shipped";
+  }
+  const unique = Array.from(new Set(awbStatuses));
+  if (unique.length === 1) return shipmentStatusLabel(unique[0]);
+  const lagging = unique
+    .slice()
+    .sort((a, b) => shipmentFlowIndex(a) - shipmentFlowIndex(b))[0];
+  return shipmentStatusLabel(lagging);
+}
+
+function scrollToSection(id: string) {
+  if (typeof document === "undefined") return;
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function liveItemQty(item: OrderItemRow): number {
+  if (typeof item.qtyShippable === "number") return Math.max(0, item.qtyShippable);
+  return Math.max(0, item.qtyOrdered - (item.returnedQty ?? 0));
+}
+
+function liveLineTotalPaise(item: OrderItemRow): number {
+  const qty = liveItemQty(item);
+  if (item.qtyOrdered <= 0) return 0;
+  return Math.round((item.lineTotalInPaise * qty) / item.qtyOrdered);
 }
 
 function sameAddress(a: AddressRow | undefined, b: AddressRow | undefined): boolean {
@@ -652,6 +746,7 @@ function AdminOrderProductionView({
   serviceRequests: ReactNode;
   shipmentSetup: ReactNode;
 }) {
+  const [shipmentTimelineOpen, setShipmentTimelineOpen] = useState(false);
   const payment = order.payments?.[0];
   const isCod = payment?.provider === "COD";
   const isCancelled = order.status === "CANCELLED";
@@ -664,13 +759,21 @@ function AdminOrderProductionView({
     order.paymentStatus === "REFUNDED" ||
     order.paymentStatus === "PARTIALLY_REFUNDED";
   const collectedInPaise = captured ? payment?.amountInPaise ?? order.grandTotalInPaise : 0;
-  const refundedInPaise = payment?.refundedInPaise ?? 0;
+  const refundedInPaise =
+    order.refundedInPaise ??
+    payment?.refundedInPaise ??
+    (payment?.refunds ?? []).reduce((s, r) => s + r.amountInPaise, 0);
+  const netOrderTotalInPaise =
+    order.netOrderTotalInPaise ?? Math.max(0, order.grandTotalInPaise - refundedInPaise);
   const netCollectedInPaise = Math.max(0, collectedInPaise - refundedInPaise);
   const amountDueInPaise = isCod && !captured ? order.grandTotalInPaise : 0;
   const shipping = order.addresses.find((a) => a.type === "SHIPPING") ?? order.addresses[0];
   const billing = order.addresses.find((a) => a.type === "BILLING");
   const customerName = order.customerName ?? shipping?.fullName ?? billing?.fullName ?? "Customer";
   const awbRows = allOrderAwbRows(order.shipments);
+  const paymentMethodLabel = isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Pending");
+  const paymentRefId =
+    payment?.providerPaymentId || payment?.providerOrderId || null;
   const paymentLabel = isCod
     ? isCancelled && !captured
       ? "COD — Not Collected"
@@ -691,9 +794,11 @@ function AdminOrderProductionView({
     : isUnpaidCheckoutAttempt(order.status, order.paymentStatus, payment?.provider)
       ? "Abandoned"
       : formatAdminOrderStatusLabel(order.status, order.paymentStatus, payment?.provider);
-  const fulfilmentLabel = isCancelled
-    ? "Unfulfilled"
-    : humanState(order.fulfillmentStatus);
+  const shipmentHeadline = orderShipmentHeadline(
+    order.status,
+    isCancelled,
+    awbRows.map((r) => r.status)
+  );
   const nextStatuses: Record<string, string[]> = {
     PAID: ["PROCESSING"],
     PROCESSING: ["PACKED"],
@@ -725,6 +830,40 @@ function AdminOrderProductionView({
     invoice?.invoiceNo || invoice?.pdfUrl
       ? invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)
       : null;
+
+  const liveItems = order.items.filter((item) => liveItemQty(item) > 0);
+  const refundAllocByItem = new Map<string, { qty: number; amount: number }>();
+  for (const p of order.payments ?? []) {
+    for (const r of p.refunds ?? []) {
+      for (const a of r.allocations ?? []) {
+        const prev = refundAllocByItem.get(a.orderItemId) ?? { qty: 0, amount: 0 };
+        refundAllocByItem.set(a.orderItemId, {
+          qty: prev.qty + a.quantity,
+          amount: prev.amount + a.approvedRefundPaise
+        });
+      }
+    }
+  }
+  const refundedRows = order.items
+    .map((item) => {
+      const fromAlloc = item.id ? refundAllocByItem.get(item.id) : undefined;
+      const qty =
+        fromAlloc?.qty ??
+        (typeof item.returnedQty === "number" && item.returnedQty > 0 ? item.returnedQty : 0);
+      if (qty <= 0) return null;
+      const amount =
+        fromAlloc?.amount ??
+        (item.qtyOrdered > 0
+          ? Math.round((item.lineTotalInPaise * qty) / item.qtyOrdered)
+          : item.unitPriceInPaise * qty);
+      return { item, qty, amount };
+    })
+    .filter((row): row is { item: OrderItemRow; qty: number; amount: number } => row != null);
+
+  const goTo = (sectionId: string, opts?: { openShipmentTimeline?: boolean }) => {
+    if (opts?.openShipmentTimeline) setShipmentTimelineOpen(true);
+    scrollToSection(sectionId);
+  };
 
   const timeline = [
     {
@@ -790,24 +929,33 @@ function AdminOrderProductionView({
               Payment: {paymentLabel}
             </span>
             <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700">
-              Fulfillment: {fulfilmentLabel}
+              Shipment: {shipmentHeadline}
             </span>
           </div>
         </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className={`${card} flex min-h-[104px] flex-col p-4`}>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <button
+          type="button"
+          onClick={() => goTo("section-order-total")}
+          className={`${card} flex min-h-[120px] flex-col p-4 text-left transition hover:border-[#b98a3e]`}
+        >
           <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Order total</p>
           <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">
-            {formatMinorFromPaise(order.grandTotalInPaise, order.currency)}
+            {formatMinorFromPaise(netOrderTotalInPaise, order.currency)}
           </p>
-          <p className="mt-0.5 text-xs text-stone-500">{order.currency}</p>
+          <p className="mt-0.5 text-xs text-stone-500">
+            {refundedInPaise > 0
+              ? `After refunds · was ${formatMinorFromPaise(order.grandTotalInPaise, order.currency)}`
+              : order.currency}
+          </p>
           {invoiceHref ? (
             <a
               href={invoiceHref}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="mt-auto self-end rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-3 py-1.5 text-xs font-semibold text-[#1c352a]"
             >
               Download Invoice
@@ -815,32 +963,77 @@ function AdminOrderProductionView({
           ) : (
             <span className="mt-auto self-end text-[11px] text-stone-400">No invoice yet</span>
           )}
-        </div>
-        {[
-          [
-            "Payment",
-            isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Pending"),
-            isCod && !captured ? (isCancelled ? "Not collected" : "Pending collection") : humanState(order.paymentStatus)
-          ],
-          [
-            "Fulfillment",
-            fulfilmentLabel,
-            awbRows.length
-              ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}`
-              : "No shipment"
-          ],
-          [
-            "Delivery",
-            shipping ? `${shipping.city}, ${shipping.state}` : "Address unavailable",
-            shipping?.postalCode ?? "—"
-          ]
-        ].map(([label, value, hint]) => (
-          <div key={label} className={`${card} min-h-[104px] p-4`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">{label}</p>
-            <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">{value}</p>
-            <p className="mt-0.5 text-xs text-stone-500">{hint}</p>
-          </div>
-        ))}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => goTo("section-payment")}
+          className={`${card} min-h-[120px] p-4 text-left transition hover:border-[#b98a3e]`}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Payment</p>
+          <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">{paymentMethodLabel}</p>
+          <p className="mt-0.5 text-xs text-stone-500">
+            {isCod && !captured
+              ? isCancelled
+                ? "Not collected"
+                : "Pending collection"
+              : humanState(order.paymentStatus)}
+          </p>
+          {paymentRefId ? (
+            <p className="mt-2 break-all font-mono text-[11px] text-stone-500">Ref · {paymentRefId}</p>
+          ) : null}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => goTo("section-refund")}
+          className={`${card} min-h-[120px] p-4 text-left transition hover:border-[#b98a3e]`}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Refund</p>
+          <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">
+            {formatMinorFromPaise(refundedInPaise, order.currency)}
+          </p>
+          <p className="mt-0.5 text-xs text-stone-500">
+            {refundedInPaise > 0
+              ? `${refundedRows.length || (payment?.refunds?.length ?? 0)} refund line${
+                  (refundedRows.length || (payment?.refunds?.length ?? 0)) === 1 ? "" : "s"
+                }`
+              : "No refunds"}
+          </p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => goTo("section-shipments", { openShipmentTimeline: true })}
+          className={`${card} flex min-h-[120px] flex-col p-4 text-left transition hover:border-[#b98a3e]`}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Shipment</p>
+          <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">{shipmentHeadline}</p>
+          <p className="mt-0.5 text-xs text-stone-500">
+            {awbRows.length
+              ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"} · timeline`
+              : "No label yet"}
+          </p>
+          <Link
+            href={`/admin/shipments/${order.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-auto self-end rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800"
+          >
+            Open shipments
+          </Link>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => goTo("section-delivery")}
+          className={`${card} min-h-[120px] p-4 text-left transition hover:border-[#b98a3e]`}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Delivery</p>
+          <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">
+            {shipping ? `${shipping.city}, ${shipping.state}` : "Address unavailable"}
+          </p>
+          <p className="mt-0.5 text-xs text-stone-500">{shipping?.postalCode ?? "—"}</p>
+        </button>
       </div>
 
       <section className={`${card} p-4`}>
@@ -907,15 +1100,16 @@ function AdminOrderProductionView({
         </div>
       </section>
 
-      <section className={card}>
+      <section id="section-items" className={card}>
         <div className={sectionHeader}>
           <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Items</h2>
+          <p className="mt-1 text-xs text-stone-500">Live purchased quantity remaining on this order</p>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-[#faf7f2] text-[11px] uppercase tracking-wide text-[#8a7060]">
               <tr>
-                {["Product", "SKU", "Qty", "Fulfilled From", "Unit Price", "Total"].map((h) => (
+                {["Product", "SKU", "Qty", "Unit Price", "GST %", "Total"].map((h) => (
                   <th key={h} className="px-4 py-3 font-semibold">
                     {h}
                   </th>
@@ -923,58 +1117,153 @@ function AdminOrderProductionView({
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {order.items.map((item, idx) => {
-                const warehouseQty = item.warehouseFulfillmentQty ?? item.qtyOrdered;
-                const dropQty = item.dropShipFulfillmentQty ?? 0;
-                const source =
-                  dropQty > 0 && warehouseQty > 0
-                    ? `Warehouse (${warehouseQty}) · Drop ship (${dropQty})`
-                    : dropQty > 0
-                      ? "Drop ship"
-                      : item.pickupLocation?.label ?? "Warehouse";
-                const thumb = resolveMediaUrl(item.imageUrl);
-                const qtyDisplay =
-                  typeof item.qtyShippable === "number" ? item.qtyShippable : item.qtyOrdered;
-                return (
-                  <tr key={item.id ?? idx}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-stone-100">
-                          {thumb ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={thumb} alt="" className="h-full w-full object-cover" />
-                          ) : null}
-                        </div>
-                        <div>
+              {liveItems.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-sm text-stone-500">
+                    No live items remain on this order (all units refunded or restocked).
+                  </td>
+                </tr>
+              ) : (
+                liveItems.map((item, idx) => {
+                  const qty = liveItemQty(item);
+                  const thumb = resolveMediaUrl(item.imageUrl);
+                  const gst =
+                    typeof item.gstPercent === "number" ? `${item.gstPercent}%` : "—";
+                  return (
+                    <tr key={item.id ?? idx}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-stone-100">
+                            {thumb ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={thumb} alt="" className="h-full w-full object-cover" />
+                            ) : null}
+                          </div>
                           <p className="font-medium text-stone-900">{item.nameSnapshot}</p>
-                          {typeof item.returnedQty === "number" && item.returnedQty > 0 ? (
-                            <p className="text-[11px] text-amber-800">
-                              Ordered {item.qtyOrdered}, restocked {item.returnedQty}
-                            </p>
-                          ) : null}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
-                    <td className="px-4 py-3">{qtyDisplay}</td>
-                    <td className="px-4 py-3 text-stone-600">{source}</td>
-                    <td className="px-4 py-3">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
-                    <td className="px-4 py-3 font-semibold">
-                      {formatMinorFromPaise(
-                        item.qtyOrdered > 0 && typeof item.qtyShippable === "number"
-                          ? Math.round((item.lineTotalInPaise * item.qtyShippable) / item.qtyOrdered)
-                          : item.lineTotalInPaise,
-                        order.currency
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                      <td className="px-4 py-3">{qty}</td>
+                      <td className="px-4 py-3">
+                        {formatMinorFromPaise(item.unitPriceInPaise, order.currency)}
+                      </td>
+                      <td className="px-4 py-3">{gst}</td>
+                      <td className="px-4 py-3 font-semibold">
+                        {formatMinorFromPaise(liveLineTotalPaise(item), order.currency)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
-        <div className="border-t border-stone-100 p-5">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Shipments</h3>
+        {refundedRows.length > 0 ? (
+          <div className="border-t border-stone-100">
+            <div className="border-b border-stone-100 px-5 py-3">
+              <h3 className="text-sm font-bold text-[#1c352a]">Refunded items</h3>
+              <p className="mt-0.5 text-xs text-stone-500">Units refunded / restocked from this order</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-amber-50/80 text-[11px] uppercase tracking-wide text-amber-900/70">
+                  <tr>
+                    {["Product", "SKU", "Qty refunded", "Amount refunded"].map((h) => (
+                      <th key={h} className="px-4 py-3 font-semibold">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {refundedRows.map(({ item, qty, amount }) => (
+                    <tr key={`refund-${item.id ?? item.skuSnapshot}`}>
+                      <td className="px-4 py-3 font-medium text-stone-900">{item.nameSnapshot}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                      <td className="px-4 py-3">{qty}</td>
+                      <td className="px-4 py-3 font-semibold">
+                        {formatMinorFromPaise(amount, order.currency)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section id="section-shipments" className={card}>
+        <div className={sectionHeader}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Shipments</h2>
+              <p className="mt-1 text-xs text-stone-500">Warehouse source and carrier tracking</p>
+            </div>
+            <Link
+              href={`/admin/shipments/${order.id}`}
+              className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-3 py-1.5 text-xs font-semibold text-[#1c352a]"
+            >
+              Open shipments workspace
+            </Link>
+          </div>
+        </div>
+        <div className="overflow-x-auto border-b border-stone-100">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-[#faf7f2] text-[11px] uppercase tracking-wide text-[#8a7060]">
+              <tr>
+                {["Product", "SKU", "Qty to ship", "Warehouse"].map((h) => (
+                  <th key={h} className="px-4 py-3 font-semibold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {liveItems.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-5 text-sm text-stone-500">
+                    Nothing left to ship.
+                  </td>
+                </tr>
+              ) : (
+                liveItems.map((item, idx) => {
+                  const warehouseQty = item.warehouseFulfillmentQty ?? liveItemQty(item);
+                  const dropQty = item.dropShipFulfillmentQty ?? 0;
+                  const source =
+                    dropQty > 0 && warehouseQty > 0
+                      ? `Warehouse (${warehouseQty}) · Drop ship (${dropQty})`
+                      : dropQty > 0
+                        ? "Drop ship"
+                        : item.pickupLocation?.label ?? "Warehouse";
+                  const thumb = resolveMediaUrl(item.imageUrl);
+                  return (
+                    <tr key={`ship-item-${item.id ?? idx}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-stone-100">
+                            {thumb ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={thumb} alt="" className="h-full w-full object-cover" />
+                            ) : null}
+                          </div>
+                          <p className="font-medium text-stone-900">{item.nameSnapshot}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                      <td className="px-4 py-3">{liveItemQty(item)}</td>
+                      <td className="px-4 py-3 text-stone-600">{source}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="p-5">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Tracking
+          </h3>
           {isCancelled && awbRows.length === 0 ? (
             <p className="text-sm text-stone-600">This order was cancelled before shipment.</p>
           ) : awbRows.length === 0 ? (
@@ -985,6 +1274,8 @@ function AdminOrderProductionView({
                 const isPrimaryStatusRow = !seenShipmentIds.has(row.shipmentId);
                 if (isPrimaryStatusRow) seenShipmentIds.add(row.shipmentId);
                 const nextShip = shipmentTestNext[row.status] ?? [];
+                const flowIdx = shipmentFlowIndex(row.status);
+                const shipmentMeta = order.shipments.find((s) => s.id === row.shipmentId);
                 return (
                   <div
                     key={`${row.shipmentId}-${row.awb}`}
@@ -994,7 +1285,7 @@ function AdminOrderProductionView({
                       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
                         <div>
                           <dt className="text-xs text-stone-500">Status</dt>
-                          <dd className="font-semibold">{humanState(row.status)}</dd>
+                          <dd className="font-semibold">{shipmentStatusLabel(row.status)}</dd>
                         </div>
                         <div>
                           <dt className="text-xs text-stone-500">Carrier</dt>
@@ -1028,6 +1319,59 @@ function AdminOrderProductionView({
                         ) : null}
                       </div>
                     </div>
+                    {shipmentTimelineOpen ? (
+                      <ol className="space-y-2 border-t border-stone-200/80 pt-3">
+                        {SHIPMENT_FLOW.map((step, idx) => {
+                          const done = idx <= flowIdx && row.status !== "RTO";
+                          const current = step.status === row.status;
+                          return (
+                            <li
+                              key={step.status}
+                              className={`flex items-center gap-2 text-xs ${
+                                done || current ? "text-stone-800" : "text-stone-400"
+                              }`}
+                            >
+                              <span
+                                className={`h-2 w-2 rounded-full ${
+                                  current
+                                    ? "bg-[#b98a3e]"
+                                    : done
+                                      ? "bg-emerald-500"
+                                      : "bg-stone-300"
+                                }`}
+                              />
+                              <span className={current ? "font-semibold" : undefined}>
+                                {step.label}
+                              </span>
+                            </li>
+                          );
+                        })}
+                        {row.status === "RTO" ? (
+                          <li className="flex items-center gap-2 text-xs font-semibold text-red-800">
+                            <span className="h-2 w-2 rounded-full bg-red-500" />
+                            RTO
+                          </li>
+                        ) : null}
+                        {shipmentMeta?.deliveredAt ? (
+                          <li className="pl-4 text-[11px] text-stone-500">
+                            Delivered{" "}
+                            {new Date(shipmentMeta.deliveredAt).toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short"
+                            })}
+                          </li>
+                        ) : null}
+                        {shipmentMeta?.rtoAt ? (
+                          <li className="pl-4 text-[11px] text-stone-500">
+                            RTO{" "}
+                            {new Date(shipmentMeta.rtoAt).toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short"
+                            })}
+                          </li>
+                        ) : null}
+                      </ol>
+                    ) : null}
                     {isPrimaryStatusRow && nextShip.length > 0 ? (
                       <div className="flex flex-wrap gap-2 border-t border-stone-200/80 pt-3">
                         {nextShip.map((btn) => (
@@ -1035,7 +1379,9 @@ function AdminOrderProductionView({
                             key={btn.status}
                             type="button"
                             disabled={statusSaving || !!shipBusy}
-                            onClick={() => onSetShipmentStatus(row.cancelWaybill || row.awb, btn.status)}
+                            onClick={() =>
+                              onSetShipmentStatus(row.cancelWaybill || row.awb, btn.status)
+                            }
                             className={`rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
                               btn.status === "RTO"
                                 ? "border-red-300 bg-red-50 text-red-900"
@@ -1056,7 +1402,7 @@ function AdminOrderProductionView({
         </div>
       </section>
 
-      <section className={card}>
+      <section id="section-delivery" className={card}>
         <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Customer &amp; Delivery</h2></div>
         <div className="grid gap-6 p-5 md:grid-cols-2">
           <div>
@@ -1087,11 +1433,17 @@ function AdminOrderProductionView({
         </div>
       </section>
 
-      <section className={card}>
+      <section id="section-payment" className={card}>
         <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Payment &amp; Order Total</h2></div>
-        <div className="grid gap-8 p-5 lg:grid-cols-2">
+        <div id="section-order-total" className="grid gap-8 p-5 lg:grid-cols-2">
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4"><dt className="text-stone-500">Payment method</dt><dd className="font-semibold">{isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Not selected")}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-stone-500">Payment method</dt><dd className="font-semibold">{paymentMethodLabel}</dd></div>
+            {paymentRefId ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-stone-500">Reference ID</dt>
+                <dd className="break-all text-right font-mono text-xs">{paymentRefId}</dd>
+              </div>
+            ) : null}
             {isCod ? (
               <>
                 <div className="flex justify-between"><dt className="text-stone-500">Amount due</dt><dd>{formatMinorFromPaise(amountDueInPaise, order.currency)}</dd></div>
@@ -1100,9 +1452,10 @@ function AdminOrderProductionView({
               </>
             ) : (
               <>
-                <div className="flex justify-between"><dt className="text-stone-500">Order total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between"><dt className="text-stone-500">Original order total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
                 <div className="flex justify-between"><dt className="text-stone-500">Originally collected</dt><dd>{formatMinorFromPaise(collectedInPaise, order.currency)}</dd></div>
                 <div className="flex justify-between"><dt className="text-stone-500">Refunded</dt><dd>{formatMinorFromPaise(refundedInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between font-semibold"><dt>Net order total</dt><dd>{formatMinorFromPaise(netOrderTotalInPaise, order.currency)}</dd></div>
                 <div className="flex justify-between font-semibold"><dt>Net collected</dt><dd>{formatMinorFromPaise(netCollectedInPaise, order.currency)}</dd></div>
               </>
             )}
@@ -1112,15 +1465,32 @@ function AdminOrderProductionView({
             <div className="flex justify-between"><dt className="text-stone-500">Shipping</dt><dd>{formatMinorFromPaise(order.shippingInPaise, order.currency)}</dd></div>
             <div className="flex justify-between"><dt className="text-stone-500">Discount</dt><dd>{order.discountInPaise ? `−${formatMinorFromPaise(order.discountInPaise, order.currency)}` : formatMinorFromPaise(0, order.currency)}</dd></div>
             <div className="flex justify-between"><dt className="text-stone-500">GST</dt><dd>{formatMinorFromPaise(order.taxInPaise, order.currency)}</dd></div>
-            <div className="flex justify-between border-t-2 border-stone-200 pt-3 text-base font-bold text-[#1c352a]"><dt>Grand Total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
+            <div className="flex justify-between border-t border-stone-200 pt-2"><dt className="text-stone-500">Original grand total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
+            <div className="flex justify-between border-t-2 border-stone-200 pt-3 text-base font-bold text-[#1c352a]"><dt>Current order total</dt><dd>{formatMinorFromPaise(netOrderTotalInPaise, order.currency)}</dd></div>
           </dl>
         </div>
       </section>
 
-      {isCancelled || isRefunded || refundContent || serviceRequests ? (
-        <section className={card}>
+      {isCancelled || isRefunded || refundContent || serviceRequests || refundedInPaise > 0 ? (
+        <section id="section-refund" className={card}>
           <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">{isCancelled && isCod && !captured ? "Cancellation" : "Refunds & Returns"}</h2></div>
           <div className="space-y-4 p-5">
+            {refundedInPaise > 0 ? (
+              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-stone-500">Amount refunded</dt>
+                  <dd className="font-semibold">{formatMinorFromPaise(refundedInPaise, order.currency)}</dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Refunded lines</dt>
+                  <dd className="font-semibold">{refundedRows.length}</dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Payment status</dt>
+                  <dd className="font-semibold">{humanState(order.paymentStatus)}</dd>
+                </div>
+              </dl>
+            ) : null}
             {isCancelled && isCod && !captured ? (
               <dl className="grid gap-3 text-sm sm:grid-cols-3">
                 <div><dt className="text-stone-500">Status</dt><dd className="font-semibold">Cancelled before shipment</dd></div>
@@ -1131,7 +1501,11 @@ function AdminOrderProductionView({
             {serviceRequests}
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section id="section-refund" className="sr-only" aria-hidden>
+          Refunds
+        </section>
+      )}
 
       <section className={card}>
         <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Documents</h2></div>
@@ -1194,7 +1568,7 @@ function AdminOrderProductionView({
             <div><dt className="text-stone-500">Internal order ID</dt><dd className="break-all font-mono">{order.id}</dd></div>
             <div><dt className="text-stone-500">Stored order state</dt><dd className="font-mono">{order.status}</dd></div>
             <div><dt className="text-stone-500">Stored payment state</dt><dd className="font-mono">{order.paymentStatus}</dd></div>
-            <div><dt className="text-stone-500">Stored fulfillment state</dt><dd className="font-mono">{order.fulfillmentStatus}</dd></div>
+            <div><dt className="text-stone-500">Stored shipment state</dt><dd className="font-mono">{order.fulfillmentStatus}</dd></div>
           </dl>
           <div className="space-y-3">
             {(order.payments ?? []).map((p, idx) => (
@@ -3114,10 +3488,16 @@ export default function AdminOrderDetailPage() {
         <div className="border-b border-stone-100 p-4 dark:border-stone-700">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Line items &amp; fulfillment</h2>
+              <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Shipment tools</h2>
               <p className="text-xs text-stone-500 dark:text-stone-400">
-                Fulfillment:{" "}
-                <span className="font-medium text-stone-700 dark:text-stone-200">{order.fulfillmentStatus}</span>
+                Status:{" "}
+                <span className="font-medium text-stone-700 dark:text-stone-200">
+                  {orderShipmentHeadline(
+                    order.status,
+                    order.status === "CANCELLED",
+                    awbRows.map((r) => r.status)
+                  )}
+                </span>
                 {order.shippingZone ? ` · Zone ${order.shippingZone}` : ""}
               </p>
             </div>
@@ -3196,51 +3576,6 @@ export default function AdminOrderDetailPage() {
             {order.wooImportNote ? ` ${order.wooImportNote}` : " Line items were not in the export file."}
           </p>
         ) : null}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-stone-100 dark:border-stone-700 dark:bg-stone-800/80" style={{ background: "linear-gradient(180deg,#f4f0e8,#f9f7f4)" }}>
-              <tr>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Product</th>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">SKU</th>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Qty</th>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Fulfilment</th>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Unit</th>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Line total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
-              {order.items.map((item, idx) => (
-                <tr
-                  key={item.id ?? `${item.skuSnapshot}-${idx}`}
-                  className="transition-colors"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#faf8f5";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "";
-                  }}
-                >
-                  <td className="px-3 py-3 align-top font-medium text-stone-800 dark:text-stone-100">
-                    {item.nameSnapshot}
-                  </td>
-                  <td className="px-3 py-3 align-top" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#8a7060" }}>{item.skuSnapshot}</td>
-                  <td className="px-3 py-3 align-top">{item.qtyOrdered}</td>
-                  <td className="px-3 py-3 align-top text-xs text-stone-600 dark:text-stone-300">
-                    {(() => {
-                      const wh = item.warehouseFulfillmentQty ?? item.qtyOrdered;
-                      const ds = item.dropShipFulfillmentQty ?? 0;
-                      if (ds <= 0) return wh === item.qtyOrdered ? "Warehouse" : `Warehouse: ${wh}`;
-                      if (wh <= 0) return `Drop ship: ${ds}`;
-                      return `Warehouse: ${wh} · Drop ship: ${ds}`;
-                    })()}
-                  </td>
-                  <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
-                  <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
         <div className="border-t border-stone-100 px-4 py-4 dark:border-stone-700">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -3447,58 +3782,7 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       </div>
-      <div className="mt-6">
-        <AdminOrderAttributionCard attribution={order.attribution} />
-      </div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-          <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Totals</h2>
-          <dl className="mt-3 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-stone-500 dark:text-stone-400">Subtotal</dt>
-              <dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-stone-500 dark:text-stone-400">
-                Shipping
-                {order.shippingZone ? (
-                  <span className="block text-xs font-normal">Zone {order.shippingZone}</span>
-                ) : null}
-              </dt>
-              <dd>{formatMinorFromPaise(order.shippingInPaise, order.currency)}</dd>
-            </div>
-            {(order.payments ?? []).length > 0 ? (
-              <div className="flex justify-between">
-                <dt className="text-stone-500 dark:text-stone-400">Payment method</dt>
-                <dd className="font-medium">
-                  {(order.payments ?? [])
-                    .map((p) => p.provider)
-                    .filter((v, i, a) => a.indexOf(v) === i)
-                    .join(", ")}
-                </dd>
-              </div>
-            ) : null}
-            <div className="flex justify-between">
-              <dt className="text-stone-500 dark:text-stone-400">Tax</dt>
-              <dd>{formatMinorFromPaise(order.taxInPaise, order.currency)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-stone-500 dark:text-stone-400">Discount</dt>
-              <dd>{formatMinorFromPaise(order.discountInPaise, order.currency)}</dd>
-            </div>
-            <div className="flex justify-between border-t border-stone-100 pt-2 font-semibold dark:border-stone-700" style={{ borderTop: "2px solid #e8e2d9" }}>
-              <dt>Grand total</dt>
-              <dd style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1c352a" }}>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd>
-            </div>
-          </dl>
-          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
-            Currency: {order.currency}
-          </p>
-          <p className="mt-4 text-xs text-stone-500 dark:text-stone-400">
-            Created {new Date(order.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-          </p>
-        </div>
-
         {(order.payments ?? []).some(
           (p) => p.providerPaymentId || (p.refunds?.length ?? 0) > 0
         ) ? (

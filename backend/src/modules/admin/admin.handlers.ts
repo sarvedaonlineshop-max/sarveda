@@ -1015,6 +1015,7 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
                 sku: true,
                 productRel: {
                   select: {
+                    taxClass: true,
                     images: {
                       orderBy: [{ isPrimary: "desc" }, { position: "asc" }],
                       take: 1,
@@ -1031,7 +1032,12 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
         payments: {
           orderBy: { createdAt: "desc" },
           include: {
-            refunds: { orderBy: { createdAt: "desc" } }
+            refunds: {
+              orderBy: { createdAt: "desc" },
+              include: {
+                allocations: true
+              }
+            }
           }
         },
         invoice: true,
@@ -1088,6 +1094,7 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
         }
       }
     });
+    const { gstRatePercent } = await import("../../utils/gst");
     const {
       shippableQuantityForOrderItem,
       sumReturnedFromRestockEvents
@@ -1096,16 +1103,32 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
     const items = order.items.map((it) => {
       const returnedQty = returnedByItem.get(it.id) ?? 0;
       const imageUrl = it.variant?.productRel?.images?.[0]?.url ?? null;
+      const taxClass = it.variant?.productRel?.taxClass ?? "standard";
       return {
         ...it,
         returnedQty,
         qtyShippable: shippableQuantityForOrderItem(it, returnedQty),
-        imageUrl
+        imageUrl,
+        taxClass,
+        gstPercent: gstRatePercent(taxClass)
       };
     });
+    const refundedInPaise = order.payments.reduce(
+      (sum, p) => sum + (p.refundedInPaise ?? 0),
+      0
+    );
+    const netOrderTotalInPaise = Math.max(0, order.grandTotalInPaise - refundedInPaise);
     res.json({
       success: true,
-      data: { order: { ...order, items, accountingEvents } }
+      data: {
+        order: {
+          ...order,
+          items,
+          accountingEvents,
+          netOrderTotalInPaise,
+          refundedInPaise
+        }
+      }
     });
   } catch (err) {
     next(err);
