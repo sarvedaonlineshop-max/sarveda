@@ -2,23 +2,65 @@ import type { Order, OrderStatus, Shipment, ShipmentStatus } from "@prisma/clien
 
 import { prisma } from "../../config/db";
 
-/** Normalize courier-facing strings → DB shipment enum. */
+/**
+ * Normalize courier-facing strings → DB shipment enum.
+ *
+ * Delhivery often returns "Manifested" right after label create (not yet packed/picked).
+ * That must stay CREATED — never jump to INTRANSIT.
+ */
 export function mapCourierStatusToShipment(rawStatus: string): ShipmentStatus {
-  const s = rawStatus.toUpperCase();
-  if (s.includes("DELIVER")) return "DELIVERED";
-  if (s.includes("RTO") || s.includes("RETURN TO ORIGIN") || s.includes("RETURNED TO")) return "RTO";
-  if (s.includes("OUT") || s.includes("OFD")) return "OUT_FOR_DELIVERY";
+  const s = rawStatus.toUpperCase().trim();
+  if (!s || s === "UNKNOWN") return "CREATED";
+
+  if (s.includes("RTO") || s.includes("RETURN TO ORIGIN") || s.includes("RETURNED TO")) {
+    return "RTO";
+  }
+  // OFD before DELIVER — "Out for Delivery" contains "DELIVER"
+  if (s.includes("OUT FOR") || s.includes("OFD") || (/\bOUT\b/.test(s) && s.includes("DELIVERY"))) {
+    return "OUT_FOR_DELIVERY";
+  }
+  // "Undelivered" must not match DELIVER
+  if (s.includes("DELIVER") && !s.includes("UNDELIVER")) return "DELIVERED";
+
+  // Label / warehouse / awaiting pickup — still Created on our desk
+  if (
+    s.includes("MANIFEST") ||
+    s.includes("SOFT DATA") ||
+    s.includes("PENDING") ||
+    s.includes("AWAITING") ||
+    s.includes("SCHEDULED") ||
+    s.includes("NOT PICKED") ||
+    s.includes("PICKUP FAIL") ||
+    s.includes("CANCELED") ||
+    s.includes("CANCELLED") ||
+    s === "OPEN" ||
+    s.includes("UD:MANIFEST")
+  ) {
+    return "CREATED";
+  }
+
+  // Picked up by courier (not merely "Pickup Scheduled")
+  if (s.includes("PICKED UP") || s === "PICKED" || (s.includes("PICKED") && !s.includes("PICKUP"))) {
+    return "PICKED";
+  }
+  if (s.includes("PICKUP")) {
+    // Pickup Scheduled / Awaited / Generated → still waiting at warehouse
+    return "CREATED";
+  }
+
   if (
     s.includes("TRANSIT") ||
     s.includes("SHIPPED") ||
-    s.includes("MANIFEST") ||
-    s.includes("PICKUP") ||
-    s.includes("DISPATCH")
+    s.includes("DISPATCH") ||
+    s.includes("CONNECTED") ||
+    s.includes("LEFT") ||
+    s.includes("ARRIVED")
   ) {
     return "INTRANSIT";
   }
-  if (s.includes("PICK")) return "PICKED";
-  return "INTRANSIT";
+
+  // Unknown carrier strings: do not invent In transit
+  return "CREATED";
 }
 
 const ORDER_STATUS_BEFORE_TRANSIT: OrderStatus[] = ["PAID", "PROCESSING", "PACKED"];
@@ -76,6 +118,20 @@ export async function persistShipmentTrackingFromCarrier(
       data: { status: "SHIPPED" }
     });
     orderStatus = "SHIPPED";
+  }
+
+  // Carrier still pre-pickup (e.g. Manifested) — undo premature SHIPPED from a bad sync map.
+  if (
+    shipmentStatus === "CREATED" &&
+    shipment.order.status === "SHIPPED" &&
+    shipment.order.fulfillmentStatus !== "FULFILLED" &&
+    shipment.order.fulfillmentStatus !== "RETURNED"
+  ) {
+    await prisma.order.update({
+      where: { id: shipment.orderId },
+      data: { status: "PROCESSING" }
+    });
+    orderStatus = "PROCESSING";
   }
 
   if (shipmentStatus === "DELIVERED") {

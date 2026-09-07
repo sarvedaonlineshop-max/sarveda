@@ -751,6 +751,48 @@ export async function cancelShipmentWithMps(
   return { success: true, data: { cancelled } };
 }
 
+/** Pull human status from Delhivery `/packages/json` payload shapes. */
+export function extractDelhiveryTrackStatus(raw: unknown): string {
+  if (!raw || typeof raw !== "object") return "UNKNOWN";
+  const o = raw as Record<string, unknown>;
+
+  if (typeof o.status === "string" && o.status.trim()) return o.status.trim();
+  if (typeof o.Status === "string" && o.Status.trim()) return o.Status.trim();
+
+  const shipmentData = o.ShipmentData;
+  if (Array.isArray(shipmentData) && shipmentData[0] && typeof shipmentData[0] === "object") {
+    const row = shipmentData[0] as Record<string, unknown>;
+    const shipment = row.Shipment;
+    if (shipment && typeof shipment === "object") {
+      const ship = shipment as Record<string, unknown>;
+      const st = ship.Status;
+      if (st && typeof st === "object") {
+        const nested = (st as Record<string, unknown>).Status;
+        if (typeof nested === "string" && nested.trim()) return nested.trim();
+      }
+      if (typeof st === "string" && st.trim()) return st.trim();
+      const scans = ship.Scans;
+      if (Array.isArray(scans) && scans[0] && typeof scans[0] === "object") {
+        const detail = (scans[0] as Record<string, unknown>).ScanDetail;
+        if (detail && typeof detail === "object") {
+          const scan = (detail as Record<string, unknown>).Scan;
+          if (typeof scan === "string" && scan.trim()) return scan.trim();
+        }
+      }
+    }
+    if (typeof row.Status === "string" && row.Status.trim()) return row.Status.trim();
+    if (typeof row.status === "string" && row.status.trim()) return row.status.trim();
+  }
+
+  if (Array.isArray(o.packages) && o.packages[0] && typeof o.packages[0] === "object") {
+    const row = o.packages[0] as Record<string, unknown>;
+    if (typeof row.status === "string" && row.status.trim()) return row.status.trim();
+    if (typeof row.Status === "string" && row.Status.trim()) return row.Status.trim();
+  }
+
+  return "UNKNOWN";
+}
+
 export async function trackShipment(waybill: string): Promise<ApiOk<{ status: string; raw: unknown }> | ApiErr> {
   try {
     assertDelhiveryConfigured();
@@ -779,18 +821,7 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
       return mapAxiosError({ response: res, message: "track failed" }, "DELHIVERY_TRACK");
     }
     const raw = res.data;
-    let status = "UNKNOWN";
-    const o = raw as Record<string, unknown>;
-    if (typeof o?.status === "string") status = o.status;
-    else if (typeof o?.Status === "string") status = o.Status;
-    else if (Array.isArray(o?.ShipmentData) && (o.ShipmentData as unknown[])[0]) {
-      const row = (o.ShipmentData as Record<string, unknown>[])[0];
-      status = String(row?.Status ?? row?.status ?? "UNKNOWN");
-    } else if (Array.isArray(o?.packages) && (o.packages as unknown[])[0]) {
-      const row = (o.packages as Record<string, unknown>[])[0];
-      status = String(row?.status ?? row?.Status ?? "UNKNOWN");
-    }
-    return { success: true, data: { status, raw } };
+    return { success: true, data: { status: extractDelhiveryTrackStatus(raw), raw } };
   } catch (err) {
     return mapAxiosError(err, "DELHIVERY_TRACK");
   }
