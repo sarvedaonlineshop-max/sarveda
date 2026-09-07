@@ -1,6 +1,10 @@
 import type { Order, OrderItem, PickupLocation, Prisma, Shipment } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import {
+  getReturnedQuantitiesByOrderItemIds,
+  shippableQuantityForOrderItem
+} from "../orders/order-shippable-qty";
 
 import type { LabelLineItem, LabelMpsContext, LabelRenderOptions } from "./delhivery.label";
 import { formatPickupReturnAddress, getLabelAddressDefaults } from "./labelAssets";
@@ -96,11 +100,11 @@ export async function resolvePickupReturnAddress(
   return defaults.returnAddress;
 }
 
-export function buildLabelRenderOptions(
+export async function buildLabelRenderOptions(
   shipment: ShipmentForLabel | null,
   waybill: string,
   pickupReturn: string
-): LabelRenderOptions {
+): Promise<LabelRenderOptions> {
   const defaults = getLabelAddressDefaults();
   const returnAddress = pickupReturn || defaults.returnAddress;
   const renderOptions: LabelRenderOptions = {
@@ -116,13 +120,28 @@ export function buildLabelRenderOptions(
   const mps = resolveMpsLabelContext(waybill, shipment);
   if (mps) renderOptions.mps = mps;
 
-  const productLines: LabelLineItem[] = shipment.order.items.map((it) => ({
-    name: it.nameSnapshot,
-    sku: it.skuSnapshot,
-    qty: it.qtyOrdered,
-    unitPrice: it.unitPriceInPaise / 100,
-    lineTotal: it.lineTotalInPaise / 100
-  }));
+  const returnedByItem = await getReturnedQuantitiesByOrderItemIds(
+    prisma,
+    shipment.order.items.map((it) => it.id)
+  );
+
+  const productLines: LabelLineItem[] = [];
+  for (const it of shipment.order.items) {
+    const qty = shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0);
+    if (qty <= 0) continue;
+    const unitPrice = it.unitPriceInPaise / 100;
+    const lineTotalRupees =
+      it.qtyOrdered > 0
+        ? Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered) / 100
+        : unitPrice * qty;
+    productLines.push({
+      name: it.nameSnapshot,
+      sku: it.skuSnapshot,
+      qty,
+      unitPrice,
+      lineTotal: lineTotalRupees
+    });
+  }
 
   const grandTotal = shipment.order.grandTotalInPaise / 100;
   const sumProducts = productLines.reduce((s, it) => s + it.lineTotal, 0);

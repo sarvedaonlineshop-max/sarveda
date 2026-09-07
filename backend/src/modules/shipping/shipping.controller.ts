@@ -522,7 +522,7 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
 
     const shipment = await findShipmentForLabelWaybill(waybill);
     const pickupReturn = await resolvePickupReturnAddress(shipment);
-    const renderOptions = buildLabelRenderOptions(shipment, waybill, pickupReturn);
+    const renderOptions = await buildLabelRenderOptions(shipment, waybill, pickupReturn);
 
     const result = await delhivery.fetchPackingSlip(waybill, renderOptions);
     if (!result.success) {

@@ -4,7 +4,11 @@ import type { Prisma } from "@prisma/client";
 import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
 
-import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
+import {
+  getReturnedQuantitiesByOrderItemIds,
+  shippableQuantityForOrderItem
+} from "../orders/order-shippable-qty";
+import { prisma } from "../../config/db";
 import type { ApiErr, ApiOk, OrderWithShippingContext } from "./types";
 
 const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
@@ -313,10 +317,14 @@ export async function createInternationalShipment(
   if (!ship) {
     return { success: false, error: "Shipping address missing", code: "BAD_REQUEST" };
   }
+  const returnedByItem = await getReturnedQuantitiesByOrderItemIds(
+    prisma,
+    order.items.map((li) => li.id)
+  );
   const weightKg =
     order.items.reduce((sum, li) => {
       const w = li.variant?.weightGrams ?? 500;
-      const units = orderItemWarehouseUnits(li);
+      const units = shippableQuantityForOrderItem(li, returnedByItem.get(li.id) ?? 0);
       if (units <= 0) return sum;
       return sum + (w * units) / 1000;
     }, 0) || 0.5;
@@ -352,7 +360,7 @@ export async function createInternationalShipment(
 
     const orderItemsPayload = order.items
       .map((li) => {
-        const units = orderItemWarehouseUnits(li);
+        const units = shippableQuantityForOrderItem(li, returnedByItem.get(li.id) ?? 0);
         if (units <= 0) return null;
         const name = (li.nameSnapshot ?? "Item").trim().slice(0, 200) || "Item";
         const sku = (li.skuSnapshot ?? "SKU").trim().slice(0, 100) || "SKU";
@@ -367,8 +375,8 @@ export async function createInternationalShipment(
       return {
         success: false,
         error:
-          "No Sarveda-warehouse units to ship — drop-ship-only lines must be fulfilled by vendor.",
-        code: "DROP_SHIP_ONLY"
+          "No units left to ship — all line quantities were restocked/refunded, or lines are drop-ship-only.",
+        code: "NOTHING_TO_SHIP"
       };
     }
     const subTotalFromLines = Math.max(

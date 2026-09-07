@@ -1074,7 +1074,23 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
         }
       }
     });
-    res.json({ success: true, data: { order: { ...order, accountingEvents } } });
+    const {
+      shippableQuantityForOrderItem,
+      sumReturnedFromRestockEvents
+    } = await import("../orders/order-shippable-qty");
+    const returnedByItem = sumReturnedFromRestockEvents(order.inventoryRestocks);
+    const items = order.items.map((it) => {
+      const returnedQty = returnedByItem.get(it.id) ?? 0;
+      return {
+        ...it,
+        returnedQty,
+        qtyShippable: shippableQuantityForOrderItem(it, returnedQty)
+      };
+    });
+    res.json({
+      success: true,
+      data: { order: { ...order, items, accountingEvents } }
+    });
   } catch (err) {
     next(err);
   }
@@ -2554,9 +2570,21 @@ export async function orderShippingBreakdown(req: Request, res: Response, next: 
       order.payments[0]?.provider === "COD" ||
       (order.paymentStatus === "PENDING" && order.status === "PAID");
     const { computeVariantShippingBreakdown } = await import("../shipping/shippingRates.service");
+    const {
+      getReturnedQuantitiesByOrderItemIds,
+      shippableQuantityForOrderItem
+    } = await import("../orders/order-shippable-qty");
+    const returnedByItem = await getReturnedQuantitiesByOrderItemIds(
+      prisma,
+      order.items.map((i) => i.id)
+    );
     const lines = order.items
       .filter((i): i is typeof i & { variantId: string } => Boolean(i.variantId))
-      .map((i) => ({ variantId: i.variantId, quantity: i.qtyOrdered }));
+      .map((i) => ({
+        variantId: i.variantId,
+        quantity: shippableQuantityForOrderItem(i, returnedByItem.get(i.id) ?? 0)
+      }))
+      .filter((l) => l.quantity > 0);
     const breakdown = await computeVariantShippingBreakdown(prisma, lines, country, {
       cod: isCod && country.toUpperCase() === "IN"
     });

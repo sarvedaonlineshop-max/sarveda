@@ -76,6 +76,9 @@ type OrderLoaded = {
     nameSnapshot: string;
     skuSnapshot: string;
     qtyOrdered: number;
+    /** Remaining to pack after restocks (pre-ship refunds). */
+    qtyShippable?: number;
+    returnedQty?: number;
     unitPriceInPaise: number;
     lineTotalInPaise: number;
   }>;
@@ -398,18 +401,38 @@ export default function AdminShipmentCreateLabelPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {order.items.map((it, i) => (
-                  <tr key={it.id ?? i}>
-                    <td className="py-2 pr-2">
-                      <div className="font-medium">{it.nameSnapshot}</div>
-                      <div className="font-mono text-[11px] text-stone-500">{it.skuSnapshot}</div>
-                    </td>
-                    <td className="py-2 pr-2">{it.qtyOrdered}</td>
-                    <td className="py-2 text-right font-semibold">
-                      {formatMinorFromPaise(it.lineTotalInPaise, order.currency)}
-                    </td>
-                  </tr>
-                ))}
+                {order.items
+                  .map((it) => {
+                    const qty =
+                      typeof it.qtyShippable === "number"
+                        ? it.qtyShippable
+                        : it.qtyOrdered;
+                    if (qty <= 0) return null;
+                    const linePaise =
+                      it.qtyOrdered > 0
+                        ? Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered)
+                        : it.lineTotalInPaise;
+                    return (
+                      <tr key={it.id ?? `${it.skuSnapshot}-${qty}`}>
+                        <td className="py-2 pr-2">
+                          <div className="font-medium">{it.nameSnapshot}</div>
+                          <div className="font-mono text-[11px] text-stone-500">
+                            {it.skuSnapshot}
+                          </div>
+                          {typeof it.returnedQty === "number" && it.returnedQty > 0 ? (
+                            <div className="mt-0.5 text-[11px] text-amber-800">
+                              Ordered {it.qtyOrdered}, restocked {it.returnedQty}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="py-2 pr-2">{qty}</td>
+                        <td className="py-2 text-right font-semibold">
+                          {formatMinorFromPaise(linePaise, order.currency)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                  .filter(Boolean)}
               </tbody>
             </table>
           </div>

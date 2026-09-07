@@ -8,7 +8,10 @@ import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 import * as delhivery from "./delhivery";
 import { resolvePickupForShipment } from "./pickupLocation.resolve";
 import * as shiprocket from "./shiprocket";
-import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
+import {
+  getReturnedQuantitiesByOrderItemIds,
+  shippableQuantityForOrderItem
+} from "../orders/order-shippable-qty";
 import type { CourierChoice, OrderWithShippingContext } from "./types";
 
 const METRO_NORMALIZED = new Set([
@@ -35,15 +38,33 @@ export function isZoneAPincode(pincode: string): boolean {
   return /^110/.test(p) || /^400/.test(p) || /^560/.test(p);
 }
 
-export function totalWeightGrams(order: OrderWithShippingContext): number {
+export function totalWeightGrams(
+  order: OrderWithShippingContext,
+  returnedByItem?: Map<string, number>
+): number {
   let g = 0;
   for (const li of order.items) {
     const w = li.variant?.weightGrams ?? 500;
-    const units = orderItemWarehouseUnits(li);
+    const units = shippableQuantityForOrderItem(li, returnedByItem?.get(li.id) ?? 0);
     if (units <= 0) continue;
     g += w * units;
   }
   return Math.max(g, 1);
+}
+
+function productsDescForShipment(
+  items: OrderWithShippingContext["items"],
+  returnedByItem: Map<string, number>
+): string {
+  return items
+    .map((it) => {
+      const qty = shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0);
+      if (qty <= 0) return null;
+      return `${it.nameSnapshot} (${qty})`;
+    })
+    .filter((s): s is string => Boolean(s))
+    .join(", ")
+    .slice(0, 240);
 }
 
 function primaryPaymentProvider(order: OrderWithShippingContext): PaymentProvider | null {
@@ -399,13 +420,31 @@ export async function autoSelectAndCreate(
     order.shippingLabelSeq
   );
 
+  const returnedByItem = await getReturnedQuantitiesByOrderItemIds(
+    prisma,
+    order.items.map((i) => i.id)
+  );
+  const shippableItems = order.items.filter(
+    (it) => shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0) > 0
+  );
+  if (!shippableItems.length) {
+    return {
+      success: false,
+      error: "No units left to ship — all line quantities were restocked/refunded.",
+      code: "NOTHING_TO_SHIP"
+    };
+  }
+
   const choice = selectCourier(order as OrderWithShippingContext);
   const shipAddr = order.addresses.find((a) => a.type === "SHIPPING");
   if (!shipAddr) {
     return { success: false, error: "Missing shipping address", code: "BAD_REQUEST" };
   }
 
-  const weightKg = Math.max(0.05, totalWeightGrams(order as OrderWithShippingContext) / 1000);
+  const weightKg = Math.max(
+    0.05,
+    totalWeightGrams(order as OrderWithShippingContext, returnedByItem) / 1000
+  );
   const paymentMode =
     options?.paymentMode ??
     (primaryPaymentProvider(order as OrderWithShippingContext) === "COD" ? "COD" : "Pre-paid");
@@ -449,19 +488,19 @@ export async function autoSelectAndCreate(
 
     if (choice === "DELHIVERY") {
       const delhiveryPickup = await resolveDelhiveryPickupName(orderId, options);
-      const computedWeightG = Math.max(50, totalWeightGrams(order as OrderWithShippingContext));
+      const computedWeightG = Math.max(
+        50,
+        totalWeightGrams(order as OrderWithShippingContext, returnedByItem)
+      );
       const defaultHsn = process.env.DEFAULT_HSN_CODE?.trim() || "9205";
       const hsnCodes = [
         ...new Set(
-          order.items.map(
+          shippableItems.map(
             (it) => it.variant?.productRel?.hsnCode?.trim() || defaultHsn
           )
         )
       ];
-      const productsDesc = order.items
-        .map((it) => `${it.nameSnapshot} (${it.qtyOrdered})`)
-        .join(", ")
-        .slice(0, 240);
+      const productsDesc = productsDescForShipment(order.items, returnedByItem);
       const orderValueRupees = order.grandTotalInPaise / 100;
       const boxes =
         options?.boxes?.length ?
