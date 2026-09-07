@@ -14,10 +14,11 @@ export function resolveMediaUrl(url: string | null | undefined): string | null {
   const cdn = process.env.NEXT_PUBLIC_MEDIA_CDN_URL?.replace(/\/$/, "");
   if (!cdn) return url;
   if (url.startsWith(cdn)) return url;
-  const wpPrefix = "https://sarveda.com/wp-content/uploads/";
-  if (url.startsWith(wpPrefix)) {
-    const rest = url.slice(wpPrefix.length);
-    return `${cdn}/media/wp/uploads/${rest}`;
-  }
+  /**
+   * Product images in DB are already absolute S3 URLs.
+   * Blog/legacy rows still point at sarveda.com/wp-content/uploads — rewriting those
+   * to `${cdn}/media/wp/uploads/...` 403s because blog banners were never uploaded to S3.
+   * Keep the origin URL so Next/Image can load from sarveda.com.
+   */
   return url;
 }
