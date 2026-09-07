@@ -87,6 +87,7 @@ async function migrateUrl(sourceUrl: string): Promise<string | null> {
 
   if (dryRun) {
     console.log(`[dry-run] ${trimmed} → ${key}`);
+    // Do not cache dry-run URLs into urlMap — that would skip real uploads on a later live run.
     return getPublicMediaUrl(key);
   }
 
