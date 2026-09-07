@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import type { AdminShipmentsQuery, ShipmentsListData } from "@/lib/admin-api";
-import { fetchAdminShipments } from "@/lib/admin-api";
+import { adminSyncOrderShipments, fetchAdminShipments } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 
 const buckets = [
@@ -19,6 +19,12 @@ const buckets = [
   { value: "delivered", label: "Delivered" },
   { value: "rto", label: "RTO" }
 ] as const;
+
+function initialBucket(): string {
+  if (typeof window === "undefined") return "ready";
+  const b = new URLSearchParams(window.location.search).get("bucket");
+  return buckets.some((x) => x.value === b) ? (b as string) : "ready";
+}
 
 function shipmentBadge(status: string | null, kind: "ready" | "shipment") {
   const label =
@@ -109,10 +115,11 @@ function todayYmd(): string {
 }
 
 export default function AdminShipmentsPage() {
-  const [bucket, setBucket] = useState<string>("ready");
+  const [bucket, setBucket] = useState<string>(initialBucket);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ShipmentsListData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const [orderNumber, setOrderNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -215,8 +222,8 @@ export default function AdminShipmentsPage() {
       >
         <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🚚 Shipments</h1>
         <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          Logistics desk · Ready = confirmed order with no AWB — use <strong>Create label</strong> · Carrier
-          tracking lives here · Returns reverse pickups stay under{" "}
+          Ready → <strong>Create label</strong> page (sets order to Processing) → Created · Then Picked / In transit /
+          OFD / Delivered come from <strong>Delhivery sync</strong> · Returns under{" "}
           <a href="/admin/returns" style={{ color: "#e8d5a8", fontWeight: 600 }}>
             Returns
           </a>
@@ -394,6 +401,11 @@ export default function AdminShipmentsPage() {
               onClick={() => {
                 setPage(1);
                 setBucket(b.value);
+                if (typeof window !== "undefined") {
+                  const u = new URL(window.location.href);
+                  u.searchParams.set("bucket", b.value);
+                  window.history.replaceState({}, "", u.pathname + u.search);
+                }
               }}
               style={{
                 padding: "7px 14px",
@@ -467,7 +479,10 @@ export default function AdminShipmentsPage() {
                     <tr
                       key={row.id}
                       onClick={() => {
-                        window.location.href = `/admin/orders/${row.orderId}`;
+                        window.location.href =
+                          row.kind === "ready"
+                            ? `/admin/shipments/${row.orderId}`
+                            : `/admin/shipments/${row.orderId}`;
                       }}
                       style={{ cursor: "pointer" }}
                       onMouseEnter={(e) => {
@@ -480,7 +495,7 @@ export default function AdminShipmentsPage() {
                     >
                       <td style={tdSt}>
                         <Link
-                          href={`/admin/orders/${row.orderId}`}
+                          href={`/admin/shipments/${row.orderId}`}
                           style={{
                             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                             fontWeight: 600,
@@ -512,7 +527,7 @@ export default function AdminShipmentsPage() {
                       <td style={tdSt}>
                         {row.kind === "ready" ? (
                           <Link
-                            href={`/admin/orders/${row.orderId}?ship=1`}
+                            href={`/admin/shipments/${row.orderId}`}
                             onClick={(e) => e.stopPropagation()}
                             style={{
                               display: "inline-block",
@@ -559,6 +574,37 @@ export default function AdminShipmentsPage() {
                             ) : (
                               <div style={{ fontSize: "11px", color: "#8a7060" }}>No AWB</div>
                             )}
+                            {row.shipmentStatus === "CREATED" ||
+                            row.shipmentStatus === "PICKED" ||
+                            row.shipmentStatus === "INTRANSIT" ||
+                            row.shipmentStatus === "OUT_FOR_DELIVERY" ? (
+                              <button
+                                type="button"
+                                disabled={syncingId === row.orderId}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSyncingId(row.orderId);
+                                  void adminSyncOrderShipments(row.orderId)
+                                    .then(() => load())
+                                    .catch(() => undefined)
+                                    .finally(() => setSyncingId(null));
+                                }}
+                                style={{
+                                  marginTop: "6px",
+                                  display: "inline-block",
+                                  padding: "4px 10px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #5b21b6",
+                                  background: "#f5f3ff",
+                                  color: "#5b21b6",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  cursor: "pointer"
+                                }}
+                              >
+                                {syncingId === row.orderId ? "Syncing…" : "Sync Delhivery"}
+                              </button>
+                            ) : null}
                           </>
                         )}
                       </td>

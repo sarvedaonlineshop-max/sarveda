@@ -714,13 +714,20 @@ async function persistShipment(
       });
     }
 
+    const orderRow = await tx.order.findUnique({
+      where: { id: orderId },
+      select: { status: true }
+    });
+
     await tx.order.update({
       where: { id: orderId },
       data: {
         fulfillmentStatus: "PARTIAL",
         shippingLastError: null,
         shippingLastErrorAt: null,
-        ...(shippingLabelSeqAfter !== undefined ? { shippingLabelSeq: shippingLabelSeqAfter } : {})
+        ...(shippingLabelSeqAfter !== undefined ? { shippingLabelSeq: shippingLabelSeqAfter } : {}),
+        // First successful outbound label: Paid → Processing on commercial desk.
+        ...(orderRow?.status === "PAID" ? { status: "PROCESSING" as const } : {})
       }
     });
   });
