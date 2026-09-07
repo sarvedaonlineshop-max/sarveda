@@ -478,6 +478,7 @@ type OrderBucket =
   | "cancelled"
   | "refunded"
   | "paid"
+  /** @deprecated logistics moved to /admin/shipments — kept for old query links */
   | "shipped"
   | "delivered";
 
@@ -492,6 +493,16 @@ const ORDER_BUCKETS: OrderBucket[] = [
   "shipped",
   "delivered"
 ];
+
+/** Commercial pills on Orders desk (shipped/delivered live under Shipments). */
+const ORDER_COUNT_BUCKETS = [
+  "all",
+  "paid",
+  "pending",
+  "abandoned",
+  "cancelled",
+  "refunded"
+] as const;
 
 function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.OrderWhereInput {
   const pendingCutoff = new Date(now.getTime() - PAYMENT_PENDING_MS);
@@ -889,17 +900,6 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const where = ordersListWhere(f);
     const searchBase = ordersSearchWhere(f);
 
-    const countBuckets = [
-      "all",
-      "paid",
-      "pending",
-      "abandoned",
-      "cancelled",
-      "refunded",
-      "shipped",
-      "delivered"
-    ] as const;
-
     const [total, rows, ...bucketCounts] = await prisma.$transaction([
       prisma.order.count({ where }),
       prisma.order.findMany({
@@ -925,7 +925,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           }
         }
       }),
-      ...countBuckets.map((b) =>
+      ...ORDER_COUNT_BUCKETS.map((b) =>
         prisma.order.count({
           where:
             b === "all"
@@ -936,8 +936,8 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     ]);
 
     const counts = Object.fromEntries(
-      countBuckets.map((b, i) => [b, bucketCounts[i] as number])
-    ) as Record<(typeof countBuckets)[number], number>;
+      ORDER_COUNT_BUCKETS.map((b, i) => [b, bucketCounts[i] as number])
+    ) as Record<(typeof ORDER_COUNT_BUCKETS)[number], number>;
 
     res.json({
       success: true,

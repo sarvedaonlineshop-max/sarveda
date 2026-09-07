@@ -5,54 +5,43 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
-import type { AdminOrdersQuery, OrdersListData } from "@/lib/admin-api";
-import { downloadAdminOrdersExport, fetchAdminOrders } from "@/lib/admin-api";
+import type { AdminShipmentsQuery, ShipmentsListData } from "@/lib/admin-api";
+import { fetchAdminShipments } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
-import { formatAdminOrderStatusLabel } from "@/lib/order-status-display";
 
 const buckets = [
-  { value: "all", label: "All" },
-  { value: "paid", label: "Paid" },
-  { value: "pending", label: "Pending payment" },
-  { value: "abandoned", label: "Abandoned" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" }
+  { value: "all", label: "All shipments" },
+  { value: "ready", label: "Ready to ship" },
+  { value: "created", label: "Created" },
+  { value: "picked", label: "Picked" },
+  { value: "intransit", label: "In transit" },
+  { value: "ofd", label: "Out for delivery" },
+  { value: "delivered", label: "Delivered" },
+  { value: "rto", label: "RTO" }
 ] as const;
 
-function StatusBadge({
-  status,
-  paymentStatus,
-  paymentProvider
-}: {
-  status: string;
-  paymentStatus: string;
-  paymentProvider?: string | null;
-}) {
-  const label = formatAdminOrderStatusLabel(status, paymentStatus, paymentProvider);
-  const s = label.toUpperCase().replace(/\s/g, "");
-  let bg = "#f3f4f6",
-    color = "#374151";
-  if (s.includes("PAID") || s.includes("PROCESSING")) {
-    bg = "#dcfce7";
-    color = "#166534";
-  } else if (s.includes("SHIPPED")) {
+function shipmentBadge(status: string | null, kind: "ready" | "shipment") {
+  const label =
+    kind === "ready"
+      ? "READY TO SHIP"
+      : (status ?? "UNKNOWN").replace(/_/g, " ");
+  let bg = "#f3f4f6";
+  let color = "#374151";
+  if (kind === "ready") {
+    bg = "#fef3c7";
+    color = "#92400e";
+  } else if (status === "CREATED" || status === "PICKED") {
     bg = "#dbeafe";
     color = "#1e40af";
-  } else if (s.includes("DELIVERED")) {
-    bg = "#f0fdf4";
-    color = "#15803d";
-  } else if (s === "ABANDONED" || s === "ATTEMPTED") {
-    bg = "#fef3c7";
-    color = "#92400e";
-  } else if (s.includes("CANCEL")) {
+  } else if (status === "INTRANSIT" || status === "OUT_FOR_DELIVERY") {
+    bg = "#e0e7ff";
+    color = "#3730a3";
+  } else if (status === "DELIVERED") {
+    bg = "#dcfce7";
+    color = "#166534";
+  } else if (status === "RTO") {
     bg = "#fee2e2";
     color = "#991b1b";
-  } else if (s.includes("REFUND")) {
-    bg = "#fef3c7";
-    color = "#92400e";
-  } else if (s.includes("PENDING")) {
-    bg = "#f3f4f6";
-    color = "#374151";
   }
   return (
     <span
@@ -64,22 +53,9 @@ function StatusBadge({
         padding: "3px 10px",
         borderRadius: "999px",
         whiteSpace: "nowrap",
-        border: `1px solid ${color}30`,
-        display: "inline-flex",
-        alignItems: "center"
+        border: `1px solid ${color}30`
       }}
     >
-      <span
-        style={{
-          width: "6px",
-          height: "6px",
-          borderRadius: "50%",
-          background: color,
-          display: "inline-block",
-          marginRight: "5px",
-          flexShrink: 0
-        }}
-      />
       {label}
     </span>
   );
@@ -132,18 +108,17 @@ function todayYmd(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
-export default function AdminOrdersPage() {
-  const [bucket, setBucket] = useState<string>("all");
+export default function AdminShipmentsPage() {
+  const [bucket, setBucket] = useState<string>("ready");
   const [page, setPage] = useState(1);
-  const [data, setData] = useState<OrdersListData | null>(null);
+  const [data, setData] = useState<ShipmentsListData | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [exportErr, setExportErr] = useState<string | null>(null);
-  const [exportLoading, setExportLoading] = useState<"pdf" | "xlsx" | null>(null);
 
   const [orderNumber, setOrderNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [place, setPlace] = useState("");
   const [country, setCountry] = useState("");
+  const [awb, setAwb] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [todayOnly, setTodayOnly] = useState(false);
@@ -153,20 +128,22 @@ export default function AdminOrdersPage() {
     customerName: "",
     place: "",
     country: "",
+    awb: "",
     from: "",
     to: "",
     todayOnly: false
   });
 
-  const queryParams = useMemo((): AdminOrdersQuery => {
+  const queryParams = useMemo((): AdminShipmentsQuery => {
     return {
-      bucket: bucket === "all" ? undefined : bucket,
+      bucket,
       page,
       limit: 20,
       orderNumber: applied.orderNumber || undefined,
       customerName: applied.customerName || undefined,
       place: applied.place || undefined,
       country: applied.country || undefined,
+      awb: applied.awb || undefined,
       today: applied.todayOnly || undefined,
       from: applied.todayOnly ? undefined : applied.from || undefined,
       to: applied.todayOnly ? undefined : applied.to || undefined
@@ -176,10 +153,10 @@ export default function AdminOrdersPage() {
   const load = useCallback(async () => {
     setErr(null);
     try {
-      const res = await fetchAdminOrders(queryParams);
+      const res = await fetchAdminShipments(queryParams);
       setData(res);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Failed to load orders");
+      setErr(e instanceof Error ? e.message : "Failed to load shipments");
       setData(null);
     }
   }, [queryParams]);
@@ -195,6 +172,7 @@ export default function AdminOrdersPage() {
       customerName: customerName.trim(),
       place: place.trim(),
       country: country.trim(),
+      awb: awb.trim(),
       from: from.trim(),
       to: to.trim(),
       todayOnly
@@ -206,6 +184,7 @@ export default function AdminOrdersPage() {
     setCustomerName("");
     setPlace("");
     setCountry("");
+    setAwb("");
     setFrom("");
     setTo("");
     setTodayOnly(false);
@@ -215,36 +194,11 @@ export default function AdminOrdersPage() {
       customerName: "",
       place: "",
       country: "",
+      awb: "",
       from: "",
       to: "",
       todayOnly: false
     });
-  };
-
-  const exportParams = useMemo(
-    (): Omit<AdminOrdersQuery, "page" | "limit"> => ({
-      bucket: bucket === "all" ? undefined : bucket,
-      orderNumber: applied.orderNumber || undefined,
-      customerName: applied.customerName || undefined,
-      place: applied.place || undefined,
-      country: applied.country || undefined,
-      today: applied.todayOnly || undefined,
-      from: applied.todayOnly ? undefined : applied.from || undefined,
-      to: applied.todayOnly ? undefined : applied.to || undefined
-    }),
-    [applied, bucket]
-  );
-
-  const runExport = async (format: "pdf" | "xlsx") => {
-    setExportErr(null);
-    setExportLoading(format);
-    try {
-      await downloadAdminOrdersExport(format, exportParams);
-    } catch (e) {
-      setExportErr(e instanceof Error ? e.message : "Export failed");
-    } finally {
-      setExportLoading(null);
-    }
   };
 
   const counts = data?.counts;
@@ -259,12 +213,12 @@ export default function AdminOrdersPage() {
           marginBottom: "4px"
         }}
       >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛒 Orders</h1>
+        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🚚 Shipments</h1>
         <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          Payment &amp; commercial desk · Pending = unpaid &lt; 15 min · Abandoned = never paid · Cancelled = paid/COD
-          stopped · Refunded = money returned · Carrier tracking lives under{" "}
-          <a href="/admin/shipments" style={{ color: "#e8d5a8", fontWeight: 600 }}>
-            Shipments
+          Logistics desk · Ready = paid order with no AWB yet · Open a row to create/sync shipment on the order ·
+          Returns reverse pickups stay under{" "}
+          <a href="/admin/returns" style={{ color: "#e8d5a8", fontWeight: 600 }}>
+            Returns
           </a>
         </p>
       </div>
@@ -273,17 +227,17 @@ export default function AdminOrdersPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             gap: "12px",
             alignItems: "end"
           }}
         >
           <div>
-            <label style={labelSt} htmlFor="ord-id">
+            <label style={labelSt} htmlFor="ship-ord">
               Order ID
             </label>
             <input
-              id="ord-id"
+              id="ship-ord"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
               placeholder="SRV-…"
@@ -291,11 +245,23 @@ export default function AdminOrdersPage() {
             />
           </div>
           <div>
-            <label style={labelSt} htmlFor="ord-customer">
-              Customer name
+            <label style={labelSt} htmlFor="ship-awb">
+              AWB
             </label>
             <input
-              id="ord-customer"
+              id="ship-awb"
+              value={awb}
+              onChange={(e) => setAwb(e.target.value)}
+              placeholder="Waybill"
+              style={inputSt}
+            />
+          </div>
+          <div>
+            <label style={labelSt} htmlFor="ship-customer">
+              Customer
+            </label>
+            <input
+              id="ship-customer"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Name / email / phone"
@@ -303,11 +269,11 @@ export default function AdminOrdersPage() {
             />
           </div>
           <div>
-            <label style={labelSt} htmlFor="ord-place">
+            <label style={labelSt} htmlFor="ship-place">
               Place
             </label>
             <input
-              id="ord-place"
+              id="ship-place"
               value={place}
               onChange={(e) => setPlace(e.target.value)}
               placeholder="City / state / PIN"
@@ -315,11 +281,11 @@ export default function AdminOrdersPage() {
             />
           </div>
           <div>
-            <label style={labelSt} htmlFor="ord-country">
+            <label style={labelSt} htmlFor="ship-country">
               Country
             </label>
             <input
-              id="ord-country"
+              id="ship-country"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               placeholder="IN / US / GB"
@@ -327,11 +293,11 @@ export default function AdminOrdersPage() {
             />
           </div>
           <div>
-            <label style={labelSt} htmlFor="ord-from">
+            <label style={labelSt} htmlFor="ship-from">
               From
             </label>
             <input
-              id="ord-from"
+              id="ship-from"
               type="date"
               value={from}
               disabled={todayOnly}
@@ -340,11 +306,11 @@ export default function AdminOrdersPage() {
             />
           </div>
           <div>
-            <label style={labelSt} htmlFor="ord-to">
+            <label style={labelSt} htmlFor="ship-to">
               To
             </label>
             <input
-              id="ord-to"
+              id="ship-to"
               type="date"
               value={to}
               disabled={todayOnly}
@@ -412,62 +378,10 @@ export default function AdminOrdersPage() {
               >
                 Clear
               </button>
-              <button
-                type="button"
-                disabled={exportLoading !== null}
-                onClick={() => void runExport("xlsx")}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #1e3a2f",
-                  background: exportLoading === "xlsx" ? "#faf5ec" : "#fff",
-                  color: "#1c352a",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  opacity: exportLoading ? 0.7 : 1
-                }}
-              >
-                {exportLoading === "xlsx" ? "Exporting…" : "Export Excel"}
-              </button>
-              <button
-                type="button"
-                disabled={exportLoading !== null}
-                onClick={() => void runExport("pdf")}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #1e3a2f",
-                  background: exportLoading === "pdf" ? "#faf5ec" : "#fff",
-                  color: "#1c352a",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  opacity: exportLoading ? 0.7 : 1
-                }}
-              >
-                {exportLoading === "pdf" ? "Exporting…" : "Export PDF"}
-              </button>
             </div>
           </div>
         </div>
       </div>
-
-      {exportErr ? (
-        <p
-          style={{
-            background: "#fef2f2",
-            borderLeft: "3px solid #dc2626",
-            borderRadius: "8px",
-            padding: "8px 12px",
-            color: "#dc2626",
-            fontSize: "13px",
-            margin: 0
-          }}
-        >
-          ⚠️ {exportErr}
-        </p>
-      ) : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         {buckets.map((b) => {
@@ -481,16 +395,6 @@ export default function AdminOrdersPage() {
                 setPage(1);
                 setBucket(b.value);
               }}
-              onMouseEnter={(e) => {
-                if (active) return;
-                e.currentTarget.style.background = "#faf5ec";
-                e.currentTarget.style.borderColor = "#b98a3e";
-              }}
-              onMouseLeave={(e) => {
-                if (active) return;
-                e.currentTarget.style.background = "var(--admin-card-bg, #fff)";
-                e.currentTarget.style.borderColor = "var(--admin-card-border, #e8e2d9)";
-              }}
               style={{
                 padding: "7px 14px",
                 borderRadius: "999px",
@@ -499,9 +403,10 @@ export default function AdminOrdersPage() {
                 cursor: "pointer",
                 border: "1px solid",
                 borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
-                background: active ? "linear-gradient(135deg, #1c352a, #2d5040)" : "var(--admin-card-bg, #fff)",
+                background: active
+                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
+                  : "var(--admin-card-bg, #fff)",
                 color: active ? "#fffbf5" : "#6b5c52",
-                transition: "all 0.15s",
                 boxShadow: active ? "0 2px 8px rgba(28,53,42,0.20)" : "none",
                 display: "inline-flex",
                 alignItems: "center",
@@ -527,119 +432,167 @@ export default function AdminOrdersPage() {
         })}
       </div>
 
-      {err && (
+      {err ? (
         <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
           {err}
         </p>
-      )}
+      ) : null}
 
       {!data ? (
-        <AdminTableSkeleton rows={8} cols={7} />
+        <AdminTableSkeleton rows={8} cols={8} />
       ) : (
         <>
           <div style={{ ...card, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #f0ece6" }}>
-                  {["Order", "Customer", "Place", "Items", "Amount", "Status", "Date"].map((h) => (
-                    <th key={h} style={thSt}>
-                      {h}
-                    </th>
-                  ))}
+                  {["Order", "Customer", "Place", "Courier / AWB", "Items", "Amount", "Status", "Date"].map(
+                    (h) => (
+                      <th key={h} style={thSt}>
+                        {h}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((o) => (
-                  <tr
-                    key={o.id}
-                    onClick={() => {
-                      window.location.href = `/admin/orders/${o.id}`;
-                    }}
-                    style={{ cursor: "pointer" }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "var(--admin-row-hover, #faf5ec)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "";
-                    }}
-                  >
-                    <td style={tdSt}>
-                      <Link
-                        href={`/admin/orders/${o.id}`}
-                        style={{
-                          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                          fontWeight: 600,
-                          color: "#b98a3e",
-                          textDecoration: "none"
-                        }}
-                      >
-                        {o.orderNumber}
-                      </Link>
-                    </td>
-                    <td style={tdSt}>
-                      {o.customerName ? (
-                        <div style={{ fontWeight: 600, color: "var(--admin-text, #2c2420)", fontSize: "13px" }}>
-                          {o.customerName}
-                        </div>
-                      ) : null}
-                      <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>{o.email}</div>
-                    </td>
-                    <td style={tdSt}>
-                      <div style={{ fontSize: "12px" }}>
-                        {[o.city, o.state].filter(Boolean).join(", ") || "—"}
-                      </div>
-                      {o.country ? (
-                        <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>{o.country}</div>
-                      ) : null}
-                    </td>
-                    <td style={tdSt}>
-                      <span style={{ fontSize: "12px" }}>{o.itemCount} units</span>
-                      {o.linePreview.length > 0 && (
-                        <div
-                          title={o.linePreview.join(" · ")}
-                          style={{
-                            fontSize: "11px",
-                            color: "var(--admin-text-muted, #8a7060)",
-                            maxWidth: "180px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
-                          }}
-                        >
-                          {o.linePreview.join(" · ")}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ ...tdSt, fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>
-                      {formatMinorFromPaise(o.grandTotalInPaise, o.currency)}
-                    </td>
-                    <td style={tdSt}>
-                      <StatusBadge
-                        status={o.status}
-                        paymentStatus={o.paymentStatus}
-                        paymentProvider={o.paymentProvider}
-                      />
-                    </td>
-                    <td
-                      style={{
-                        ...tdSt,
-                        fontSize: "12px",
-                        color: "var(--admin-text-muted, #8a7060)",
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      {new Date(o.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                {data.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ ...tdSt, textAlign: "center", color: "#8a7060" }}>
+                      No shipments in this bucket
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  data.items.map((row) => (
+                    <tr
+                      key={row.id}
+                      onClick={() => {
+                        window.location.href = `/admin/orders/${row.orderId}`;
+                      }}
+                      style={{ cursor: "pointer" }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.background =
+                          "var(--admin-row-hover, #faf5ec)";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = "";
+                      }}
+                    >
+                      <td style={tdSt}>
+                        <Link
+                          href={`/admin/orders/${row.orderId}`}
+                          style={{
+                            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                            fontWeight: 600,
+                            color: "#b98a3e",
+                            textDecoration: "none"
+                          }}
+                        >
+                          {row.orderNumber}
+                        </Link>
+                      </td>
+                      <td style={tdSt}>
+                        {row.customerName ? (
+                          <div style={{ fontWeight: 600, fontSize: "13px" }}>{row.customerName}</div>
+                        ) : null}
+                        <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>
+                          {row.email}
+                        </div>
+                      </td>
+                      <td style={tdSt}>
+                        <div style={{ fontSize: "12px" }}>
+                          {[row.city, row.state].filter(Boolean).join(", ") || "—"}
+                        </div>
+                        {row.country ? (
+                          <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>
+                            {row.country}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td style={tdSt}>
+                        {row.kind === "ready" ? (
+                          <span style={{ fontSize: "12px", color: "#92400e", fontWeight: 600 }}>
+                            Create on order →
+                          </span>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 600, fontSize: "12px" }}>{row.courier || "—"}</div>
+                            {row.awb ? (
+                              row.trackingUrl ? (
+                                <a
+                                  href={row.trackingUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    fontFamily: "ui-monospace, monospace",
+                                    fontSize: "11px",
+                                    color: "#1e40af"
+                                  }}
+                                >
+                                  {row.awb}
+                                </a>
+                              ) : (
+                                <div
+                                  style={{
+                                    fontFamily: "ui-monospace, monospace",
+                                    fontSize: "11px",
+                                    color: "#5a4a40"
+                                  }}
+                                >
+                                  {row.awb}
+                                </div>
+                              )
+                            ) : (
+                              <div style={{ fontSize: "11px", color: "#8a7060" }}>No AWB</div>
+                            )}
+                          </>
+                        )}
+                      </td>
+                      <td style={tdSt}>
+                        <span style={{ fontSize: "12px" }}>{row.itemCount} units</span>
+                        {row.linePreview.length > 0 ? (
+                          <div
+                            title={row.linePreview.join(" · ")}
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--admin-text-muted, #8a7060)",
+                              maxWidth: "160px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            {row.linePreview.join(" · ")}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td style={{ ...tdSt, fontWeight: 700 }}>
+                        {formatMinorFromPaise(row.grandTotalInPaise, row.currency)}
+                      </td>
+                      <td style={tdSt}>{shipmentBadge(row.shipmentStatus, row.kind)}</td>
+                      <td style={{ ...tdSt, whiteSpace: "nowrap", fontSize: "12px" }}>
+                        {new Date(row.createdAt).toLocaleString("en-IN", {
+                          timeZone: "Asia/Kolkata",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit"
+                        })}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
+
           <AdminPagination
             page={page}
             totalPages={data.pagination.totalPages}
             total={data.pagination.total}
-            itemLabel="orders"
+            itemLabel="shipments"
             onPrev={() => setPage((p) => Math.max(1, p - 1))}
             onNext={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))}
           />

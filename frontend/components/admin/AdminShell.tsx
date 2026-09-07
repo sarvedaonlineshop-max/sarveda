@@ -26,6 +26,7 @@ function readStoredTheme(): boolean {
 const PAGE_TITLES: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/orders": "Orders",
+  "/admin/shipments": "Shipments",
   "/admin/returns": "Returns",
   "/admin/returns/analytics": "Returns Intel",
   "/admin/chats": "Chats",

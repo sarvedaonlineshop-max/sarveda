@@ -27,6 +27,7 @@ import { isAccountingEmailAllowed } from "@/lib/accounting-access";
 import { AdminAccountingSidebarTree } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
+import { AdminShipmentsSidebarLink } from "@/components/admin/AdminShipmentsSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
@@ -194,6 +195,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           beginNavigation={beginNavigation}
         />
         <AdminOrdersSidebarLink onNavigate={onNavigate} />
+        <AdminShipmentsSidebarLink onNavigate={onNavigate} />
         {primaryNav.slice(1, 3).map((item) => (
           <NavLink
             key={item.href}

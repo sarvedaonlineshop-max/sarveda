@@ -440,12 +440,55 @@ export type OrdersListData = {
     createdAt: string;
   }>;
   counts?: Partial<
+    Record<"all" | "paid" | "pending" | "abandoned" | "cancelled" | "refunded", number>
+  >;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export type ShipmentsListData = {
+  items: Array<{
+    kind: "ready" | "shipment";
+    id: string;
+    shipmentId: string | null;
+    orderId: string;
+    orderNumber: string;
+    email: string;
+    customerName: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    courier: string | null;
+    awb: string | null;
+    trackingUrl: string | null;
+    shipmentStatus: string | null;
+    orderStatus: string;
+    currency: string;
+    grandTotalInPaise: number;
+    itemCount: number;
+    linePreview: string[];
+    createdAt: string;
+  }>;
+  counts?: Partial<
     Record<
-      "all" | "paid" | "pending" | "abandoned" | "cancelled" | "refunded" | "shipped" | "delivered",
+      "all" | "ready" | "created" | "picked" | "intransit" | "ofd" | "delivered" | "rto",
       number
     >
   >;
   pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export type AdminShipmentsQuery = {
+  bucket?: string;
+  page?: number;
+  limit?: number;
+  orderNumber?: string;
+  customerName?: string;
+  place?: string;
+  country?: string;
+  awb?: string;
+  from?: string;
+  to?: string;
+  today?: boolean;
 };
 
 export type AdminOrdersQuery = {
@@ -482,6 +525,30 @@ export function fetchAdminOrders(params: AdminOrdersQuery, signal?: AbortSignal)
   const q = buildAdminOrdersQuery(params);
   const qs = q.toString();
   return adminFetch<OrdersListData>(`/api/admin/orders${qs ? `?${qs}` : ""}`, { signal });
+}
+
+function buildAdminShipmentsQuery(params: AdminShipmentsQuery): URLSearchParams {
+  const q = new URLSearchParams();
+  if (params.bucket && params.bucket !== "all") q.set("bucket", params.bucket);
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.orderNumber?.trim()) q.set("orderNumber", params.orderNumber.trim());
+  if (params.customerName?.trim()) q.set("customerName", params.customerName.trim());
+  if (params.place?.trim()) q.set("place", params.place.trim());
+  if (params.country?.trim()) q.set("country", params.country.trim());
+  if (params.awb?.trim()) q.set("awb", params.awb.trim());
+  if (params.today) q.set("today", "1");
+  else {
+    if (params.from?.trim()) q.set("from", params.from.trim());
+    if (params.to?.trim()) q.set("to", params.to.trim());
+  }
+  return q;
+}
+
+export function fetchAdminShipments(params: AdminShipmentsQuery, signal?: AbortSignal) {
+  const q = buildAdminShipmentsQuery(params);
+  const qs = q.toString();
+  return adminFetch<ShipmentsListData>(`/api/admin/shipments${qs ? `?${qs}` : ""}`, { signal });
 }
 
 export async function downloadAdminOrdersExport(

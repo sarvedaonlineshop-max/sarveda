@@ -9,6 +9,7 @@ import * as productsController from "../products/products.controller";
 import { createProductSchema, reorderProductsSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
+import * as shipmentsList from "./shipments-list.handlers";
 import * as legacyOrders from "./legacy-orders.handlers";
 import * as activity from "./activity.handlers";
 import * as enrollments from "./enrollments.handlers";
@@ -105,6 +106,7 @@ router.get("/orders/service-requests/pending-count", serviceRequest.adminPending
 router.get("/orders/:orderId/service-requests/photos/:photoId/view", serviceRequest.adminViewServiceRequestPhoto);
 router.get("/orders/:orderId/service-requests/photos/:photoId/download", serviceRequest.adminDownloadServiceRequestPhoto);
 router.get("/orders", admin.ordersList);
+router.get("/shipments", shipmentsList.shipmentsList);
 router.get("/orders/:id/invoice/download", admin.downloadOrderInvoice);
 router.get("/orders/:id/invoice", admin.orderInvoice);
 router.post("/orders/:id/invoice/regenerate", admin.regenerateOrderInvoice);
