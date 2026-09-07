@@ -422,6 +422,8 @@ export function fetchAdminActivityList(params: {
 }
 
 export type OrdersListData = {
+  channel?: "online" | "cod";
+  channelCounts?: { online: number; cod: number };
   items: Array<{
     id: string;
     orderNumber: string;
@@ -439,19 +441,7 @@ export type OrdersListData = {
     linePreview: string[];
     createdAt: string;
   }>;
-  counts?: Partial<
-    Record<
-      | "all"
-      | "paid"
-      | "pending"
-      | "abandoned"
-      | "cancelled"
-      | "refunded"
-      | "shipped"
-      | "delivered",
-      number
-    >
-  >;
+  counts?: Partial<Record<"all" | "confirmed" | "abandoned" | "cancelled" | "refunded", number>>;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 };
 
@@ -502,6 +492,7 @@ export type AdminShipmentsQuery = {
 };
 
 export type AdminOrdersQuery = {
+  channel?: "online" | "cod";
   bucket?: string;
   page?: number;
   limit?: number;
@@ -516,6 +507,7 @@ export type AdminOrdersQuery = {
 
 function buildAdminOrdersQuery(params: AdminOrdersQuery): URLSearchParams {
   const q = new URLSearchParams();
+  if (params.channel) q.set("channel", params.channel);
   if (params.bucket && params.bucket !== "all") q.set("bucket", params.bucket);
   if (params.page) q.set("page", String(params.page));
   if (params.limit) q.set("limit", String(params.limit));

@@ -788,7 +788,7 @@ function AdminOrderProductionView({
           <div className="flex flex-wrap gap-2">
             {shipUi && awbRows.length === 0 ? (
               <button type="button" disabled={!!shipBusy} onClick={onCreateShipment} className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                {shipBusy === "create" ? "Creating shipment…" : "Create Shipment"}
+                {shipBusy === "create" ? "Creating label…" : "Create label"}
               </button>
             ) : null}
             {awbRows
@@ -1069,6 +1069,14 @@ export default function AdminOrderDetailPage() {
   const [err, setErr] = useState<string | null>(null);
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [shipmentWorkspaceOpen, setShipmentWorkspaceOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("ship") === "1" || q.get("focus") === "shipment") {
+      setShipmentWorkspaceOpen(true);
+    }
+  }, []);
   const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
   const [selectedPickupId, setSelectedPickupId] = useState<string>("");
   const [selectedCourier, setSelectedCourier] = useState<string>("AUTO");

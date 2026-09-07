@@ -215,8 +215,8 @@ export default function AdminShipmentsPage() {
       >
         <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🚚 Shipments</h1>
         <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          Logistics desk · Ready = paid order with no AWB yet · Open a row to create/sync shipment on the order ·
-          Returns reverse pickups stay under{" "}
+          Logistics desk · Ready = confirmed order with no AWB — use <strong>Create label</strong> · Carrier
+          tracking lives here · Returns reverse pickups stay under{" "}
           <a href="/admin/returns" style={{ color: "#e8d5a8", fontWeight: 600 }}>
             Returns
           </a>
@@ -511,9 +511,22 @@ export default function AdminShipmentsPage() {
                       </td>
                       <td style={tdSt}>
                         {row.kind === "ready" ? (
-                          <span style={{ fontSize: "12px", color: "#92400e", fontWeight: 600 }}>
-                            Create on order →
-                          </span>
+                          <Link
+                            href={`/admin/orders/${row.orderId}?ship=1`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              display: "inline-block",
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                              color: "#fffbf5",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              textDecoration: "none"
+                            }}
+                          >
+                            Create label
+                          </Link>
                         ) : (
                           <>
                             <div style={{ fontWeight: 600, fontSize: "12px" }}>{row.courier || "—"}</div>

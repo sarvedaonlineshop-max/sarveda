@@ -10,15 +10,19 @@ import { downloadAdminOrdersExport, fetchAdminOrders } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 import { formatAdminOrderStatusLabel } from "@/lib/order-status-display";
 
-const buckets = [
+const onlineBuckets = [
   { value: "all", label: "All" },
-  { value: "paid", label: "Paid" },
-  { value: "pending", label: "Pending payment" },
+  { value: "confirmed", label: "Confirmed" },
   { value: "abandoned", label: "Abandoned" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" }
+  { value: "refunded", label: "Refunded" }
+] as const;
+
+const codBuckets = [
+  { value: "all", label: "All" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "refunded", label: "Refunded" }
 ] as const;
 
 function StatusBadge({
@@ -135,6 +139,7 @@ function todayYmd(): string {
 }
 
 export default function AdminOrdersPage() {
+  const [channel, setChannel] = useState<"online" | "cod">("online");
   const [bucket, setBucket] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<OrdersListData | null>(null);
@@ -160,8 +165,11 @@ export default function AdminOrdersPage() {
     todayOnly: false
   });
 
+  const buckets = channel === "cod" ? codBuckets : onlineBuckets;
+
   const queryParams = useMemo((): AdminOrdersQuery => {
     return {
+      channel,
       bucket: bucket === "all" ? undefined : bucket,
       page,
       limit: 20,
@@ -173,7 +181,7 @@ export default function AdminOrdersPage() {
       from: applied.todayOnly ? undefined : applied.from || undefined,
       to: applied.todayOnly ? undefined : applied.to || undefined
     };
-  }, [applied, bucket, page]);
+  }, [applied, bucket, channel, page]);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -225,6 +233,7 @@ export default function AdminOrdersPage() {
 
   const exportParams = useMemo(
     (): Omit<AdminOrdersQuery, "page" | "limit"> => ({
+      channel,
       bucket: bucket === "all" ? undefined : bucket,
       orderNumber: applied.orderNumber || undefined,
       customerName: applied.customerName || undefined,
@@ -234,7 +243,7 @@ export default function AdminOrdersPage() {
       from: applied.todayOnly ? undefined : applied.from || undefined,
       to: applied.todayOnly ? undefined : applied.to || undefined
     }),
-    [applied, bucket]
+    [applied, bucket, channel]
   );
 
   const runExport = async (format: "pdf" | "xlsx") => {
@@ -250,6 +259,7 @@ export default function AdminOrdersPage() {
   };
 
   const counts = data?.counts;
+  const channelCounts = data?.channelCounts;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -263,14 +273,68 @@ export default function AdminOrdersPage() {
       >
         <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛒 Orders</h1>
         <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          Pills are exclusive and should add up to All · Pending = unpaid &lt; 15 min · Abandoned = never paid ·
-          Cancelled = paid/COD stopped · Refunded = money returned · Shipped/Delivered = order progress (AWB detail
-          under{" "}
+          {channel === "online"
+            ? "Online paid · Confirmed = money captured (incl. warehouse / in-transit / delivered) · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
+            : "COD · Confirmed = placed (cash on delivery) · Cancelled = stopped (no gateway refund) · Refunded = cash/manual return if collected"}{" "}
+          · Labels &amp; AWB under{" "}
           <a href="/admin/shipments" style={{ color: "#e8d5a8", fontWeight: 600 }}>
             Shipments
           </a>
-          )
         </p>
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {(
+          [
+            { value: "online" as const, label: "Online paid" },
+            { value: "cod" as const, label: "COD" }
+          ] as const
+        ).map((ch) => {
+          const active = channel === ch.value;
+          const count = channelCounts?.[ch.value];
+          return (
+            <button
+              key={ch.value}
+              type="button"
+              onClick={() => {
+                setChannel(ch.value);
+                setBucket("all");
+                setPage(1);
+              }}
+              style={{
+                padding: "10px 18px",
+                borderRadius: "12px",
+                fontSize: "14px",
+                fontWeight: 700,
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
+                background: active
+                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
+                  : "var(--admin-card-bg, #fff)",
+                color: active ? "#fffbf5" : "#6b5c52",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+            >
+              <span>{ch.label}</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  minWidth: "18px",
+                  padding: "1px 7px",
+                  borderRadius: "999px",
+                  background: active ? "rgba(255,255,255,0.18)" : "#f0ece6",
+                  color: active ? "#fffbf5" : "#5a4a40"
+                }}
+              >
+                {typeof count === "number" ? count : "–"}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ ...card, padding: "16px 18px" }}>

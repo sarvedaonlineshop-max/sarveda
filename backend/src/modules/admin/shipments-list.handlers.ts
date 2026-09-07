@@ -25,7 +25,7 @@ const SHIPMENT_BUCKETS: ShipmentBucket[] = [
   "rto"
 ];
 
-const READY_ORDER_STATUSES = ["PAID", "PROCESSING", "PACKED"] as const;
+const READY_ORDER_STATUSES = ["PAID", "PROCESSING", "PACKED", "SHIPPED"] as const;
 
 const BUCKET_TO_STATUS: Partial<Record<ShipmentBucket, ShipmentStatus>> = {
   created: "CREATED",

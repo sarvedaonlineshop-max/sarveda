@@ -467,49 +467,53 @@ export async function adminNotifications(_req: Request, res: Response, next: Nex
   }
 }
 
-/** Matches payment-timeout job (15 min). Pending = still awaiting pay; older unpaid → Abandoned. */
+/** Matches payment-timeout job (15 min). Older unpaid → Abandoned (Pending is not a desk pill). */
 const PAYMENT_PENDING_MS = 15 * 60 * 1000;
+
+type OrderChannel = "online" | "cod";
 
 type OrderBucket =
   | "all"
-  | "pending"
+  | "confirmed"
+  | "paid" // alias of confirmed (legacy query links)
+  | "pending" // legacy; folded into abandoned for desk filters
   | "abandoned"
   | "attempted"
   | "cancelled"
   | "refunded"
-  | "paid"
-  /** @deprecated logistics moved to /admin/shipments — kept for old query links */
-  | "shipped"
-  | "delivered";
+  | "shipped" // legacy — treated as confirmed
+  | "delivered"; // legacy — treated as confirmed
 
 const ORDER_BUCKETS: OrderBucket[] = [
   "all",
+  "confirmed",
+  "paid",
   "pending",
   "abandoned",
   "attempted",
   "cancelled",
   "refunded",
-  "paid",
   "shipped",
   "delivered"
 ];
 
-/** Pills on Orders desk — mutually exclusive buckets; sum equals All. */
-const ORDER_COUNT_BUCKETS = [
-  "all",
-  "paid",
-  "pending",
-  "abandoned",
-  "cancelled",
-  "refunded",
-  "shipped",
-  "delivered"
-] as const;
+/** Online desk pills — exclusive; sum equals All for that channel. */
+const ONLINE_COUNT_BUCKETS = ["all", "confirmed", "abandoned", "cancelled", "refunded"] as const;
+/** COD desk pills — no abandoned/pending (COD confirms at place). */
+const COD_COUNT_BUCKETS = ["all", "confirmed", "cancelled", "refunded"] as const;
+
+function channelWhere(channel: OrderChannel): Prisma.OrderWhereInput {
+  if (channel === "cod") {
+    return { payments: { some: { provider: "COD" } } };
+  }
+  return { NOT: { payments: { some: { provider: "COD" } } } };
+}
 
 function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.OrderWhereInput {
   const pendingCutoff = new Date(now.getTime() - PAYMENT_PENDING_MS);
   switch (bucket) {
     case "pending":
+      // Desk no longer surfaces Pending; keep filter for old links → same window as before.
       return {
         status: "PENDING_PAYMENT",
         createdAt: { gte: pendingCutoff }
@@ -522,7 +526,7 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.Ord
           {
             AND: [
               unpaidCheckoutAttemptWhere,
-              { status: "PENDING_PAYMENT", createdAt: { lt: pendingCutoff } }
+              { status: "PENDING_PAYMENT" } // includes in-flight + timed-out unpaid
             ]
           }
         ]
@@ -531,12 +535,14 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.Ord
       return genuineCancelledWhere;
     case "refunded":
       return { status: "REFUNDED" };
+    case "confirmed":
     case "paid":
-      return { status: { in: ["PAID", "PROCESSING", "PACKED"] } };
     case "shipped":
-      return { status: "SHIPPED" };
     case "delivered":
-      return { status: "DELIVERED" };
+      // Commercial “alive” orders — logistics progress stays on Shipments.
+      return {
+        status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+      };
     default:
       return {};
   }
@@ -544,6 +550,7 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.Ord
 
 type OrdersListFilters = {
   now: Date;
+  channel: OrderChannel;
   bucket: OrderBucket;
   orderNumber: string;
   customerName: string;
@@ -562,11 +569,20 @@ function parseYmdToKolkataStart(raw: string): Date | null {
 
 function parseOrdersListFilters(req: Request): OrdersListFilters {
   const now = new Date();
+  const rawChannel = String(req.query.channel ?? "online").toLowerCase();
+  const channel: OrderChannel = rawChannel === "cod" ? "cod" : "online";
+
   const rawBucket = String(req.query.bucket ?? "all");
-  const bucket: OrderBucket = ORDER_BUCKETS.includes(rawBucket as OrderBucket)
+  let bucket: OrderBucket = ORDER_BUCKETS.includes(rawBucket as OrderBucket)
     ? (rawBucket as OrderBucket)
     : "all";
-
+  // COD has no abandoned/pending desk pills — coerce to all.
+  if (channel === "cod" && (bucket === "abandoned" || bucket === "attempted" || bucket === "pending")) {
+    bucket = "all";
+  }
+  if (bucket === "paid" || bucket === "shipped" || bucket === "delivered") {
+    bucket = "confirmed";
+  }
   const orderNumber = String(req.query.orderNumber ?? req.query.orderId ?? "").trim();
   const customerName = String(req.query.customerName ?? "").trim();
   const place = String(req.query.place ?? req.query.city ?? "").trim();
@@ -592,11 +608,11 @@ function parseOrdersListFilters(req: Request): OrdersListFilters {
     }
   }
 
-  return { now, bucket, orderNumber, customerName, place, country, from, toExclusive };
+  return { now, channel, bucket, orderNumber, customerName, place, country, from, toExclusive };
 }
 
 function ordersSearchWhere(f: OrdersListFilters): Prisma.OrderWhereInput {
-  const parts: Prisma.OrderWhereInput[] = [liveAdminOrderWhere(f.now)];
+  const parts: Prisma.OrderWhereInput[] = [liveAdminOrderWhere(f.now), channelWhere(f.channel)];
 
   if (f.orderNumber) {
     parts.push({ orderNumber: { contains: f.orderNumber, mode: "insensitive" } });
@@ -700,6 +716,7 @@ export async function ordersExport(req: Request, res: Response, next: NextFuncti
     const stamp = dateKeyKolkata(f.now);
 
     const filterLabel = [
+      `channel=${f.channel}`,
       f.bucket !== "all" ? `bucket=${f.bucket}` : null,
       f.orderNumber ? `order=${f.orderNumber}` : null,
       f.customerName ? `customer=${f.customerName}` : null,
@@ -901,8 +918,13 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const f = parseOrdersListFilters(req);
     const where = ordersListWhere(f);
     const searchBase = ordersSearchWhere(f);
+    const countBuckets =
+      f.channel === "cod" ? COD_COUNT_BUCKETS : ONLINE_COUNT_BUCKETS;
 
-    const [total, rows, ...bucketCounts] = await prisma.$transaction([
+    const onlineSearch = ordersSearchWhere({ ...f, channel: "online" });
+    const codSearch = ordersSearchWhere({ ...f, channel: "cod" });
+
+    const [total, rows, onlineAll, codAll, ...bucketCounts] = await prisma.$transaction([
       prisma.order.count({ where }),
       prisma.order.findMany({
         where,
@@ -927,7 +949,9 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           }
         }
       }),
-      ...ORDER_COUNT_BUCKETS.map((b) =>
+      prisma.order.count({ where: onlineSearch }),
+      prisma.order.count({ where: codSearch }),
+      ...countBuckets.map((b) =>
         prisma.order.count({
           where:
             b === "all"
@@ -938,12 +962,14 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     ]);
 
     const counts = Object.fromEntries(
-      ORDER_COUNT_BUCKETS.map((b, i) => [b, bucketCounts[i] as number])
-    ) as Record<(typeof ORDER_COUNT_BUCKETS)[number], number>;
+      countBuckets.map((b, i) => [b, bucketCounts[i] as number])
+    ) as Record<string, number>;
 
     res.json({
       success: true,
       data: {
+        channel: f.channel,
+        channelCounts: { online: onlineAll, cod: codAll },
         items: rows.map((o) => ({
           id: o.id,
           orderNumber: o.orderNumber,
