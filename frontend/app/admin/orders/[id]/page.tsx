@@ -797,11 +797,43 @@ function AdminOrderProductionView({
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={`${card} flex min-h-[104px] flex-col p-4`}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Order total</p>
+          <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">
+            {formatMinorFromPaise(order.grandTotalInPaise, order.currency)}
+          </p>
+          <p className="mt-0.5 text-xs text-stone-500">{order.currency}</p>
+          {invoiceHref ? (
+            <a
+              href={invoiceHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-auto self-end rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-3 py-1.5 text-xs font-semibold text-[#1c352a]"
+            >
+              Download Invoice
+            </a>
+          ) : (
+            <span className="mt-auto self-end text-[11px] text-stone-400">No invoice yet</span>
+          )}
+        </div>
         {[
-          ["Order total", formatMinorFromPaise(order.grandTotalInPaise, order.currency), order.currency],
-          ["Payment", isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Pending"), isCod && !captured ? (isCancelled ? "Not collected" : "Pending collection") : humanState(order.paymentStatus)],
-          ["Fulfillment", fulfilmentLabel, awbRows.length ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}` : "No shipment"],
-          ["Delivery", shipping ? `${shipping.city}, ${shipping.state}` : "Address unavailable", shipping?.postalCode ?? "—"]
+          [
+            "Payment",
+            isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Pending"),
+            isCod && !captured ? (isCancelled ? "Not collected" : "Pending collection") : humanState(order.paymentStatus)
+          ],
+          [
+            "Fulfillment",
+            fulfilmentLabel,
+            awbRows.length
+              ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}`
+              : "No shipment"
+          ],
+          [
+            "Delivery",
+            shipping ? `${shipping.city}, ${shipping.state}` : "Address unavailable",
+            shipping?.postalCode ?? "—"
+          ]
         ].map(([label, value, hint]) => (
           <div key={label} className={`${card} min-h-[104px] p-4`}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">{label}</p>
@@ -815,7 +847,12 @@ function AdminOrderProductionView({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {shipUi && awbRows.length === 0 ? (
-              <button type="button" disabled={!!shipBusy} onClick={onCreateShipment} className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              <button
+                type="button"
+                disabled={!!shipBusy}
+                onClick={onCreateShipment}
+                className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
                 {shipBusy === "create" ? "Creating label…" : "Create label"}
               </button>
             ) : null}
@@ -837,11 +874,19 @@ function AdminOrderProductionView({
           </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
             <div className="flex flex-wrap gap-2 lg:justify-end">
-              {(nextStatuses[order.status] ?? []).map((status) => (
-                <button key={status} type="button" disabled={statusSaving} onClick={() => onStatusChange(status)} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:opacity-50">
-                  Mark {humanState(status)}
-                </button>
-              ))}
+              {awbRows.length === 0
+                ? (nextStatuses[order.status] ?? []).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      disabled={statusSaving}
+                      onClick={() => onStatusChange(status)}
+                      className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:opacity-50"
+                    >
+                      Mark {humanState(status)}
+                    </button>
+                  ))
+                : null}
               {deliveryStateIncomplete ? (
                 <button
                   type="button"
@@ -852,39 +897,76 @@ function AdminOrderProductionView({
                   Confirm delivery state
                 </button>
               ) : null}
-              {invoice?.invoiceNo || invoice?.pdfUrl ? (
-                <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]">
-                  Download Invoice
-                </a>
-              ) : null}
             </div>
-            {dangerActions ? <div className="border-t border-red-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">{dangerActions}</div> : null}
+            {dangerActions ? (
+              <div className="border-t border-red-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                {dangerActions}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
       <section className={card}>
         <div className={sectionHeader}>
-          <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Items &amp; Fulfillment</h2>
+          <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Items</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-[#faf7f2] text-[11px] uppercase tracking-wide text-[#8a7060]">
-              <tr>{["Product", "SKU", "Qty", "Fulfilled From", "Unit Price", "Total"].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
+              <tr>
+                {["Product", "SKU", "Qty", "Fulfilled From", "Unit Price", "Total"].map((h) => (
+                  <th key={h} className="px-4 py-3 font-semibold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {order.items.map((item, idx) => {
                 const warehouseQty = item.warehouseFulfillmentQty ?? item.qtyOrdered;
                 const dropQty = item.dropShipFulfillmentQty ?? 0;
-                const source = dropQty > 0 && warehouseQty > 0 ? `Warehouse (${warehouseQty}) · Drop ship (${dropQty})` : dropQty > 0 ? "Drop ship" : item.pickupLocation?.label ?? "Warehouse";
+                const source =
+                  dropQty > 0 && warehouseQty > 0
+                    ? `Warehouse (${warehouseQty}) · Drop ship (${dropQty})`
+                    : dropQty > 0
+                      ? "Drop ship"
+                      : item.pickupLocation?.label ?? "Warehouse";
+                const thumb = resolveMediaUrl(item.imageUrl);
+                const qtyDisplay =
+                  typeof item.qtyShippable === "number" ? item.qtyShippable : item.qtyOrdered;
                 return (
                   <tr key={item.id ?? idx}>
-                    <td className="px-4 py-3 font-medium text-stone-900">{item.nameSnapshot}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-stone-100">
+                          {thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb} alt="" className="h-full w-full object-cover" />
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="font-medium text-stone-900">{item.nameSnapshot}</p>
+                          {typeof item.returnedQty === "number" && item.returnedQty > 0 ? (
+                            <p className="text-[11px] text-amber-800">
+                              Ordered {item.qtyOrdered}, restocked {item.returnedQty}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
-                    <td className="px-4 py-3">{item.qtyOrdered}</td>
+                    <td className="px-4 py-3">{qtyDisplay}</td>
                     <td className="px-4 py-3 text-stone-600">{source}</td>
                     <td className="px-4 py-3">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
-                    <td className="px-4 py-3 font-semibold">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
+                    <td className="px-4 py-3 font-semibold">
+                      {formatMinorFromPaise(
+                        item.qtyOrdered > 0 && typeof item.qtyShippable === "number"
+                          ? Math.round((item.lineTotalInPaise * item.qtyShippable) / item.qtyOrdered)
+                          : item.lineTotalInPaise,
+                        order.currency
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -892,38 +974,82 @@ function AdminOrderProductionView({
           </table>
         </div>
         <div className="border-t border-stone-100 p-5">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Shipments</h3>
           {isCancelled && awbRows.length === 0 ? (
             <p className="text-sm text-stone-600">This order was cancelled before shipment.</p>
           ) : awbRows.length === 0 ? (
             <p className="text-sm text-stone-500">No shipment has been created yet.</p>
           ) : (
             <div className="space-y-3">
-              {awbRows.map((row) => (
-                <div key={`${row.shipmentId}-${row.awb}`} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-                    <div><dt className="text-xs text-stone-500">Status</dt><dd className="font-semibold">{humanState(row.status)}</dd></div>
-                    <div><dt className="text-xs text-stone-500">Carrier</dt><dd>{humanState(row.courier)}</dd></div>
-                    <div><dt className="text-xs text-stone-500">AWB / Tracking ID</dt><dd className="font-mono text-xs">{row.awb}</dd></div>
-                  </dl>
-                  <div className="flex flex-wrap gap-2">
-                    {row.isDelhiveryIntegrated ? (
-                      <a
-                        href={delhiveryLabelUrl(row.awb)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={AWB_PILL.label}
-                      >
-                        Download label
-                      </a>
-                    ) : null}
-                    {row.trackingUrl ? (
-                      <a href={row.trackingUrl} target="_blank" rel="noopener noreferrer" className={AWB_PILL.track}>
-                        Open tracking
-                      </a>
+              {awbRows.map((row) => {
+                const isPrimaryStatusRow = !seenShipmentIds.has(row.shipmentId);
+                if (isPrimaryStatusRow) seenShipmentIds.add(row.shipmentId);
+                const nextShip = shipmentTestNext[row.status] ?? [];
+                return (
+                  <div
+                    key={`${row.shipmentId}-${row.awb}`}
+                    className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50/60 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+                        <div>
+                          <dt className="text-xs text-stone-500">Status</dt>
+                          <dd className="font-semibold">{humanState(row.status)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-stone-500">Carrier</dt>
+                          <dd>{humanState(row.courier)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-stone-500">AWB / Tracking ID</dt>
+                          <dd className="font-mono text-xs">{row.awb}</dd>
+                        </div>
+                      </dl>
+                      <div className="flex flex-wrap gap-2">
+                        {row.isDelhiveryIntegrated ? (
+                          <a
+                            href={delhiveryLabelUrl(row.awb)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={AWB_PILL.label}
+                          >
+                            Download label
+                          </a>
+                        ) : null}
+                        {row.trackingUrl ? (
+                          <a
+                            href={row.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={AWB_PILL.track}
+                          >
+                            Open tracking
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                    {isPrimaryStatusRow && nextShip.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 border-t border-stone-200/80 pt-3">
+                        {nextShip.map((btn) => (
+                          <button
+                            key={btn.status}
+                            type="button"
+                            disabled={statusSaving || !!shipBusy}
+                            onClick={() => onSetShipmentStatus(row.cancelWaybill || row.awb, btn.status)}
+                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+                              btn.status === "RTO"
+                                ? "border-red-300 bg-red-50 text-red-900"
+                                : "border-stone-300 bg-white text-stone-800"
+                            }`}
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+                      </div>
                     ) : null}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {shipmentSetup}
