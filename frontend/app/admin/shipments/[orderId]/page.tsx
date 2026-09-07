@@ -8,6 +8,7 @@ import { ChevronLeft } from "lucide-react";
 import { AdminSkeleton } from "@/components/admin/AdminSkeleton";
 import { AdminToast } from "@/components/admin/AdminToast";
 import {
+  adminCancelWaybill,
   adminCreateShipmentForOrder,
   adminEstimateDelhiveryCharge,
   adminSyncOrderShipments,
@@ -18,14 +19,22 @@ import {
   type AdminPickupLocationRow,
   type DelhiveryShipBox
 } from "@/lib/admin-api";
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
+  breakdownChargeableWeight,
   digitsOnly,
   totalChargeableWeightGrams,
   validateBoxDimensions
 } from "@/lib/chargeable-weight";
 import { formatMinorFromPaise } from "@/lib/money";
 import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
-import { allOrderAwbRows, primaryForwardShipment } from "@/lib/shipment-labels";
+import {
+  allOrderAwbRows,
+  paymentModeLabel,
+  primaryForwardShipment,
+  shippingModeLabel,
+  type ShipmentCarrierMeta
+} from "@/lib/shipment-labels";
 
 const MAX_SHIP_BOXES = 5;
 const DIM_MAX_CM = 200;
@@ -100,10 +109,9 @@ type OrderLoaded = {
     awb: string | null;
     trackingUrl: string | null;
     status: string;
-    carrierMeta?: Record<string, unknown> | null;
+    carrierMeta?: ShipmentCarrierMeta | null;
   }>;
 };
-
 export default function AdminShipmentCreateLabelPage() {
   const params = useParams();
   const router = useRouter();
@@ -125,6 +133,8 @@ export default function AdminShipmentCreateLabelPage() {
   const [freightBusy, setFreightBusy] = useState(false);
   const [shipBusy, setShipBusy] = useState(false);
   const [syncBusy, setSyncBusy] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
   const [breakdown, setBreakdown] = useState<{
     breakdown: {
       zone: string;
@@ -182,7 +192,35 @@ export default function AdminShipmentCreateLabelPage() {
   const forward = order ? primaryForwardShipment(order.shipments ?? []) : null;
   const awbRows = order ? allOrderAwbRows(order.shipments ?? []) : [];
   const hasForwardAwb = Boolean(forward?.awb?.trim());
+  const forwardMeta = forward?.carrierMeta ?? null;
+  const bookingBoxes = forwardMeta?.boxes ?? [];
+  const delhiveryFreightBooked = forwardMeta?.delhiveryFreightInr;
+  const bookedChargeableG = forwardMeta?.chargeableGrams;
+  const canCancelLabel =
+    hasForwardAwb &&
+    Boolean(forward?.awb) &&
+    ["CREATED", "PICKED"].includes(forward?.status ?? "") &&
+    !["SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"].includes(order?.status ?? "");
 
+  async function confirmCancelWaybill(localOnly = false) {
+    const awb = cancelAwbConfirm;
+    if (!awb) return;
+    setCancelBusy(true);
+    try {
+      const r = await adminCancelWaybill(awb, { localOnly });
+      setCancelAwbConfirm(null);
+      await load();
+      if (r.carrierAlreadyCancelled || r.localOnly) {
+        pushToast("Label removed in Sarveda. You can create a new Delhivery label.");
+      } else {
+        pushToast("Delhivery label cancelled. Create a new label when ready.");
+      }
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Cancel failed", true);
+    } finally {
+      setCancelBusy(false);
+    }
+  }
   useEffect(() => {
     if (!order || !shippingAddr || hasForwardAwb) return;
     const destPin = (shippingAddr.postalCode || "").replace(/\D/g, "");
@@ -484,9 +522,12 @@ export default function AdminShipmentCreateLabelPage() {
                 ))}
               </ul>
               <div className="mt-2 flex justify-between border-t border-amber-200/80 pt-2 font-semibold">
-                <span>Total shipping (w/ COD)</span>
+                <span>Catalog shipping (customer checkout)</span>
                 <span>₹{(breakdown.breakdown.totalWithCod / 100).toFixed(2)}</span>
               </div>
+              <p className="mt-1 text-[11px] font-normal text-amber-800/90">
+                From Sarveda product shipping rates at checkout — not Delhivery’s courier quote.
+              </p>
             </div>
           ) : null}
         </section>
@@ -495,16 +536,98 @@ export default function AdminShipmentCreateLabelPage() {
           {hasForwardAwb ? (
             <div className="space-y-4">
               <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Label already created</h2>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+                  Delhivery booking (courier)
+                </p>
+                <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-[11px] text-stone-500">Delhivery freight quote</dt>
+                    <dd className="text-base font-extrabold text-[#1c352a]">
+                      {delhiveryFreightBooked != null
+                        ? `₹${delhiveryFreightBooked.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                        : "—"}
+                    </dd>
+                    <p className="text-[11px] text-stone-500">
+                      What Delhivery charges Sarveda for this booking (all boxes).
+                    </p>
+                  </div>
+                  <div>
+                    <dt className="text-[11px] text-stone-500">Customer paid shipping</dt>
+                    <dd className="font-semibold">
+                      {formatMinorFromPaise(order.shippingInPaise, order.currency)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11px] text-stone-500">Mode</dt>
+                    <dd className="font-semibold">
+                      {paymentModeLabel(forwardMeta?.paymentMode)} ·{" "}
+                      {shippingModeLabel(forwardMeta?.shippingMode)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11px] text-stone-500">Total chargeable weight</dt>
+                    <dd className="font-semibold">
+                      {bookedChargeableG != null
+                        ? `${bookedChargeableG.toLocaleString("en-IN")} gm`
+                        : "—"}
+                    </dd>
+                  </div>
+                </dl>
+                {bookingBoxes.length > 0 ? (
+                  <ul className="mt-3 space-y-1.5 border-t border-emerald-200/80 pt-2 text-[12px] text-stone-700">
+                    {bookingBoxes.map((box, idx) => {
+                      const vol = breakdownChargeableWeight({
+                        lengthCm: box.lengthCm,
+                        breadthCm: box.breadthCm,
+                        heightCm: box.heightCm,
+                        weightGrams: box.weightGrams,
+                        packageType:
+                          (box.packageType as "PLASTIC_COVER" | "CARDBOARD_BOX") ?? "CARDBOARD_BOX"
+                      });
+                      return (
+                        <li key={idx}>
+                          <span className="font-semibold text-stone-900">Box {idx + 1}:</span>{" "}
+                          {box.lengthCm}×{box.breadthCm}×{box.heightCm} cm · dead{" "}
+                          {box.weightGrams.toLocaleString("en-IN")} gm · chargeable{" "}
+                          {vol.chargeableGrams.toLocaleString("en-IN")} gm
+                          {box.packageType ? ` · ${box.packageType.replace(/_/g, " ").toLowerCase()}` : ""}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+                {awbRows.length > 1 ? (
+                  <p className="mt-3 text-[11px] text-stone-600">
+                    Multi-piece (MPS): Delhivery shows <strong>{awbRows.length} AWBs</strong> for this one
+                    order (one per box). Label amount ₹{((order.grandTotalInPaise ?? 0) / 100).toFixed(2)}{" "}
+                    is on the <strong>master</strong> only; child labels show ₹0.10 (Delhivery requirement —
+                    not a second charge).
+                  </p>
+                ) : null}
+              </div>
+
               {awbRows.map((row) => (
                 <div
                   key={`${row.shipmentId}-${row.awb}`}
                   className="rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm"
                 >
-                  <p>
+                  <p className="text-xs font-semibold text-stone-700">{row.boxLabel}</p>
+                  <p className="mt-1">
                     <span className="text-stone-500">Courier</span> · {row.courier}
                   </p>
                   <p className="mt-1 font-mono text-xs">AWB {row.awb}</p>
                   <p className="mt-1">Status: {row.status}</p>
+                  {row.role === "child" ? (
+                    <p className="mt-1 text-[11px] text-stone-500">
+                      Child box — declared amount on label is ₹0.10 (master holds full order value).
+                    </p>
+                  ) : row.role === "parent" && awbRows.length > 1 ? (
+                    <p className="mt-1 text-[11px] text-stone-500">
+                      Master box — full order amount on this label.
+                    </p>
+                  ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
                     {row.isDelhiveryIntegrated && row.awb ? (
                       <a
@@ -529,17 +652,31 @@ export default function AdminShipmentCreateLabelPage() {
                   </div>
                 </div>
               ))}
-              <button
-                type="button"
-                disabled={syncBusy}
-                onClick={() => void handleSync()}
-                className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {syncBusy ? "Syncing…" : "Sync tracking from Delhivery"}
-              </button>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={syncBusy || cancelBusy}
+                  onClick={() => void handleSync()}
+                  className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {syncBusy ? "Syncing…" : "Sync tracking from Delhivery"}
+                </button>
+                {canCancelLabel && forward?.awb ? (
+                  <button
+                    type="button"
+                    disabled={syncBusy || cancelBusy}
+                    onClick={() => setCancelAwbConfirm(forward.awb!)}
+                    className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-900 disabled:opacity-50"
+                  >
+                    Cancel label &amp; recreate
+                  </button>
+                ) : null}
+              </div>
               <p className="text-xs text-stone-500">
-                Picked → In transit → Out for delivery → Delivered updates come from Delhivery when you sync (or via
-                automated tracking).
+                Pickup is scheduled in <strong>Delhivery One</strong> (“Add to Pickup”). When their courier
+                collects the parcel, Delhivery marks it Picked — press Sync here (no manual “mark pickup”
+                needed in Sarveda). Then: In transit → Out for delivery → Delivered.
               </p>
             </div>
           ) : (
@@ -731,6 +868,23 @@ export default function AdminShipmentCreateLabelPage() {
           )}
         </section>
       </div>
+
+      <AdminConfirmModal
+        open={cancelAwbConfirm !== null}
+        title="Cancel Delhivery label?"
+        message={
+          cancelAwbConfirm
+            ? `Cancel AWB ${cancelAwbConfirm} on Delhivery (voids master + child boxes for multi-piece) and remove it from Sarveda so you can create a new label. If you already cancelled in Delhivery One, use “Remove label only”. This does not cancel the Sarveda order.`
+            : ""
+        }
+        confirmLabel="Cancel on Delhivery"
+        secondaryConfirmLabel="Remove label only (Sarveda)"
+        onSecondaryConfirm={() => void confirmCancelWaybill(true)}
+        danger
+        busy={cancelBusy}
+        onClose={() => setCancelAwbConfirm(null)}
+        onConfirm={() => void confirmCancelWaybill(false)}
+      />
     </div>
   );
 }
