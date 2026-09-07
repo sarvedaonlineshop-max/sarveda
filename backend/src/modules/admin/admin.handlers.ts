@@ -494,14 +494,16 @@ const ORDER_BUCKETS: OrderBucket[] = [
   "delivered"
 ];
 
-/** Commercial pills on Orders desk (shipped/delivered live under Shipments). */
+/** Pills on Orders desk — mutually exclusive buckets; sum equals All. */
 const ORDER_COUNT_BUCKETS = [
   "all",
   "paid",
   "pending",
   "abandoned",
   "cancelled",
-  "refunded"
+  "refunded",
+  "shipped",
+  "delivered"
 ] as const;
 
 function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.OrderWhereInput {

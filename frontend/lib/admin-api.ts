@@ -440,7 +440,17 @@ export type OrdersListData = {
     createdAt: string;
   }>;
   counts?: Partial<
-    Record<"all" | "paid" | "pending" | "abandoned" | "cancelled" | "refunded", number>
+    Record<
+      | "all"
+      | "paid"
+      | "pending"
+      | "abandoned"
+      | "cancelled"
+      | "refunded"
+      | "shipped"
+      | "delivered",
+      number
+    >
   >;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 };

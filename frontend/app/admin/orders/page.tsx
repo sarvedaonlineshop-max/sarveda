@@ -16,7 +16,9 @@ const buckets = [
   { value: "pending", label: "Pending payment" },
   { value: "abandoned", label: "Abandoned" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" }
+  { value: "refunded", label: "Refunded" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" }
 ] as const;
 
 function StatusBadge({
@@ -261,11 +263,13 @@ export default function AdminOrdersPage() {
       >
         <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛒 Orders</h1>
         <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          Payment &amp; commercial desk · Pending = unpaid &lt; 15 min · Abandoned = never paid · Cancelled = paid/COD
-          stopped · Refunded = money returned · Carrier tracking lives under{" "}
+          Pills are exclusive and should add up to All · Pending = unpaid &lt; 15 min · Abandoned = never paid ·
+          Cancelled = paid/COD stopped · Refunded = money returned · Shipped/Delivered = order progress (AWB detail
+          under{" "}
           <a href="/admin/shipments" style={{ color: "#e8d5a8", fontWeight: 600 }}>
             Shipments
           </a>
+          )
         </p>
       </div>
 
