@@ -50,7 +50,7 @@ function adminExplanation(policy: string, fullyRefunded: boolean): string {
 
 function cleanupOrderPageLabels() {
   if (typeof document === "undefined") return;
-  const replacements = new Map([
+  const replacements: Array<[string, string]> = [
     ["Fulfillment:", "Shipment:"],
     ["Fulfillment", "Shipment"],
     ["Fulfilment", "Shipment"],
@@ -60,7 +60,7 @@ function cleanupOrderPageLabels() {
     ["Line items & fulfilment", "Line items & shipment"],
     ["Fulfilled From", "Shipped from"],
     ["Fulfilled from", "Shipped from"]
-  ]);
+  ];
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
@@ -69,13 +69,13 @@ function cleanupOrderPageLabels() {
     textNodes.push(node as Text);
     node = walker.nextNode();
   }
-  for (const textNode of textNodes) {
+  textNodes.forEach((textNode) => {
     let next = textNode.nodeValue ?? "";
-    for (const [from, to] of replacements) {
+    replacements.forEach(([from, to]) => {
       next = next.replaceAll(from, to);
-    }
+    });
     if (next !== textNode.nodeValue) textNode.nodeValue = next;
-  }
+  });
 }
 
 export function AdminOrderRefundPreview({ orderId, currency, refreshKey = 0 }: Props) {
