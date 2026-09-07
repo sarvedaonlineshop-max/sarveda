@@ -146,11 +146,23 @@ function orderSearchParts(f: ListFilters): Prisma.OrderWhereInput[] {
   return parts;
 }
 
-/** Paid warehouse orders with no Shipment row yet (Create Shipment pending). */
+/** Paid warehouse orders with no Shipment row yet (Create label pending). */
 function readyOrderWhere(f: ListFilters): Prisma.OrderWhereInput {
   const parts = orderSearchParts(f);
   parts.push({ status: { in: [...READY_ORDER_STATUSES] } });
   parts.push({ shipments: { none: {} } });
+  // Must match create-shipment payment gate (CAPTURED / partial refund / COD placed).
+  parts.push({
+    OR: [
+      { paymentStatus: { in: ["CAPTURED", "PARTIALLY_REFUNDED"] } },
+      {
+        AND: [
+          { status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED"] } },
+          { payments: { some: { provider: "COD" } } }
+        ]
+      }
+    ]
+  });
   if (f.from || f.toExclusive) {
     parts.push({
       createdAt: {

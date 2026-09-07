@@ -75,7 +75,8 @@ export function isCodOrderReadyToShip(order: OrderPaymentCheck): boolean {
 function assertPaymentEligibleForShipping(
   order: OrderPaymentCheck
 ): { ok: true } | { ok: false; error: string; code: string } {
-  if (order.paymentStatus === "CAPTURED") {
+  // CAPTURED = full pay held; PARTIALLY_REFUNDED = remaining goods may still ship.
+  if (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED") {
     return { ok: true };
   }
   if (isCodOrderReadyToShip(order)) {
