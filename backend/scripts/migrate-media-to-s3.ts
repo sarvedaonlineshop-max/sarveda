@@ -194,6 +194,9 @@ async function migrateContent(): Promise<void> {
     await replaceField(t.name, rows, t.update);
   }
 
+  // Blog body HTML still embeds sarveda.com/wp-content URLs — mirror those too.
+  await migrateBlogPostHtmlBodies();
+
   const people = [
     ...(await prisma.vaidya.findMany({ select: { id: true, photoUrl: true } })).map((r) => ({
       id: r.id,
@@ -215,6 +218,55 @@ async function migrateContent(): Promise<void> {
     }
   }
   console.log("People photos processed");
+}
+
+const WP_MEDIA_URL_RE =
+  /https?:\/\/(?:www\.)?sarveda\.com\/wp-content\/(?:uploads|themes)\/[^\s"'<>\\]+/gi;
+
+function extractWpMediaUrls(html: string): string[] {
+  const matches = html.match(WP_MEDIA_URL_RE) ?? [];
+  return [
+    ...new Set(
+      matches.map((u) => u.replace(/[),.;]+$/g, "").replace(/\\$/, ""))
+    )
+  ];
+}
+
+async function migrateBlogPostHtmlBodies(): Promise<void> {
+  const posts = await prisma.blogPost.findMany({
+    select: { id: true, slug: true, content: true }
+  });
+  let updated = 0;
+  let urlsMirrored = 0;
+  for (const post of posts) {
+    const content = post.content ?? "";
+    if (!content.includes("sarveda.com/wp-content")) continue;
+    const urls = extractWpMediaUrls(content);
+    if (!urls.length) continue;
+    let nextContent = content;
+    let changed = false;
+    for (const url of urls) {
+      const mirrored = await migrateUrl(url);
+      if (!mirrored || mirrored === url) continue;
+      urlsMirrored++;
+      if (nextContent.includes(url)) {
+        nextContent = nextContent.split(url).join(mirrored);
+        changed = true;
+      }
+    }
+    if (changed && !dryRun) {
+      await prisma.blogPost.update({
+        where: { id: post.id },
+        data: { content: nextContent }
+      });
+      updated++;
+      console.log(`BlogPost content rewritten: ${post.slug}`);
+    } else if (changed && dryRun) {
+      updated++;
+      console.log(`[dry-run] BlogPost content would rewrite: ${post.slug} (${urls.length} urls)`);
+    }
+  }
+  console.log(`BlogPost HTML bodies: ${updated} posts, ${urlsMirrored} media URLs mirrored`);
 }
 
 /** Corporate theme assets — URLs from frontend data files (upload only, no DB). */
