@@ -20,6 +20,16 @@ function expandOriginVariants(origin: string): string[] {
   return [...variants];
 }
 
+function isSarvedaVercelPreview(origin: string): boolean {
+  try {
+    const url = new URL(normalizeOrigin(origin));
+    if (url.protocol !== "https:") return false;
+    return /^sarveda-frontend-[a-z0-9-]+\.vercel\.app$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** Comma-separated origins in FRONTEND_URL plus optional CORS_ORIGINS. */
 export function getCorsOrigins(): string[] {
   const raw = [
@@ -41,5 +51,6 @@ export function getCorsOrigins(): string[] {
 
 export function isAllowedCorsOrigin(origin: string | undefined, allowed: string[]): boolean {
   if (!origin) return true;
-  return allowed.includes(normalizeOrigin(origin));
+  const normalized = normalizeOrigin(origin);
+  return allowed.includes(normalized) || isSarvedaVercelPreview(normalized);
 }
