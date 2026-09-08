@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchPaymentsReconciliation } from "@/lib/admin-api";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
 const card: React.CSSProperties = { background: "#fff", borderRadius: "12px", border: "1px solid #e8e2d9", boxShadow: "0 1px 4px rgba(44,36,32,0.06)", padding: "20px 24px" };
 
@@ -17,22 +18,22 @@ export default function AdminReconciliationPage() {
     void fetchPaymentsReconciliation(days).then(setData).catch((e) => setErr(e instanceof Error ? e.message : "Failed")).finally(() => setLoading(false));
   }, [days]);
 
+  useAdminPageHeader(
+    () => ({
+      title: "Payment Reconciliation",
+      icon: "💳",
+      subtitle: (
+        <>
+          Compare order payment status with gateway payment rows. Use per-order Razorpay sync on
+          mismatches.
+        </>
+      )
+    }),
+    []
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px"
-        }}
-      >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>💳 Payment Reconciliation</h1>
-        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-          Compare order payment status with gateway payment rows. Use per-order Razorpay sync on mismatches.
-        </p>
-      </div>
-
       <div
         style={{
           background: "#fff",

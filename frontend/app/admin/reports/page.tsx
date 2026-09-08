@@ -6,6 +6,7 @@ import { Lock } from "lucide-react";
 import type { AdminReportPeriod, AdminReportType } from "@/lib/admin-api";
 import { downloadAdminReportExcel } from "@/lib/admin-api";
 import { useIsSuperAdmin } from "@/components/admin/AdminUserContext";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
 const card: React.CSSProperties = {
   background: "#fff",
@@ -112,30 +113,27 @@ export default function AdminReportsPage() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px"
-        }}
-      >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>
-          📊 Store Reports
-        </h1>
-        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
+  useAdminPageHeader(
+    () => ({
+      title: "Store Reports",
+      icon: "📊",
+      subtitle: (
+        <>
           Operational Excel exports for sales, products, customers, and payments. Financial
           statements and ledgers live under Accounting → Financial Reports. Customer downloads are
           super-admin only. Sales analytics also appear on the{" "}
-          <a href="/admin" style={{ color: "#f6c95a", fontWeight: 700 }}>
+          <a href="/admin" style={{ color: "#b98a3e", fontWeight: 700 }}>
             Dashboard
           </a>
           .
-        </p>
-      </div>
+        </>
+      )
+    }),
+    []
+  );
 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={card}>
         <div
           style={{

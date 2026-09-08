@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import {
   type CourseEnrollmentFilterCourse,
   type CourseEnrollmentsListData,
@@ -114,24 +115,17 @@ export default function AdminEnrollmentsPage() {
     setSearch(q.trim());
   }
 
+  useAdminPageHeader(
+    () => ({
+      title: "Course Enrollments",
+      icon: "🎓",
+      subtitle: <>Students who paid online and have an active enrollment record.</>
+    }),
+    []
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px"
-        }}
-      >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>
-          🎓 Course Enrollments
-        </h1>
-        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px", maxWidth: "560px" }}>
-          Students who paid online and have an active enrollment record.
-        </p>
-      </div>
-
       <div
         style={{
           background: "var(--admin-card-bg, #faf9f7)",

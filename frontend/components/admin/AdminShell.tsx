@@ -80,10 +80,8 @@ function AdminShellInner({
   const reduceMotion = useReducedMotion();
   const [searchFocused, setSearchFocused] = useState(false);
   const suggestions = headerSlot?.searchSuggestions ?? [];
-  const hideSearch =
-    Boolean(headerSlot?.hideSearch) ||
-    pathname === "/admin/orders" ||
-    pathname.startsWith("/admin/orders/");
+  // Global admin search field removed — page filters live in content; header is title + actions.
+  const hideSearch = true;
   const showSuggestions =
     !hideSearch &&
     searchFocused &&

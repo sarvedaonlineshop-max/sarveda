@@ -33,6 +33,7 @@ import {
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 import { ZohoBooksHistoricalPanel } from "@/components/admin/ZohoBooksHistoricalPanel";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
 type ViewTab = "overview" | "zoho_books" | MarketplaceChannelCode;
 type ChannelSubTab = "overview" | "listings" | "orders" | "returns";
@@ -1138,19 +1139,19 @@ export function MarketplaceOpsWorkspace({ mode = "live" }: { mode?: "live" | "le
     return Array.from(buckets.entries()).map(([label, value]) => ({ label, value }));
   }, [overviewReturns]);
 
+  useAdminPageHeader(
+    () => ({
+      title: isLegacy ? "Old Marketplace Operations" : "Marketplace Operations",
+      icon: isLegacy ? "📦" : "🛒",
+      subtitle: isLegacy
+        ? "Pre-launch archive — Zoho Books history + native channel orders before cutover"
+        : "Post-launch channel ops — new syncs and orders from 01-Sep-2026 onward"
+    }),
+    [isLegacy]
+  );
+
   return (
     <div className="mx-auto max-w-[1440px] space-y-4 pt-2">
-      <div style={{ background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)", borderRadius: "16px", padding: "22px 28px" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec" }}>
-          {isLegacy ? "📦 Old Marketplace Operations" : "🛒 Marketplace Operations"}
-        </h1>
-        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-          {isLegacy
-            ? "Pre-launch archive — Zoho Books history + native channel orders before cutover"
-            : "Post-launch channel ops — new syncs and orders from 01-Sep-2026 onward"}
-        </p>
-      </div>
-
       <div className="flex flex-wrap gap-5 border-b border-[#e8e2d9]">
         <button
           type="button"

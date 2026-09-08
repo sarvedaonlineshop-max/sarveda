@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import {
   PickupLocationModal,
   type PickupLocationDraft
@@ -130,6 +131,43 @@ export default function AdminPickupLocationsPage() {
     }
   }
 
+  useAdminPageHeader(
+    () => ({
+      title: "Pickup Locations",
+      icon: "📍",
+      subtitle: (
+        <>
+          Manage facilities like Delhivery One. The <strong>Delhivery facility name</strong> must
+          match your Delhivery dashboard exactly — used as{" "}
+          <code style={{ fontSize: "11px" }}>pickup_location</code> when creating AWBs.
+        </>
+      ),
+      actions: (
+        <button
+          type="button"
+          onClick={openAdd}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 12px",
+            borderRadius: "999px",
+            color: "#fff",
+            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+            fontSize: "13px",
+            fontWeight: 700,
+            border: "none",
+            cursor: "pointer",
+            whiteSpace: "nowrap"
+          }}
+        >
+          📍 Add New Pickup Location
+        </button>
+      )
+    }),
+    []
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <AdminConfirmModal
@@ -153,46 +191,6 @@ export default function AdminPickupLocationsPage() {
         }}
         onSave={handleSave}
       />
-
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          gap: "16px"
-        }}
-      >
-        <div>
-          <h1 style={{ color: "#faf5ec", fontSize: "26px", fontWeight: 800, margin: 0 }}>📍 Pickup Locations</h1>
-          <p style={{ color: "#a8c4b0", fontSize: "13px", maxWidth: "500px", marginTop: "6px", marginBottom: 0 }}>
-            Manage facilities like Delhivery One. The <strong>Delhivery facility name</strong> must match your Delhivery
-            dashboard exactly — used as <code style={{ fontSize: "11px" }}>pickup_location</code> when creating AWBs.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openAdd}
-          style={{
-            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
-            color: "#fff",
-            fontWeight: 700,
-            borderRadius: "10px",
-            border: "none",
-            padding: "10px 20px",
-            fontSize: "13px",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(185,138,62,0.35)",
-            flexShrink: 0
-          }}
-        >
-          📍 Add New Pickup Location
-        </button>
-      </div>
 
       {err ? (
         <p

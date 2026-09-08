@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
+
 type PendingReview = {
   id: string;
   rating: number;
@@ -123,38 +125,35 @@ export default function AdminReviewsPage() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px"
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>⭐ Reviews</h1>
-        </div>
+  useAdminPageHeader(
+    () => ({
+      title: "Reviews",
+      icon: "⭐",
+      subtitle: <>Approve or reject customer product reviews.</>,
+      actions: (
         <span
           style={{
-            background: reviews.length > 0 ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)",
-            color: reviews.length > 0 ? "#f6c95a" : "#86efac",
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "6px 12px",
             borderRadius: "999px",
-            padding: "4px 12px",
+            background: reviews.length > 0 ? "#fef3c7" : "#dcfce7",
+            color: reviews.length > 0 ? "#92400e" : "#166534",
+            border: `1px solid ${reviews.length > 0 ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)"}`,
             fontSize: "12px",
-            fontWeight: 700
+            fontWeight: 700,
+            whiteSpace: "nowrap"
           }}
         >
           {reviews.length > 0 ? `${reviews.length} pending` : "✓ All clear"}
         </span>
-      </div>
+      )
+    }),
+    [reviews.length]
+  );
 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {err && (
         <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
           {err}

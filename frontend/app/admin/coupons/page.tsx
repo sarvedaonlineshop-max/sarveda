@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
+
 type Coupon = {
   id: string;
   code: string;
@@ -170,45 +172,43 @@ export default function AdminCouponsPage() {
     borderBottom: "1px solid #f0ece6"
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px"
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🎟️ Coupons</h1>
-          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-            {coupons.length} total · {coupons.filter((c) => c.isActive).length} active
-          </p>
-        </div>
+  useAdminPageHeader(
+    () => ({
+      title: "Coupons",
+      icon: "🎟️",
+      subtitle: (
+        <>
+          {coupons.length} total · {coupons.filter((c) => c.isActive).length} active
+        </>
+      ),
+      actions: (
         <button
+          type="button"
           onClick={openCreate}
           style={{
-            height: "40px",
-            padding: "0 20px",
-            borderRadius: "10px",
-            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 12px",
+            borderRadius: "999px",
             color: "#fff",
+            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
             fontSize: "13px",
             fontWeight: 700,
             border: "none",
             cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(185,138,62,0.35)"
+            whiteSpace: "nowrap"
           }}
         >
           ✨ + New Coupon
         </button>
-      </div>
+      )
+    }),
+    [coupons]
+  );
 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {success && (
         <div
           style={{

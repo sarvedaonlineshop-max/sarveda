@@ -5,10 +5,8 @@ import { FileSpreadsheet } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
-import {
-  useRegisterAdminHeaderSlot,
-  type AdminHeaderSearchSuggestion
-} from "@/components/admin/AdminHeaderSlotContext";
+import { type AdminHeaderSearchSuggestion } from "@/components/admin/AdminHeaderSlotContext";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 import type {
   InventoryRow,
@@ -353,8 +351,10 @@ export function AdminInventoryWorkspace() {
   } | null>(null);
   const [reconciling, setReconciling] = useState(false);
 
-  /** Draft in the header — does not filter the table until Enter / suggestion select. */
+  /** Draft search — does not filter the table until Enter / suggestion select. */
   const [searchInput, setSearchInput] = useState("");
+  /** Whether the in-page search suggestion dropdown is visible. */
+  const [searchFocused, setSearchFocused] = useState(false);
   /** Applied filter for the results table. */
   const [appliedSearch, setAppliedSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
@@ -741,22 +741,13 @@ export function AdminInventoryWorkspace() {
   const headerBtnClass =
     "inline-flex h-11 items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 shadow-sm hover:bg-[#eef6f1] disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200";
 
-  useRegisterAdminHeaderSlot(
+  useAdminPageHeader(
     () => ({
-      wideSearch: true,
-      searchPlaceholder: "Search inventory SKUs, products…",
-      searchValue: searchInput,
-      onSearchChange: setSearchInput,
-      onSearchSubmit: (value) => applyInventorySearch(value),
-      searchSuggestions: headerSuggestions,
-      onSelectSuggestion: (s) => {
-        if (s.id.startsWith("product:")) {
-          applyInventorySearch(s.label, { productId: s.id.slice("product:".length) });
-        } else {
-          applyInventorySearch(s.label);
-        }
-      },
-      afterSearch: (
+      title: "Inventory",
+      icon: "📋",
+      subtitle: "Stock counts, low-stock thresholds, drop ship, and Zoho sync.",
+      actions: (
+        <div className="flex flex-wrap items-center gap-2">
         <div className="relative" ref={categoryMenuRef}>
           <button
             type="button"
@@ -841,9 +832,6 @@ export function AdminInventoryWorkspace() {
             </div>
           ) : null}
         </div>
-      ),
-      actions: (
-        <>
           <Link href="/admin/inventory/xl" className={headerBtnClass}>
             <FileSpreadsheet className="h-3.5 w-3.5" />
             XL
@@ -916,12 +904,10 @@ export function AdminInventoryWorkspace() {
               {reconciling ? "…" : "Reconcile"}
             </button>
           ) : null}
-        </>
+        </div>
       )
     }),
     [
-      searchInput,
-      headerSuggestions,
       categorySlug,
       categoryMenuOpen,
       categoryHoverRoot,
@@ -1375,6 +1361,51 @@ export function AdminInventoryWorkspace() {
         .admin-inv-list-fade { animation: admin-inv-fade 0.38s ease; }
       `}</style>
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
+
+      <div className="relative max-w-xl">
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              applyInventorySearch(searchInput);
+              setSearchFocused(false);
+            }
+          }}
+          placeholder="Search inventory SKUs, products…"
+          aria-label="Search inventory"
+          className="w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
+        />
+        {searchFocused && searchInput.trim() && headerSuggestions.length > 0 ? (
+          <div className="absolute left-0 right-0 z-40 mt-1 max-h-80 overflow-auto rounded-lg border border-stone-200 bg-white py-1 shadow-xl dark:border-stone-600 dark:bg-stone-900">
+            {headerSuggestions.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (s.id.startsWith("product:")) {
+                    applyInventorySearch(s.label, { productId: s.id.slice("product:".length) });
+                  } else {
+                    applyInventorySearch(s.label);
+                  }
+                  setSearchFocused(false);
+                }}
+                className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
+              >
+                <span className="font-medium">{s.label}</span>
+                {s.sublabel ? (
+                  <span className="ml-2 text-xs text-stone-500">{s.sublabel}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <div
         className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${

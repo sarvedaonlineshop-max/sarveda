@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalytics";
 import { AdminSkeleton, AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { DashboardData } from "@/lib/admin-api";
 import { fetchAdminDashboard } from "@/lib/admin-api";
 import { adminMotionSec, adminMotionEase } from "@/lib/admin-motion";
@@ -112,6 +113,43 @@ export default function AdminDashboardPage() {
       cancelled = true;
     };
   }, []);
+
+  useAdminPageHeader(
+    () => ({
+      title: "Dashboard",
+      icon: "🌿",
+      subtitle: (
+        <>
+          Store operations overview — orders, products, inventory risk, customers, and recent
+          activity. Financial statements live under Accounting → Financial Reports.
+        </>
+      ),
+      actions: (
+        <Link
+          href="/admin/orders"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 12px",
+            borderRadius: "999px",
+            textDecoration: "none",
+            color: "#fff",
+            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+            fontSize: "13px",
+            fontWeight: 700,
+            border: "none",
+            cursor: "pointer",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Open orders
+          <ArrowRight size={15} />
+        </Link>
+      )
+    }),
+    []
+  );
 
   if (err) {
     return (
@@ -231,57 +269,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: adminMotionSec.normal, ease: adminMotionEase }}
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "16px",
-            flexWrap: "wrap"
-          }}
-        >
-          <div>
-            <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#faf5ec", letterSpacing: "-0.03em" }}>
-              🌿 Dashboard
-            </h2>
-            <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "6px", maxWidth: "680px" }}>
-              Store operations overview — orders, products, inventory risk, customers, and recent
-              activity. Financial statements live under Accounting → Financial Reports.
-            </p>
-          </div>
-          <Link
-            href="/admin/orders"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "10px 14px",
-              borderRadius: "999px",
-              textDecoration: "none",
-              color: "#fff",
-              background: "linear-gradient(135deg, #b98a3e, #c8960a)",
-              boxShadow: "0 4px 16px rgba(185,138,62,0.35)",
-              fontSize: "13px",
-              fontWeight: 700
-            }}
-          >
-            Open orders
-            <ArrowRight size={15} />
-          </Link>
-        </div>
-      </motion.div>
-
       <div
         style={{
           display: "grid",

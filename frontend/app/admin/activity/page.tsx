@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useIsSuperAdmin } from "@/components/admin/AdminUserContext";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import {
   fetchAdminActivityDashboard,
   fetchAdminActivityList,
@@ -159,48 +160,46 @@ export default function AdminActivityPage() {
     };
   }, [isSuper, days, page, actorUserId, resource, action, q]);
 
+  useAdminPageHeader(
+    () => ({
+      title: "Admin activity",
+      icon: "🛡️",
+      subtitle: (
+        <>
+          Super-admin only. Login/logout and successful create / update / delete actions across the
+          admin backend.
+        </>
+      ),
+      actions: (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "6px 12px",
+            borderRadius: "999px",
+            background: "#fef3c7",
+            color: "#92400e",
+            border: "1px solid rgba(245,158,11,0.3)",
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Super admin only
+        </span>
+      )
+    }),
+    []
+  );
+
   if (!isSuper) {
     return <p style={{ color: "#8a7060" }}>Redirecting…</p>;
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px"
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛡️ Admin activity</h1>
-          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-            Super-admin only. Login/logout and successful create / update / delete actions across the
-            admin backend.
-          </p>
-        </div>
-        <span
-          style={{
-            background: "rgba(185,138,62,0.2)",
-            color: "#f6c95a",
-            borderRadius: "999px",
-            padding: "4px 12px",
-            fontSize: "11px",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase"
-          }}
-        >
-          Super admin only
-        </span>
-      </div>
-
       {err ? (
         <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
           {err}

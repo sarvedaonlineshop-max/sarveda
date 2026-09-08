@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { fetchCatalogGaps, type CatalogGapsReport } from "@/lib/admin-api";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
 const card: React.CSSProperties = { background: "var(--admin-card-bg, #fff)", borderRadius: "12px", border: "1px solid var(--admin-card-border, #e8e2d9)", boxShadow: "0 1px 4px rgba(44,36,32,0.06)" };
 const thSt: React.CSSProperties = { padding: "9px 14px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--admin-text-muted, #8a7060)", background: "var(--admin-table-head, linear-gradient(180deg,#f2ede5,#f9f7f4))", textAlign: "left", position: "sticky" as const, top: 0 };
@@ -60,48 +61,60 @@ export default function CatalogGapsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{
-        background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-        borderRadius: "16px",
-        padding: "22px 28px",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: "16px"
-      }}>
-        <div>
+  useAdminPageHeader(
+    () => ({
+      title: "Catalog & Payment Gaps",
+      icon: "🔍",
+      subtitle: <>Missing prices, shipping rows, and payment gateway config.</>,
+      actions: (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
           <Link
             href="/admin/products"
-            style={{ fontSize: "12px", color: "#a8c4b0", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}
-          >← Products</Link>
-          <h1 style={{ fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", color: "#faf5ec", marginTop: "6px" }}>🔍 Catalog &amp; Payment Gaps</h1>
-          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>Missing prices, shipping rows, and payment gateway config.</p>
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "8px 12px",
+              borderRadius: "999px",
+              background: "transparent",
+              color: "var(--admin-text, #1c352a)",
+              border: "1px solid var(--admin-card-border, #e0d8ce)",
+              fontSize: "13px",
+              fontWeight: 600,
+              textDecoration: "none",
+              whiteSpace: "nowrap"
+            }}
+          >
+            ← Products
+          </Link>
+          <button
+            type="button"
+            onClick={() => void load()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "8px 12px",
+              borderRadius: "999px",
+              background: "transparent",
+              color: "var(--admin-text, #1c352a)",
+              border: "1px solid var(--admin-card-border, #e0d8ce)",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap"
+            }}
+          >
+            ↻ Refresh
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          style={{
-            height: "40px",
-            padding: "0 20px",
-            borderRadius: "8px",
-            background: "rgba(255,255,255,0.12)",
-            color: "#faf5ec",
-            fontSize: "13px",
-            fontWeight: 600,
-            border: "1px solid rgba(255,255,255,0.2)",
-            cursor: "pointer",
-            transition: "all 0.15s ease"
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
-        >
-          ↻ Refresh
-        </button>
-      </div>
+      )
+    }),
+    [load]
+  );
 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {loading && <p style={{ color: "var(--admin-text-muted, #8a7060)" }}>Loading...</p>}
       {err && <p style={{ color: "#dc2626" }} role="alert">{err}</p>}
 

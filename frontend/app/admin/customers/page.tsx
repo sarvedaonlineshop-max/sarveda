@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { CustomersListData } from "@/lib/admin-api";
 import { fetchAdminCustomers } from "@/lib/admin-api";
 
@@ -61,43 +62,35 @@ export default function AdminCustomersPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  useAdminPageHeader(
+    () => ({
+      title: "Customers",
+      icon: "👥",
+      subtitle: <>Customers sign in with OTP or Google.</>,
+      actions: data ? (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "6px 12px",
+            borderRadius: "999px",
+            background: "transparent",
+            color: "var(--admin-text, #1c352a)",
+            border: "1px solid var(--admin-card-border, #e0d8ce)",
+            fontSize: "12px",
+            fontWeight: 700,
+            whiteSpace: "nowrap"
+          }}
+        >
+          {data.pagination.total.toLocaleString("en-IN")} customers
+        </span>
+      ) : undefined
+    }),
+    [data]
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px"
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "30px", fontWeight: 700, color: "#faf5ec", margin: 0 }}>👥 Customers</h1>
-          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-            Customers sign in with OTP or Google.
-          </p>
-        </div>
-        {data ? (
-          <span
-            style={{
-              background: "rgba(185,138,62,0.2)",
-              color: "#f6c95a",
-              borderRadius: "999px",
-              padding: "4px 12px",
-              fontSize: "12px",
-              fontWeight: 700
-            }}
-          >
-            {data.pagination.total.toLocaleString("en-IN")} customers
-          </span>
-        ) : null}
-      </div>
-
       <form
         style={{
           ...card,

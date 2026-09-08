@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminToast } from "@/components/admin/AdminToast";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { AdminProductRow } from "@/lib/admin-api";
 import { fetchAdminProducts, fetchProductsXlSheet, putAdminProduct, reorderAdminProducts } from "@/lib/admin-api";
 import {
@@ -267,45 +268,36 @@ export default function AdminProductsPage() {
     }
   }
 
-  return (
-    <div className="w-full space-y-5 font-sans">
-      <AdminToast toast={toast} onDismiss={() => setToast(null)} />
+  const secondaryActionStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    background: "transparent",
+    color: "var(--admin-text, #1c352a)",
+    border: "1px solid var(--admin-card-border, #e0d8ce)",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+    textDecoration: "none",
+    whiteSpace: "nowrap"
+  };
 
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "16px"
-        }}
-      >
-        <div>
-          <h1 style={{ color: "#faf5ec", fontSize: "26px", fontWeight: 800, margin: 0 }}>📦 Products</h1>
-          <p style={{ color: "#a8c4b0", fontSize: "13px", marginTop: "4px", marginBottom: 0 }}>
-            Drag the handle to set storefront order (global or this category).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="relative" ref={exportMenuRef}>
+  useAdminPageHeader(
+    () => ({
+      title: "Products",
+      icon: "📦",
+      subtitle: <>Drag the handle to set storefront order (global or this category).</>,
+      actions: (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+          <div style={{ position: "relative" }} ref={exportMenuRef}>
             <button
               type="button"
               disabled={exporting}
               onClick={() => setExportOpen((o) => !o)}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "9px 16px",
-                borderRadius: "8px",
-                background: "rgba(255,255,255,0.12)",
-                color: "#faf5ec",
-                border: "1px solid rgba(255,255,255,0.2)",
-                fontSize: "13px",
-                fontWeight: 600,
+                ...secondaryActionStyle,
                 cursor: exporting ? "wait" : "pointer",
                 opacity: exporting ? 0.7 : 1
               }}
@@ -333,62 +325,44 @@ export default function AdminProductsPage() {
               </div>
             ) : null}
           </div>
-          <Link
-            href="/admin/products/xl"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "9px 16px",
-              borderRadius: "8px",
-              background: "rgba(255,255,255,0.12)",
-              color: "#faf5ec",
-              border: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "13px",
-              fontWeight: 600,
-              textDecoration: "none"
-            }}
-          >
+          <Link href="/admin/products/xl" style={secondaryActionStyle}>
             <FileSpreadsheet size={14} aria-hidden />
             View in XL format
           </Link>
-          <Link
-            href="/admin/catalog-gaps"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "9px 16px",
-              borderRadius: "8px",
-              background: "rgba(255,255,255,0.12)",
-              color: "#faf5ec",
-              border: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "13px",
-              fontWeight: 600,
-              textDecoration: "none"
-            }}
-          >
+          <Link href="/admin/catalog-gaps" style={secondaryActionStyle}>
             <ScanSearch size={14} aria-hidden />
             Catalog gaps
           </Link>
           <Link
             href="/admin/products/new"
             style={{
-              background: "linear-gradient(135deg, #b98a3e, #c8960a)",
-              color: "#fff",
-              fontWeight: 700,
-              borderRadius: "10px",
-              padding: "10px 18px",
-              fontSize: "13px",
-              boxShadow: "0 2px 8px rgba(185,138,62,0.35)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 12px",
+              borderRadius: "999px",
               textDecoration: "none",
-              display: "inline-block"
+              color: "#fff",
+              background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+              fontSize: "13px",
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap"
             }}
           >
             ✨ Add product
           </Link>
         </div>
-      </div>
+      )
+    }),
+    [exporting, exportOpen]
+  );
+
+  return (
+    <div className="w-full space-y-5 font-sans">
+      <AdminToast toast={toast} onDismiss={() => setToast(null)} />
+
       <div
         className="h-px w-full"
         style={{

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { ADMIN_CONTENT_LABELS, ADMIN_CONTENT_TYPES, type AdminContentRow, type AdminContentType, deleteAdminContent, fetchAdminContentList } from "@/lib/admin-api";
 
 function parseType(raw: string | null): AdminContentType {
@@ -91,46 +92,39 @@ function AdminContentList() {
     finally { setBusyId(null); }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px",
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px"
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>📄 Content</h1>
-          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-            Pages, courses, events, blog, and directory entries.
-          </p>
-        </div>
+  useAdminPageHeader(
+    () => ({
+      title: "Content",
+      icon: "📄",
+      subtitle: <>Pages, courses, events, blog, and directory entries.</>,
+      actions: (
         <Link
           href={`/admin/content/${type}/new`}
           style={{
-            height: "40px",
-            padding: "0 20px",
-            borderRadius: "10px",
-            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
-            color: "#fff",
-            fontSize: "13px",
-            fontWeight: 700,
-            textDecoration: "none",
             display: "inline-flex",
             alignItems: "center",
-            boxShadow: "0 2px 8px rgba(185,138,62,0.35)"
+            gap: "6px",
+            padding: "8px 12px",
+            borderRadius: "999px",
+            textDecoration: "none",
+            color: "#fff",
+            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+            fontSize: "13px",
+            fontWeight: 700,
+            border: "none",
+            cursor: "pointer",
+            whiteSpace: "nowrap"
           }}
         >
           + Add {ADMIN_CONTENT_LABELS[type].slice(0, -1).toLowerCase()}
         </Link>
-      </div>
+      )
+    }),
+    [type]
+  );
 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Type tabs */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", borderBottom: "2px solid #e8e2d9", paddingBottom: "0" }}>
         {ADMIN_CONTENT_TYPES.map((t) => (

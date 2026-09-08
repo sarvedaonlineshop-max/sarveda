@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { AdminShipmentsQuery, ShipmentsListData } from "@/lib/admin-api";
 import { adminSyncOrderShipments, fetchAdminShipments } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
@@ -210,26 +211,25 @@ export default function AdminShipmentsPage() {
 
   const counts = data?.counts;
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px"
-        }}
-      >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🚚 Shipments</h1>
-        <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          Ready → <strong>Create label</strong> page (sets order to Processing) → Created · Then Picked / In transit /
-          OFD / Delivered come from <strong>Delhivery sync</strong> · Returns under{" "}
-          <a href="/admin/returns" style={{ color: "#e8d5a8", fontWeight: 600 }}>
+  useAdminPageHeader(
+    () => ({
+      title: "Shipments",
+      icon: "🚚",
+      subtitle: (
+        <>
+          Ready → <strong>Create label</strong> (sets order to Processing) → Created · Then Picked /
+          In transit / OFD / Delivered come from <strong>Delhivery sync</strong> · Returns under{" "}
+          <a href="/admin/returns" style={{ color: "#b98a3e", fontWeight: 600 }}>
             Returns
           </a>
-        </p>
-      </div>
+        </>
+      )
+    }),
+    []
+  );
 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div style={{ ...card, padding: "16px 18px" }}>
         <div
           style={{
