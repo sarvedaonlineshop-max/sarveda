@@ -887,72 +887,19 @@ select:-webkit-autofill {
   -webkit-font-smoothing: antialiased;
 }
 
-/*
- * Soft-green workspace (admin without .dark): remap cream/white hardcodes
- * so order/list pages still read as green + white type.
- */
+/* Light-green workspace: gentle remaps for cream hardcodes → soft green */
 .admin-product-ui:not(.dark) {
-  color: var(--admin-text, #ffffff);
+  color: var(--admin-text, #143026);
 }
 
-.admin-product-ui:not(.dark) .bg-white,
-.admin-product-ui:not(.dark) .bg-stone-50,
 .admin-product-ui:not(.dark) .bg-\[\#faf7f2\],
 .admin-product-ui:not(.dark) .bg-\[\#fff8e8\],
 .admin-product-ui:not(.dark) .bg-\[\#fbfcfb\] {
-  background-color: var(--admin-card-bg, #1a3a28) !important;
+  background-color: var(--admin-table-head, #eaf5ef) !important;
 }
 
-.admin-product-ui:not(.dark) .bg-stone-50\/60,
-.admin-product-ui:not(.dark) .bg-stone-50\/80 {
-  background-color: rgba(26, 58, 40, 0.85) !important;
-}
-
-.admin-product-ui:not(.dark) .text-\[\#1c352a\],
-.admin-product-ui:not(.dark) .text-stone-900,
-.admin-product-ui:not(.dark) .text-stone-800,
-.admin-product-ui:not(.dark) .text-stone-700,
-.admin-product-ui:not(.dark) .text-\[\#2c2420\],
-.admin-product-ui:not(.dark) .text-\[\#4a3f38\] {
-  color: #ffffff !important;
-}
-
-.admin-product-ui:not(.dark) .text-stone-600,
-.admin-product-ui:not(.dark) .text-stone-500,
-.admin-product-ui:not(.dark) .text-stone-400,
 .admin-product-ui:not(.dark) .text-\[\#8a7060\] {
-  color: rgba(255, 255, 255, 0.72) !important;
-}
-
-.admin-product-ui:not(.dark) .border-stone-200,
-.admin-product-ui:not(.dark) .border-stone-100,
-.admin-product-ui:not(.dark) .border-stone-300,
-.admin-product-ui:not(.dark) .border-\[\#e8e2d9\],
-.admin-product-ui:not(.dark) .border-\[\#e0d8ce\] {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-}
-
-.admin-product-ui:not(.dark) .divide-stone-100 > :not([hidden]) ~ :not([hidden]),
-.admin-product-ui:not(.dark) .divide-y > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.admin-product-ui:not(.dark) input:not([type="checkbox"]):not([type="radio"]),
-.admin-product-ui:not(.dark) select,
-.admin-product-ui:not(.dark) textarea {
-  background-color: var(--admin-input-bg, rgba(255, 255, 255, 0.08));
-  border-color: var(--admin-input-border, rgba(255, 255, 255, 0.18));
-  color: #ffffff;
-}
-
-.admin-product-ui:not(.dark) input::placeholder,
-.admin-product-ui:not(.dark) textarea::placeholder {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.admin-product-ui:not(.dark) option {
-  background-color: #1a3a28;
-  color: #ffffff;
+  color: var(--admin-text-muted, #4a6b58) !important;
 }
 
 .admin-product-ui h1,
