@@ -68,15 +68,17 @@ function IconHeart() {
   );
 }
 
+const TRUST_BRONZE = "#a07b4a";
+
 function IconGlobe() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M3 12h18" stroke="currentColor" strokeWidth="1.6" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke={TRUST_BRONZE} strokeWidth="1.55" />
+      <path d="M3 12h18" stroke={TRUST_BRONZE} strokeWidth="1.55" />
       <path
         d="M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
+        stroke={TRUST_BRONZE}
+        strokeWidth="1.55"
       />
     </svg>
   );
@@ -84,14 +86,34 @@ function IconGlobe() {
 
 function IconShield() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M12 3.5 5 6.2v5.3c0 4.4 2.9 7.5 7 8.8 4.1-1.3 7-4.4 7-8.8V6.2L12 3.5Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
+        stroke={TRUST_BRONZE}
+        strokeWidth="1.55"
         strokeLinejoin="round"
       />
-      <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="m9 12 2 2 4-4"
+        stroke={TRUST_BRONZE}
+        strokeWidth="1.55"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconLeaf() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M5 19C5 11.5 10.2 5.5 19 5c0 8.8-6 14-14 14Z"
+        stroke={TRUST_BRONZE}
+        strokeWidth="1.55"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 15.5 15 9" stroke={TRUST_BRONZE} strokeWidth="1.55" strokeLinecap="round" />
     </svg>
   );
 }
@@ -105,23 +127,56 @@ function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
   );
 }
 
-function TrustPill({ icon, label }: { icon: ReactNode; label: string }) {
+/** Storefront-style trust row: bronze icon + two-line label (no pill chrome). */
+function TrustStat({ icon, line1, line2 }: { icon: ReactNode; line1: string; line2: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-[#d9c8ab]/90 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#9a6f2d] shadow-[0_10px_30px_rgba(28,53,42,0.06)] backdrop-blur-md">
-      <span className="text-[#b98a3e]">{icon}</span>
-      {label}
-    </span>
+    <div className="inline-flex items-center gap-3">
+      <span className="shrink-0">{icon}</span>
+      <span className="text-[15px] font-medium leading-tight text-[#a07b4a]">
+        {line1}
+        <br />
+        {line2}
+      </span>
+    </div>
   );
 }
 
-function SocialDot({ label, children }: { label: string; children: ReactNode }) {
+/** Same profiles as SiteFooter / live store. */
+const LOGIN_SOCIAL = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/sarveda_life/",
+    d: "M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z"
+  },
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/sarvedalife",
+    d: "M14 8h3V5h-3c-2.2 0-4 1.8-4 4v2H7v3h3v7h3v-7h3l1-3h-4V9c0-.6.4-1 1-1z"
+  },
+  {
+    label: "YouTube",
+    href: "https://www.youtube.com/@sarvedalife",
+    d: "M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.1 0 6.9-.2c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.8 14.5v-5.1l5.7 2.6-5.7 2.5z"
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/14769426/",
+    d: "M6.5 9H3v12h3.5V9zM4.75 3A2.1 2.1 0 102.7 5.1 2.1 2.1 0 004.75 3zM21 21h-3.5v-6.2c0-1.7-.6-2.8-2.1-2.8-1.1 0-1.8.8-2.1 1.5-.1.3-.1.6-.1.9V21H9.8s.05-10.8 0-12H13.3v1.9c.5-.8 1.4-1.9 3.4-1.9 2.5 0 4.3 1.6 4.3 5.1V21z"
+  }
+] as const;
+
+function SocialDot({ label, href, path }: { label: string; href: string; path: string }) {
   return (
     <a
-      href="#"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={label}
       className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#2c3a33] text-white transition hover:bg-[#166D46]"
     >
-      {children}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <path d={path} />
+      </svg>
     </a>
   );
 }
@@ -231,7 +286,8 @@ export function AuthShell({
 
       {/* Desktop landing */}
       <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
-        <section className="absolute left-[7.5%] top-[7.5%] max-w-[560px] xl:left-[8.5%] 2xl:left-[9.5%]">
+        {/* Shifted right + down vs earlier flush-left placement */}
+        <section className="absolute left-[12%] top-[11%] max-w-[560px] xl:left-[13%] 2xl:left-[14%]">
           <SarvedaLogo iconHeight={104} tone="onLight" />
           <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.45em] text-[#6f7b67]">
             Yoga · Sound · Wellbeing
@@ -294,9 +350,10 @@ export function AuthShell({
             </Link>
           </div>
 
-          <div className="mt-8 flex max-w-[520px] flex-wrap gap-3 border-t border-[#e1d1ba]/70 pt-6">
-            <TrustPill icon={<IconGlobe />} label="Worldwide shipping" />
-            <TrustPill icon={<IconShield />} label="Secure checkout" />
+          <div className="mt-8 flex max-w-[560px] flex-wrap items-center gap-x-10 gap-y-4">
+            <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
+            <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
+            <TrustStat icon={<IconLeaf />} line1="169+" line2="products" />
           </div>
         </section>
 
@@ -326,12 +383,12 @@ export function AuthShell({
           </p>
         </aside>
 
-        <div className="pointer-events-none absolute bottom-[7.5rem] left-[5.5%] max-w-[280px] rounded-[2rem] bg-[#10201a]/18 px-7 py-6 font-serif text-2xl italic leading-tight text-white shadow-[0_22px_70px_rgba(28,53,42,0.14)] backdrop-blur-sm">
+        {/* Quote sits on the dark stone (no blur plate) */}
+        <p className="pointer-events-none absolute bottom-[6.2rem] left-[7%] max-w-[300px] font-serif text-[1.85rem] italic leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] xl:left-[8%] xl:text-[2rem]">
           “A calmer you,
           <br />
           a kinder world.”
-          <div className="mt-5 h-0.5 w-14 bg-[#c28a2b]" />
-        </div>
+        </p>
 
         {/* Solid footer bar — always visible */}
         <footer className="absolute bottom-0 left-0 right-0 z-20 flex h-[64px] items-center justify-between border-t border-[#eadfcd] bg-white px-[4.5%] text-sm text-[#526158]">
@@ -349,26 +406,9 @@ export function AuthShell({
               Contact Us
             </Link>
             <div className="ml-2 flex items-center gap-2">
-              <SocialDot label="Instagram">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Zm5 5.2A3.8 3.8 0 1 0 15.8 12 3.8 3.8 0 0 0 12 8.2Zm6.1-.9a.9.9 0 1 0 .9.9.9.9 0 0 0-.9-.9Z" />
-                </svg>
-              </SocialDot>
-              <SocialDot label="YouTube">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M22 8.2a3 3 0 0 0-2.1-2.1C18.2 5.6 12 5.6 12 5.6s-6.2 0-7.9.5A3 3 0 0 0 2 8.2 31.4 31.4 0 0 0 1.5 12a31.4 31.4 0 0 0 .5 3.8 3 3 0 0 0 2.1 2.1c1.7.5 7.9.5 7.9.5s6.2 0 7.9-.5a3 3 0 0 0 2.1-2.1A31.4 31.4 0 0 0 22.5 12a31.4 31.4 0 0 0-.5-3.8ZM10 15.2V8.8L15.5 12Z" />
-                </svg>
-              </SocialDot>
-              <SocialDot label="Facebook">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v2H8v3h2v7h3v-7h2.6l.4-3H13v-2c0-.6.4-1 1-1Z" />
-                </svg>
-              </SocialDot>
-              <SocialDot label="Pinterest">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M12 3a9 9 0 0 0-3.3 17.4c-.1-.8-.2-2 .1-2.9l1.3-5.4s-.3-.7-.3-1.6c0-1.5.9-2.7 2-2.7.9 0 1.4.7 1.4 1.5 0 .9-.6 2.3-.9 3.5-.3 1.1.5 1.9 1.6 1.9 1.9 0 3.2-2.4 3.2-5.3 0-2.2-1.5-3.8-4.2-3.8a4.5 4.5 0 0 0-4.7 4.5c0 .9.3 1.5.7 2l.2.2-.2.9c-.1.3-.3.4-.6.3-1.7-.7-2.5-2.6-2.5-4.7A6.1 6.1 0 0 1 12.8 5C16 5 18 7.2 18 10.2c0 3.7-2.1 6.5-5.1 6.5-1 0-2-.6-2.3-1.2l-.6 2.4c-.2.8-.8 1.8-1.2 2.4A9 9 0 1 0 12 3Z" />
-                </svg>
-              </SocialDot>
+              {LOGIN_SOCIAL.map((s) => (
+                <SocialDot key={s.label} label={s.label} href={s.href} path={s.d} />
+              ))}
             </div>
           </div>
         </footer>
