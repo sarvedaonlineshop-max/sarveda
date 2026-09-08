@@ -368,7 +368,7 @@ export function AdminSidebar({
             e.currentTarget.style.color = "rgba(255,255,255,0.4)";
           }}
         >
-          {preferDarkMain ? "☀ Light workspace" : "☾ Dark workspace"}
+          {preferDarkMain ? "☀ Soft green workspace" : "☾ Deep green workspace"}
         </button>
         <Link
           href="/store"

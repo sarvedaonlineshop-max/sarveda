@@ -100,12 +100,12 @@ function AdminShellInner({
   const mutedColor = isDark ? t.textMutedDark : t.textMuted;
   const labelColor = isDark ? t.labelDark : t.label;
   const thTextColor = isDark ? t.thTextDark : t.thText;
-  const inputBg = isDark ? t.inputBgDark : "#f8fafc";
-  const inputBorder = isDark ? t.inputBorderDark : t.cardBorder;
+  const inputBg = isDark ? t.inputBgDark : t.inputBg;
+  const inputBorder = isDark ? t.inputBorderDark : t.inputBorder;
   const rowHover = isDark ? t.rowHoverDark : t.rowHover;
   const tableHeadBg = isDark ? t.tableHeadBgDark : t.tableHeadBg;
   const headerBg = isDark ? t.headerBgDark : t.headerBg;
-  const headerBorder = isDark ? "rgba(185,138,62,0.12)" : t.cardBorder;
+  const headerBorder = isDark ? "rgba(185,138,62,0.12)" : "rgba(255,255,255,0.12)";
   const titleColor = textColor;
 
   return (
@@ -199,9 +199,9 @@ function AdminShellInner({
               position: "sticky",
               top: 0,
               zIndex: 30,
-              background: isDark ? headerBg : "rgba(255,255,255,0.92)",
-              backdropFilter: "saturate(180%) blur(14px)",
-              WebkitBackdropFilter: "saturate(180%) blur(14px)",
+              background: headerBg,
+              backdropFilter: "saturate(160%) blur(14px)",
+              WebkitBackdropFilter: "saturate(160%) blur(14px)",
               borderBottom: `1px solid ${headerBorder}`,
               minHeight: "72px",
               height: "auto",
@@ -212,7 +212,7 @@ function AdminShellInner({
               gap: "12px 14px",
               boxShadow: isDark
                 ? "0 1px 0 rgba(185,138,62,0.10), 0 10px 24px rgba(0,0,0,0.20)"
-                : "0 1px 0 rgba(23,26,23,0.06), 0 8px 24px rgba(23,26,23,0.04)"
+                : "0 1px 0 rgba(255,255,255,0.06), 0 10px 24px rgba(0,0,0,0.18)"
             }}
           >
             <button
@@ -230,9 +230,7 @@ function AdminShellInner({
               className="md:hidden block"
               aria-label="Open navigation"
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = isDark
-                  ? "rgba(185,138,62,0.14)"
-                  : "rgba(28,53,42,0.08)";
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
@@ -339,11 +337,9 @@ function AdminShellInner({
                     paddingRight: "14px",
                     height: "46px",
                     borderRadius: "10px",
-                    background: isDark ? inputBg : "#fbfcfb",
+                    background: inputBg,
                     border: `1px solid ${inputBorder}`,
-                    boxShadow: isDark
-                      ? "inset 0 1px 0 rgba(255,255,255,0.02)"
-                      : "inset 0 1px 0 rgba(23,26,23,0.02), 0 1px 1px rgba(23,26,23,0.02)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
                     fontSize: "15px",
                     color: titleColor,
                     outline: "none",
@@ -351,8 +347,8 @@ function AdminShellInner({
                   }}
                   onFocus={(e) => {
                     setSearchFocused(true);
-                    e.currentTarget.style.borderColor = "#1c352a";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(28,53,42,0.12)";
+                    e.currentTarget.style.borderColor = "#b98a3e";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.22)";
                   }}
                   onBlur={(e) => {
                     e.currentTarget.style.borderColor = inputBorder;
@@ -374,10 +370,8 @@ function AdminShellInner({
                       overflowY: "auto",
                       borderRadius: "12px",
                       border: `1px solid ${inputBorder}`,
-                      background: isDark ? cardBg : "#fff",
-                      boxShadow: isDark
-                        ? "0 16px 40px rgba(0,0,0,0.45)"
-                        : "0 16px 40px rgba(23,26,23,0.14)"
+                      background: cardBg,
+                      boxShadow: "0 16px 40px rgba(0,0,0,0.45)"
                     }}
                   >
                     {suggestions.map((s) => (
@@ -396,15 +390,13 @@ function AdminShellInner({
                           textAlign: "left",
                           padding: "12px 14px",
                           border: "none",
-                          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(23,26,23,0.06)"}`,
+                          borderBottom: "1px solid rgba(255,255,255,0.08)",
                           background: "transparent",
                           cursor: "pointer",
                           color: titleColor
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = isDark
-                            ? "rgba(28,53,42,0.35)"
-                            : "rgba(28,53,42,0.06)";
+                          e.currentTarget.style.background = "rgba(185,138,62,0.16)";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = "transparent";
@@ -423,7 +415,7 @@ function AdminShellInner({
                         padding: "8px 14px",
                         fontSize: "11px",
                         color: mutedColor,
-                        background: isDark ? "rgba(255,255,255,0.03)" : "#f8faf8"
+                        background: "rgba(255,255,255,0.04)"
                       }}
                     >
                       Press Enter to show all matches (collapsed)
