@@ -441,7 +441,9 @@ export type OrdersListData = {
     linePreview: string[];
     createdAt: string;
   }>;
-  counts?: Partial<Record<"all" | "confirmed" | "abandoned" | "cancelled" | "refunded", number>>;
+  counts?: Partial<
+    Record<"all" | "new" | "processed" | "confirmed" | "abandoned" | "cancelled" | "refunded", number>
+  >;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 };
 

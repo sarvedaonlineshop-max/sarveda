@@ -1489,6 +1489,58 @@ function AdminOrderProductionView({
         </button>
       </div>
 
+      {order.status === "PAID" && !isCancelled ? (
+        <section className={`${card} border-[#b98a3e]/40 bg-[#fff8e8] p-4`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-[#1c352a]">New order — acknowledge for warehouse</p>
+              <p className="mt-1 text-sm text-stone-600">
+                Mark Processing to move this out of New and into Shipments → Ready to ship (create label).
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={statusSaving}
+              onClick={() => onStatusChange("PROCESSING")}
+              className="rounded-lg bg-[#1c352a] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {statusSaving ? "Updating…" : "Mark Processing"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {["PROCESSING", "PACKED"].includes(order.status) && awbRows.length === 0 ? (
+        <section className={`${card} p-4`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-[#1c352a]">Ready for label</p>
+              <p className="mt-1 text-sm text-stone-600">
+                This order is in Shipments → Ready to ship. Create a courier label when the parcel is ready.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {shipUi ? (
+                <button
+                  type="button"
+                  disabled={!!shipBusy}
+                  onClick={onCreateShipment}
+                  className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {shipBusy === "create" ? "Creating label…" : "Create label"}
+                </button>
+              ) : null}
+              <Link
+                href="/admin/shipments?bucket=ready"
+                className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-800"
+              >
+                Open Ready to ship
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {showActionBar ? (
         <section className={`${card} p-4`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

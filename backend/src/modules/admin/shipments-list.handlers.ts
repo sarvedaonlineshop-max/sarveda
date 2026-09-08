@@ -25,7 +25,8 @@ const SHIPMENT_BUCKETS: ShipmentBucket[] = [
   "rto"
 ];
 
-const READY_ORDER_STATUSES = ["PAID", "PROCESSING", "PACKED", "SHIPPED"] as const;
+/** Warehouse-ready orders with no label yet — after admin Marks Processing (or Packed). */
+const READY_ORDER_STATUSES = ["PROCESSING", "PACKED"] as const;
 
 const BUCKET_TO_STATUS: Partial<Record<ShipmentBucket, ShipmentStatus>> = {
   created: "CREATED",
@@ -157,7 +158,7 @@ function readyOrderWhere(f: ListFilters): Prisma.OrderWhereInput {
       { paymentStatus: { in: ["CAPTURED", "PARTIALLY_REFUNDED"] } },
       {
         AND: [
-          { status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED"] } },
+          { status: { in: ["PROCESSING", "PACKED"] } },
           { payments: { some: { provider: "COD" } } }
         ]
       }

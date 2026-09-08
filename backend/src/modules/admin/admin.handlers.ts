@@ -474,18 +474,22 @@ type OrderChannel = "online" | "cod";
 
 type OrderBucket =
   | "all"
-  | "confirmed"
+  | "new"
+  | "processed"
+  | "confirmed" // legacy — treated as new+processed (alive paid orders)
   | "paid" // alias of confirmed (legacy query links)
   | "pending" // legacy; folded into abandoned for desk filters
   | "abandoned"
   | "attempted"
   | "cancelled"
   | "refunded"
-  | "shipped" // legacy — treated as confirmed
-  | "delivered"; // legacy — treated as confirmed
+  | "shipped" // legacy — treated as processed
+  | "delivered"; // legacy — treated as processed
 
 const ORDER_BUCKETS: OrderBucket[] = [
   "all",
+  "new",
+  "processed",
   "confirmed",
   "paid",
   "pending",
@@ -498,9 +502,9 @@ const ORDER_BUCKETS: OrderBucket[] = [
 ];
 
 /** Online desk pills — exclusive; sum equals All for that channel. */
-const ONLINE_COUNT_BUCKETS = ["all", "confirmed", "abandoned", "cancelled", "refunded"] as const;
+const ONLINE_COUNT_BUCKETS = ["all", "new", "processed", "abandoned", "cancelled", "refunded"] as const;
 /** COD desk pills — no abandoned/pending (COD confirms at place). */
-const COD_COUNT_BUCKETS = ["all", "confirmed", "cancelled", "refunded"] as const;
+const COD_COUNT_BUCKETS = ["all", "new", "processed", "cancelled", "refunded"] as const;
 
 function channelWhere(channel: OrderChannel): Prisma.OrderWhereInput {
   if (channel === "cod") {
@@ -535,11 +539,19 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.Ord
       return genuineCancelledWhere;
     case "refunded":
       return { status: "REFUNDED" };
-    case "confirmed":
-    case "paid":
+    case "new":
+      // Just paid / COD placed — warehouse has not started yet.
+      return { status: "PAID" };
+    case "processed":
     case "shipped":
     case "delivered":
-      // Commercial “alive” orders — logistics progress stays on Shipments.
+      // Ops has acknowledged or progressed fulfillment (through delivered).
+      return {
+        status: { in: ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+      };
+    case "confirmed":
+    case "paid":
+      // Legacy “alive” bucket = New + Processed.
       return {
         status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
       };
@@ -580,8 +592,11 @@ function parseOrdersListFilters(req: Request): OrdersListFilters {
   if (channel === "cod" && (bucket === "abandoned" || bucket === "attempted" || bucket === "pending")) {
     bucket = "all";
   }
-  if (bucket === "paid" || bucket === "shipped" || bucket === "delivered") {
+  if (bucket === "paid") {
     bucket = "confirmed";
+  }
+  if (bucket === "shipped" || bucket === "delivered") {
+    bucket = "processed";
   }
   const orderNumber = String(req.query.orderNumber ?? req.query.orderId ?? "").trim();
   const customerName = String(req.query.customerName ?? "").trim();

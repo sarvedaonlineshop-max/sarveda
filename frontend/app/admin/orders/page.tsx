@@ -14,7 +14,8 @@ import { formatAdminOrderStatusLabel } from "@/lib/order-status-display";
 
 const onlineBuckets = [
   { value: "all", label: "All" },
-  { value: "confirmed", label: "Confirmed" },
+  { value: "new", label: "New" },
+  { value: "processed", label: "Processed" },
   { value: "abandoned", label: "Abandoned" },
   { value: "cancelled", label: "Cancelled" },
   { value: "refunded", label: "Refunded" }
@@ -22,7 +23,8 @@ const onlineBuckets = [
 
 const codBuckets = [
   { value: "all", label: "All" },
-  { value: "confirmed", label: "Confirmed" },
+  { value: "new", label: "New" },
+  { value: "processed", label: "Processed" },
   { value: "cancelled", label: "Cancelled" },
   { value: "refunded", label: "Refunded" }
 ] as const;
@@ -217,8 +219,8 @@ export default function AdminOrdersPage() {
 
   const ordersLegend =
     channel === "online"
-      ? "Online paid · Confirmed = money captured (incl. warehouse / in-transit / delivered) · Abandoned = never paid · Cancelled = stopped · Refunded = money returned · Labels & AWB under Shipments"
-      : "COD · Confirmed = placed (cash on delivery) · Cancelled = stopped (no gateway refund) · Refunded = cash/manual return if collected · Labels & AWB under Shipments";
+      ? "Online paid · New = just paid (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned · Labels under Shipments → Ready to ship"
+      : "COD · New = just placed · Processed = processing through delivered · Cancelled = stopped · Refunded = cash/manual return if collected · Labels under Shipments → Ready to ship";
 
   useRegisterAdminHeaderSlot(
     () => ({
@@ -247,9 +249,9 @@ export default function AdminOrdersPage() {
                 color: "var(--admin-text-muted, #4a6b58)"
               }}
             >
-              {ordersLegend.replace(" · Labels & AWB under Shipments", "")} · Labels & AWB under{" "}
-              <Link href="/admin/shipments" style={{ color: "#8a6428", fontWeight: 600 }}>
-                Shipments
+              {ordersLegend.replace(/ · Labels under Shipments → Ready to ship$/, "")} · Labels under{" "}
+              <Link href="/admin/shipments?bucket=ready" style={{ color: "#8a6428", fontWeight: 600 }}>
+                Shipments → Ready to ship
               </Link>
             </p>
           </div>
