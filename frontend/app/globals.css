@@ -885,6 +885,14 @@ select:-webkit-autofill {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "tnum" 1;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  /* ~125% browser zoom readability at 100% zoom */
+  zoom: 1.2;
+}
+
+@supports not (zoom: 1) {
+  .admin-product-ui {
+    font-size: 120%;
+  }
 }
 
 /* Light-green workspace: gentle remaps for cream hardcodes → soft green */
