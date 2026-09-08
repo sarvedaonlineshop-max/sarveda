@@ -6,7 +6,7 @@ import type { PublicUser } from "@/lib/auth-client";
 import { sendLoginOtp, verifyLoginOtp } from "@/lib/auth-client";
 
 const BTN_GREEN =
-  "w-full rounded-full bg-[#166D46] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#145a3a] disabled:opacity-60 sm:py-3";
+  "w-full rounded-2xl bg-[#166D46] py-3.5 text-sm font-bold text-white shadow-[0_16px_34px_rgba(22,109,70,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#145a3a] hover:shadow-[0_20px_42px_rgba(22,109,70,0.28)] disabled:opacity-60";
 
 type OtpLoginFormProps = {
   inputClass: string;
@@ -40,7 +40,7 @@ export function OtpLoginForm({
       await sendLoginOtp(email);
       setStep("code");
       setCode("");
-      setInfo(`An OTP has been sent to ${email.trim().toLowerCase()}.`);
+      setInfo(`A secure OTP has been sent to ${email.trim().toLowerCase()}.`);
     } catch (ex) {
       setMessage(ex instanceof Error ? ex.message : "Could not send OTP");
     } finally {
@@ -68,7 +68,7 @@ export function OtpLoginForm({
     setInfo("");
     try {
       await sendLoginOtp(email);
-      setInfo("A new code has been sent.");
+      setInfo("A new OTP has been sent.");
     } catch (ex) {
       setMessage(ex instanceof Error ? ex.message : "Could not resend OTP");
     } finally {
@@ -80,7 +80,7 @@ export function OtpLoginForm({
     return (
       <form className={stack} onSubmit={handleVerifyOtp}>
         {info ? (
-          <p className="rounded-xl border border-[#166D46]/20 bg-[#166D46]/5 px-3 py-2 text-sm text-brand-ink">
+          <p className="rounded-2xl border border-[#166D46]/20 bg-[#166D46]/5 px-3 py-2 text-sm text-brand-ink">
             {info}
           </p>
         ) : null}
@@ -129,7 +129,7 @@ export function OtpLoginForm({
             disabled={submitting}
             onClick={() => void handleResend()}
           >
-            Resend code
+            Resend OTP
           </button>
         </div>
       </form>
@@ -138,7 +138,6 @@ export function OtpLoginForm({
 
   return (
     <form className={stack} onSubmit={handleSendOtp}>
-      <p className="text-sm text-brand-ink/80">An OTP will be sent to the email below.</p>
       <div>
         <label htmlFor="otp-email" className="sr-only">
           Email
@@ -150,7 +149,7 @@ export function OtpLoginForm({
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
+          placeholder="Enter your email address"
           className={inputClass}
         />
       </div>
@@ -162,6 +161,9 @@ export function OtpLoginForm({
       <button type="submit" disabled={submitting} className={BTN_GREEN}>
         {submitting ? "Sending…" : "Send OTP"}
       </button>
+      <p className="text-center text-xs text-brand-ink/55">
+        We’ll send a secure OTP to your email address.
+      </p>
     </form>
   );
 }
