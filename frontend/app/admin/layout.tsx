@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 
 import { AdminAuthBoundary } from "@/components/admin/AdminAuthBoundary";
 import { AdminShell } from "@/components/admin/AdminShell";
+import styles from "./admin-dark.module.css";
 
 const adminSans = Inter({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className={`${adminSans.variable} ${adminSans.className}`}>
+    <div className={`${adminSans.variable} ${adminSans.className} ${styles.adminDarkScope}`}>
       <AdminAuthBoundary>
         <AdminShell>{children}</AdminShell>
       </AdminAuthBoundary>
