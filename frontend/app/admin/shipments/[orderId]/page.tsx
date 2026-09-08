@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft } from "lucide-react";
 
 import { AdminSkeleton } from "@/components/admin/AdminSkeleton";
 import { AdminToast } from "@/components/admin/AdminToast";
@@ -347,11 +346,14 @@ export default function AdminShipmentCreateLabelPage() {
 
   if (err) {
     return (
-      <div className="space-y-4 p-2">
-        <Link href="/admin/shipments?bucket=ready" className="inline-flex items-center gap-1 text-sm text-[#1c352a]">
-          <ChevronLeft size={16} /> Back to Shipments
+      <div className="mx-auto max-w-[1380px] space-y-4 p-5 lg:p-7">
+        <Link
+          href="/admin/shipments?bucket=ready"
+          className="text-base font-bold text-stone-700 hover:text-stone-950"
+        >
+          ← Back to shipments
         </Link>
-        <p className="text-red-600" role="alert">
+        <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-800" role="alert">
           {err}
         </p>
       </div>
@@ -366,59 +368,111 @@ export default function AdminShipmentCreateLabelPage() {
     n == null ? "—" : `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5">
+    <div className="mx-auto max-w-[1380px] space-y-5 p-5 lg:p-7">
       {toast ? <AdminToast toast={toast} onDismiss={() => setToast(null)} /> : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link
-            href="/admin/shipments?bucket=ready"
-            className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-[#8a7060] hover:text-[#1c352a]"
-          >
-            <ChevronLeft size={16} /> Shipments
-          </Link>
-          <h1 className="text-2xl font-extrabold text-[#1c352a]">Create label</h1>
-          <p className="mt-1 text-sm text-stone-500">
-            {order.orderNumber} · {order.status.replace(/_/g, " ")} · After create, status becomes{" "}
-            <strong>Processing</strong> and the row moves to <strong>Created</strong>.
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-4 px-1">
         <Link
-          href={`/admin/orders/${order.id}`}
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700"
+          href="/admin/shipments?bucket=ready"
+          className="text-base font-bold text-stone-700 hover:text-stone-950"
         >
-          Open full order
+          ← Back to shipments
         </Link>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-stone-500">Order {order.orderNumber}</span>
+          <Link
+            href={`/admin/orders/${order.id}`}
+            className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
+          >
+            View order ↗
+          </Link>
+        </div>
       </div>
 
+      <section className="overflow-hidden rounded-[26px] border border-stone-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.07)]">
+        <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <span className="text-2xl">▣</span>
+            </div>
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-stone-400">
+                {hasForwardAwb ? "Shipment label" : "Create label"}
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
+                <h1 className="text-3xl font-extrabold tracking-tight text-stone-950">
+                  {order.orderNumber}
+                </h1>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-800">
+                  {order.status.replace(/_/g, " ")}
+                </span>
+                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-700">
+                  {order.paymentStatus.replace(/_/g, " ")}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-stone-500">
+                {hasForwardAwb
+                  ? "Label already booked — sync tracking or download from Delhivery."
+                  : "After create, status becomes Processing and the row moves to Created."}
+              </p>
+            </div>
+          </div>
+          <div className="grid min-w-[280px] grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[430px]">
+            <div className="rounded-2xl bg-stone-50 px-4 py-3">
+              <p className="text-xs text-stone-500">Grand total</p>
+              <p className="mt-1 text-lg font-extrabold">
+                {formatMinorFromPaise(order.grandTotalInPaise, order.currency)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-stone-50 px-4 py-3">
+              <p className="text-xs text-stone-500">Customer shipping</p>
+              <p className="mt-1 text-lg font-extrabold">
+                {formatMinorFromPaise(order.shippingInPaise, order.currency)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-stone-50 px-4 py-3 sm:col-span-1 col-span-2">
+              <p className="text-xs text-stone-500">Payment</p>
+              <p className="mt-1 truncate text-lg font-extrabold">
+                {order.payments?.[0]?.provider ?? "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Order</h2>
-          <dl className="mt-3 space-y-2 text-sm">
+        <section className="rounded-[26px] border border-stone-200 bg-white p-6 shadow-[0_8px_28px_rgba(15,23,42,.05)]">
+          <div className="pb-2">
+            <h2 className="text-2xl font-extrabold text-stone-950">Order</h2>
+            <p className="mt-1 text-sm text-stone-500">Customer, ship-to, and line items.</p>
+          </div>
+          <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-stone-500">Customer</dt>
-              <dd className="font-semibold text-stone-900">
+              <dd className="font-extrabold text-stone-950">
                 {order.customer?.name || shippingAddr?.fullName || "—"}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-stone-500">Email</dt>
-              <dd className="text-right text-stone-800">{order.email}</dd>
+              <dd className="text-right font-semibold text-stone-800">{order.email}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-stone-500">Phone</dt>
-              <dd>{shippingAddr?.phone || order.phone || "—"}</dd>
+              <dd className="font-semibold">{shippingAddr?.phone || order.phone || "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-stone-500">Payment</dt>
-              <dd>{order.payments?.[0]?.provider ?? "—"} · {order.paymentStatus}</dd>
+              <dd className="font-semibold">
+                {order.payments?.[0]?.provider ?? "—"} · {order.paymentStatus}
+              </dd>
             </div>
           </dl>
 
           {shippingAddr ? (
-            <div className="mt-4 rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
-              <p className="text-xs font-semibold uppercase text-stone-500">Ship to</p>
-              <p className="mt-1 font-medium">{shippingAddr.fullName}</p>
+            <div className="mt-4 rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Ship to</p>
+              <p className="mt-1 font-extrabold text-stone-950">{shippingAddr.fullName}</p>
               <p>
                 {shippingAddr.line1}
                 {shippingAddr.line2 ? `, ${shippingAddr.line2}` : ""}
@@ -430,9 +484,9 @@ export default function AdminShipmentCreateLabelPage() {
             </div>
           ) : null}
 
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-5 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b text-[11px] uppercase text-stone-500">
+              <thead className="border-b text-[11px] font-bold uppercase tracking-wide text-stone-400">
                 <tr>
                   <th className="py-2 pr-2">Item</th>
                   <th className="py-2 pr-2">SKU</th>
@@ -455,22 +509,22 @@ export default function AdminShipmentCreateLabelPage() {
                         : it.lineTotalInPaise;
                     return (
                       <tr key={it.id ?? `${it.skuSnapshot}-${qty}`}>
-                        <td className="py-2 pr-2">
-                          <div className="font-medium">{it.nameSnapshot}</div>
+                        <td className="py-2.5 pr-2">
+                          <div className="font-extrabold text-stone-950">{it.nameSnapshot}</div>
                           {typeof it.returnedQty === "number" && it.returnedQty > 0 ? (
-                            <div className="mt-0.5 text-[11px] text-amber-800">
+                            <div className="mt-0.5 text-xs text-amber-800">
                               Ordered {it.qtyOrdered}, restocked {it.returnedQty}
                             </div>
                           ) : null}
                         </td>
-                        <td className="py-2 pr-2 font-mono text-[11px] text-stone-500">
+                        <td className="py-2.5 pr-2 font-mono text-xs text-stone-500">
                           {it.skuSnapshot}
                         </td>
-                        <td className="py-2 pr-2">{qty}</td>
-                        <td className="py-2 pr-2 text-stone-600">
+                        <td className="py-2.5 pr-2 font-extrabold">{qty}</td>
+                        <td className="py-2.5 pr-2 text-stone-600">
                           {it.pickupLocation?.label ?? "Warehouse"}
                         </td>
-                        <td className="py-2 text-right font-semibold">
+                        <td className="py-2.5 text-right font-extrabold">
                           {formatMinorFromPaise(linePaise, order.currency)}
                         </td>
                       </tr>
@@ -503,15 +557,15 @@ export default function AdminShipmentCreateLabelPage() {
                 <dd className="text-xs">Included in line prices (GST-inclusive catalog)</dd>
               </div>
             )}
-            <div className="flex justify-between text-base font-bold">
+            <div className="flex justify-between text-base font-extrabold text-stone-950">
               <dt>Grand total</dt>
               <dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd>
             </div>
           </dl>
 
           {breakdown ? (
-            <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50/60 p-3 text-sm">
-              <p className="text-xs font-semibold uppercase text-amber-900">
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-amber-900">
                 Shipping breakdown · zone {breakdown.breakdown.zone}
               </p>
               <ul className="mt-2 space-y-1 text-amber-950">
@@ -527,51 +581,54 @@ export default function AdminShipmentCreateLabelPage() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 flex justify-between border-t border-amber-200/80 pt-2 font-semibold">
+              <div className="mt-2 flex justify-between border-t border-amber-200/80 pt-2 font-extrabold">
                 <span>Catalog shipping (customer checkout)</span>
                 <span>₹{(breakdown.breakdown.totalWithCod / 100).toFixed(2)}</span>
               </div>
-              <p className="mt-1 text-[11px] font-normal text-amber-800/90">
+              <p className="mt-1 text-xs font-normal text-amber-800/90">
                 From Sarveda product shipping rates at checkout — not Delhivery’s courier quote.
               </p>
             </div>
           ) : null}
         </section>
 
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        <section className="rounded-[26px] border border-stone-200 bg-white p-6 shadow-[0_8px_28px_rgba(15,23,42,.05)]">
           {hasForwardAwb ? (
             <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Label already created</h2>
+              <div className="pb-1">
+                <h2 className="text-2xl font-extrabold text-stone-950">Label already created</h2>
+                <p className="mt-1 text-sm text-stone-500">Courier booking, AWB, and tracking actions.</p>
+              </div>
 
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-900">
                   Delhivery booking (courier)
                 </p>
-                <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-[11px] text-stone-500">Delhivery freight quote</dt>
-                    <dd className="text-base font-extrabold text-[#1c352a]">
+                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-white/80 px-3 py-2">
+                    <dt className="text-xs text-stone-500">Delhivery freight quote</dt>
+                    <dd className="mt-1 text-lg font-extrabold text-stone-950">
                       {delhiveryFreightBooked != null
                         ? `₹${delhiveryFreightBooked.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
                         : "—"}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="text-[11px] text-stone-500">Customer paid shipping</dt>
-                    <dd className="font-semibold">
+                  <div className="rounded-2xl bg-white/80 px-3 py-2">
+                    <dt className="text-xs text-stone-500">Customer paid shipping</dt>
+                    <dd className="mt-1 text-lg font-extrabold">
                       {formatMinorFromPaise(order.shippingInPaise, order.currency)}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="text-[11px] text-stone-500">Mode</dt>
-                    <dd className="font-semibold">
+                  <div className="rounded-2xl bg-white/80 px-3 py-2">
+                    <dt className="text-xs text-stone-500">Mode</dt>
+                    <dd className="mt-1 font-extrabold">
                       {paymentModeLabel(forwardMeta?.paymentMode)} ·{" "}
                       {shippingModeLabel(forwardMeta?.shippingMode)}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="text-[11px] text-stone-500">Total chargeable weight</dt>
-                    <dd className="font-semibold">
+                  <div className="rounded-2xl bg-white/80 px-3 py-2">
+                    <dt className="text-xs text-stone-500">Total chargeable weight</dt>
+                    <dd className="mt-1 font-extrabold">
                       {bookedChargeableG != null
                         ? `${bookedChargeableG.toLocaleString("en-IN")} gm`
                         : "—"}
@@ -579,7 +636,7 @@ export default function AdminShipmentCreateLabelPage() {
                   </div>
                 </dl>
                 {bookingBoxes.length > 0 ? (
-                  <ul className="mt-3 space-y-1.5 border-t border-emerald-200/80 pt-2 text-[12px] text-stone-700">
+                  <ul className="mt-3 space-y-1.5 border-t border-emerald-200/80 pt-2 text-xs text-stone-700">
                     {bookingBoxes.map((box, idx) => {
                       const vol = breakdownChargeableWeight({
                         lengthCm: box.lengthCm,
@@ -606,21 +663,23 @@ export default function AdminShipmentCreateLabelPage() {
               {awbRows.map((row) => (
                 <div
                   key={`${row.shipmentId}-${row.awb}`}
-                  className="rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm"
+                  className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm"
                 >
-                  <p className="text-xs font-semibold text-stone-700">{row.boxLabel}</p>
-                  <p className="mt-1">
+                  <p className="text-[11px] font-bold uppercase text-stone-400">{row.boxLabel}</p>
+                  <p className="mt-1 font-semibold">
                     <span className="text-stone-500">Courier</span> · {row.courier}
                   </p>
                   <p className="mt-1 font-mono text-xs">AWB {row.awb}</p>
-                  <p className="mt-1">Status: {row.status}</p>
+                  <p className="mt-1">
+                    Status: <span className="font-extrabold">{row.status}</span>
+                  </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {row.isDelhiveryIntegrated && row.awb ? (
                       <a
                         href={delhiveryLabelUrl(row.awb)}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-lg border border-emerald-700 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900"
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900"
                       >
                         Download label
                       </a>
@@ -630,7 +689,7 @@ export default function AdminShipmentCreateLabelPage() {
                         href={row.trackingUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-lg border border-sky-700 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-900"
+                        className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900"
                       >
                         Track
                       </a>
@@ -644,7 +703,7 @@ export default function AdminShipmentCreateLabelPage() {
                   type="button"
                   disabled={syncBusy || cancelBusy}
                   onClick={() => void handleSync()}
-                  className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                 >
                   {syncBusy ? "Syncing…" : "Sync tracking from Delhivery"}
                 </button>
@@ -653,13 +712,13 @@ export default function AdminShipmentCreateLabelPage() {
                     type="button"
                     disabled={syncBusy || cancelBusy}
                     onClick={() => setCancelAwbConfirm(forward.awb!)}
-                    className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-900 disabled:opacity-50"
+                    className="rounded-xl border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-bold text-red-900 disabled:opacity-50"
                   >
                     Cancel label &amp; recreate
                   </button>
                 ) : null}
               </div>
-              <p className="text-xs text-stone-500">
+              <p className="text-sm leading-6 text-stone-500">
                 Pickup is scheduled in <strong>Delhivery One</strong> (“Add to Pickup”). When their courier
                 collects the parcel, Delhivery marks it Picked — press Sync here (no manual “mark pickup”
                 needed in Sarveda). Then: In transit → Out for delivery → Delivered.
@@ -667,14 +726,17 @@ export default function AdminShipmentCreateLabelPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Delhivery label</h2>
+              <div className="pb-1">
+                <h2 className="text-2xl font-extrabold text-stone-950">Delhivery label</h2>
+                <p className="mt-1 text-sm text-stone-500">Facility, package, and freight mode.</p>
+              </div>
 
               <label className="block">
-                <span className="text-xs font-semibold uppercase text-stone-500">Facility *</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Facility *</span>
                 <select
                   value={selectedPickupId}
                   onChange={(e) => setSelectedPickupId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 text-sm"
                 >
                   {pickupOptions.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -686,11 +748,11 @@ export default function AdminShipmentCreateLabelPage() {
               </label>
 
               <label className="block">
-                <span className="text-xs font-semibold uppercase text-stone-500">Payment mode</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Payment mode</span>
                 <select
                   value={shipPaymentMode}
                   onChange={(e) => setShipPaymentMode(e.target.value as "Pre-paid" | "COD")}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 text-sm"
                 >
                   <option value="Pre-paid">Pre-Paid</option>
                   <option value="COD">Cash On Delivery</option>
@@ -703,7 +765,7 @@ export default function AdminShipmentCreateLabelPage() {
                     key={idx}
                     type="button"
                     onClick={() => setActiveShipBoxIdx(idx)}
-                    className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${
+                    className={`rounded-xl border px-3 py-1.5 text-sm font-bold ${
                       activeShipBoxIdx === idx
                         ? "border-stone-900 bg-stone-900 text-amber-50"
                         : "border-stone-300 text-stone-600"
@@ -719,7 +781,7 @@ export default function AdminShipmentCreateLabelPage() {
                       setShipBoxes((prev) => [...prev, defaultShipBox(activeShipBox.weightGrams)]);
                       setActiveShipBoxIdx(shipBoxes.length);
                     }}
-                    className="rounded-md border border-dashed border-stone-400 px-2.5 py-1 text-xs font-semibold"
+                    className="rounded-xl border border-dashed border-stone-400 px-3 py-1.5 text-sm font-bold"
                   >
                     + Add box
                   </button>
@@ -736,7 +798,7 @@ export default function AdminShipmentCreateLabelPage() {
                       prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, packageType } : b))
                     );
                   }}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 text-sm"
                 >
                   <option value="PLASTIC_COVER">Plastic cover / Flyer</option>
                   <option value="CARDBOARD_BOX">Cardboard Box</option>
@@ -746,7 +808,7 @@ export default function AdminShipmentCreateLabelPage() {
               <label className="block">
                 <span className="text-xs text-stone-500">Box size preset</span>
                 <select
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 text-sm"
                   defaultValue=""
                   onChange={(e) => {
                     const preset = SHIP_BOX_PRESETS.find((p) => p.id === e.target.value);
@@ -778,7 +840,7 @@ export default function AdminShipmentCreateLabelPage() {
 
               <div className="grid grid-cols-3 gap-2">
                 {(["lengthCm", "breadthCm", "heightCm"] as const).map((field) => (
-                  <label key={field} className="block text-[11px] text-stone-500">
+                  <label key={field} className="block text-xs text-stone-500">
                     {field === "lengthCm" ? "L" : field === "breadthCm" ? "B" : "H"} (cm)
                     <input
                       type="text"
@@ -787,13 +849,13 @@ export default function AdminShipmentCreateLabelPage() {
                       onChange={(e) =>
                         setShipBoxes((prev) => patchDim(prev, activeShipBoxIdx, field, e.target.value))
                       }
-                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-2 py-2 font-mono text-sm"
+                      className="mt-0.5 w-full rounded-xl border border-stone-300 px-2 py-2 font-mono text-sm"
                     />
                   </label>
                 ))}
               </div>
               {boxDimError ? (
-                <p className="text-[11px] font-medium text-red-600">{boxDimError}</p>
+                <p className="text-xs font-medium text-red-600">{boxDimError}</p>
               ) : null}
 
               <label className="block">
@@ -805,7 +867,7 @@ export default function AdminShipmentCreateLabelPage() {
                   onChange={(e) =>
                     setShipBoxes((prev) => patchWeight(prev, activeShipBoxIdx, e.target.value))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 font-mono text-sm"
+                  className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 font-mono text-sm"
                 />
               </label>
 
@@ -818,26 +880,26 @@ export default function AdminShipmentCreateLabelPage() {
                   <button
                     type="button"
                     onClick={() => setShipMode("S")}
-                    className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                    className={`rounded-2xl border px-3 py-3 text-sm font-semibold ${
                       shipMode === "S"
                         ? "border-stone-900 bg-stone-900 text-amber-50"
                         : "border-stone-300"
                     }`}
                   >
-                    <span className="block text-[10px] uppercase text-stone-500">Surface</span>
-                    <span className="mt-1 block text-base font-bold">{fmtFreight(freightByMode.S)}</span>
+                    <span className="block text-[11px] font-bold uppercase text-stone-400">Surface</span>
+                    <span className="mt-1 block text-lg font-extrabold">{fmtFreight(freightByMode.S)}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setShipMode("E")}
-                    className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                    className={`rounded-2xl border px-3 py-3 text-sm font-semibold ${
                       shipMode === "E"
                         ? "border-stone-900 bg-stone-900 text-amber-50"
                         : "border-stone-300"
                     }`}
                   >
-                    <span className="block text-[10px] uppercase text-stone-500">Express</span>
-                    <span className="mt-1 block text-base font-bold">{fmtFreight(freightByMode.E)}</span>
+                    <span className="block text-[11px] font-bold uppercase text-stone-400">Express</span>
+                    <span className="mt-1 block text-lg font-extrabold">{fmtFreight(freightByMode.E)}</span>
                   </button>
                 </div>
               </div>
@@ -846,7 +908,7 @@ export default function AdminShipmentCreateLabelPage() {
                 type="button"
                 disabled={shipBusy || !!boxDimError || !selectedPickupId}
                 onClick={() => void handleCreateLabel()}
-                className="w-full rounded-xl bg-[#1c352a] px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+                className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
               >
                 {shipBusy ? "Creating label…" : "Create shipment / label"}
               </button>

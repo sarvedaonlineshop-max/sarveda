@@ -787,9 +787,6 @@ function AdminOrderProductionView({
   const billing = order.addresses.find((a) => a.type === "BILLING");
   const customerName = order.customerName ?? shipping?.fullName ?? billing?.fullName ?? "Customer";
   const awbRows = allOrderAwbRows(order.shipments);
-  const paymentMethodLabel = isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Pending");
-  const paymentRefId =
-    payment?.providerPaymentId || payment?.providerOrderId || null;
   const paymentLabel = isCod
     ? isCancelled && !captured
       ? "COD — Not Collected"
@@ -1321,34 +1318,34 @@ function AdminOrderProductionView({
     if (steps.length === 0) return null;
     return (
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">{title}</p>
+        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-stone-400">{title}</p>
         <ol className="flex flex-wrap items-stretch gap-2">
           {steps.map((step, idx) => {
             const tone =
               step.state === "done"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-950"
                 : step.state === "current"
-                  ? "border-[#b98a3e] bg-[#fff8e8] text-[#1c352a] ring-1 ring-[#b98a3e]/40"
+                  ? "border-blue-200 bg-blue-50 text-blue-900 ring-1 ring-blue-200"
                   : step.state === "skipped"
                     ? "border-stone-100 bg-stone-50 text-stone-400 line-through"
                     : "border-stone-200 bg-white text-stone-400";
             return (
               <li key={step.key} className="flex items-center gap-2">
                 <div
-                  className={`min-w-[132px] rounded-xl border px-3 py-2.5 ${tone}`}
+                  className={`min-w-[132px] rounded-2xl border px-3 py-2.5 ${tone}`}
                   title={step.at ? new Date(step.at).toLocaleString("en-IN") : undefined}
                 >
                   <p className="text-lg leading-none">{step.icon}</p>
-                  <p className="mt-1.5 text-sm font-semibold leading-snug">{step.label}</p>
+                  <p className="mt-1.5 text-sm font-extrabold leading-snug">{step.label}</p>
                   {step.at ? (
-                    <time className="mt-1 block text-[11px] opacity-70">
+                    <time className="mt-1 block text-xs text-stone-500">
                       {new Date(step.at).toLocaleString("en-IN", {
                         dateStyle: "medium",
                         timeStyle: "short"
                       })}
                     </time>
                   ) : step.state === "upcoming" ? (
-                    <p className="mt-1 text-[11px] opacity-70">Pending</p>
+                    <p className="mt-1 text-xs text-stone-400">Pending</p>
                   ) : null}
                 </div>
                 {idx < steps.length - 1 ? (
@@ -1364,137 +1361,139 @@ function AdminOrderProductionView({
     );
   }
 
-  const card = "rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900";
-  const sectionHeader = "border-b border-stone-100 px-5 py-4 dark:border-stone-700";
+  const card =
+    "rounded-[26px] border border-stone-200 bg-white shadow-[0_8px_28px_rgba(15,23,42,.05)] dark:border-stone-700 dark:bg-stone-900";
+  const sectionTitle = "text-2xl font-extrabold text-stone-950 dark:text-stone-100";
+  const tileClass =
+    "rounded-2xl bg-stone-50 px-4 py-3 text-left transition hover:bg-stone-100/80 dark:bg-stone-800/60";
 
   return (
-    <div className="space-y-6">
-      <header className={`${card} overflow-hidden`}>
-        <div className="h-1 bg-gradient-to-r from-[#1c352a] via-[#b98a3e] to-[#1c352a]" />
-        <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a7060]">Order</p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1c352a] dark:text-stone-100">
-              #{order.orderNumber}
-            </h1>
-            <div className="mt-3 space-y-0.5 text-sm text-stone-600 dark:text-stone-300">
-              <p className="font-semibold text-stone-900 dark:text-stone-100">{customerName}</p>
-              <p>{order.email}</p>
-              <p>{order.phone}</p>
-              <p className="pt-1 text-xs text-stone-500">
-                Placed {new Date(order.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+    <div className="mx-auto max-w-[1380px] space-y-5 p-5 lg:p-7">
+      <section className="overflow-hidden rounded-[26px] border border-stone-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.07)] dark:border-stone-700 dark:bg-stone-900">
+        <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <span className="text-2xl">▣</span>
+            </div>
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-stone-400">Order</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
+                <h1 className="text-3xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100">
+                  #{order.orderNumber}
+                </h1>
+                <span
+                  className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
+                    isCancelled
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  }`}
+                >
+                  {orderLabel}
+                </span>
+                <span
+                  className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
+                    order.paymentStatus === "FAILED"
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : isCod && !captured
+                        ? "border-amber-200 bg-amber-50 text-amber-800"
+                        : "border-sky-200 bg-sky-50 text-sky-800"
+                  }`}
+                >
+                  {paymentLabel}
+                </span>
+                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-700">
+                  {shipmentHeadline}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-stone-500">
+                {customerName} · {order.email}
+                {order.phone ? ` · ${order.phone}` : ""}
+              </p>
+              <p className="mt-0.5 text-sm text-stone-500">
+                Placed{" "}
+                {new Date(order.createdAt).toLocaleString("en-IN", {
+                  dateStyle: "medium",
+                  timeStyle: "short"
+                })}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 lg:max-w-xl lg:justify-end">
-            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${isCancelled ? "bg-red-50 text-red-800" : "bg-emerald-50 text-emerald-800"}`}>
-              Order: {orderLabel}
-            </span>
-            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${order.paymentStatus === "FAILED" ? "bg-red-50 text-red-800" : isCod && !captured ? "bg-amber-50 text-amber-900" : "bg-sky-50 text-sky-800"}`}>
-              Payment: {paymentLabel}
-            </span>
-            <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700">
-              Shipment: {shipmentHeadline}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <button
-          type="button"
-          onClick={() => goTo("section-order-total")}
-          className={`${card} flex min-h-[128px] flex-col p-4 text-left transition hover:border-[#b98a3e]`}
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Order total</p>
-          <p className="mt-2 text-xl font-bold text-[#1c352a] dark:text-stone-100">
-            {formatMinorFromPaise(netOrderTotalInPaise, order.currency)}
-          </p>
-          {refundedInPaise > 0 ? (
-            <>
-              <p className="mt-1 text-sm text-stone-600">
-                Before refund: {formatMinorFromPaise(order.grandTotalInPaise, order.currency)}
+          <div className="grid min-w-[280px] grid-cols-3 gap-3 lg:min-w-[430px]">
+            <button type="button" onClick={() => goTo("section-order-total")} className={tileClass}>
+              <p className="text-xs text-stone-500">Order total</p>
+              <p className="mt-1 text-lg font-extrabold text-stone-950 dark:text-stone-100">
+                {formatMinorFromPaise(netOrderTotalInPaise, order.currency)}
+              </p>
+              {refundedInPaise > 0 ? (
+                <p className="mt-0.5 text-xs text-stone-500">
+                  Before: {formatMinorFromPaise(order.grandTotalInPaise, order.currency)}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-xs text-stone-500">{order.currency}</p>
+              )}
+            </button>
+            <button type="button" onClick={() => goTo("section-payment")} className={tileClass}>
+              <p className="text-xs text-stone-500">{paymentModeTitle}</p>
+              <p className="mt-1 text-lg font-extrabold text-stone-950 dark:text-stone-100">
+                {paymentModeLine2}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-stone-500">{paymentModeLine3}</p>
+            </button>
+            <button type="button" onClick={() => goTo("section-refunded-items")} className={tileClass}>
+              <p className="text-xs text-stone-500">Refund</p>
+              <p className="mt-1 text-lg font-extrabold text-stone-950 dark:text-stone-100">
+                {formatMinorFromPaise(refundedInPaise, order.currency)}
               </p>
               <p className="mt-0.5 text-xs text-stone-500">
-                After {refundCaseTables.length || 1} refund case
-                {(refundCaseTables.length || 1) === 1 ? "" : "s"}
+                {refundedInPaise > 0
+                  ? `${refundCaseTables.length || 1} case${
+                      (refundCaseTables.length || 1) === 1 ? "" : "s"
+                    }`
+                  : "No refunds"}
               </p>
-            </>
-          ) : (
-            <p className="mt-0.5 text-xs text-stone-500">{order.currency}</p>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => goTo("section-payment")}
-          className={`${card} min-h-[128px] p-4 text-left transition hover:border-[#b98a3e]`}
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">{paymentModeTitle}</p>
-          <p className="mt-2 text-xl font-bold text-[#1c352a] dark:text-stone-100">{paymentModeLine2}</p>
-          <p className="mt-1 text-sm font-medium text-stone-700">{paymentModeLine3}</p>
-          {paymentRefId ? (
-            <p className="mt-2 break-all font-mono text-xs text-stone-500">Ref · {paymentRefId}</p>
-          ) : null}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => goTo("section-refunded-items")}
-          className={`${card} min-h-[128px] p-4 text-left transition hover:border-[#b98a3e]`}
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Refund</p>
-          <p className="mt-2 text-xl font-bold text-[#1c352a] dark:text-stone-100">
-            {formatMinorFromPaise(refundedInPaise, order.currency)}
-          </p>
-          <p className="mt-0.5 text-xs text-stone-500">
-            {refundedInPaise > 0
-              ? `${refundCaseTables.length || 1} refund case${
-                  (refundCaseTables.length || 1) === 1 ? "" : "s"
-                }`
-              : "No refunds"}
-          </p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => goTo("section-shipments", { openShipmentTimeline: true })}
-          className={`${card} flex min-h-[128px] flex-col p-4 text-left transition hover:border-[#b98a3e]`}
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Shipment</p>
-          <p className="mt-2 text-xl font-bold text-[#1c352a] dark:text-stone-100">{shipmentHeadline}</p>
-          <p className="mt-0.5 text-xs text-stone-500">
-            {awbRows.length
-              ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"} · timeline`
-              : "No label yet"}
-          </p>
-          <Link
-            href={`/admin/shipments/${order.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="mt-auto self-end rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800"
+            </button>
+          </div>
+        </div>
+        <div className="grid gap-3 border-t border-emerald-100 bg-gradient-to-r from-emerald-50/60 via-white to-sky-50/50 px-6 py-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => goTo("section-shipments", { openShipmentTimeline: true })}
+            className="rounded-2xl bg-white/80 px-4 py-3 text-left shadow-sm transition hover:bg-white"
           >
-            Open shipments
-          </Link>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => goTo("section-delivery")}
-          className={`${card} min-h-[128px] p-4 text-left transition hover:border-[#b98a3e]`}
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Delivery</p>
-          <p className="mt-2 text-sm font-normal leading-snug text-[#1c352a] dark:text-stone-100">
-            {deliveryFullAddress}
-          </p>
-        </button>
-      </div>
+            <p className="text-xs text-stone-500">Shipment</p>
+            <p className="mt-1 text-base font-extrabold text-stone-950">{shipmentHeadline}</p>
+            <p className="mt-0.5 text-xs text-stone-500">
+              {awbRows.length
+                ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}`
+                : "No label yet"}
+            </p>
+            <Link
+              href={`/admin/shipments/${order.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-2 inline-flex rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
+            >
+              Open shipments ↗
+            </Link>
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo("section-delivery")}
+            className="rounded-2xl bg-white/80 px-4 py-3 text-left shadow-sm transition hover:bg-white"
+          >
+            <p className="text-xs text-stone-500">Delivery</p>
+            <p className="mt-1 text-sm font-semibold leading-snug text-stone-800">{deliveryFullAddress}</p>
+          </button>
+        </div>
+      </section>
 
       {order.status === "PAID" && !isCancelled ? (
-        <section className={`${card} border-[#b98a3e]/40 bg-[#fff8e8] p-4`}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-bold text-[#1c352a]">New order — acknowledge for warehouse</p>
-              <p className="mt-1 text-sm text-stone-600">
+              <p className="text-base font-extrabold text-amber-950">
+                New order — acknowledge for warehouse
+              </p>
+              <p className="mt-1 text-sm leading-6 text-amber-900/80">
                 Mark Processing to move this out of New and into Shipments → Ready to ship (create label).
               </p>
             </div>
@@ -1502,7 +1501,7 @@ function AdminOrderProductionView({
               type="button"
               disabled={statusSaving}
               onClick={() => onStatusChange("PROCESSING")}
-              className="rounded-lg bg-[#1c352a] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
             >
               {statusSaving ? "Updating…" : "Mark Processing"}
             </button>
@@ -1511,11 +1510,11 @@ function AdminOrderProductionView({
       ) : null}
 
       {["PROCESSING", "PACKED"].includes(order.status) && awbRows.length === 0 ? (
-        <section className={`${card} p-4`}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section className={`${card} p-5`}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-bold text-[#1c352a]">Ready for label</p>
-              <p className="mt-1 text-sm text-stone-600">
+              <p className="text-base font-extrabold text-stone-950">Ready for label</p>
+              <p className="mt-1 text-sm leading-6 text-stone-500">
                 This order is in Shipments → Ready to ship. Create a courier label when the parcel is ready.
               </p>
             </div>
@@ -1525,14 +1524,14 @@ function AdminOrderProductionView({
                   type="button"
                   disabled={!!shipBusy}
                   onClick={onCreateShipment}
-                  className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                 >
                   {shipBusy === "create" ? "Creating label…" : "Create label"}
                 </button>
               ) : null}
               <Link
                 href="/admin/shipments?bucket=ready"
-                className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-800"
+                className="rounded-xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
               >
                 Open Ready to ship
               </Link>
@@ -1542,7 +1541,7 @@ function AdminOrderProductionView({
       ) : null}
 
       {showActionBar ? (
-        <section className={`${card} p-4`}>
+        <section className={`${card} p-5`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap gap-2">
               {shipUi && awbRows.length === 0 ? (
@@ -1550,7 +1549,7 @@ function AdminOrderProductionView({
                   type="button"
                   disabled={!!shipBusy}
                   onClick={onCreateShipment}
-                  className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                 >
                   {shipBusy === "create" ? "Creating label…" : "Create label"}
                 </button>
@@ -1565,7 +1564,7 @@ function AdminOrderProductionView({
                         type="button"
                         disabled={statusSaving}
                         onClick={() => onStatusChange(status)}
-                        className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:opacity-50"
+                        className="rounded-xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-bold text-stone-800 shadow-sm disabled:opacity-50"
                       >
                         Mark {humanState(status)}
                       </button>
@@ -1576,7 +1575,7 @@ function AdminOrderProductionView({
                     type="button"
                     disabled={statusSaving}
                     onClick={() => onStatusChange("DELIVERED")}
-                    className="rounded-lg border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950 disabled:opacity-50"
+                    className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-bold text-amber-950 disabled:opacity-50"
                   >
                     Confirm delivery state
                   </button>
@@ -1592,16 +1591,17 @@ function AdminOrderProductionView({
         </section>
       ) : null}
 
-      <section id="section-items" className={card}>
-        <div className={sectionHeader}>
-          <h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Purchased Items</h2>
+      <section id="section-items" className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Purchased items</h2>
+          <p className="mt-1 text-sm text-stone-500">Line items charged on this order.</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-base">
-            <thead className="bg-[#faf7f2] text-xs uppercase tracking-wide text-[#8a7060]">
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b text-[11px] font-bold uppercase tracking-wide text-stone-400">
               <tr>
                 {["Product", "SKU", "Qty", "Unit Price", "Shipping", "GST %", "Total"].map((h) => (
-                  <th key={h} className="px-4 py-3 font-semibold">
+                  <th key={h} className="px-3 py-2.5">
                     {h}
                   </th>
                 ))}
@@ -1610,7 +1610,7 @@ function AdminOrderProductionView({
             <tbody className="divide-y divide-stone-100">
               {order.items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-stone-500">
+                  <td colSpan={7} className="px-3 py-6 text-stone-500">
                     No purchased items on this order.
                   </td>
                 </tr>
@@ -1624,27 +1624,27 @@ function AdminOrderProductionView({
                   const lineTotal = item.lineTotalInPaise + shipShare;
                   return (
                     <tr key={item.id ?? idx}>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-stone-100">
+                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white">
                             {thumb ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={thumb} alt="" className="h-full w-full object-cover" />
+                              <img src={thumb} alt="" className="h-full w-full object-contain p-1.5" />
                             ) : null}
                           </div>
-                          <p className="font-medium text-stone-900">{item.nameSnapshot}</p>
+                          <p className="text-base font-extrabold text-stone-950">{item.nameSnapshot}</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-sm text-stone-500">{item.skuSnapshot}</td>
-                      <td className="px-4 py-3">{item.qtyOrdered}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                      <td className="px-3 py-3 font-extrabold">{item.qtyOrdered}</td>
+                      <td className="px-3 py-3">
                         {formatMinorFromPaise(item.unitPriceInPaise, order.currency)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         {formatMinorFromPaise(shipShare, order.currency)}
                       </td>
-                      <td className="px-4 py-3">{gst}</td>
-                      <td className="px-4 py-3 font-semibold">
+                      <td className="px-3 py-3">{gst}</td>
+                      <td className="px-3 py-3 font-extrabold">
                         {formatMinorFromPaise(lineTotal, order.currency)}
                       </td>
                     </tr>
@@ -1655,10 +1655,10 @@ function AdminOrderProductionView({
             {order.items.length > 0 ? (
               <tfoot>
                 <tr className="border-t-2 border-stone-200 bg-stone-50/80">
-                  <td colSpan={6} className="px-4 py-3 text-right text-sm font-semibold uppercase tracking-wide text-stone-500">
+                  <td colSpan={6} className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-stone-400">
                     Grand total
                   </td>
-                  <td className="px-4 py-3 text-base font-bold text-[#1c352a]">
+                  <td className="px-3 py-3 text-base font-extrabold text-stone-950">
                     {formatMinorFromPaise(purchasedGrandTotalPaise, order.currency)}
                   </td>
                 </tr>
@@ -1668,42 +1668,43 @@ function AdminOrderProductionView({
         </div>
       </section>
 
-      <section id="section-refunded-items" className={card}>
-        <div className={sectionHeader}>
-          <h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Refunded items</h2>
+      <section id="section-refunded-items" className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Refunded items</h2>
+          <p className="mt-1 text-sm text-stone-500">Linked return / cancellation cases and refund lines.</p>
         </div>
         {refundCaseTables.length === 0 ? (
-          <p className="px-5 py-6 text-stone-500">No refunded items on this order.</p>
+          <p className="mt-4 text-sm text-stone-500">No refunded items on this order.</p>
         ) : (
-          <div className="divide-y divide-stone-100">
+          <div className="mt-4 space-y-4">
             {refundCaseTables.map((table) => (
-              <div key={table.key} className="p-5">
+              <div key={table.key} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_4px_14px_rgba(15,23,42,.04)]">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                   {table.caseHref && table.caseNumber ? (
                     <Link
                       href={table.caseHref}
-                      className="text-base font-bold text-[#8a6428] hover:underline"
+                      className="text-base font-extrabold text-[#8a6428] hover:underline"
                     >
                       {table.caseNumber}
                     </Link>
                   ) : (
-                    <p className="text-base font-bold text-[#1c352a]">{table.title}</p>
+                    <p className="text-base font-extrabold text-stone-950">{table.title}</p>
                   )}
                   {table.caseNumber ? (
                     <span className="text-sm text-stone-500">Open case for full workflow</span>
                   ) : null}
                 </div>
-                <div className="overflow-hidden rounded-lg border border-stone-100">
+                <div className="overflow-hidden rounded-xl border border-stone-100">
                   <table className="min-w-full text-left text-sm">
-                    <thead className="bg-[#faf7f2] text-[#8a7060]">
+                    <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wide text-stone-400">
                       <tr>
-                        <th className="px-3 py-2 font-semibold">Item</th>
-                        <th className="px-3 py-2 font-semibold">Unit cost</th>
-                        <th className="px-3 py-2 font-semibold">Qty</th>
-                        <th className="px-3 py-2 font-semibold">Shipping cost</th>
-                        <th className="px-3 py-2 font-semibold">Customer reason</th>
-                        <th className="px-3 py-2 font-semibold">Decision</th>
-                        <th className="px-3 py-2 font-semibold">Refunded</th>
+                        <th className="px-3 py-2">Item</th>
+                        <th className="px-3 py-2">Unit cost</th>
+                        <th className="px-3 py-2">Qty</th>
+                        <th className="px-3 py-2">Shipping cost</th>
+                        <th className="px-3 py-2">Customer reason</th>
+                        <th className="px-3 py-2">Decision</th>
+                        <th className="px-3 py-2">Refunded</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
@@ -1740,10 +1741,10 @@ function AdminOrderProductionView({
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-stone-200 bg-stone-50/80">
-                        <td colSpan={6} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-stone-500">
+                        <td colSpan={6} className="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wide text-stone-400">
                           Grand total
                         </td>
-                        <td className="px-3 py-2 text-base font-bold text-[#1c352a]">
+                        <td className="px-3 py-2 text-base font-extrabold text-stone-950">
                           {formatMinorFromPaise(table.grandTotalInPaise, order.currency)}
                         </td>
                       </tr>
@@ -1756,48 +1757,46 @@ function AdminOrderProductionView({
         )}
       </section>
 
-      <section id="section-shipments" className={card}>
-        <div className={sectionHeader}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Shipments</h2>
-              <p className="mt-1 text-sm text-stone-500">
-                Shipment state:{" "}
-                <span className="font-semibold text-stone-800">
-                  {shipmentStatusLabel(order.fulfillmentStatus === "RETURNED" ? "RTO" : order.fulfillmentStatus === "FULFILLED" ? "DELIVERED" : order.fulfillmentStatus === "PARTIAL" ? shipmentHeadline : order.fulfillmentStatus)}
-                </span>
-                {" · "}
-                {shipmentHeadline}
-              </p>
-            </div>
-            <Link
-              href={`/admin/shipments/${order.id}`}
-              className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-3 py-1.5 text-xs font-semibold text-[#1c352a]"
-            >
-              Open shipments workspace
-            </Link>
+      <section id="section-shipments" className={`${card} p-6`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+          <div>
+            <h2 className={sectionTitle}>Shipments</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Shipment state:{" "}
+              <span className="font-semibold text-stone-800">
+                {shipmentStatusLabel(order.fulfillmentStatus === "RETURNED" ? "RTO" : order.fulfillmentStatus === "FULFILLED" ? "DELIVERED" : order.fulfillmentStatus === "PARTIAL" ? shipmentHeadline : order.fulfillmentStatus)}
+              </span>
+              {" · "}
+              {shipmentHeadline}
+            </p>
           </div>
+          <Link
+            href={`/admin/shipments/${order.id}`}
+            className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
+          >
+            Open shipments workspace ↗
+          </Link>
         </div>
-        <div className="p-5">
+        <div className="mt-4">
           {isCancelled && awbRows.length === 0 ? (
-            <p className="text-stone-600">This order was cancelled before shipment.</p>
+            <p className="text-sm text-stone-600">This order was cancelled before shipment.</p>
           ) : awbRows.length === 0 ? (
             <div className="space-y-3">
-              <p className="text-stone-500">No shipment has been created yet.</p>
+              <p className="text-sm text-stone-500">No shipment has been created yet.</p>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                <div>
+                <div className="rounded-2xl bg-stone-50 px-4 py-3">
                   <dt className="text-xs text-stone-500">Source</dt>
-                  <dd className="mt-1 font-medium">
+                  <dd className="mt-1 font-extrabold">
                     {order.items.find((i) => i.pickupLocation?.label)?.pickupLocation?.label ?? "Warehouse"}
                   </dd>
                 </div>
-                <div>
+                <div className="rounded-2xl bg-stone-50 px-4 py-3">
                   <dt className="text-xs text-stone-500">Destination</dt>
-                  <dd className="mt-1 font-medium leading-snug">{deliveryFullAddress}</dd>
+                  <dd className="mt-1 font-semibold leading-snug">{deliveryFullAddress}</dd>
                 </div>
-                <div>
+                <div className="rounded-2xl bg-stone-50 px-4 py-3">
                   <dt className="text-xs text-stone-500">Status</dt>
-                  <dd className="mt-1 font-semibold">{shipmentHeadline}</dd>
+                  <dd className="mt-1 font-extrabold">{shipmentHeadline}</dd>
                 </div>
               </dl>
             </div>
@@ -1816,27 +1815,27 @@ function AdminOrderProductionView({
                 return (
                   <div
                     key={`${row.shipmentId}-${row.awb}`}
-                    className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50/60 p-4"
+                    className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_4px_14px_rgba(15,23,42,.04)]"
                   >
                     <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                       <div>
-                        <dt className="text-xs text-stone-500">Status</dt>
-                        <dd className="font-semibold">{shipmentStatusLabel(row.status)}</dd>
+                        <dt className="text-[11px] font-bold uppercase text-stone-400">Status</dt>
+                        <dd className="mt-1 font-extrabold">{shipmentStatusLabel(row.status)}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-stone-500">Carrier · AWB</dt>
-                        <dd>
+                        <dt className="text-[11px] font-bold uppercase text-stone-400">Carrier · AWB</dt>
+                        <dd className="mt-1">
                           {humanState(row.courier)}
-                          <span className="mt-0.5 block font-mono text-xs">{row.awb}</span>
+                          <span className="mt-0.5 block font-mono text-xs text-stone-500">{row.awb}</span>
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-stone-500">Source</dt>
-                        <dd className="font-medium">{sourceLabel}</dd>
+                        <dt className="text-[11px] font-bold uppercase text-stone-400">Source</dt>
+                        <dd className="mt-1 font-semibold">{sourceLabel}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-stone-500">Destination</dt>
-                        <dd className="font-medium leading-snug">{deliveryFullAddress}</dd>
+                        <dt className="text-[11px] font-bold uppercase text-stone-400">Destination</dt>
+                        <dd className="mt-1 font-semibold leading-snug">{deliveryFullAddress}</dd>
                       </div>
                     </dl>
                     <div className="flex flex-wrap gap-2">
@@ -1934,42 +1933,48 @@ function AdminOrderProductionView({
         </div>
       </section>
 
-      <section id="section-delivery" className={card}>
-        <div className={sectionHeader}><h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Customer &amp; Delivery</h2></div>
-        <div className="grid gap-6 p-5 md:grid-cols-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Customer</p>
-            <dl className="mt-3 space-y-2 text-base">
-              <div><dt className="text-xs text-stone-500">Name</dt><dd className="font-semibold">{customerName}</dd></div>
-              <div><dt className="text-xs text-stone-500">Email</dt><dd>{order.email}</dd></div>
-              <div><dt className="text-xs text-stone-500">Phone</dt><dd>{order.phone}</dd></div>
+      <section id="section-delivery" className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Customer &amp; Delivery</h2>
+          <p className="mt-1 text-sm text-stone-500">Buyer details and shipping address.</p>
+        </div>
+        <div className="mt-4 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl bg-stone-50 px-4 py-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Customer</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div><dt className="text-xs text-stone-500">Name</dt><dd className="font-extrabold text-stone-950">{customerName}</dd></div>
+              <div><dt className="text-xs text-stone-500">Email</dt><dd className="font-semibold">{order.email}</dd></div>
+              <div><dt className="text-xs text-stone-500">Phone</dt><dd className="font-semibold">{order.phone}</dd></div>
             </dl>
           </div>
-          <div>
+          <div className="rounded-2xl bg-stone-50 px-4 py-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Shipping address</p>
-              {shipping ? <button type="button" onClick={() => onEditAddress(shipping)} className="text-xs font-semibold text-[#8a6428] hover:underline">Edit</button> : null}
+              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Shipping address</p>
+              {shipping ? <button type="button" onClick={() => onEditAddress(shipping)} className="text-sm font-bold text-[#8a6428] hover:underline">Edit</button> : null}
             </div>
             {shipping ? (
-              <address className="mt-3 text-base not-italic leading-6 text-stone-700">
-                <span className="font-semibold text-stone-900">{shipping.fullName}</span><br />
+              <address className="mt-3 text-sm not-italic leading-6 text-stone-700">
+                <span className="font-extrabold text-stone-950">{shipping.fullName}</span><br />
                 {shipping.line1}{shipping.line2 ? <><br />{shipping.line2}</> : null}<br />
                 {shipping.city}, {shipping.state} {shipping.postalCode}<br />{shipping.country}
               </address>
-            ) : <p className="mt-3 text-stone-500">No shipping address.</p>}
-            <div className="mt-4 border-t border-stone-100 pt-3 text-base">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Billing address</p>
+            ) : <p className="mt-3 text-sm text-stone-500">No shipping address.</p>}
+            <div className="mt-4 border-t border-stone-200/80 pt-3 text-sm">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Billing address</p>
               <p className="mt-1 text-stone-600">{sameAddress(shipping, billing) ? "Same as shipping" : billing ? `${billing.line1}, ${billing.city}, ${billing.state} ${billing.postalCode}` : "Not provided"}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="section-payment" className={card}>
-        <div className={sectionHeader}><h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Payment &amp; Order Total</h2></div>
-        <div id="section-order-total" className="grid gap-8 p-5 lg:grid-cols-2">
-          <dl className="space-y-3 text-base">
-            <div className="flex justify-between gap-4"><dt className="text-stone-500">Payment mode</dt><dd className="font-semibold">{paymentModeLine2}</dd></div>
+      <section id="section-payment" className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Payment &amp; Order Total</h2>
+          <p className="mt-1 text-sm text-stone-500">Gateway details and money breakdown.</p>
+        </div>
+        <div id="section-order-total" className="mt-4 grid gap-8 lg:grid-cols-2">
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4"><dt className="text-stone-500">Payment mode</dt><dd className="font-extrabold">{paymentModeLine2}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-stone-500">Provider</dt><dd className="font-semibold">{paymentModeLine3}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-stone-500">Payment state</dt><dd className="font-mono text-sm font-semibold">{order.paymentStatus}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-stone-500">Internal order ID</dt><dd className="break-all text-right font-mono text-xs">{order.id}</dd></div>
@@ -1986,7 +1991,7 @@ function AdminOrderProductionView({
               </>
             ) : null}
           </dl>
-          <dl className="space-y-2 text-base">
+          <dl className="space-y-2 text-sm">
             <div className="flex justify-between"><dt className="text-stone-500">Products</dt><dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd></div>
             <div className="flex justify-between"><dt className="text-stone-500">Shipping</dt><dd>{formatMinorFromPaise(order.shippingInPaise, order.currency)}</dd></div>
             <div className="flex justify-between"><dt className="text-stone-500">Discount</dt><dd>{order.discountInPaise ? `−${formatMinorFromPaise(order.discountInPaise, order.currency)}` : formatMinorFromPaise(0, order.currency)}</dd></div>
@@ -1995,51 +2000,60 @@ function AdminOrderProductionView({
             {refundedInPaise > 0 ? (
               <div className="flex justify-between"><dt className="text-stone-500">Refunded</dt><dd>{formatMinorFromPaise(refundedInPaise, order.currency)}</dd></div>
             ) : null}
-            <div className="flex justify-between border-t-2 border-stone-200 pt-3 text-lg font-bold text-[#1c352a]"><dt>Current order total</dt><dd>{formatMinorFromPaise(netOrderTotalInPaise, order.currency)}</dd></div>
+            <div className="flex justify-between border-t-2 border-stone-200 pt-3 text-lg font-extrabold text-stone-950"><dt>Current order total</dt><dd>{formatMinorFromPaise(netOrderTotalInPaise, order.currency)}</dd></div>
           </dl>
         </div>
       </section>
 
-      <section className={card}>
-        <div className={sectionHeader}><h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Order Timeline</h2></div>
-        <div className="space-y-8 p-5">
+      <section className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Order Timeline</h2>
+          <p className="mt-1 text-sm text-stone-500">Payment, shipment, and exception journey.</p>
+        </div>
+        <div className="mt-4 space-y-8">
           <JourneyLayer title="Payment" steps={paymentJourney} />
           <JourneyLayer title="Shipment" steps={fulfillmentJourney} />
           <JourneyLayer title="Exceptions & refunds" steps={exceptionJourney} />
         </div>
       </section>
 
-      <details className={card} open>
-        <summary className="cursor-pointer list-none px-5 py-4 text-base font-semibold text-[#1c352a]">Marketing attribution</summary>
-        <div className="border-t border-stone-100 p-5"><AdminOrderAttributionCard attribution={order.attribution} /></div>
+      <details className={`${card} overflow-hidden`}>
+        <summary className="cursor-pointer list-none px-6 py-5 text-xl font-extrabold text-stone-950">Marketing attribution</summary>
+        <div className="border-t border-stone-100 p-6"><AdminOrderAttributionCard attribution={order.attribution} /></div>
       </details>
 
-      <section className={card}>
-        <div className={sectionHeader}><h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Documents</h2></div>
-        <div className="grid gap-3 p-5 md:grid-cols-3">
-          <div className="rounded-lg border border-stone-200 p-4">
-            <p className="font-semibold">Tax Invoice</p>
+      <section className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Documents</h2>
+          <p className="mt-1 text-sm text-stone-500">Invoice, challan, and e-way bill.</p>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
+            <p className="font-extrabold text-stone-950">Tax Invoice</p>
             <p className="mt-1 font-mono text-xs text-stone-500">{invoice?.invoiceNo ?? "Not generated"}</p>
-            {invoice?.invoiceNo || invoice?.pdfUrl ? <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-[#8a6428] hover:underline">Download</a> : null}
+            {invoice?.invoiceNo || invoice?.pdfUrl ? <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#8a6428] hover:underline">Download</a> : null}
           </div>
-          <div className="rounded-lg border border-stone-200 p-4">
-            <p className="font-semibold">Delivery Challan</p>
+          <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
+            <p className="font-extrabold text-stone-950">Delivery Challan</p>
             <p className="mt-1 font-mono text-xs text-stone-500">{deliveryChallan?.challanNumber ?? "Not generated"}</p>
-            {deliveryChallan ? <a href={deliveryChallan.downloadUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-[#8a6428] hover:underline">Download</a> : canGenerateChallan ? <button type="button" disabled={challanBusy} onClick={() => onGenerateChallan(false)} className="mt-3 text-sm font-semibold text-[#8a6428] hover:underline disabled:opacity-50">{challanBusy ? "Generating…" : "Generate"}</button> : null}
+            {deliveryChallan ? <a href={deliveryChallan.downloadUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#8a6428] hover:underline">Download</a> : canGenerateChallan ? <button type="button" disabled={challanBusy} onClick={() => onGenerateChallan(false)} className="mt-3 text-sm font-bold text-[#8a6428] hover:underline disabled:opacity-50">{challanBusy ? "Generating…" : "Generate"}</button> : null}
           </div>
-          <div className="rounded-lg border border-stone-200 p-4">{ewayBill}</div>
+          <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">{ewayBill}</div>
         </div>
       </section>
 
-      <section className={card}>
-        <div className={sectionHeader}><h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Accounting</h2></div>
-        <div className="p-5">
+      <section className={`${card} p-6`}>
+        <div className="pb-2">
+          <h2 className={sectionTitle}>Accounting</h2>
+          <p className="mt-1 text-sm text-stone-500">Journal events for this order.</p>
+        </div>
+        <div className="mt-4">
           {order.accountingEvents.length ? (
             <div className="space-y-3">
               {order.accountingEvents.map((event) => (
                 <div key={event.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-3 last:border-0 last:pb-0">
                   <div>
-                    <p className="text-base font-semibold">{event.eventType === "ORDER_PAID" ? "Sale journal" : event.eventType === "ORDER_CANCELLED" ? "Cancellation reversal" : event.eventType === "ORDER_REFUNDED_FULL" ? "Refund reversal" : humanState(event.eventType)}</p>
+                    <p className="text-base font-extrabold">{event.eventType === "ORDER_PAID" ? "Sale journal" : event.eventType === "ORDER_CANCELLED" ? "Cancellation reversal" : event.eventType === "ORDER_REFUNDED_FULL" ? "Refund reversal" : humanState(event.eventType)}</p>
                     <p className="mt-0.5 font-mono text-xs text-stone-500">{event.journalEntry?.entryNumber ?? "Journal pending"}</p>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">Posted</span>
