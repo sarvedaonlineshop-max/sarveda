@@ -246,29 +246,37 @@ function AdminShellInner({
             </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: "0 0 auto" }}>
-              <div
-                style={{
-                  width: "3px",
-                  height: "26px",
-                  borderRadius: "2px",
-                  background: "#b98a3e",
-                  flexShrink: 0,
-                  boxShadow: isDark ? "0 0 10px rgba(185,138,62,0.5)" : "none"
-                }}
-                aria-hidden
-              />
-              <h1
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: titleColor,
-                  margin: 0,
-                  lineHeight: 1.2,
-                  letterSpacing: "-0.02em"
-                }}
-              >
-                {pageTitle}
-              </h1>
+              {headerSlot?.leading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {headerSlot.leading}
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      width: "3px",
+                      height: "26px",
+                      borderRadius: "2px",
+                      background: "#b98a3e",
+                      flexShrink: 0,
+                      boxShadow: isDark ? "0 0 10px rgba(185,138,62,0.5)" : "none"
+                    }}
+                    aria-hidden
+                  />
+                  <h1
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      color: titleColor,
+                      margin: 0,
+                      lineHeight: 1.2,
+                      letterSpacing: "-0.02em"
+                    }}
+                  >
+                    {pageTitle}
+                  </h1>
+                </>
+              )}
             </div>
 
             <div

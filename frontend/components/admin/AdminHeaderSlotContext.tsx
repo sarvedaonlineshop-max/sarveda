@@ -28,6 +28,8 @@ export type AdminHeaderSlot = {
   wideSearch?: boolean;
   /** Hide the header search field entirely (e.g. order detail). */
   hideSearch?: boolean;
+  /** Optional control rendered before the page title (e.g. Back to Orders). */
+  leading?: ReactNode;
   afterSearch?: ReactNode;
   actions?: ReactNode;
 };

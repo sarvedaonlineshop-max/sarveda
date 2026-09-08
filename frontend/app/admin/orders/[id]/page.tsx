@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft } from "lucide-react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
+import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
 import { AdminSkeleton, AdminSkeletonLines } from "@/components/admin/AdminSkeleton";
 import { AdminToast } from "@/components/admin/AdminToast";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/admin/AdminOrderAttributionCard";
 import { AdminOrderEwayBillCard } from "@/components/admin/AdminOrderEwayBillCard";
 import {
+  type AdminServiceRequestItemRow,
   type AdminServiceRequestRow
 } from "@/components/admin/AdminOrderServiceRequests";
 import {
@@ -558,7 +560,8 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       nameSnapshot: String(item.nameSnapshot),
       skuSnapshot: String(item.skuSnapshot),
       qtySelected: Number(item.qtySelected),
-      reasonLabel: String(item.reasonLabel),
+      reasonLabel: String(item.reasonLabel ?? ""),
+      reviewDecision: item.reviewDecision != null ? String(item.reviewDecision) : null,
       requestedResolution: item.requestedResolution != null ? String(item.requestedResolution) : null,
       message: item.message != null ? String(item.message) : null,
       otherMessage: item.otherMessage != null ? String(item.otherMessage) : null,
@@ -841,7 +844,6 @@ function AdminOrderProductionView({
     });
   const seenShipmentIds = new Set<string>();
 
-  const liveItems = order.items.filter((item) => liveItemQty(item) > 0);
   const shippingByItemId = allocateShippingByQty(order.items, order.shippingInPaise);
   const refundAllocByItem = new Map<
     string,
@@ -871,7 +873,6 @@ function AdminOrderProductionView({
     unitCostInPaise: number;
     qty: number;
     shippingRefundPaise: number | null;
-    shippingNote: string;
     customerReason: string;
     decision: string;
     refundedInPaise: number;
@@ -888,73 +889,165 @@ function AdminOrderProductionView({
 
   const coveredOrderItemIds = new Set<string>();
   const refundCaseTables: RefundCaseTable[] = [];
+  const tablesByReqId = new Map<string, RefundCaseTable>();
 
-  function shippingRefundNote(
-    shippingPaise: number | null,
-    policy: string | null | undefined
+  const caseByOrderItemId = new Map<
+    string,
+    { req: AdminServiceRequestRow; item: AdminServiceRequestItemRow }
+  >();
+  for (const req of order.serviceRequests ?? []) {
+    for (const item of req.items ?? []) {
+      if (item.orderItemId) {
+        caseByOrderItemId.set(item.orderItemId, { req, item });
+      }
+    }
+  }
+
+  function customerReasonFromCase(
+    item: AdminServiceRequestItemRow | null | undefined,
+    req: AdminServiceRequestRow | null | undefined
   ): string {
-    if (shippingPaise != null && shippingPaise > 0) {
-      return "Included in refund (shipping returned to customer)";
+    return (
+      item?.reasonLabel?.trim() ||
+      item?.otherMessage?.trim() ||
+      item?.message?.trim() ||
+      req?.reasonLabel?.trim() ||
+      req?.otherMessage?.trim() ||
+      req?.message?.trim() ||
+      "—"
+    );
+  }
+
+  function lineIsRefundLinked(
+    item: AdminServiceRequestItemRow,
+    req: AdminServiceRequestRow
+  ): boolean {
+    if (item.qtySelected <= 0) return false;
+    if ((item.refundAmountInPaise ?? 0) > 0 || Boolean(item.refundedAt)) return true;
+    const alloc = refundAllocByItem.get(item.orderItemId);
+    if (alloc && (alloc.amount > 0 || alloc.qty > 0)) return true;
+    const orderItem = order.items.find((o) => o.id === item.orderItemId);
+    if (orderItem && (orderItem.returnedQty ?? 0) > 0) return true;
+    // Cancel/return case with a case-level refund — show all selected lines
+    if ((req.refundTotalInPaise ?? 0) > 0 || Boolean(req.refundProcessedAt)) return true;
+    // Pre-dispatch cancel / refund-in-flight: case exists, money or order already cancelled
+    const cancelLike = [
+      "APPROVED",
+      "CANCELLED",
+      "COMPLETED",
+      "REFUND_PENDING",
+      "REFUND_PROCESSING",
+      "REFUNDED",
+      "CLOSED"
+    ].includes(req.status);
+    if (
+      cancelLike &&
+      (["CANCELLED", "REFUNDED"].includes(order.status) ||
+        (order.refundedInPaise ?? 0) > 0 ||
+        order.paymentStatus === "REFUNDED" ||
+        order.paymentStatus === "PARTIALLY_REFUNDED")
+    ) {
+      return true;
     }
-    if (policy === "REFUND_SHIPPING" || policy === "FULL_INCLUDING_SHIPPING") {
-      return "Shipping eligible — pending allocation";
-    }
-    return "NA — shipping kept by store (product-value refund only)";
+    return false;
+  }
+
+  function ensureCaseTable(req: AdminServiceRequestRow): RefundCaseTable {
+    const existing = tablesByReqId.get(req.id);
+    if (existing) return existing;
+    const caseNumber = req.caseNumber ?? null;
+    const table: RefundCaseTable = {
+      key: req.id,
+      caseNumber,
+      caseHref: caseNumber ? `/admin/returns/${encodeURIComponent(caseNumber)}` : null,
+      title: caseNumber ? `Case ${caseNumber}` : `Return · ${req.type}`,
+      lines: [],
+      grandTotalInPaise: 0
+    };
+    tablesByReqId.set(req.id, table);
+    refundCaseTables.push(table);
+    return table;
   }
 
   for (const req of order.serviceRequests ?? []) {
-    const reqItems = (req.items ?? []).filter(
-      (item) => (item.refundAmountInPaise ?? 0) > 0 || Boolean(item.refundedAt)
-    );
-    if (reqItems.length === 0 && !(req.refundTotalInPaise && req.refundTotalInPaise > 0)) {
-      continue;
-    }
-    const sourceItems =
-      reqItems.length > 0
-        ? reqItems
-        : (req.items ?? []).filter((item) => item.qtySelected > 0);
+    const sourceItems = (req.items ?? []).filter((item) => lineIsRefundLinked(item, req));
     if (sourceItems.length === 0) continue;
 
-    const lines: RefundCaseLine[] = sourceItems.map((item) => {
+    const table = ensureCaseTable(req);
+    for (const item of sourceItems) {
+      if (coveredOrderItemIds.has(item.orderItemId)) continue;
       coveredOrderItemIds.add(item.orderItemId);
       const orderItem = order.items.find((o) => o.id === item.orderItemId);
       const alloc = refundAllocByItem.get(item.orderItemId);
-      const shippingRefund =
-        alloc && alloc.shipping > 0 ? alloc.shipping : null;
-      const refunded = item.refundAmountInPaise ?? alloc?.amount ?? 0;
-      const customerReason =
-        item.reasonLabel?.trim() ||
-        item.otherMessage?.trim() ||
-        item.message?.trim() ||
-        req.reasonLabel?.trim() ||
-        req.message?.trim() ||
-        "Customer return / cancellation";
-      return {
+      const shippingRefund = alloc && alloc.shipping > 0 ? alloc.shipping : null;
+      const refunded =
+        item.refundAmountInPaise ??
+        alloc?.amount ??
+        (orderItem && item.qtySelected > 0 && orderItem.qtyOrdered > 0
+          ? Math.round((orderItem.lineTotalInPaise * item.qtySelected) / orderItem.qtyOrdered)
+          : 0);
+      table.lines.push({
         key: item.id,
         nameSnapshot: item.nameSnapshot,
         skuSnapshot: item.skuSnapshot,
         unitCostInPaise: orderItem?.unitPriceInPaise ?? 0,
         qty: item.qtySelected,
         shippingRefundPaise: shippingRefund,
-        shippingNote: shippingRefundNote(shippingRefund, req.shippingRefundPolicy),
-        customerReason,
+        customerReason: customerReasonFromCase(item, req),
         decision: item.reviewDecision || req.status,
         refundedInPaise: refunded
-      };
-    });
-
-    const caseNumber = req.caseNumber ?? null;
-    refundCaseTables.push({
-      key: req.id,
-      caseNumber,
-      caseHref: caseNumber ? `/admin/returns/${encodeURIComponent(caseNumber)}` : null,
-      title: caseNumber ? `Case ${caseNumber}` : `Return · ${req.type}`,
-      lines,
-      grandTotalInPaise:
-        req.refundTotalInPaise ??
-        lines.reduce((s, l) => s + l.refundedInPaise, 0)
-    });
+      });
+    }
+    table.grandTotalInPaise =
+      req.refundTotalInPaise ??
+      table.lines.reduce((s, l) => s + l.refundedInPaise, 0);
   }
+
+  // Attach refunded order lines to their return/cancel case when item-level
+  // refund flags were missing (common for pre-dispatch cancellations).
+  for (const item of order.items) {
+    if (!item.id || coveredOrderItemIds.has(item.id)) continue;
+    const alloc = refundAllocByItem.get(item.id);
+    const qty =
+      alloc?.qty ??
+      (typeof item.returnedQty === "number" && item.returnedQty > 0 ? item.returnedQty : 0);
+    if (qty <= 0 && !(alloc && alloc.amount > 0)) continue;
+
+    const linked = caseByOrderItemId.get(item.id);
+    if (!linked) continue;
+
+    coveredOrderItemIds.add(item.id);
+    const amount =
+      linked.item.refundAmountInPaise ??
+      alloc?.amount ??
+      (item.qtyOrdered > 0
+        ? Math.round((item.lineTotalInPaise * qty) / item.qtyOrdered)
+        : item.unitPriceInPaise * qty);
+    const shippingRefund = alloc && alloc.shipping > 0 ? alloc.shipping : null;
+    const table = ensureCaseTable(linked.req);
+    table.lines.push({
+      key: linked.item.id,
+      nameSnapshot: linked.item.nameSnapshot || item.nameSnapshot,
+      skuSnapshot: linked.item.skuSnapshot || item.skuSnapshot,
+      unitCostInPaise: item.unitPriceInPaise,
+      qty: linked.item.qtySelected > 0 ? linked.item.qtySelected : qty,
+      shippingRefundPaise: shippingRefund,
+      customerReason: customerReasonFromCase(linked.item, linked.req),
+      decision: linked.item.reviewDecision || linked.req.status,
+      refundedInPaise: amount
+    });
+    if (!(linked.req.refundTotalInPaise && linked.req.refundTotalInPaise > 0)) {
+      table.grandTotalInPaise = table.lines.reduce((s, l) => s + l.refundedInPaise, 0);
+    } else {
+      table.grandTotalInPaise = linked.req.refundTotalInPaise;
+    }
+  }
+
+  const paymentRefundReason =
+    (order.payments ?? [])
+      .flatMap((p) => p.refunds ?? [])
+      .map((r) => r.reason?.trim())
+      .find((r) => Boolean(r)) ?? null;
 
   const orphanRefundLines: RefundCaseLine[] = order.items
     .map((item) => {
@@ -963,7 +1056,7 @@ function AdminOrderProductionView({
       const qty =
         alloc?.qty ??
         (typeof item.returnedQty === "number" && item.returnedQty > 0 ? item.returnedQty : 0);
-      if (qty <= 0) return null;
+      if (qty <= 0 && !(alloc && alloc.amount > 0)) return null;
       const amount =
         alloc?.amount ??
         (item.qtyOrdered > 0
@@ -975,10 +1068,9 @@ function AdminOrderProductionView({
         nameSnapshot: item.nameSnapshot,
         skuSnapshot: item.skuSnapshot,
         unitCostInPaise: item.unitPriceInPaise,
-        qty,
+        qty: qty > 0 ? qty : 1,
         shippingRefundPaise: shippingRefund,
-        shippingNote: shippingRefundNote(shippingRefund, null),
-        customerReason: "Admin partial line refund (qty / value adjustment)",
+        customerReason: paymentRefundReason || "—",
         decision: "Refunded",
         refundedInPaise: amount
       } satisfies RefundCaseLine;
@@ -990,7 +1082,7 @@ function AdminOrderProductionView({
       key: "orphan-refunds",
       caseNumber: null,
       caseHref: null,
-      title: "Admin line refunds",
+      title: "Other refunds",
       lines: orphanRefundLines,
       grandTotalInPaise: orphanRefundLines.reduce((s, l) => s + l.refundedInPaise, 0)
     });
@@ -1187,7 +1279,7 @@ function AdminOrderProductionView({
           className={`${card} min-h-[128px] p-4 text-left transition hover:border-[#b98a3e]`}
         >
           <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Delivery</p>
-          <p className="mt-2 text-sm font-bold leading-snug text-[#1c352a] dark:text-stone-100">
+          <p className="mt-2 text-sm font-normal leading-snug text-[#1c352a] dark:text-stone-100">
             {deliveryFullAddress}
           </p>
         </button>
@@ -1373,7 +1465,6 @@ function AdminOrderProductionView({
                             {line.shippingRefundPaise != null
                               ? formatMinorFromPaise(line.shippingRefundPaise, order.currency)
                               : "NA"}
-                            <span className="mt-0.5 block text-xs text-stone-500">{line.shippingNote}</span>
                           </td>
                           <td className="px-3 py-2 align-top text-stone-600">{line.customerReason}</td>
                           <td className="px-3 py-2 align-top text-stone-600">
@@ -1726,6 +1817,22 @@ export default function AdminOrderDetailPage() {
   const [err, setErr] = useState<string | null>(null);
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [shipmentWorkspaceOpen, setShipmentWorkspaceOpen] = useState(false);
+
+  useRegisterAdminHeaderSlot(
+    () => ({
+      hideSearch: true,
+      leading: (
+        <Link
+          href="/admin/orders"
+          className="inline-flex items-center gap-2.5 text-[17px] font-semibold text-[#1c352a] no-underline transition-colors hover:text-[#8a6428] dark:text-stone-100 dark:hover:text-amber-300"
+        >
+          <ChevronLeft size={28} strokeWidth={2.5} aria-hidden />
+          Back to Orders
+        </Link>
+      )
+    }),
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2297,10 +2404,10 @@ export default function AdminOrderDetailPage() {
         </p>
         <Link
           href="/admin/orders"
-          className="inline-flex items-center gap-1 text-sm font-medium text-brand-gold transition-colors hover:text-brand-forest mt-4 dark:text-amber-400"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-brand-gold transition-colors hover:text-brand-forest mt-4 dark:text-amber-400"
         >
-          <ChevronLeft size={14} />
-          Orders
+          <ChevronLeft size={20} />
+          Back to Orders
         </Link>
       </div>
     );
@@ -2615,10 +2722,6 @@ export default function AdminOrderDetailPage() {
         </div>
       ) : null}
 
-      <Link href="/admin/orders" className="inline-flex items-center gap-1 text-sm font-medium text-brand-gold transition-colors hover:text-brand-forest dark:text-amber-400">
-        <ChevronLeft size={14} />
-        Orders
-      </Link>
       {err ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
           {err}
