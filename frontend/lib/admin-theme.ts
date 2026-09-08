@@ -1,6 +1,6 @@
 /**
  * Admin UI theme — Sarveda forest green + gold.
- * Soft (light) workspace = light green surfaces (not cream, not deep dark).
+ * Light workspace stays unchanged; dark workspace is tuned for dense admin data.
  * Skin only — do not couple to API / routing logic.
  * Storefront is unaffected.
  */
@@ -18,7 +18,7 @@ export const adminTheme = {
   sidebarTextActive:   "#f2ede4",
   sidebarMuted:        "rgba(220,210,190,0.38)",
 
-  /* Soft / light-green workspace — easy on eyes, readable dark type */
+  /* Soft / light-green workspace — existing approved light mode */
   workspaceBg:    "#e7f1eb",
   headerBg:       "#f3f8f5",
   cardBg:         "#f7fbf8",
@@ -34,17 +34,17 @@ export const adminTheme = {
   inputBg:        "#ffffff",
   inputBorder:    "#b7cec0",
 
-  /* Deep green workspace (optional dark toggle) */
-  workspaceBgDark:  "#0c1a10",
-  headerBgDark:     "#0f2016",
-  cardBgDark:       "#132a1a",
-  cardBorderDark:   "rgba(185,138,62,0.18)",
-  textDark:         "#e8e0d4",
-  textMutedDark:    "#8aaa95",
-  labelDark:        "#f0e2b8",
-  thTextDark:       "#e8d9a8",
-  rowHoverDark:     "rgba(185,138,62,0.07)",
-  tableHeadBgDark:  "linear-gradient(180deg, #1a3525, #162d1f)",
-  inputBgDark:      "rgba(255,255,255,0.05)",
-  inputBorderDark:  "rgba(185,138,62,0.20)",
+  /* Admin dark workspace — neutral forest, high contrast, data-friendly */
+  workspaceBgDark:  "#07120d",
+  headerBgDark:     "#0b1711",
+  cardBgDark:       "#111f18",
+  cardBorderDark:   "rgba(185,138,62,0.22)",
+  textDark:         "#f4efe6",
+  textMutedDark:    "#a9b9ad",
+  labelDark:        "#f0d89b",
+  thTextDark:       "#e7c779",
+  rowHoverDark:     "rgba(185,138,62,0.09)",
+  tableHeadBgDark:  "linear-gradient(180deg, #16251d, #101d16)",
+  inputBgDark:      "#0c1711",
+  inputBorderDark:  "rgba(185,138,62,0.32)",
 } as const;
