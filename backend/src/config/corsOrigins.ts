@@ -39,7 +39,22 @@ export function getCorsOrigins(): string[] {
   return [...new Set([...fromEnv, ...defaults])];
 }
 
+/**
+ * Vercel preview / alias hosts for this project, e.g.
+ * - https://sarveda-frontend.vercel.app
+ * - https://sarveda-frontend-p8we2zs01-sarveda.vercel.app
+ * - https://sarveda-frontend-git-admin-dark-theme-polish-sarveda.vercel.app
+ *
+ * Preview URLs rotate per deploy — allow the project pattern instead of listing each one.
+ */
+export function isSarvedaVercelFrontendOrigin(origin: string): boolean {
+  const normalized = normalizeOrigin(origin);
+  return /^https:\/\/sarveda-frontend(?:-[a-z0-9]+)*\.vercel\.app$/i.test(normalized);
+}
+
 export function isAllowedCorsOrigin(origin: string | undefined, allowed: string[]): boolean {
   if (!origin) return true;
-  return allowed.includes(normalizeOrigin(origin));
+  const normalized = normalizeOrigin(origin);
+  if (allowed.includes(normalized)) return true;
+  return isSarvedaVercelFrontendOrigin(normalized);
 }
