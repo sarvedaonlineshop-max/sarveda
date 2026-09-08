@@ -32,7 +32,7 @@ function flattenCategoryOptions(nodes: CategoryNode[], depth = 0): { slug: strin
 }
 
 const thClass =
-  "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)] transition-colors";
+  "px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)] transition-colors";
 
 const ROW_H = 72;
 const FULL_LIST_VISIBLE_ROWS = 24;
@@ -372,16 +372,15 @@ export default function AdminProductsPage() {
       />
 
       <div
-        className="flex flex-wrap items-end gap-3 rounded-lg border p-4"
+        className="flex flex-wrap items-end gap-3 rounded-xl border p-4"
         style={{
-          background: "var(--admin-card-bg, #faf9f7)",
-          borderLeft: "3px solid rgba(185,138,62,0.25)",
+          background: "var(--admin-card-bg, #fff)",
           borderColor: "var(--admin-card-border, #e8e2d9)",
-          boxShadow: "0 2px 8px rgba(28,53,42,0.05)"
+          boxShadow: "0 1px 2px rgba(15,23,42,0.045), 0 8px 24px rgba(15,23,42,0.04)"
         }}
       >
         <div className="min-w-[12rem] flex-1">
-          <label htmlFor="q" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)]">
+          <label htmlFor="q" className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)]">
             Search
           </label>
           <input
@@ -390,11 +389,11 @@ export default function AdminProductsPage() {
             onChange={(e) => setQ(e.target.value)}
             onBlur={() => setPage(1)}
             placeholder="Product name…"
-            className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] focus:border-[#b98a3e] focus:outline-none focus:ring-1 focus:ring-[rgba(185,138,62,0.15)]"
+            className="mt-1 w-full rounded-xl border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2.5 text-base text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
           />
         </div>
         <div className="min-w-[10rem]">
-          <label htmlFor="category" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)]">
+          <label htmlFor="category" className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)]">
             Category
           </label>
           <select
@@ -404,7 +403,7 @@ export default function AdminProductsPage() {
               setPage(1);
               setCategory(e.target.value);
             }}
-            className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] focus:border-[#b98a3e] focus:outline-none focus:ring-1 focus:ring-[rgba(185,138,62,0.15)]"
+            className="mt-1 w-full rounded-xl border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2.5 text-base text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -415,7 +414,7 @@ export default function AdminProductsPage() {
           </select>
         </div>
         <div className="min-w-[8rem]">
-          <label htmlFor="status" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)]">
+          <label htmlFor="status" className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)]">
             Status
           </label>
           <select
@@ -425,7 +424,7 @@ export default function AdminProductsPage() {
               setPage(1);
               setStatus(e.target.value);
             }}
-            className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] focus:border-[#b98a3e] focus:outline-none focus:ring-1 focus:ring-[rgba(185,138,62,0.15)]"
+            className="mt-1 w-full rounded-xl border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2.5 text-base text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
           >
             <option value="">Active + Draft</option>
             <option value="ACTIVE">Active only</option>
@@ -436,7 +435,7 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="h-[38px] shrink-0 rounded-lg px-4 text-[13px] font-semibold text-[#fffbf5] shadow-[0_2px_6px_rgba(28,53,42,0.2)]"
+          className="h-[42px] shrink-0 rounded-xl px-4 text-base font-semibold text-[#fffbf5] shadow-[0_2px_6px_rgba(28,53,42,0.2)]"
           style={{
             background: "linear-gradient(135deg, #1c352a, #2d5040)",
             border: "none",
@@ -446,7 +445,7 @@ export default function AdminProductsPage() {
           Apply
         </button>
         <div
-          className="relative mt-auto inline-grid h-[38px] shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
+          className="relative mt-auto inline-grid h-[42px] shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
           role="group"
           aria-label="List view mode"
         >

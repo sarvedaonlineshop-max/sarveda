@@ -98,7 +98,7 @@ function BarChart({
 }) {
   const max = Math.max(1, ...rows.map((r) => Number(r[valueKey]) || 0));
   if (rows.length === 0) {
-    return <p style={{ fontSize: "13px", color: "#8a7060" }}>No trend data in this range.</p>;
+    return <p style={{ fontSize: "16px", color: "#8a7060" }}>No trend data in this range.</p>;
   }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -116,7 +116,7 @@ function BarChart({
             key={String(r[labelKey])}
             style={{ display: "grid", gridTemplateColumns: "90px 1fr 80px", gap: "10px", alignItems: "center" }}
           >
-            <span style={{ fontSize: "12px", color: "#8a7060", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: "14px", color: "#8a7060", fontFamily: "'JetBrains Mono', monospace" }}>
               {String(r[labelKey])}
             </span>
             <div style={{ height: "14px", background: "#e8e2d9", borderRadius: "999px", overflow: "hidden" }}>
@@ -146,7 +146,7 @@ function BarChart({
                 ) : null}
               </div>
             </div>
-            <span style={{ fontSize: "12px", fontFamily: "monospace", color: "#2c2420", textAlign: "right" }}>
+            <span style={{ fontSize: "14px", fontFamily: "monospace", color: "#2c2420", textAlign: "right" }}>
               {v}
             </span>
           </div>
@@ -159,7 +159,7 @@ function BarChart({
 function renderMiniTable(headers: string[], rows: React.ReactNode[][], empty: string) {
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "16px" }}>
         <thead>
           <tr>
             {headers.map((h) => (
@@ -169,7 +169,7 @@ function renderMiniTable(headers: string[], rows: React.ReactNode[][], empty: st
                   textAlign: "left",
                   padding: "10px 12px",
                   color: "#8a7060",
-                  fontSize: "11px",
+                  fontSize: "14px",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
                   borderBottom: "1px solid #eee6dc"
@@ -342,7 +342,7 @@ export function AdminDashboardAnalytics() {
                 style={{
                   padding: "7px 12px",
                   borderRadius: "8px",
-                  fontSize: "12px",
+                  fontSize: "14px",
                   fontWeight: 700,
                   cursor: "pointer",
                   border: "1px solid",
@@ -357,7 +357,7 @@ export function AdminDashboardAnalytics() {
             ))}
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "end" }}>
-            <label style={{ fontSize: "12px", color: "#8a7060" }}>
+            <label style={{ fontSize: "14px", color: "#8a7060" }}>
               From
               <input
                 type="date"
@@ -378,7 +378,7 @@ export function AdminDashboardAnalytics() {
                 }}
               />
             </label>
-            <label style={{ fontSize: "12px", color: "#8a7060" }}>
+            <label style={{ fontSize: "14px", color: "#8a7060" }}>
               To
               <input
                 type="date"
@@ -402,7 +402,7 @@ export function AdminDashboardAnalytics() {
           </div>
         </div>
         {rangeLabel ? (
-          <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "10px" }}>Showing {rangeLabel}</p>
+          <p style={{ fontSize: "14px", color: "#8a7060", marginTop: "10px" }}>Showing {rangeLabel}</p>
         ) : null}
       </div>
 
@@ -439,7 +439,7 @@ export function AdminDashboardAnalytics() {
             >
               <p
                 style={{
-                  fontSize: "11px",
+                  fontSize: "14px",
                   fontWeight: 700,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -467,7 +467,7 @@ export function AdminDashboardAnalytics() {
         <UnderlineTabs items={TABS} active={tab} onChange={setTab} />
 
         {loading || !data ? (
-          <p style={{ color: "#8a7060", fontSize: "13px" }}>Loading analytics...</p>
+          <p style={{ color: "#8a7060", fontSize: "16px" }}>Loading analytics...</p>
         ) : (
           <>
             {data.overview.tips.length > 0 ? (
@@ -482,7 +482,7 @@ export function AdminDashboardAnalytics() {
               >
                 <ul style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {data.overview.tips.slice(0, 3).map((t) => (
-                    <li key={t} style={{ fontSize: "13px", color: "#4a3f38" }}>
+                    <li key={t} style={{ fontSize: "16px", color: "#4a3f38" }}>
                       <span style={{ color: "#b98a3e" }}>✦ </span>
                       {t}
                     </li>
@@ -549,7 +549,7 @@ export function AdminDashboardAnalytics() {
                       o.orderNumber,
                       <div key={o.orderNumber}>
                         <div style={{ fontWeight: 600 }}>{o.customerName}</div>
-                        <div style={{ fontSize: "12px", color: "#8a7060" }}>{o.email}</div>
+                        <div style={{ fontSize: "14px", color: "#8a7060" }}>{o.email}</div>
                       </div>,
                       o.city || "—",
                       money(o.totalInr)
@@ -574,7 +574,7 @@ export function AdminDashboardAnalytics() {
 
             {tab === "returns" && data.returns ? (
               <div style={{ display: "grid", gap: "20px" }}>
-                <p style={{ fontSize: "12px", color: "#8a7060" }}>{data.returns.note}</p>
+                <p style={{ fontSize: "14px", color: "#8a7060" }}>{data.returns.note}</p>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Return trend</h3>
                   <BarChart rows={data.returns.returnTrend} labelKey="month" valueKey="units" />
@@ -584,11 +584,11 @@ export function AdminDashboardAnalytics() {
                     Item return nature
                   </h3>
                   {data.returns.returnItemTrend.length === 0 ? (
-                    <p style={{ fontSize: "13px", color: "#8a7060" }}>Few/no refunded line items in this range.</p>
+                    <p style={{ fontSize: "16px", color: "#8a7060" }}>Few/no refunded line items in this range.</p>
                   ) : (
                     data.returns.returnItemTrend.map((it) => (
                       <div key={`${it.sku}-${it.productName}`} style={{ marginBottom: "14px" }}>
-                        <p style={{ fontSize: "13px", fontWeight: 600, marginBottom: "6px" }}>
+                        <p style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>
                           {it.productName} {it.sku ? `· ${it.sku}` : ""}
                         </p>
                         <BarChart rows={it.months} labelKey="month" valueKey="units" />
@@ -669,8 +669,8 @@ export function AdminDashboardAnalytics() {
 
             {tab === "customers" && data.customers ? (
               <div style={{ display: "grid", gap: "20px" }}>
-                <p style={{ fontSize: "12px", color: "#8a7060" }}>{data.customers.note}</p>
-                <p style={{ fontSize: "13px", color: "#2c2420" }}>
+                <p style={{ fontSize: "14px", color: "#8a7060" }}>{data.customers.note}</p>
+                <p style={{ fontSize: "16px", color: "#2c2420" }}>
                   New customers in range: <strong>{data.customers.newCustomers}</strong>
                 </p>
                 <div>
@@ -697,7 +697,7 @@ export function AdminDashboardAnalytics() {
                     data.customers.mostBought.map((c) => [
                       <div key={c.email}>
                         <div style={{ fontWeight: 600 }}>{c.name}</div>
-                        <div style={{ fontSize: "12px", color: "#8a7060" }}>{c.email}</div>
+                        <div style={{ fontSize: "14px", color: "#8a7060" }}>{c.email}</div>
                       </div>,
                       String(c.orderCount),
                       money(c.totalSpendInr),

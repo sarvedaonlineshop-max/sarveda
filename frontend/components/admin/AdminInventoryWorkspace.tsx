@@ -161,8 +161,8 @@ function MetricCard({
 
   const inner = (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">{label}</p>
-      <p className={`mt-1 text-3xl font-extrabold tabular-nums ${valueClass}`}>{value}</p>
+      <p className="text-xs font-bold uppercase tracking-[0.08em] text-stone-500">{label}</p>
+      <p className={`mt-1 text-2xl font-extrabold tabular-nums ${valueClass}`}>{value}</p>
     </>
   );
 
@@ -1055,7 +1055,7 @@ export function AdminInventoryWorkspace() {
   const actionOutline = `${actionBtn} border border-stone-200 bg-white text-stone-700 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200`;
 
   const thClass =
-    "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
+    "px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400";
 
   function renderZohoRowActions(r: InventoryRow) {
     const scenario = effectiveZohoScenario(r);
@@ -1351,7 +1351,7 @@ export function AdminInventoryWorkspace() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4 font-sans">
+    <div className="w-full space-y-4 font-sans">
       <style>{`
         @keyframes admin-inv-fade {
           from { opacity: 0.45; }
@@ -1362,7 +1362,57 @@ export function AdminInventoryWorkspace() {
       `}</style>
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
-      <div className="relative max-w-xl">
+      <div className="flex flex-wrap items-center gap-2">
+        {dropShipTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => {
+              setDropShipFilter(tab.id);
+              setListFadeKey((k) => k + 1);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors duration-200 ${
+              dropShipFilter === tab.id
+                ? "border-[#1e3a2f] bg-gradient-to-br from-[#1c352a] to-[#2d5040] font-semibold text-[#fffbf5] shadow-sm"
+                : "border-stone-200 bg-white text-stone-600 hover:bg-[#eef6f1] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800"
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span
+              className={`min-w-[18px] rounded-full px-1.5 py-0.5 text-center text-sm font-bold tabular-nums ${
+                dropShipFilter === tab.id
+                  ? "bg-white/20 text-[#fffbf5]"
+                  : "bg-[#f0ece6] text-[#5a4a40]"
+              }`}
+            >
+              {dropShipTabCounts[tab.id]}
+            </span>
+          </button>
+        ))}
+        {showZohoSync ? (
+          <div className="ml-auto flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={zohoSyncing === "audit"}
+              onClick={() => void runZohoAudit()}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-bold text-[#1e3a2f] shadow-sm hover:bg-[#faf5ec]/60 disabled:opacity-50 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
+            >
+              <IconRefresh className={`h-3.5 w-3.5 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
+              Refresh Zoho audit
+            </button>
+            <button
+              type="button"
+              disabled={zohoSyncing === "pull_all"}
+              onClick={() => void runPullAllFromZoho()}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a2f] px-4 py-2 text-sm font-bold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-50"
+            >
+              Sync all from Zoho
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative w-full">
         <input
           type="search"
           value={searchInput}
@@ -1378,10 +1428,10 @@ export function AdminInventoryWorkspace() {
           }}
           placeholder="Search inventory SKUs, products…"
           aria-label="Search inventory"
-          className="w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
+          className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-base text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
         />
         {searchFocused && searchInput.trim() && headerSuggestions.length > 0 ? (
-          <div className="absolute left-0 right-0 z-40 mt-1 max-h-80 overflow-auto rounded-lg border border-stone-200 bg-white py-1 shadow-xl dark:border-stone-600 dark:bg-stone-900">
+          <div className="absolute left-0 right-0 z-40 mt-1 max-h-80 overflow-auto rounded-xl border border-stone-200 bg-white py-1 shadow-xl dark:border-stone-600 dark:bg-stone-900">
             {headerSuggestions.map((s) => (
               <button
                 key={s.id}
@@ -1395,11 +1445,11 @@ export function AdminInventoryWorkspace() {
                   }
                   setSearchFocused(false);
                 }}
-                className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
+                className="block w-full px-4 py-2.5 text-left text-base text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
               >
-                <span className="font-medium">{s.label}</span>
+                <span className="font-semibold">{s.label}</span>
                 {s.sublabel ? (
-                  <span className="ml-2 text-xs text-stone-500">{s.sublabel}</span>
+                  <span className="ml-2 text-sm text-stone-500">{s.sublabel}</span>
                 ) : null}
               </button>
             ))}
@@ -1408,7 +1458,7 @@ export function AdminInventoryWorkspace() {
       </div>
 
       <div
-        className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${
+        className={`grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-stone-200 bg-stone-200 sm:grid-cols-3 ${
           showZohoSync ? "lg:grid-cols-6" : "lg:grid-cols-5"
         } dark:border-stone-700 dark:bg-stone-700`}
       >
@@ -1475,48 +1525,6 @@ export function AdminInventoryWorkspace() {
                   : undefined
               }
             />
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {dropShipTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => {
-              setDropShipFilter(tab.id);
-              setListFadeKey((k) => k + 1);
-            }}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
-              dropShipFilter === tab.id
-                ? "bg-[#1c352a] font-bold text-white shadow-sm"
-                : "border border-stone-200 bg-white text-stone-600 hover:bg-[#eef6f1] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800"
-            }`}
-          >
-            {tab.label}{" "}
-            <span className="tabular-nums opacity-80">{dropShipTabCounts[tab.id]}</span>
-          </button>
-        ))}
-        {showZohoSync ? (
-          <div className="ml-auto flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={zohoSyncing === "audit"}
-              onClick={() => void runZohoAudit()}
-              className="inline-flex items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#1e3a2f] shadow-sm hover:bg-[#faf5ec]/60 disabled:opacity-50 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
-            >
-              <IconRefresh className={`h-3.5 w-3.5 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
-              Refresh Zoho audit
-            </button>
-            <button
-              type="button"
-              disabled={zohoSyncing === "pull_all"}
-              onClick={() => void runPullAllFromZoho()}
-              className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-3 py-1.5 text-xs font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-50"
-            >
-              Sync all from Zoho
-            </button>
           </div>
         ) : null}
       </div>

@@ -65,9 +65,9 @@ function StatusBadge({ status }: { status: string }) {
         background: bg,
         color,
         border: `1px solid ${border}`,
-        fontSize: "11px",
-        fontWeight: 700,
-        padding: "4px 10px",
+        fontSize: "14px",
+        fontWeight: 600,
+        padding: "3px 10px",
         borderRadius: "999px",
         display: "inline-flex",
         alignItems: "center",
@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
 
   const thSt: React.CSSProperties = {
     padding: "12px 16px",
-    fontSize: "11px",
+    fontSize: "14px",
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
 
   const tdSt: React.CSSProperties = {
     padding: "14px 16px",
-    fontSize: "13px",
+    fontSize: "16px",
     color: "var(--admin-text, #4a3f38)",
     borderBottom: "1px solid var(--admin-card-border, #f0ece6)"
   };
@@ -294,9 +294,9 @@ export default function AdminDashboardPage() {
               <div>
                 <p
                   style={{
-                    fontSize: "11px",
+                    fontSize: "12px",
                     fontWeight: 700,
-                    letterSpacing: "0.1em",
+                    letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     color: "var(--admin-text-muted, #8a7060)"
                   }}
@@ -305,7 +305,7 @@ export default function AdminDashboardPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "1.7rem",
+                    fontSize: "28px",
                     lineHeight: 1.1,
                     fontWeight: 800,
                     color: "var(--admin-text, #2c2420)",
@@ -314,7 +314,7 @@ export default function AdminDashboardPage() {
                 >
                   {item.value}
                 </p>
-                <p style={{ fontSize: "12px", color: "var(--admin-text-muted, #8a7060)", marginTop: "8px" }}>{item.note}</p>
+                <p style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)", marginTop: "8px" }}>{item.note}</p>
               </div>
               <span
                 style={{
@@ -337,7 +337,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div>
-        <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--admin-text, #2c2420)", marginBottom: "12px", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>Analytics</h3>
+        <h3 style={{ fontSize: "20px", fontWeight: 800, color: "var(--admin-text, #2c2420)", marginBottom: "12px", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>Analytics</h3>
         <AdminDashboardAnalytics />
       </div>
 
@@ -374,8 +374,8 @@ export default function AdminDashboardPage() {
                 <AlertTriangle size={18} />
               </div>
               <div>
-                <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--admin-text, #2c2420)", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>Low Stock</h3>
-                <p style={{ fontSize: "12px", color: "var(--admin-text-muted, #8a7060)", marginTop: "2px" }}>
+                <h3 style={{ fontSize: "20px", fontWeight: 800, color: "var(--admin-text, #2c2420)", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>Low Stock</h3>
+                <p style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)", marginTop: "2px" }}>
                   Priority list for quick inventory follow-up
                 </p>
               </div>

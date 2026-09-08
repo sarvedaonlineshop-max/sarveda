@@ -55,14 +55,27 @@ function shipmentBadge(status: string | null, kind: "ready" | "shipment") {
       style={{
         background: bg,
         color,
-        fontSize: "11px",
+        fontSize: "14px",
         fontWeight: 600,
         padding: "3px 10px",
         borderRadius: "999px",
         whiteSpace: "nowrap",
-        border: `1px solid ${color}30`
+        border: `1px solid ${color}30`,
+        display: "inline-flex",
+        alignItems: "center"
       }}
     >
+      <span
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          background: color,
+          display: "inline-block",
+          marginRight: "5px",
+          flexShrink: 0
+        }}
+      />
       {label}
     </span>
   );
@@ -76,7 +89,7 @@ const card: React.CSSProperties = {
 };
 const thSt: React.CSSProperties = {
   padding: "11px 16px",
-  fontSize: "11px",
+  fontSize: "14px",
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -87,7 +100,7 @@ const thSt: React.CSSProperties = {
 };
 const tdSt: React.CSSProperties = {
   padding: "12px 16px",
-  fontSize: "13px",
+  fontSize: "16px",
   color: "var(--admin-text, #4a3f38)",
   borderBottom: "1px solid var(--admin-card-border, #f0ece6)"
 };
@@ -99,13 +112,13 @@ const inputSt: React.CSSProperties = {
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   background: "var(--admin-card-bg, #fff)",
   color: "var(--admin-text, #2c2420)",
-  fontSize: "13px"
+  fontSize: "15px"
 };
 const labelSt: React.CSSProperties = {
   display: "block",
-  fontSize: "11px",
-  fontWeight: 600,
-  letterSpacing: "0.04em",
+  fontSize: "12px",
+  fontWeight: 700,
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: "var(--admin-text-muted, #8a7060)",
   marginBottom: "4px"
@@ -230,7 +243,61 @@ export default function AdminShipmentsPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ ...card, padding: "16px 18px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {buckets.map((b) => {
+          const count = counts?.[b.value as keyof NonNullable<typeof counts>];
+          const active = bucket === b.value;
+          return (
+            <button
+              key={b.value}
+              type="button"
+              onClick={() => {
+                setPage(1);
+                setBucket(b.value);
+                if (typeof window !== "undefined") {
+                  const u = new URL(window.location.href);
+                  u.searchParams.set("bucket", b.value);
+                  window.history.replaceState({}, "", u.pathname + u.search);
+                }
+              }}
+              style={{
+                padding: "7px 14px",
+                borderRadius: "999px",
+                fontSize: "16px",
+                fontWeight: 500,
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
+                background: active
+                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
+                  : "var(--admin-card-bg, #fff)",
+                color: active ? "#fffbf5" : "#6b5c52",
+                boxShadow: active ? "0 2px 8px rgba(28,53,42,0.20)" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px"
+              }}
+            >
+              <span>{b.label}</span>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  minWidth: "18px",
+                  padding: "1px 6px",
+                  borderRadius: "999px",
+                  background: active ? "rgba(255,255,255,0.18)" : "#f0ece6",
+                  color: active ? "#fffbf5" : "#5a4a40"
+                }}
+              >
+                {typeof count === "number" ? count : "–"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ ...card, padding: "12px 14px" }}>
         <div
           style={{
             display: "grid",
@@ -331,7 +398,7 @@ export default function AdminShipmentsPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                fontSize: "13px",
+                fontSize: "15px",
                 color: "var(--admin-text, #4a3f38)",
                 cursor: "pointer",
                 userSelect: "none"
@@ -362,7 +429,7 @@ export default function AdminShipmentsPage() {
                   border: "none",
                   background: "linear-gradient(135deg, #1c352a, #2d5040)",
                   color: "#fffbf5",
-                  fontSize: "13px",
+                  fontSize: "15px",
                   fontWeight: 600,
                   cursor: "pointer"
                 }}
@@ -378,7 +445,7 @@ export default function AdminShipmentsPage() {
                   border: "1px solid var(--admin-card-border, #e8e2d9)",
                   background: "transparent",
                   color: "#6b5c52",
-                  fontSize: "13px",
+                  fontSize: "15px",
                   fontWeight: 500,
                   cursor: "pointer"
                 }}
@@ -390,62 +457,8 @@ export default function AdminShipmentsPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        {buckets.map((b) => {
-          const count = counts?.[b.value as keyof NonNullable<typeof counts>];
-          const active = bucket === b.value;
-          return (
-            <button
-              key={b.value}
-              type="button"
-              onClick={() => {
-                setPage(1);
-                setBucket(b.value);
-                if (typeof window !== "undefined") {
-                  const u = new URL(window.location.href);
-                  u.searchParams.set("bucket", b.value);
-                  window.history.replaceState({}, "", u.pathname + u.search);
-                }
-              }}
-              style={{
-                padding: "7px 14px",
-                borderRadius: "999px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-                border: "1px solid",
-                borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
-                background: active
-                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
-                  : "var(--admin-card-bg, #fff)",
-                color: active ? "#fffbf5" : "#6b5c52",
-                boxShadow: active ? "0 2px 8px rgba(28,53,42,0.20)" : "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px"
-              }}
-            >
-              <span>{b.label}</span>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  minWidth: "18px",
-                  padding: "1px 6px",
-                  borderRadius: "999px",
-                  background: active ? "rgba(255,255,255,0.18)" : "#f0ece6",
-                  color: active ? "#fffbf5" : "#5a4a40"
-                }}
-              >
-                {typeof count === "number" ? count : "–"}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
       {err ? (
-        <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
+        <p style={{ color: "#dc2626", fontSize: "16px" }} role="alert">
           {err}
         </p>
       ) : null}
@@ -508,18 +521,18 @@ export default function AdminShipmentsPage() {
                       </td>
                       <td style={tdSt}>
                         {row.customerName ? (
-                          <div style={{ fontWeight: 600, fontSize: "13px" }}>{row.customerName}</div>
+                          <div style={{ fontWeight: 600, color: "var(--admin-text, #2c2420)", fontSize: "16px" }}>{row.customerName}</div>
                         ) : null}
-                        <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>
+                        <div style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)" }}>
                           {row.email}
                         </div>
                       </td>
                       <td style={tdSt}>
-                        <div style={{ fontSize: "12px" }}>
+                        <div style={{ fontSize: "15px" }}>
                           {[row.city, row.state].filter(Boolean).join(", ") || "—"}
                         </div>
                         {row.country ? (
-                          <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>
+                          <div style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)" }}>
                             {row.country}
                           </div>
                         ) : null}
@@ -535,7 +548,7 @@ export default function AdminShipmentsPage() {
                               borderRadius: "8px",
                               background: "linear-gradient(135deg, #1c352a, #2d5040)",
                               color: "#fffbf5",
-                              fontSize: "12px",
+                              fontSize: "15px",
                               fontWeight: 700,
                               textDecoration: "none"
                             }}
@@ -544,7 +557,7 @@ export default function AdminShipmentsPage() {
                           </Link>
                         ) : (
                           <>
-                            <div style={{ fontWeight: 600, fontSize: "12px" }}>{row.courier || "—"}</div>
+                            <div style={{ fontWeight: 600, fontSize: "15px" }}>{row.courier || "—"}</div>
                             {row.awb ? (
                               row.trackingUrl ? (
                                 <a
@@ -554,7 +567,7 @@ export default function AdminShipmentsPage() {
                                   onClick={(e) => e.stopPropagation()}
                                   style={{
                                     fontFamily: "ui-monospace, monospace",
-                                    fontSize: "11px",
+                                    fontSize: "14px",
                                     color: "#1e40af"
                                   }}
                                 >
@@ -564,7 +577,7 @@ export default function AdminShipmentsPage() {
                                 <div
                                   style={{
                                     fontFamily: "ui-monospace, monospace",
-                                    fontSize: "11px",
+                                    fontSize: "14px",
                                     color: "#5a4a40"
                                   }}
                                 >
@@ -572,7 +585,7 @@ export default function AdminShipmentsPage() {
                                 </div>
                               )
                             ) : (
-                              <div style={{ fontSize: "11px", color: "#8a7060" }}>No AWB</div>
+                              <div style={{ fontSize: "14px", color: "#8a7060" }}>No AWB</div>
                             )}
                             {row.shipmentStatus === "CREATED" ||
                             row.shipmentStatus === "PICKED" ||
@@ -597,7 +610,7 @@ export default function AdminShipmentsPage() {
                                   border: "1px solid #5b21b6",
                                   background: "#f5f3ff",
                                   color: "#5b21b6",
-                                  fontSize: "11px",
+                                  fontSize: "14px",
                                   fontWeight: 700,
                                   cursor: "pointer"
                                 }}
@@ -609,14 +622,14 @@ export default function AdminShipmentsPage() {
                         )}
                       </td>
                       <td style={tdSt}>
-                        <span style={{ fontSize: "12px" }}>{row.itemCount} units</span>
+                        <span style={{ fontSize: "15px" }}>{row.itemCount} units</span>
                         {row.linePreview.length > 0 ? (
                           <div
                             title={row.linePreview.join(" · ")}
                             style={{
-                              fontSize: "11px",
+                              fontSize: "14px",
                               color: "var(--admin-text-muted, #8a7060)",
-                              maxWidth: "160px",
+                              maxWidth: "180px",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap"
@@ -630,7 +643,7 @@ export default function AdminShipmentsPage() {
                         {formatMinorFromPaise(row.grandTotalInPaise, row.currency)}
                       </td>
                       <td style={tdSt}>{shipmentBadge(row.shipmentStatus, row.kind)}</td>
-                      <td style={{ ...tdSt, whiteSpace: "nowrap", fontSize: "12px" }}>
+                      <td style={{ ...tdSt, whiteSpace: "nowrap", fontSize: "15px", color: "var(--admin-text-muted, #8a7060)" }}>
                         {new Date(row.createdAt).toLocaleString("en-IN", {
                           timeZone: "Asia/Kolkata",
                           day: "numeric",

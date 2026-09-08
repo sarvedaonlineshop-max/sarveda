@@ -79,10 +79,9 @@ const accountingFlagOn =
 const primaryNav: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: icon.dashboard, match: "exact" },
   { href: "/admin/returns", label: "Returns", icon: icon.reports },
-  { href: "/admin/returns/analytics", label: "Returns Intel", icon: icon.reports },
-  { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments },
-  { href: "/admin/inventory", label: "Inventory", icon: icon.inventory },
   { href: "/admin/products", label: "Products", icon: icon.products },
+  { href: "/admin/inventory", label: "Inventory", icon: icon.inventory },
+  { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments },
   { href: "/admin/courses", label: "Courses", icon: icon.courses },
   { href: "/admin/content?type=events", label: "Events", icon: icon.events },
   { href: "/admin/customers", label: "Customers", icon: icon.customers }
@@ -196,7 +195,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         />
         <AdminOrdersSidebarLink onNavigate={onNavigate} />
         <AdminShipmentsSidebarLink onNavigate={onNavigate} />
-        {primaryNav.slice(1, 3).map((item) => (
+        {primaryNav.slice(1, 4).map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -207,7 +206,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
         ))}
         <AdminChatsSidebarLink onNavigate={onNavigate} />
-        {primaryNav.slice(3).map((item) => (
+        {primaryNav.slice(4).map((item) => (
           <NavLink
             key={item.href}
             item={item}
