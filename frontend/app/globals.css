@@ -1250,6 +1250,12 @@ select:-webkit-autofill {
 /* +3pt vs default Tailwind rem sizes inside admin (avoids CSS zoom hangs) */
 .admin-product-ui .text-\[10px\] { font-size: 13px !important; }
 .admin-product-ui .text-\[11px\] { font-size: 14px !important; }
+.admin-product-ui .text-\[12px\] { font-size: 15px !important; }
+.admin-product-ui .text-\[13px\] { font-size: 16px !important; }
+.admin-product-ui .text-\[14px\] { font-size: 17px !important; }
+.admin-product-ui .text-\[15px\] { font-size: 18px !important; }
+.admin-product-ui .text-\[17px\] { font-size: 20px !important; }
+.admin-product-ui .text-\[20px\] { font-size: 23px !important; }
 .admin-product-ui .text-xs { font-size: 15px !important; }
 .admin-product-ui .text-sm { font-size: 17px !important; }
 .admin-product-ui .text-base { font-size: 19px !important; }
