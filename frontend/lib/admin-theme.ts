@@ -1,7 +1,8 @@
 /**
- * Admin UI theme — Sarveda forest green + white type.
- * Light workspace is green (not cream/white) — easier on the eyes.
+ * Admin UI theme — Sarveda forest green + gold.
+ * Soft (light) workspace = light green surfaces (not cream, not deep dark).
  * Skin only — do not couple to API / routing logic.
+ * Storefront is unaffected.
  */
 export const adminTheme = {
   primary:         "#1c352a",
@@ -10,39 +11,39 @@ export const adminTheme = {
   accent:          "#b98a3e",
   danger:          "#ef4444",
 
-  /* Sidebar */
+  /* Sidebar (always deep green) */
   sidebarBg:           "#0a160e",
   sidebarBorder:       "rgba(185,138,62,0.10)",
   sidebarText:         "rgba(220,210,190,0.65)",
   sidebarTextActive:   "#f2ede4",
   sidebarMuted:        "rgba(220,210,190,0.38)",
 
-  /* Soft green workspace (toggle: “Light” / soft green) — green surfaces, white fonts */
-  workspaceBg:    "#102418",
-  headerBg:       "#143020",
-  cardBg:         "#1a3a28",
-  cardBorder:     "rgba(255,255,255,0.14)",
-  text:           "#ffffff",
-  textMuted:      "rgba(255,255,255,0.72)",
-  /** Field labels — white for contrast on green */
-  label:          "#ffffff",
+  /* Soft / light-green workspace — easy on eyes, readable dark type */
+  workspaceBg:    "#e7f1eb",
+  headerBg:       "#f3f8f5",
+  cardBg:         "#f7fbf8",
+  cardBorder:     "#c5d9cc",
+  text:           "#143026",
+  textMuted:      "#4a6b58",
+  /** Field labels */
+  label:          "#1c352a",
   /** Table column headers */
-  thText:         "rgba(255,255,255,0.88)",
-  rowHover:       "rgba(255,255,255,0.07)",
-  tableHeadBg:    "linear-gradient(180deg, #214d36, #1a3a28)",
-  inputBg:        "rgba(255,255,255,0.08)",
-  inputBorder:    "rgba(255,255,255,0.18)",
+  thText:         "#2d5040",
+  rowHover:       "#dceae2",
+  tableHeadBg:    "linear-gradient(180deg, #dff0e6, #eaf5ef)",
+  inputBg:        "#ffffff",
+  inputBorder:    "#b7cec0",
 
-  /* Deep green workspace (toggle: “Dark”) */
+  /* Deep green workspace (optional dark toggle) */
   workspaceBgDark:  "#0c1a10",
   headerBgDark:     "#0f2016",
   cardBgDark:       "#132a1a",
   cardBorderDark:   "rgba(185,138,62,0.18)",
-  textDark:         "#ffffff",
-  textMutedDark:    "rgba(255,255,255,0.68)",
-  labelDark:        "#ffffff",
-  thTextDark:       "rgba(255,255,255,0.88)",
-  rowHoverDark:     "rgba(185,138,62,0.10)",
+  textDark:         "#e8e0d4",
+  textMutedDark:    "#8aaa95",
+  labelDark:        "#f0e2b8",
+  thTextDark:       "#e8d9a8",
+  rowHoverDark:     "rgba(185,138,62,0.07)",
   tableHeadBgDark:  "linear-gradient(180deg, #1a3525, #162d1f)",
   inputBgDark:      "rgba(255,255,255,0.05)",
   inputBorderDark:  "rgba(185,138,62,0.20)",
