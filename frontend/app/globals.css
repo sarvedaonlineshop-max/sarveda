@@ -885,8 +885,8 @@ select:-webkit-autofill {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "tnum" 1;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  /* Larger admin type without CSS zoom (zoom caused hangs) */
-  font-size: 19px;
+  /* Admin readability: ~+3pt vs default without CSS zoom */
+  font-size: 22px;
 }
 
 /* Light-green workspace: gentle remaps for cream hardcodes → soft green */
@@ -1246,6 +1246,17 @@ select:-webkit-autofill {
 .admin-product-ui h2 { font-weight: 700 !important; }
 .admin-product-ui h3 { font-weight: 650 !important; }
 .admin-product-ui :is(h1,h2,h3) + p { margin-top: 5px; }
+
+/* +3pt vs default Tailwind rem sizes inside admin (avoids CSS zoom hangs) */
+.admin-product-ui .text-\[10px\] { font-size: 13px !important; }
+.admin-product-ui .text-\[11px\] { font-size: 14px !important; }
+.admin-product-ui .text-xs { font-size: 15px !important; }
+.admin-product-ui .text-sm { font-size: 17px !important; }
+.admin-product-ui .text-base { font-size: 19px !important; }
+.admin-product-ui .text-lg { font-size: 21px !important; }
+.admin-product-ui .text-xl { font-size: 23px !important; }
+.admin-product-ui .text-2xl { font-size: 27px !important; }
+.admin-product-ui .text-3xl { font-size: 33px !important; }
 
 .admin-product-ui :is(td, th, input, select, textarea, button) {
   font-variant-numeric: tabular-nums;

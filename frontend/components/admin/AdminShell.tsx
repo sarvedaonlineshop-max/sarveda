@@ -265,7 +265,7 @@ function AdminShellInner({
                   />
                   <h1
                     style={{
-                      fontSize: "20px",
+                      fontSize: "23px",
                       fontWeight: 700,
                       color: titleColor,
                       margin: 0,
@@ -352,7 +352,7 @@ function AdminShellInner({
                     boxShadow: isDark
                       ? "inset 0 1px 0 rgba(255,255,255,0.04)"
                       : "inset 0 1px 0 rgba(20,48,38,0.03)",
-                    fontSize: "15px",
+                    fontSize: "18px",
                     color: titleColor,
                     outline: "none",
                     transition: "border-color 0.15s ease, box-shadow 0.15s ease"
@@ -418,9 +418,9 @@ function AdminShellInner({
                           e.currentTarget.style.background = "transparent";
                         }}
                       >
-                        <div style={{ fontSize: "14px", fontWeight: 600 }}>{s.label}</div>
+                        <div style={{ fontSize: "17px", fontWeight: 600 }}>{s.label}</div>
                         {s.sublabel ? (
-                          <div style={{ fontSize: "12px", color: mutedColor, marginTop: "2px" }}>
+                          <div style={{ fontSize: "15px", color: mutedColor, marginTop: "2px" }}>
                             {s.sublabel}
                           </div>
                         ) : null}
@@ -429,7 +429,7 @@ function AdminShellInner({
                     <div
                       style={{
                         padding: "8px 14px",
-                        fontSize: "11px",
+                        fontSize: "14px",
                         color: mutedColor,
                         background: isDark ? "rgba(255,255,255,0.04)" : "rgba(28,53,42,0.04)"
                       }}

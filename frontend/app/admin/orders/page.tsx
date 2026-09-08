@@ -67,7 +67,7 @@ function StatusBadge({
       style={{
         background: bg,
         color,
-        fontSize: "11px",
+        fontSize: "14px",
         fontWeight: 600,
         padding: "3px 10px",
         borderRadius: "999px",
@@ -101,7 +101,7 @@ const card: React.CSSProperties = {
 };
 const thSt: React.CSSProperties = {
   padding: "11px 16px",
-  fontSize: "11px",
+  fontSize: "14px",
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -112,7 +112,7 @@ const thSt: React.CSSProperties = {
 };
 const tdSt: React.CSSProperties = {
   padding: "12px 16px",
-  fontSize: "13px",
+  fontSize: "16px",
   color: "var(--admin-text, #4a3f38)",
   borderBottom: "1px solid var(--admin-card-border, #f0ece6)"
 };
@@ -124,12 +124,12 @@ const inputSt: React.CSSProperties = {
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   background: "var(--admin-card-bg, #fff)",
   color: "var(--admin-text, #2c2420)",
-  fontSize: "12px",
+  fontSize: "15px",
   minWidth: 0
 };
 const labelSt: React.CSSProperties = {
   display: "block",
-  fontSize: "10px",
+  fontSize: "13px",
   fontWeight: 600,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
@@ -230,7 +230,7 @@ export default function AdminOrdersPage() {
             <h1
               style={{
                 margin: 0,
-                fontSize: "20px",
+                fontSize: "23px",
                 fontWeight: 700,
                 color: "var(--admin-text, #1c352a)",
                 lineHeight: 1.2,
@@ -242,7 +242,7 @@ export default function AdminOrdersPage() {
             <p
               style={{
                 margin: "3px 0 0",
-                fontSize: "11px",
+                fontSize: "14px",
                 lineHeight: 1.4,
                 color: "var(--admin-text-muted, #4a6b58)"
               }}
@@ -353,7 +353,7 @@ export default function AdminOrdersPage() {
               }}
               style={{
                 padding: "10px 16px",
-                fontSize: "14px",
+                fontSize: "17px",
                 fontWeight: active ? 700 : 500,
                 cursor: "pointer",
                 border: "none",
@@ -371,7 +371,7 @@ export default function AdminOrdersPage() {
               <span>{ch.label}</span>
               <span
                 style={{
-                  fontSize: "11px",
+                  fontSize: "14px",
                   fontWeight: 700,
                   minWidth: "18px",
                   padding: "1px 7px",
@@ -403,7 +403,7 @@ export default function AdminOrdersPage() {
               style={{
                 padding: "7px 14px",
                 borderRadius: "999px",
-                fontSize: "13px",
+                fontSize: "16px",
                 fontWeight: 500,
                 cursor: "pointer",
                 border: "1px solid",
@@ -422,7 +422,7 @@ export default function AdminOrdersPage() {
               <span>{b.label}</span>
               <span
                 style={{
-                  fontSize: "11px",
+                  fontSize: "14px",
                   fontWeight: 700,
                   minWidth: "18px",
                   padding: "1px 6px",
@@ -529,7 +529,7 @@ export default function AdminOrdersPage() {
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            fontSize: "12px",
+            fontSize: "15px",
             color: "var(--admin-text, #4a3f38)",
             cursor: "pointer",
             userSelect: "none",
@@ -562,7 +562,7 @@ export default function AdminOrdersPage() {
             border: "none",
             background: "linear-gradient(135deg, #1c352a, #2d5040)",
             color: "#fffbf5",
-            fontSize: "12px",
+            fontSize: "15px",
             fontWeight: 600,
             cursor: "pointer",
             whiteSpace: "nowrap",
@@ -580,7 +580,7 @@ export default function AdminOrdersPage() {
             border: "1px solid var(--admin-card-border, #e8e2d9)",
             background: "transparent",
             color: "#6b5c52",
-            fontSize: "12px",
+            fontSize: "15px",
             fontWeight: 500,
             cursor: "pointer",
             whiteSpace: "nowrap",
@@ -600,7 +600,7 @@ export default function AdminOrdersPage() {
               border: "1px solid #1e3a2f",
               background: "#fff",
               color: "#1c352a",
-              fontSize: "12px",
+              fontSize: "15px",
               fontWeight: 600,
               cursor: "pointer",
               whiteSpace: "nowrap",
@@ -643,7 +643,7 @@ export default function AdminOrdersPage() {
                   border: "none",
                   background: "transparent",
                   cursor: "pointer",
-                  fontSize: "13px",
+                  fontSize: "16px",
                   fontWeight: 600,
                   color: "#1c352a"
                 }}
@@ -665,7 +665,7 @@ export default function AdminOrdersPage() {
                   border: "none",
                   background: "transparent",
                   cursor: "pointer",
-                  fontSize: "13px",
+                  fontSize: "16px",
                   fontWeight: 600,
                   color: "#1c352a"
                 }}
@@ -685,7 +685,7 @@ export default function AdminOrdersPage() {
             borderRadius: "8px",
             padding: "8px 12px",
             color: "#dc2626",
-            fontSize: "13px",
+            fontSize: "16px",
             margin: 0
           }}
         >
@@ -694,7 +694,7 @@ export default function AdminOrdersPage() {
       ) : null}
 
       {err && (
-        <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
+        <p style={{ color: "#dc2626", fontSize: "16px" }} role="alert">
           {err}
         </p>
       )}
@@ -744,27 +744,27 @@ export default function AdminOrdersPage() {
                     </td>
                     <td style={tdSt}>
                       {o.customerName ? (
-                        <div style={{ fontWeight: 600, color: "var(--admin-text, #2c2420)", fontSize: "13px" }}>
+                        <div style={{ fontWeight: 600, color: "var(--admin-text, #2c2420)", fontSize: "16px" }}>
                           {o.customerName}
                         </div>
                       ) : null}
-                      <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>{o.email}</div>
+                      <div style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)" }}>{o.email}</div>
                     </td>
                     <td style={tdSt}>
-                      <div style={{ fontSize: "12px" }}>
+                      <div style={{ fontSize: "15px" }}>
                         {[o.city, o.state].filter(Boolean).join(", ") || "—"}
                       </div>
                       {o.country ? (
-                        <div style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)" }}>{o.country}</div>
+                        <div style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)" }}>{o.country}</div>
                       ) : null}
                     </td>
                     <td style={tdSt}>
-                      <span style={{ fontSize: "12px" }}>{o.itemCount} units</span>
+                      <span style={{ fontSize: "15px" }}>{o.itemCount} units</span>
                       {o.linePreview.length > 0 && (
                         <div
                           title={o.linePreview.join(" · ")}
                           style={{
-                            fontSize: "11px",
+                            fontSize: "14px",
                             color: "var(--admin-text-muted, #8a7060)",
                             maxWidth: "180px",
                             overflow: "hidden",
@@ -789,7 +789,7 @@ export default function AdminOrdersPage() {
                     <td
                       style={{
                         ...tdSt,
-                        fontSize: "12px",
+                        fontSize: "15px",
                         color: "var(--admin-text-muted, #8a7060)",
                         whiteSpace: "nowrap"
                       }}

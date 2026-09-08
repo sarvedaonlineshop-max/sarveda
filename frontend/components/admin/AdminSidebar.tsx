@@ -46,7 +46,7 @@ type NavItem = {
   match?: "exact" | "prefix";
 };
 
-const iconProps = { size: 18, strokeWidth: 2 } as const;
+const iconProps = { size: 20, strokeWidth: 2 } as const;
 
 const icon = {
   dashboard: <LayoutDashboard {...iconProps} />,
@@ -280,7 +280,7 @@ function NavGroup({
         <p
           style={{
             color: "rgba(185,138,62,0.5)",
-            fontSize: "10px",
+            fontSize: "13px",
             fontWeight: 700,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
@@ -323,7 +323,7 @@ export function AdminSidebar({
           <p
             style={{
               color: t.accent,
-              fontSize: "10px",
+              fontSize: "13px",
               fontWeight: 600,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
@@ -352,7 +352,7 @@ export function AdminSidebar({
             borderRadius: "8px",
             textAlign: "left",
             color: "rgba(255,255,255,0.4)",
-            fontSize: "12px",
+            fontSize: "15px",
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(255,255,255,0.08)",
             cursor: "pointer",
@@ -377,7 +377,7 @@ export function AdminSidebar({
             display: "block",
             padding: "8px 12px",
             color: "rgba(255,255,255,0.4)",
-            fontSize: "12px",
+            fontSize: "15px",
             borderRadius: "8px",
             textDecoration: "none",
             background: "transparent",
@@ -400,7 +400,7 @@ export function AdminSidebar({
             width: "100%",
             padding: "8px 12px",
             color: "rgba(255,255,255,0.4)",
-            fontSize: "12px",
+            fontSize: "15px",
             textAlign: "left",
             background: "none",
             border: "none",
