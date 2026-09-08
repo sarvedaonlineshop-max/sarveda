@@ -14,11 +14,7 @@ import {
   type AdminOrderAttribution
 } from "@/components/admin/AdminOrderAttributionCard";
 import { AdminOrderEwayBillCard } from "@/components/admin/AdminOrderEwayBillCard";
-import { AdminOrderLineRefund } from "@/components/admin/AdminOrderLineRefund";
-import { AdminOrderRefundPreview } from "@/components/admin/AdminOrderRefundPreview";
-import { AdminOrderRtoWorkflow } from "@/components/admin/AdminOrderRtoWorkflow";
 import {
-  AdminOrderServiceRequests,
   type AdminServiceRequestRow
 } from "@/components/admin/AdminOrderServiceRequests";
 import {
@@ -170,6 +166,7 @@ type RefundAllocationRow = {
   orderItemId: string;
   quantity: number;
   approvedRefundPaise: number;
+  forwardShippingPaise?: number;
 };
 
 type RefundRow = {
@@ -501,7 +498,9 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       allocations: ((r.allocations as Array<Record<string, unknown>>) ?? []).map((a) => ({
         orderItemId: String(a.orderItemId),
         quantity: Number(a.quantity),
-        approvedRefundPaise: Number(a.approvedRefundPaise)
+        approvedRefundPaise: Number(a.approvedRefundPaise),
+        forwardShippingPaise:
+          a.forwardShippingPaise != null ? Number(a.forwardShippingPaise) : 0
       }))
     }))
   }));
@@ -686,10 +685,29 @@ function liveItemQty(item: OrderItemRow): number {
   return Math.max(0, item.qtyOrdered - (item.returnedQty ?? 0));
 }
 
-function liveLineTotalPaise(item: OrderItemRow): number {
-  const qty = liveItemQty(item);
-  if (item.qtyOrdered <= 0) return 0;
-  return Math.round((item.lineTotalInPaise * qty) / item.qtyOrdered);
+/** Split order-level shipping across purchased lines by qty. */
+function allocateShippingByQty(
+  items: OrderItemRow[],
+  shippingInPaise: number
+): Map<string, number> {
+  const map = new Map<string, number>();
+  const totalQty = items.reduce((s, i) => s + Math.max(0, i.qtyOrdered), 0);
+  if (totalQty <= 0 || shippingInPaise <= 0) {
+    items.forEach((item, idx) => map.set(item.id ?? `idx-${idx}`, 0));
+    return map;
+  }
+  let allocated = 0;
+  items.forEach((item, idx) => {
+    const key = item.id ?? `idx-${idx}`;
+    if (idx === items.length - 1) {
+      map.set(key, Math.max(0, shippingInPaise - allocated));
+      return;
+    }
+    const share = Math.round((shippingInPaise * item.qtyOrdered) / totalQty);
+    map.set(key, share);
+    allocated += share;
+  });
+  return map;
 }
 
 function sameAddress(a: AddressRow | undefined, b: AddressRow | undefined): boolean {
@@ -716,9 +734,9 @@ function AdminOrderProductionView({
   onSetShipmentStatus,
   statusSaving,
   dangerActions,
-  refundContent,
+  refundContent: _refundContent,
   ewayBill,
-  serviceRequests,
+  serviceRequests: _serviceRequests,
   shipmentSetup
 }: {
   order: OrderLoaded;
@@ -750,10 +768,6 @@ function AdminOrderProductionView({
   const payment = order.payments?.[0];
   const isCod = payment?.provider === "COD";
   const isCancelled = order.status === "CANCELLED";
-  const isRefunded =
-    order.status === "REFUNDED" ||
-    order.paymentStatus === "REFUNDED" ||
-    order.paymentStatus === "PARTIALLY_REFUNDED";
   const captured =
     order.paymentStatus === "CAPTURED" ||
     order.paymentStatus === "REFUNDED" ||
@@ -826,39 +840,142 @@ function AdminOrderProductionView({
       return row.status !== "DELIVERED";
     });
   const seenShipmentIds = new Set<string>();
-  const invoiceHref =
-    invoice?.invoiceNo || invoice?.pdfUrl
-      ? invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)
-      : null;
 
   const liveItems = order.items.filter((item) => liveItemQty(item) > 0);
-  const refundAllocByItem = new Map<string, { qty: number; amount: number }>();
+  const shippingByItemId = allocateShippingByQty(order.items, order.shippingInPaise);
+  const refundAllocByItem = new Map<
+    string,
+    { qty: number; amount: number; shipping: number }
+  >();
   for (const p of order.payments ?? []) {
     for (const r of p.refunds ?? []) {
       for (const a of r.allocations ?? []) {
-        const prev = refundAllocByItem.get(a.orderItemId) ?? { qty: 0, amount: 0 };
+        const prev = refundAllocByItem.get(a.orderItemId) ?? {
+          qty: 0,
+          amount: 0,
+          shipping: 0
+        };
         refundAllocByItem.set(a.orderItemId, {
           qty: prev.qty + a.quantity,
-          amount: prev.amount + a.approvedRefundPaise
+          amount: prev.amount + a.approvedRefundPaise,
+          shipping: prev.shipping + (a.forwardShippingPaise ?? 0)
         });
       }
     }
   }
-  const refundedRows = order.items
+
+  type RefundCaseLine = {
+    key: string;
+    nameSnapshot: string;
+    skuSnapshot: string;
+    unitCostInPaise: number;
+    qty: number;
+    shippingRefundPaise: number | null;
+    customerReason: string;
+    decision: string;
+    refundedInPaise: number;
+  };
+
+  type RefundCaseTable = {
+    key: string;
+    caseNumber: string | null;
+    caseHref: string | null;
+    title: string;
+    lines: RefundCaseLine[];
+    grandTotalInPaise: number;
+  };
+
+  const coveredOrderItemIds = new Set<string>();
+  const refundCaseTables: RefundCaseTable[] = [];
+
+  for (const req of order.serviceRequests ?? []) {
+    const reqItems = (req.items ?? []).filter(
+      (item) => (item.refundAmountInPaise ?? 0) > 0 || Boolean(item.refundedAt)
+    );
+    if (reqItems.length === 0 && !(req.refundTotalInPaise && req.refundTotalInPaise > 0)) {
+      continue;
+    }
+    const sourceItems =
+      reqItems.length > 0
+        ? reqItems
+        : (req.items ?? []).filter((item) => item.qtySelected > 0);
+    if (sourceItems.length === 0) continue;
+
+    const lines: RefundCaseLine[] = sourceItems.map((item) => {
+      coveredOrderItemIds.add(item.orderItemId);
+      const orderItem = order.items.find((o) => o.id === item.orderItemId);
+      const alloc = refundAllocByItem.get(item.orderItemId);
+      const shippingRefund =
+        alloc && alloc.shipping > 0
+          ? alloc.shipping
+          : null;
+      const refunded =
+        item.refundAmountInPaise ??
+        alloc?.amount ??
+        0;
+      return {
+        key: item.id,
+        nameSnapshot: item.nameSnapshot,
+        skuSnapshot: item.skuSnapshot,
+        unitCostInPaise: orderItem?.unitPriceInPaise ?? 0,
+        qty: item.qtySelected,
+        shippingRefundPaise: shippingRefund,
+        customerReason: item.reasonLabel || req.reasonLabel || "—",
+        decision: item.reviewDecision || req.status,
+        refundedInPaise: refunded
+      };
+    });
+
+    const caseNumber = req.caseNumber ?? null;
+    refundCaseTables.push({
+      key: req.id,
+      caseNumber,
+      caseHref: caseNumber ? `/admin/returns/${encodeURIComponent(caseNumber)}` : null,
+      title: caseNumber ? `Case ${caseNumber}` : `Return · ${req.type}`,
+      lines,
+      grandTotalInPaise:
+        req.refundTotalInPaise ??
+        lines.reduce((s, l) => s + l.refundedInPaise, 0)
+    });
+  }
+
+  const orphanRefundLines: RefundCaseLine[] = order.items
     .map((item) => {
-      const fromAlloc = item.id ? refundAllocByItem.get(item.id) : undefined;
+      if (!item.id || coveredOrderItemIds.has(item.id)) return null;
+      const alloc = refundAllocByItem.get(item.id);
       const qty =
-        fromAlloc?.qty ??
+        alloc?.qty ??
         (typeof item.returnedQty === "number" && item.returnedQty > 0 ? item.returnedQty : 0);
       if (qty <= 0) return null;
       const amount =
-        fromAlloc?.amount ??
+        alloc?.amount ??
         (item.qtyOrdered > 0
           ? Math.round((item.lineTotalInPaise * qty) / item.qtyOrdered)
           : item.unitPriceInPaise * qty);
-      return { item, qty, amount };
+      return {
+        key: `orphan-${item.id}`,
+        nameSnapshot: item.nameSnapshot,
+        skuSnapshot: item.skuSnapshot,
+        unitCostInPaise: item.unitPriceInPaise,
+        qty,
+        shippingRefundPaise: alloc && alloc.shipping > 0 ? alloc.shipping : null,
+        customerReason: "—",
+        decision: "Refunded",
+        refundedInPaise: amount
+      } satisfies RefundCaseLine;
     })
-    .filter((row): row is { item: OrderItemRow; qty: number; amount: number } => row != null);
+    .filter((row): row is RefundCaseLine => row != null);
+
+  if (orphanRefundLines.length > 0) {
+    refundCaseTables.push({
+      key: "orphan-refunds",
+      caseNumber: null,
+      caseHref: null,
+      title: "Line refunds",
+      lines: orphanRefundLines,
+      grandTotalInPaise: orphanRefundLines.reduce((s, l) => s + l.refundedInPaise, 0)
+    });
+  }
 
   const goTo = (sectionId: string, opts?: { openShipmentTimeline?: boolean }) => {
     if (opts?.openShipmentTimeline) setShipmentTimelineOpen(true);
@@ -950,19 +1067,6 @@ function AdminOrderProductionView({
               ? `After refunds · was ${formatMinorFromPaise(order.grandTotalInPaise, order.currency)}`
               : order.currency}
           </p>
-          {invoiceHref ? (
-            <a
-              href={invoiceHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="mt-auto self-end rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-3 py-1.5 text-xs font-semibold text-[#1c352a]"
-            >
-              Download Invoice
-            </a>
-          ) : (
-            <span className="mt-auto self-end text-[11px] text-stone-400">No invoice yet</span>
-          )}
         </button>
 
         <button
@@ -986,7 +1090,7 @@ function AdminOrderProductionView({
 
         <button
           type="button"
-          onClick={() => goTo("section-refund")}
+          onClick={() => goTo("section-refunded-items")}
           className={`${card} min-h-[120px] p-4 text-left transition hover:border-[#b98a3e]`}
         >
           <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">Refund</p>
@@ -995,8 +1099,8 @@ function AdminOrderProductionView({
           </p>
           <p className="mt-0.5 text-xs text-stone-500">
             {refundedInPaise > 0
-              ? `${refundedRows.length || (payment?.refunds?.length ?? 0)} refund line${
-                  (refundedRows.length || (payment?.refunds?.length ?? 0)) === 1 ? "" : "s"
+              ? `${refundCaseTables.length || 1} refund case${
+                  (refundCaseTables.length || 1) === 1 ? "" : "s"
                 }`
               : "No refunds"}
           </p>
@@ -1049,21 +1153,6 @@ function AdminOrderProductionView({
                 {shipBusy === "create" ? "Creating label…" : "Create label"}
               </button>
             ) : null}
-            {awbRows
-              .filter((row) => row.isDelhiveryIntegrated)
-              .map((row) => (
-                <a
-                  key={`label-${row.shipmentId}-${row.awb}`}
-                  href={delhiveryLabelUrl(row.awb)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]"
-                >
-                  {awbRows.filter((r) => r.isDelhiveryIntegrated).length > 1
-                    ? `Download label · ${row.awb}`
-                    : "Download label"}
-                </a>
-              ))}
           </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
             <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -1102,14 +1191,16 @@ function AdminOrderProductionView({
 
       <section id="section-items" className={card}>
         <div className={sectionHeader}>
-          <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Items</h2>
-          <p className="mt-1 text-xs text-stone-500">Live purchased quantity remaining on this order</p>
+          <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Purchased Items</h2>
+          <p className="mt-1 text-xs text-stone-500">
+            What the customer bought on this order (includes refunded units)
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-[#faf7f2] text-[11px] uppercase tracking-wide text-[#8a7060]">
               <tr>
-                {["Product", "SKU", "Qty", "Unit Price", "GST %", "Total"].map((h) => (
+                {["Product", "SKU", "Qty", "Unit Price", "Shipping", "GST %", "Total"].map((h) => (
                   <th key={h} className="px-4 py-3 font-semibold">
                     {h}
                   </th>
@@ -1117,18 +1208,19 @@ function AdminOrderProductionView({
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {liveItems.length === 0 ? (
+              {order.items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-sm text-stone-500">
-                    No live items remain on this order (all units refunded or restocked).
+                  <td colSpan={7} className="px-4 py-6 text-sm text-stone-500">
+                    No purchased items on this order.
                   </td>
                 </tr>
               ) : (
-                liveItems.map((item, idx) => {
-                  const qty = liveItemQty(item);
+                order.items.map((item, idx) => {
                   const thumb = resolveMediaUrl(item.imageUrl);
                   const gst =
                     typeof item.gstPercent === "number" ? `${item.gstPercent}%` : "—";
+                  const shipShare =
+                    shippingByItemId.get(item.id ?? `idx-${idx}`) ?? 0;
                   return (
                     <tr key={item.id ?? idx}>
                       <td className="px-4 py-3">
@@ -1143,13 +1235,16 @@ function AdminOrderProductionView({
                         </div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
-                      <td className="px-4 py-3">{qty}</td>
+                      <td className="px-4 py-3">{item.qtyOrdered}</td>
                       <td className="px-4 py-3">
                         {formatMinorFromPaise(item.unitPriceInPaise, order.currency)}
                       </td>
+                      <td className="px-4 py-3">
+                        {formatMinorFromPaise(shipShare, order.currency)}
+                      </td>
                       <td className="px-4 py-3">{gst}</td>
                       <td className="px-4 py-3 font-semibold">
-                        {formatMinorFromPaise(liveLineTotalPaise(item), order.currency)}
+                        {formatMinorFromPaise(item.lineTotalInPaise, order.currency)}
                       </td>
                     </tr>
                   );
@@ -1158,39 +1253,97 @@ function AdminOrderProductionView({
             </tbody>
           </table>
         </div>
-        {refundedRows.length > 0 ? (
-          <div className="border-t border-stone-100">
-            <div className="border-b border-stone-100 px-5 py-3">
-              <h3 className="text-sm font-bold text-[#1c352a]">Refunded items</h3>
-              <p className="mt-0.5 text-xs text-stone-500">Units refunded / restocked from this order</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-amber-50/80 text-[11px] uppercase tracking-wide text-amber-900/70">
-                  <tr>
-                    {["Product", "SKU", "Qty refunded", "Amount refunded"].map((h) => (
-                      <th key={h} className="px-4 py-3 font-semibold">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {refundedRows.map(({ item, qty, amount }) => (
-                    <tr key={`refund-${item.id ?? item.skuSnapshot}`}>
-                      <td className="px-4 py-3 font-medium text-stone-900">{item.nameSnapshot}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
-                      <td className="px-4 py-3">{qty}</td>
-                      <td className="px-4 py-3 font-semibold">
-                        {formatMinorFromPaise(amount, order.currency)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      </section>
+
+      <section id="section-refunded-items" className={card}>
+        <div className={sectionHeader}>
+          <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Refunded items</h2>
+          <p className="mt-1 text-xs text-stone-500">
+            Only units that were refunded — one table per case when multiple cases exist
+          </p>
+        </div>
+        {refundCaseTables.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-stone-500">No refunded items on this order.</p>
+        ) : (
+          <div className="divide-y divide-stone-100">
+            {refundCaseTables.map((table) => (
+              <div key={table.key} className="p-5">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  {table.caseHref && table.caseNumber ? (
+                    <Link
+                      href={table.caseHref}
+                      className="text-sm font-bold text-[#8a6428] hover:underline"
+                    >
+                      {table.caseNumber}
+                    </Link>
+                  ) : (
+                    <p className="text-sm font-bold text-[#1c352a]">{table.title}</p>
+                  )}
+                  {table.caseNumber ? (
+                    <span className="text-xs text-stone-500">Open case for full workflow</span>
+                  ) : null}
+                </div>
+                <div className="overflow-hidden rounded-lg border border-stone-100">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="bg-[#faf7f2] text-[#8a7060]">
+                      <tr>
+                        <th className="px-3 py-2 font-semibold">Item</th>
+                        <th className="px-3 py-2 font-semibold">Unit cost</th>
+                        <th className="px-3 py-2 font-semibold">Qty</th>
+                        <th className="px-3 py-2 font-semibold">Shipping cost</th>
+                        <th className="px-3 py-2 font-semibold">Customer reason</th>
+                        <th className="px-3 py-2 font-semibold">Decision</th>
+                        <th className="px-3 py-2 font-semibold">Refunded</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {table.lines.map((line) => (
+                        <tr key={line.key}>
+                          <td className="px-3 py-2 align-top">
+                            <p className="font-medium text-stone-900">{line.nameSnapshot}</p>
+                            <p className="font-mono text-[11px] text-stone-500">{line.skuSnapshot}</p>
+                          </td>
+                          <td className="px-3 py-2 align-top">
+                            {formatMinorFromPaise(line.unitCostInPaise, order.currency)}
+                          </td>
+                          <td className="px-3 py-2 align-top font-semibold">{line.qty}</td>
+                          <td className="px-3 py-2 align-top text-stone-600">
+                            {line.shippingRefundPaise != null
+                              ? formatMinorFromPaise(line.shippingRefundPaise, order.currency)
+                              : "NA"}
+                          </td>
+                          <td className="px-3 py-2 align-top text-stone-600">{line.customerReason}</td>
+                          <td className="px-3 py-2 align-top text-stone-600">
+                            {humanState(line.decision)}
+                          </td>
+                          <td className="px-3 py-2 align-top font-semibold text-stone-800">
+                            {formatMinorFromPaise(line.refundedInPaise, order.currency)}
+                            {line.shippingRefundPaise != null && line.shippingRefundPaise > 0 ? (
+                              <span className="mt-0.5 block text-[11px] font-normal text-stone-500">
+                                incl. {formatMinorFromPaise(line.shippingRefundPaise, order.currency)}{" "}
+                                shipping
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-stone-200 bg-stone-50/80">
+                        <td colSpan={6} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-stone-500">
+                          Grand total
+                        </td>
+                        <td className="px-3 py-2 text-sm font-bold text-[#1c352a]">
+                          {formatMinorFromPaise(table.grandTotalInPaise, order.currency)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
-        ) : null}
+        )}
       </section>
 
       <section id="section-shipments" className={card}>
@@ -1297,16 +1450,6 @@ function AdminOrderProductionView({
                         </div>
                       </dl>
                       <div className="flex flex-wrap gap-2">
-                        {row.isDelhiveryIntegrated ? (
-                          <a
-                            href={delhiveryLabelUrl(row.awb)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={AWB_PILL.label}
-                          >
-                            Download label
-                          </a>
-                        ) : null}
                         {row.trackingUrl ? (
                           <a
                             href={row.trackingUrl}
@@ -1470,42 +1613,6 @@ function AdminOrderProductionView({
           </dl>
         </div>
       </section>
-
-      {isCancelled || isRefunded || refundContent || serviceRequests || refundedInPaise > 0 ? (
-        <section id="section-refund" className={card}>
-          <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">{isCancelled && isCod && !captured ? "Cancellation" : "Refunds & Returns"}</h2></div>
-          <div className="space-y-4 p-5">
-            {refundedInPaise > 0 ? (
-              <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                <div>
-                  <dt className="text-stone-500">Amount refunded</dt>
-                  <dd className="font-semibold">{formatMinorFromPaise(refundedInPaise, order.currency)}</dd>
-                </div>
-                <div>
-                  <dt className="text-stone-500">Refunded lines</dt>
-                  <dd className="font-semibold">{refundedRows.length}</dd>
-                </div>
-                <div>
-                  <dt className="text-stone-500">Payment status</dt>
-                  <dd className="font-semibold">{humanState(order.paymentStatus)}</dd>
-                </div>
-              </dl>
-            ) : null}
-            {isCancelled && isCod && !captured ? (
-              <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                <div><dt className="text-stone-500">Status</dt><dd className="font-semibold">Cancelled before shipment</dd></div>
-                <div><dt className="text-stone-500">Payment collected</dt><dd className="font-semibold">{formatMinorFromPaise(0, order.currency)}</dd></div>
-                <div><dt className="text-stone-500">Refund required</dt><dd className="font-semibold">No</dd></div>
-              </dl>
-            ) : refundContent}
-            {serviceRequests}
-          </div>
-        </section>
-      ) : (
-        <section id="section-refund" className="sr-only" aria-hidden>
-          Refunds
-        </section>
-      )}
 
       <section className={card}>
         <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Documents</h2></div>
@@ -2532,49 +2639,8 @@ export default function AdminOrderDetailPage() {
             />
           ) : null
         }
-        refundContent={
-          order.payments?.[0]?.provider !== "COD" &&
-          ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(order.paymentStatus) ? (
-            <>
-              {lineRefundAvailable ? (
-                <AdminOrderLineRefund
-                  orderId={order.id}
-                  currency={order.currency}
-                  refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
-                  onRefunded={() => void load()}
-                />
-              ) : (
-                <AdminOrderRefundPreview
-                  orderId={order.id}
-                  currency={order.currency}
-                  refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
-                />
-              )}
-              <AdminOrderRtoWorkflow orderId={order.id} currency={order.currency} onUpdated={() => void load()} />
-            </>
-          ) : null
-        }
-        serviceRequests={
-          order.serviceRequests?.length ? (
-            <AdminOrderServiceRequests
-              orderId={order.id}
-              requests={order.serviceRequests}
-              orderCtx={{
-                currency: order.currency,
-                grandTotalInPaise: order.grandTotalInPaise,
-                paymentStatus: order.paymentStatus,
-                paymentProvider: order.payments?.[0]?.provider ?? null,
-                paymentRefundedInPaise: order.payments?.[0]?.refundedInPaise ?? 0,
-                orderItems: order.items.map((i) => ({
-                  id: i.id ?? "",
-                  lineTotalInPaise: i.lineTotalInPaise,
-                  qtyOrdered: i.qtyOrdered
-                }))
-              }}
-              onUpdated={() => void load()}
-            />
-          ) : null
-        }
+        refundContent={null}
+        serviceRequests={null}
         ewayBill={<AdminOrderEwayBillCard orderId={id} onToast={pushToast} />}
         shipmentSetup={null}
       />
@@ -3016,34 +3082,6 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       </div>
-
-      <AdminOrderRefundPreview
-        orderId={order.id}
-        currency={order.currency}
-        refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
-      />
-
-      <AdminOrderRtoWorkflow orderId={order.id} currency={order.currency} onUpdated={() => void load()} />
-
-      {order.serviceRequests?.length ? (
-        <AdminOrderServiceRequests
-          orderId={order.id}
-          requests={order.serviceRequests}
-          orderCtx={{
-            currency: order.currency,
-            grandTotalInPaise: order.grandTotalInPaise,
-            paymentStatus: order.paymentStatus,
-            paymentProvider: order.payments?.[0]?.provider ?? null,
-            paymentRefundedInPaise: order.payments?.[0]?.refundedInPaise ?? 0,
-            orderItems: order.items.map((i) => ({
-              id: i.id ?? "",
-              lineTotalInPaise: i.lineTotalInPaise,
-              qtyOrdered: i.qtyOrdered
-            }))
-          }}
-          onUpdated={() => void load()}
-        />
-      ) : null}
 
       <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Documents</p>
@@ -3710,14 +3748,6 @@ export default function AdminOrderDetailPage() {
                           >
                             {shipBusy === row.awb ? "…" : "Sync Delhivery"}
                           </button>
-                          <a
-                            href={delhiveryLabelUrl(row.awb)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={AWB_PILL.label}
-                          >
-                            Download label
-                          </a>
                           {row.role === "parent" || row.role === "return" ? (
                             <button
                               type="button"
