@@ -18,10 +18,10 @@ import {
 } from "@/lib/auth-client";
 
 const inputClass =
-  "w-full rounded-xl border border-[#E3D9C8] bg-white px-3 py-2.5 font-sans text-brand-ink placeholder:text-brand-ink/45 focus:border-[#166D46] focus:outline-none focus:ring-2 focus:ring-[#166D46]/20";
+  "w-full rounded-2xl border border-[#E3D9C8] bg-white/88 px-4 py-3.5 font-sans text-brand-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] placeholder:text-brand-ink/42 transition focus:border-[#166D46] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#166D46]/12";
 
 const BTN_GREEN =
-  "w-full rounded-full bg-[#166D46] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#145a3a] disabled:opacity-60 sm:py-3";
+  "w-full rounded-2xl bg-[#166D46] py-3.5 text-sm font-bold text-white shadow-[0_16px_34px_rgba(22,109,70,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#145a3a] hover:shadow-[0_20px_42px_rgba(22,109,70,0.28)] disabled:opacity-60";
 
 type LoginMode = "password" | "otp";
 
@@ -38,7 +38,7 @@ function LoginForm() {
   /** Stored in OAuth cookie — backend also forces /admin for admin roles. */
   const googleNextPath = next ?? (adminOnly ? "/admin" : "/");
 
-  const [mode, setMode] = useState<LoginMode>("password");
+  const [mode, setMode] = useState<LoginMode>("otp");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -105,14 +105,16 @@ function LoginForm() {
       variant="light"
       showMobileLogo
       compactMobile
+      adminMode={adminOnly}
       title={adminOnly ? "Admin sign-in" : "Welcome back"}
+      subtitle={adminOnly ? "Secure staff access for the Sarveda operations workspace." : "Sign in to continue your Sarveda journey."}
       footer={
         !adminOnly ? (
           <p className="text-center text-sm">
-            <span className="text-brand-gold">New here?</span>{" "}
+            <span className="text-[#b98a3e]">New here?</span>{" "}
             <Link
               href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-              className="font-semibold text-[#166D46] hover:text-[#145a3a]"
+              className="font-bold text-[#166D46] hover:text-[#145a3a]"
             >
               Create an account
             </Link>
@@ -122,45 +124,42 @@ function LoginForm() {
     >
       <GoogleSignInButton nextPath={googleNextPath} compact />
 
-      <div className="my-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/50 sm:my-5">
+      <div className="my-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45 sm:my-5">
         <span className="h-px flex-1 bg-brand-cream-dark" />
         <span>OR</span>
         <span className="h-px flex-1 bg-brand-cream-dark" />
       </div>
 
-      {/* Sliding mode toggle — content swaps so OTP does not inherit password form height */}
-      <div className="relative mb-3 rounded-full border border-brand-cream-dark bg-brand-cream p-1 sm:mb-5">
+      {/* Sliding mode toggle — OTP first because most customers prefer fast sign-in. */}
+      <div className="relative mb-4 rounded-full border border-brand-cream-dark bg-[#f8f0e4] p-1 shadow-[inset_0_1px_2px_rgba(16,32,26,0.04)] sm:mb-5">
         <div
-          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#166D46] shadow-sm transition-transform duration-300 ease-out"
-          style={{ transform: mode === "otp" ? "translateX(100%)" : "translateX(0)" }}
+          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#166D46] shadow-[0_10px_24px_rgba(22,109,70,0.25)] transition-transform duration-300 ease-out"
+          style={{ transform: mode === "password" ? "translateX(100%)" : "translateX(0)" }}
           aria-hidden
         />
         <div className="relative z-10 grid grid-cols-2">
           <button
             type="button"
-            onClick={() => switchMode("password")}
-            className={`rounded-full px-2 py-2 text-[13px] font-semibold transition-colors duration-300 sm:px-3 sm:py-2.5 sm:text-sm ${
-              mode === "password" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
-            }`}
-          >
-            Password login
-          </button>
-          <button
-            type="button"
             onClick={() => switchMode("otp")}
-            className={`rounded-full px-2 py-2 text-[13px] font-semibold transition-colors duration-300 sm:px-3 sm:py-2.5 sm:text-sm ${
+            className={`rounded-full px-2 py-2.5 text-[13px] font-bold transition-colors duration-300 sm:px-3 sm:text-sm ${
               mode === "otp" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
             }`}
           >
             OTP Login
           </button>
+          <button
+            type="button"
+            onClick={() => switchMode("password")}
+            className={`rounded-full px-2 py-2.5 text-[13px] font-bold transition-colors duration-300 sm:px-3 sm:text-sm ${
+              mode === "password" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
+            }`}
+          >
+            Password Login
+          </button>
         </div>
       </div>
 
-      <div
-        key={mode}
-        className="animate-[fadeSlide_280ms_ease-out]"
-      >
+      <div key={mode} className="animate-[fadeSlide_280ms_ease-out]">
         {mode === "otp" ? (
           <OtpLoginForm
             key={`otp-${email.trim().toLowerCase()}`}
