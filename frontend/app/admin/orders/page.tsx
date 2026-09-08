@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ShoppingCart } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import type { AdminOrdersQuery, OrdersListData } from "@/lib/admin-api";
@@ -117,21 +119,23 @@ const tdSt: React.CSSProperties = {
 const inputSt: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
-  padding: "8px 10px",
+  padding: "6px 8px",
   borderRadius: "8px",
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   background: "var(--admin-card-bg, #fff)",
   color: "var(--admin-text, #2c2420)",
-  fontSize: "13px"
+  fontSize: "12px",
+  minWidth: 0
 };
 const labelSt: React.CSSProperties = {
   display: "block",
-  fontSize: "11px",
+  fontSize: "10px",
   fontWeight: 600,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
   color: "var(--admin-text-muted, #8a7060)",
-  marginBottom: "4px"
+  marginBottom: "3px",
+  whiteSpace: "nowrap"
 };
 
 function todayYmd(): string {
@@ -146,6 +150,8 @@ export default function AdminOrdersPage() {
   const [err, setErr] = useState<string | null>(null);
   const [exportErr, setExportErr] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState<"pdf" | "xlsx" | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [orderNumber, setOrderNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -197,6 +203,61 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!exportMenuRef.current?.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [exportMenuOpen]);
+
+  const ordersLegend =
+    channel === "online"
+      ? "Online paid · Confirmed = money captured (incl. warehouse / in-transit / delivered) · Abandoned = never paid · Cancelled = stopped · Refunded = money returned · Labels & AWB under Shipments"
+      : "COD · Confirmed = placed (cash on delivery) · Cancelled = stopped (no gateway refund) · Refunded = cash/manual return if collected · Labels & AWB under Shipments";
+
+  useRegisterAdminHeaderSlot(
+    () => ({
+      hideSearch: true,
+      leading: (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, maxWidth: "920px" }}>
+          <ShoppingCart size={24} strokeWidth={2.25} color="#1c352a" aria-hidden />
+          <div style={{ minWidth: 0 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "var(--admin-text, #1c352a)",
+                lineHeight: 1.2,
+                letterSpacing: "-0.02em"
+              }}
+            >
+              Orders
+            </h1>
+            <p
+              style={{
+                margin: "3px 0 0",
+                fontSize: "11px",
+                lineHeight: 1.4,
+                color: "var(--admin-text-muted, #4a6b58)"
+              }}
+            >
+              {ordersLegend.replace(" · Labels & AWB under Shipments", "")} · Labels & AWB under{" "}
+              <Link href="/admin/shipments" style={{ color: "#8a6428", fontWeight: 600 }}>
+                Shipments
+              </Link>
+            </p>
+          </div>
+        </div>
+      )
+    }),
+    [ordersLegend]
+  );
 
   const applyFilters = () => {
     setPage(1);
@@ -262,32 +323,21 @@ export default function AdminOrdersPage() {
   const channelCounts = data?.channelCounts;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* Line 1 — payment channel line-tabs (SS7 style) */}
       <div
         style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
-          marginBottom: "4px"
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "4px",
+          borderBottom: "2px solid var(--admin-card-border, #e8e2d9)",
+          paddingBottom: 0
         }}
       >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛒 Orders</h1>
-        <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-          {channel === "online"
-            ? "Online paid · Confirmed = money captured (incl. warehouse / in-transit / delivered) · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
-            : "COD · Confirmed = placed (cash on delivery) · Cancelled = stopped (no gateway refund) · Refunded = cash/manual return if collected"}{" "}
-          · Labels &amp; AWB under{" "}
-          <a href="/admin/shipments" style={{ color: "#e8d5a8", fontWeight: 600 }}>
-            Shipments
-          </a>
-        </p>
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         {(
           [
-            { value: "online" as const, label: "Online paid" },
-            { value: "cod" as const, label: "COD" }
+            { value: "online" as const, label: "Online Paid", icon: "💳" },
+            { value: "cod" as const, label: "Cash On Delivery", icon: "💵" }
           ] as const
         ).map((ch) => {
           const active = channel === ch.value;
@@ -302,22 +352,22 @@ export default function AdminOrdersPage() {
                 setPage(1);
               }}
               style={{
-                padding: "10px 18px",
-                borderRadius: "12px",
+                padding: "10px 16px",
                 fontSize: "14px",
-                fontWeight: 700,
+                fontWeight: active ? 700 : 500,
                 cursor: "pointer",
-                border: "1px solid",
-                borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
-                background: active
-                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
-                  : "var(--admin-card-bg, #fff)",
-                color: active ? "#fffbf5" : "#6b5c52",
+                border: "none",
+                background: "transparent",
+                color: active ? "#1c352a" : "#8a7060",
+                borderBottom: active ? "2px solid #b98a3e" : "2px solid transparent",
+                marginBottom: "-2px",
+                transition: "all 0.15s",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px"
               }}
             >
+              <span aria-hidden>{ch.icon}</span>
               <span>{ch.label}</span>
               <span
                 style={{
@@ -326,8 +376,8 @@ export default function AdminOrdersPage() {
                   minWidth: "18px",
                   padding: "1px 7px",
                   borderRadius: "999px",
-                  background: active ? "rgba(255,255,255,0.18)" : "#f0ece6",
-                  color: active ? "#fffbf5" : "#5a4a40"
+                  background: active ? "rgba(28,53,42,0.1)" : "#f0ece6",
+                  color: active ? "#1c352a" : "#5a4a40"
                 }}
               >
                 {typeof count === "number" ? count : "–"}
@@ -337,206 +387,7 @@ export default function AdminOrdersPage() {
         })}
       </div>
 
-      <div style={{ ...card, padding: "16px 18px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "12px",
-            alignItems: "end"
-          }}
-        >
-          <div>
-            <label style={labelSt} htmlFor="ord-id">
-              Order ID
-            </label>
-            <input
-              id="ord-id"
-              value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="SRV-…"
-              style={inputSt}
-            />
-          </div>
-          <div>
-            <label style={labelSt} htmlFor="ord-customer">
-              Customer name
-            </label>
-            <input
-              id="ord-customer"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Name / email / phone"
-              style={inputSt}
-            />
-          </div>
-          <div>
-            <label style={labelSt} htmlFor="ord-place">
-              Place
-            </label>
-            <input
-              id="ord-place"
-              value={place}
-              onChange={(e) => setPlace(e.target.value)}
-              placeholder="City / state / PIN"
-              style={inputSt}
-            />
-          </div>
-          <div>
-            <label style={labelSt} htmlFor="ord-country">
-              Country
-            </label>
-            <input
-              id="ord-country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="IN / US / GB"
-              style={inputSt}
-            />
-          </div>
-          <div>
-            <label style={labelSt} htmlFor="ord-from">
-              From
-            </label>
-            <input
-              id="ord-from"
-              type="date"
-              value={from}
-              disabled={todayOnly}
-              onChange={(e) => setFrom(e.target.value)}
-              style={{ ...inputSt, opacity: todayOnly ? 0.5 : 1 }}
-            />
-          </div>
-          <div>
-            <label style={labelSt} htmlFor="ord-to">
-              To
-            </label>
-            <input
-              id="ord-to"
-              type="date"
-              value={to}
-              disabled={todayOnly}
-              onChange={(e) => setTo(e.target.value)}
-              style={{ ...inputSt, opacity: todayOnly ? 0.5 : 1 }}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                fontSize: "13px",
-                color: "var(--admin-text, #4a3f38)",
-                cursor: "pointer",
-                userSelect: "none"
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={todayOnly}
-                onChange={(e) => {
-                  const on = e.target.checked;
-                  setTodayOnly(on);
-                  if (on) {
-                    const d = todayYmd();
-                    setFrom(d);
-                    setTo(d);
-                  }
-                }}
-              />
-              Today only
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={applyFilters}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "linear-gradient(135deg, #1c352a, #2d5040)",
-                  color: "#fffbf5",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}
-              >
-                Search
-              </button>
-              <button
-                type="button"
-                onClick={clearFilters}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--admin-card-border, #e8e2d9)",
-                  background: "transparent",
-                  color: "#6b5c52",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  cursor: "pointer"
-                }}
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                disabled={exportLoading !== null}
-                onClick={() => void runExport("xlsx")}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #1e3a2f",
-                  background: exportLoading === "xlsx" ? "#faf5ec" : "#fff",
-                  color: "#1c352a",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  opacity: exportLoading ? 0.7 : 1
-                }}
-              >
-                {exportLoading === "xlsx" ? "Exporting…" : "Export Excel"}
-              </button>
-              <button
-                type="button"
-                disabled={exportLoading !== null}
-                onClick={() => void runExport("pdf")}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #1e3a2f",
-                  background: exportLoading === "pdf" ? "#faf5ec" : "#fff",
-                  color: "#1c352a",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  opacity: exportLoading ? 0.7 : 1
-                }}
-              >
-                {exportLoading === "pdf" ? "Exporting…" : "Export PDF"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {exportErr ? (
-        <p
-          style={{
-            background: "#fef2f2",
-            borderLeft: "3px solid #dc2626",
-            borderRadius: "8px",
-            padding: "8px 12px",
-            color: "#dc2626",
-            fontSize: "13px",
-            margin: 0
-          }}
-        >
-          ⚠️ {exportErr}
-        </p>
-      ) : null}
-
+      {/* Line 2 — status pills */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         {buckets.map((b) => {
           const count = counts?.[b.value as keyof NonNullable<typeof counts>];
@@ -549,16 +400,6 @@ export default function AdminOrdersPage() {
                 setPage(1);
                 setBucket(b.value);
               }}
-              onMouseEnter={(e) => {
-                if (active) return;
-                e.currentTarget.style.background = "#faf5ec";
-                e.currentTarget.style.borderColor = "#b98a3e";
-              }}
-              onMouseLeave={(e) => {
-                if (active) return;
-                e.currentTarget.style.background = "var(--admin-card-bg, #fff)";
-                e.currentTarget.style.borderColor = "var(--admin-card-border, #e8e2d9)";
-              }}
               style={{
                 padding: "7px 14px",
                 borderRadius: "999px",
@@ -567,7 +408,9 @@ export default function AdminOrdersPage() {
                 cursor: "pointer",
                 border: "1px solid",
                 borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
-                background: active ? "linear-gradient(135deg, #1c352a, #2d5040)" : "var(--admin-card-bg, #fff)",
+                background: active
+                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
+                  : "var(--admin-card-bg, #fff)",
                 color: active ? "#fffbf5" : "#6b5c52",
                 transition: "all 0.15s",
                 boxShadow: active ? "0 2px 8px rgba(28,53,42,0.20)" : "none",
@@ -594,6 +437,261 @@ export default function AdminOrdersPage() {
           );
         })}
       </div>
+
+      {/* Line 3 — one-line search + exports */}
+      <div
+        style={{
+          ...card,
+          padding: "12px 14px",
+          display: "flex",
+          flexWrap: "nowrap",
+          alignItems: "flex-end",
+          gap: "8px",
+          overflowX: "auto"
+        }}
+      >
+        <div style={{ flex: "1 1 90px", minWidth: "90px" }}>
+          <label style={labelSt} htmlFor="ord-id">
+            Order ID
+          </label>
+          <input
+            id="ord-id"
+            value={orderNumber}
+            onChange={(e) => setOrderNumber(e.target.value)}
+            placeholder="SRV-…"
+            style={inputSt}
+          />
+        </div>
+        <div style={{ flex: "1.2 1 110px", minWidth: "110px" }}>
+          <label style={labelSt} htmlFor="ord-customer">
+            Customer
+          </label>
+          <input
+            id="ord-customer"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Name / email / phone"
+            style={inputSt}
+          />
+        </div>
+        <div style={{ flex: "1 1 95px", minWidth: "95px" }}>
+          <label style={labelSt} htmlFor="ord-place">
+            Place
+          </label>
+          <input
+            id="ord-place"
+            value={place}
+            onChange={(e) => setPlace(e.target.value)}
+            placeholder="City / state / PIN"
+            style={inputSt}
+          />
+        </div>
+        <div style={{ flex: "0.9 1 88px", minWidth: "88px" }}>
+          <label style={labelSt} htmlFor="ord-country">
+            Country
+          </label>
+          <input
+            id="ord-country"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            placeholder="India / US / UK"
+            style={inputSt}
+          />
+        </div>
+        <div style={{ flex: "0.8 1 108px", minWidth: "108px" }}>
+          <label style={labelSt} htmlFor="ord-from">
+            From
+          </label>
+          <input
+            id="ord-from"
+            type="date"
+            value={from}
+            disabled={todayOnly}
+            onChange={(e) => setFrom(e.target.value)}
+            style={{ ...inputSt, opacity: todayOnly ? 0.5 : 1 }}
+          />
+        </div>
+        <div style={{ flex: "0.8 1 108px", minWidth: "108px" }}>
+          <label style={labelSt} htmlFor="ord-to">
+            To
+          </label>
+          <input
+            id="ord-to"
+            type="date"
+            value={to}
+            disabled={todayOnly}
+            onChange={(e) => setTo(e.target.value)}
+            style={{ ...inputSt, opacity: todayOnly ? 0.5 : 1 }}
+          />
+        </div>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            color: "var(--admin-text, #4a3f38)",
+            cursor: "pointer",
+            userSelect: "none",
+            whiteSpace: "nowrap",
+            paddingBottom: "6px",
+            flex: "0 0 auto"
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={todayOnly}
+            onChange={(e) => {
+              const on = e.target.checked;
+              setTodayOnly(on);
+              if (on) {
+                const d = todayYmd();
+                setFrom(d);
+                setTo(d);
+              }
+            }}
+          />
+          Today
+        </label>
+        <button
+          type="button"
+          onClick={applyFilters}
+          style={{
+            padding: "7px 12px",
+            borderRadius: "8px",
+            border: "none",
+            background: "linear-gradient(135deg, #1c352a, #2d5040)",
+            color: "#fffbf5",
+            fontSize: "12px",
+            fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto"
+          }}
+        >
+          Search
+        </button>
+        <button
+          type="button"
+          onClick={clearFilters}
+          style={{
+            padding: "7px 12px",
+            borderRadius: "8px",
+            border: "1px solid var(--admin-card-border, #e8e2d9)",
+            background: "transparent",
+            color: "#6b5c52",
+            fontSize: "12px",
+            fontWeight: 500,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto"
+          }}
+        >
+          Clear
+        </button>
+        <div ref={exportMenuRef} style={{ position: "relative", flex: "0 0 auto" }}>
+          <button
+            type="button"
+            disabled={exportLoading !== null}
+            onClick={() => setExportMenuOpen((o) => !o)}
+            style={{
+              padding: "7px 12px",
+              borderRadius: "8px",
+              border: "1px solid #1e3a2f",
+              background: "#fff",
+              color: "#1c352a",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              opacity: exportLoading ? 0.7 : 1
+            }}
+          >
+            {exportLoading ? "Exporting…" : "Exports ▾"}
+          </button>
+          {exportMenuOpen ? (
+            <div
+              role="menu"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "calc(100% + 4px)",
+                zIndex: 20,
+                minWidth: "150px",
+                background: "var(--admin-card-bg, #fff)",
+                border: "1px solid var(--admin-card-border, #e8e2d9)",
+                borderRadius: "10px",
+                boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
+                padding: "6px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px"
+              }}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                disabled={exportLoading !== null}
+                onClick={() => {
+                  setExportMenuOpen(false);
+                  void runExport("xlsx");
+                }}
+                style={{
+                  textAlign: "left",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#1c352a"
+                }}
+              >
+                Export Excel
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={exportLoading !== null}
+                onClick={() => {
+                  setExportMenuOpen(false);
+                  void runExport("pdf");
+                }}
+                style={{
+                  textAlign: "left",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#1c352a"
+                }}
+              >
+                Export PDF
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {exportErr ? (
+        <p
+          style={{
+            background: "#fef2f2",
+            borderLeft: "3px solid #dc2626",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            color: "#dc2626",
+            fontSize: "13px",
+            margin: 0
+          }}
+        >
+          ⚠️ {exportErr}
+        </p>
+      ) : null}
 
       {err && (
         <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">

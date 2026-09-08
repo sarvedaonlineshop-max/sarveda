@@ -782,7 +782,6 @@ function AdminOrderProductionView({
     (payment?.refunds ?? []).reduce((s, r) => s + r.amountInPaise, 0);
   const netOrderTotalInPaise =
     order.netOrderTotalInPaise ?? Math.max(0, order.grandTotalInPaise - refundedInPaise);
-  const netCollectedInPaise = Math.max(0, collectedInPaise - refundedInPaise);
   const amountDueInPaise = isCod && !captured ? order.grandTotalInPaise : 0;
   const shipping = order.addresses.find((a) => a.type === "SHIPPING") ?? order.addresses[0];
   const billing = order.addresses.find((a) => a.type === "BILLING");
@@ -1126,39 +1125,244 @@ function AdminOrderProductionView({
     scrollToSection(sectionId);
   };
 
-  const timeline = [
+  type JourneyStep = {
+    key: string;
+    icon: string;
+    label: string;
+    at: string | null;
+    state: "done" | "current" | "upcoming" | "skipped";
+  };
+
+  function historyAt(...statuses: string[]): string | null {
+    for (const status of statuses) {
+      const hit = order.statusHistory.find((h) => h.toStatus === status);
+      if (hit) return hit.createdAt;
+    }
+    return null;
+  }
+
+  function shipmentAt(...statuses: string[]): string | null {
+    for (const status of statuses) {
+      const hit = order.shipments.find((s) => s.status === status);
+      if (hit?.updatedAt) return hit.updatedAt;
+      if (hit?.deliveredAt) return hit.deliveredAt;
+      if (hit?.rtoAt) return hit.rtoAt;
+    }
+    const any = order.shipments.find((s) => statuses.includes(s.status));
+    return any?.updatedAt ?? null;
+  }
+
+  const primaryShipStatus = awbRows[0]?.status ?? order.shipments[0]?.status ?? null;
+  const shipIdx = primaryShipStatus ? shipmentFlowIndex(primaryShipStatus) : -1;
+  const hasLabel = awbRows.length > 0;
+  const isRto =
+    primaryShipStatus === "RTO" ||
+    order.fulfillmentStatus === "RETURNED" ||
+    shipmentHeadline === "RTO";
+  const isRefundedOrder =
+    order.status === "REFUNDED" ||
+    order.paymentStatus === "REFUNDED" ||
+    order.paymentStatus === "PARTIALLY_REFUNDED" ||
+    refundedInPaise > 0;
+
+  function stepState(done: boolean, current: boolean, skipped = false): JourneyStep["state"] {
+    if (skipped) return "skipped";
+    if (done) return "done";
+    if (current) return "current";
+    return "upcoming";
+  }
+
+  const paidDone =
+    captured ||
+    ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED", "REFUNDED"].includes(order.status);
+  const pendingDone =
+    paidDone || order.status === "PENDING_PAYMENT" || Boolean(historyAt("PENDING_PAYMENT"));
+
+  const paymentJourney: JourneyStep[] = [
     {
       key: "placed",
+      icon: "🛒",
+      label: isCod
+        ? "Order placed · COD"
+        : `Order placed${payment?.provider ? ` · ${humanState(payment.provider)}` : ""}`,
       at: order.createdAt,
-      title: `Order placed${isCod ? " — Cash on Delivery" : payment?.provider ? ` — ${humanState(payment.provider)}` : ""}`,
-      detail: null as string | null
+      state: "done"
     },
-    ...order.statusHistory.map((h) => ({
-      key: `status-${h.id}`,
-      at: h.createdAt,
-      title: `Order ${humanState(h.toStatus).toLowerCase()}`,
-      detail: h.reason ?? null
-    })),
-    ...order.inventoryRestocks.map((r) => ({
-      key: `restock-${r.id}`,
-      at: r.createdAt,
-      title: "Inventory restored",
-      detail: r.reason ? humanState(r.reason) : null
-    })),
-    ...order.accountingEvents.map((e) => ({
-      key: `accounting-${e.id}`,
-      at: e.processedAt ?? e.createdAt,
-      title:
-        e.eventType === "ORDER_CANCELLED"
-          ? "Accounting reversal posted"
-          : e.eventType === "ORDER_REFUNDED_FULL"
-            ? "Refund accounting posted"
-            : e.eventType === "ORDER_PAID"
-              ? "Sale journal posted"
-              : `${humanState(e.eventType)} posted`,
-      detail: e.journalEntry?.entryNumber ?? null
-    }))
-  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    {
+      key: "pending",
+      icon: "⏳",
+      label: "Payment pending",
+      at: historyAt("PENDING_PAYMENT") ?? order.createdAt,
+      state: stepState(pendingDone, order.status === "PENDING_PAYMENT" && !paidDone)
+    },
+    {
+      key: "paid",
+      icon: "✅",
+      label: isCod ? (captured ? "COD collected" : "COD confirmed") : "Paid",
+      at: historyAt("PAID"),
+      state: stepState(paidDone, paidDone && !hasLabel && !isCancelled && order.status === "PAID")
+    }
+  ];
+
+  const fulfillmentDefs: Array<{
+    key: string;
+    icon: string;
+    label: string;
+    done: boolean;
+    current: boolean;
+    at: string | null;
+    skip?: boolean;
+  }> = [
+    {
+      key: "processing",
+      icon: "📋",
+      label: "Processing",
+      done:
+        ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status) ||
+        hasLabel ||
+        shipIdx >= 0,
+      current: order.status === "PROCESSING" && !hasLabel,
+      at: historyAt("PROCESSING")
+    },
+    {
+      key: "packed",
+      icon: "📦",
+      label: "Packed",
+      done: ["PACKED", "SHIPPED", "DELIVERED"].includes(order.status) || shipIdx >= 0 || hasLabel,
+      current: order.status === "PACKED" && !hasLabel,
+      at: historyAt("PACKED")
+    },
+    {
+      key: "label",
+      icon: "🏷️",
+      label: "Label created",
+      done: hasLabel,
+      current: hasLabel && shipIdx <= 0 && !isRto && !isCancelled,
+      at: hasLabel ? order.shipments[0]?.updatedAt ?? shipmentAt("CREATED") : null
+    },
+    {
+      key: "picked",
+      icon: "🚚",
+      label: "Picked",
+      done: shipIdx >= shipmentFlowIndex("PICKED") || ["SHIPPED", "DELIVERED"].includes(order.status),
+      current: primaryShipStatus === "PICKED",
+      at: shipmentAt("PICKED")
+    },
+    {
+      key: "transit",
+      icon: "🛣️",
+      label: "In transit",
+      done: shipIdx >= shipmentFlowIndex("INTRANSIT") || order.status === "DELIVERED",
+      current: primaryShipStatus === "INTRANSIT" || order.status === "SHIPPED",
+      at: shipmentAt("INTRANSIT") ?? historyAt("SHIPPED")
+    },
+    {
+      key: "ofd",
+      icon: "🚪",
+      label: "Out for delivery",
+      done: shipIdx >= shipmentFlowIndex("OUT_FOR_DELIVERY") || order.status === "DELIVERED",
+      current: primaryShipStatus === "OUT_FOR_DELIVERY",
+      at: shipmentAt("OUT_FOR_DELIVERY")
+    },
+    {
+      key: "delivered",
+      icon: "🎉",
+      label: "Delivered",
+      done: order.status === "DELIVERED" || primaryShipStatus === "DELIVERED",
+      current: order.status === "DELIVERED" || primaryShipStatus === "DELIVERED",
+      at: shipmentAt("DELIVERED") ?? historyAt("DELIVERED"),
+      skip: isRto || (isCancelled && !hasLabel)
+    }
+  ];
+
+  const fulfillmentJourney: JourneyStep[] = fulfillmentDefs
+    .filter((s) => !s.skip)
+    .map((s) => ({
+      key: s.key,
+      icon: s.icon,
+      label: s.label,
+      at: s.at,
+      state: stepState(s.done, s.current, Boolean(s.skip))
+    }));
+
+  const exceptionJourney: JourneyStep[] = [];
+  if (isCancelled) {
+    exceptionJourney.push({
+      key: "cancelled",
+      icon: "❌",
+      label: hasLabel ? "Order cancelled (after dispatch)" : "Order cancelled before shipment",
+      at: historyAt("CANCELLED"),
+      state: "done"
+    });
+  }
+  if (isRto) {
+    exceptionJourney.push({
+      key: "rto",
+      icon: "↩️",
+      label: "RTO — returning to warehouse",
+      at: shipmentAt("RTO") ?? order.shipments.find((s) => s.rtoAt)?.rtoAt ?? null,
+      state: "current"
+    });
+  }
+  if (isRefundedOrder) {
+    exceptionJourney.push({
+      key: "refunded",
+      icon: "💸",
+      label:
+        order.paymentStatus === "PARTIALLY_REFUNDED"
+          ? `Partial refund · ${formatMinorFromPaise(refundedInPaise, order.currency)}`
+          : `Refunded · ${formatMinorFromPaise(refundedInPaise, order.currency)}`,
+      at: historyAt("REFUNDED", "CANCELLED"),
+      state: "done"
+    });
+  }
+
+  function JourneyLayer({ title, steps }: { title: string; steps: JourneyStep[] }) {
+    if (steps.length === 0) return null;
+    return (
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8a7060]">{title}</p>
+        <ol className="flex flex-wrap items-stretch gap-2">
+          {steps.map((step, idx) => {
+            const tone =
+              step.state === "done"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                : step.state === "current"
+                  ? "border-[#b98a3e] bg-[#fff8e8] text-[#1c352a] ring-1 ring-[#b98a3e]/40"
+                  : step.state === "skipped"
+                    ? "border-stone-100 bg-stone-50 text-stone-400 line-through"
+                    : "border-stone-200 bg-white text-stone-400";
+            return (
+              <li key={step.key} className="flex items-center gap-2">
+                <div
+                  className={`min-w-[132px] rounded-xl border px-3 py-2.5 ${tone}`}
+                  title={step.at ? new Date(step.at).toLocaleString("en-IN") : undefined}
+                >
+                  <p className="text-lg leading-none">{step.icon}</p>
+                  <p className="mt-1.5 text-sm font-semibold leading-snug">{step.label}</p>
+                  {step.at ? (
+                    <time className="mt-1 block text-[11px] opacity-70">
+                      {new Date(step.at).toLocaleString("en-IN", {
+                        dateStyle: "medium",
+                        timeStyle: "short"
+                      })}
+                    </time>
+                  ) : step.state === "upcoming" ? (
+                    <p className="mt-1 text-[11px] opacity-70">Pending</p>
+                  ) : null}
+                </div>
+                {idx < steps.length - 1 ? (
+                  <span className="text-stone-300" aria-hidden>
+                    →
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    );
+  }
 
   const card = "rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900";
   const sectionHeader = "border-b border-stone-100 px-5 py-4 dark:border-stone-700";
@@ -1728,14 +1932,7 @@ function AdminOrderProductionView({
                 <div className="flex justify-between"><dt className="text-stone-500">Amount due</dt><dd>{formatMinorFromPaise(amountDueInPaise, order.currency)}</dd></div>
                 <div className="flex justify-between"><dt className="text-stone-500">Collected</dt><dd>{formatMinorFromPaise(collectedInPaise, order.currency)}</dd></div>
               </>
-            ) : (
-              <>
-                <div className="flex justify-between"><dt className="text-stone-500">Original order total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
-                <div className="flex justify-between"><dt className="text-stone-500">Refunded</dt><dd>{formatMinorFromPaise(refundedInPaise, order.currency)}</dd></div>
-                <div className="flex justify-between font-semibold"><dt>Net order total</dt><dd>{formatMinorFromPaise(netOrderTotalInPaise, order.currency)}</dd></div>
-                <div className="flex justify-between font-semibold"><dt>Net collected</dt><dd>{formatMinorFromPaise(netCollectedInPaise, order.currency)}</dd></div>
-              </>
-            )}
+            ) : null}
           </dl>
           <dl className="space-y-2 text-base">
             <div className="flex justify-between"><dt className="text-stone-500">Products</dt><dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd></div>
@@ -1743,6 +1940,9 @@ function AdminOrderProductionView({
             <div className="flex justify-between"><dt className="text-stone-500">Discount</dt><dd>{order.discountInPaise ? `−${formatMinorFromPaise(order.discountInPaise, order.currency)}` : formatMinorFromPaise(0, order.currency)}</dd></div>
             <div className="flex justify-between"><dt className="text-stone-500">GST</dt><dd>{formatMinorFromPaise(order.taxInPaise, order.currency)}</dd></div>
             <div className="flex justify-between border-t border-stone-200 pt-2"><dt className="text-stone-500">Before refund</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
+            {refundedInPaise > 0 ? (
+              <div className="flex justify-between"><dt className="text-stone-500">Refunded</dt><dd>{formatMinorFromPaise(refundedInPaise, order.currency)}</dd></div>
+            ) : null}
             <div className="flex justify-between border-t-2 border-stone-200 pt-3 text-lg font-bold text-[#1c352a]"><dt>Current order total</dt><dd>{formatMinorFromPaise(netOrderTotalInPaise, order.currency)}</dd></div>
           </dl>
         </div>
@@ -1750,14 +1950,11 @@ function AdminOrderProductionView({
 
       <section className={card}>
         <div className={sectionHeader}><h2 className="text-lg font-bold text-[#1c352a] dark:text-stone-100">Order Timeline</h2></div>
-        <ol className="divide-y divide-stone-100 px-5">
-          {timeline.map((item) => (
-            <li key={item.key} className="grid gap-1 py-4 sm:grid-cols-[190px_1fr]">
-              <time className="text-sm text-stone-500">{new Date(item.at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</time>
-              <div><p className="text-base font-semibold">{item.title}</p>{item.detail ? <p className="mt-0.5 text-sm text-stone-500">{item.detail}</p> : null}</div>
-            </li>
-          ))}
-        </ol>
+        <div className="space-y-8 p-5">
+          <JourneyLayer title="Payment" steps={paymentJourney} />
+          <JourneyLayer title="Shipment" steps={fulfillmentJourney} />
+          <JourneyLayer title="Exceptions & refunds" steps={exceptionJourney} />
+        </div>
       </section>
 
       <details className={card} open>

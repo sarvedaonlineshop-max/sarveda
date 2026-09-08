@@ -885,8 +885,8 @@ select:-webkit-autofill {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "tnum" 1;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  /* Slightly larger base type without CSS zoom (zoom caused admin hangs) */
-  font-size: 17px;
+  /* Larger admin type without CSS zoom (zoom caused hangs) */
+  font-size: 19px;
 }
 
 /* Light-green workspace: gentle remaps for cream hardcodes → soft green */
