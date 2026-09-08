@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminToast } from "@/components/admin/AdminToast";
+import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { AdminProductRow } from "@/lib/admin-api";
 import { fetchAdminProducts, fetchProductsXlSheet, putAdminProduct, reorderAdminProducts } from "@/lib/admin-api";
@@ -44,6 +45,7 @@ type ViewMode = "paginated" | "full";
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const nav = useAdminNavOptional();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
@@ -372,7 +374,7 @@ export default function AdminProductsPage() {
       />
 
       <div
-        className="flex flex-wrap items-end gap-3 rounded-xl border p-4"
+        className="flex flex-wrap items-end gap-2 rounded-xl border p-[12px_14px]"
         style={{
           background: "var(--admin-card-bg, #fff)",
           borderColor: "var(--admin-card-border, #e8e2d9)",
@@ -380,7 +382,7 @@ export default function AdminProductsPage() {
         }}
       >
         <div className="min-w-[12rem] flex-1">
-          <label htmlFor="q" className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)]">
+          <label htmlFor="q" className="mb-[3px] block text-[13px] font-semibold uppercase tracking-[0.04em] text-[var(--admin-text-muted,#8a7060)]">
             Search
           </label>
           <input
@@ -389,11 +391,11 @@ export default function AdminProductsPage() {
             onChange={(e) => setQ(e.target.value)}
             onBlur={() => setPage(1)}
             placeholder="Product name…"
-            className="mt-1 w-full rounded-xl border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2.5 text-base text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+            className="mt-0 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-[15px] text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
           />
         </div>
         <div className="min-w-[10rem]">
-          <label htmlFor="category" className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)]">
+          <label htmlFor="category" className="mb-[3px] block text-[13px] font-semibold uppercase tracking-[0.04em] text-[var(--admin-text-muted,#8a7060)]">
             Category
           </label>
           <select
@@ -403,7 +405,7 @@ export default function AdminProductsPage() {
               setPage(1);
               setCategory(e.target.value);
             }}
-            className="mt-1 w-full rounded-xl border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2.5 text-base text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+            className="mt-0 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-[15px] text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -414,7 +416,7 @@ export default function AdminProductsPage() {
           </select>
         </div>
         <div className="min-w-[8rem]">
-          <label htmlFor="status" className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)]">
+          <label htmlFor="status" className="mb-[3px] block text-[13px] font-semibold uppercase tracking-[0.04em] text-[var(--admin-text-muted,#8a7060)]">
             Status
           </label>
           <select
@@ -424,7 +426,7 @@ export default function AdminProductsPage() {
               setPage(1);
               setStatus(e.target.value);
             }}
-            className="mt-1 w-full rounded-xl border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2.5 text-base text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+            className="mt-0 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-[15px] text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
           >
             <option value="">Active + Draft</option>
             <option value="ACTIVE">Active only</option>
@@ -435,7 +437,7 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="h-[42px] shrink-0 rounded-xl px-4 text-base font-semibold text-[#fffbf5] shadow-[0_2px_6px_rgba(28,53,42,0.2)]"
+          className="shrink-0 rounded-lg px-3 py-[7px] text-[15px] font-semibold text-[#fffbf5] shadow-[0_2px_6px_rgba(28,53,42,0.2)]"
           style={{
             background: "linear-gradient(135deg, #1c352a, #2d5040)",
             border: "none",
@@ -445,7 +447,7 @@ export default function AdminProductsPage() {
           Apply
         </button>
         <div
-          className="relative mt-auto inline-grid h-[42px] shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
+          className="relative mt-auto inline-grid h-[32px] shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
           role="group"
           aria-label="List view mode"
         >
@@ -538,11 +540,17 @@ export default function AdminProductsPage() {
                   key={p.id}
                   role="link"
                   tabIndex={0}
-                  onClick={() => router.push(`/admin/products/${p.id}`)}
+                  onClick={() => {
+                    const href = `/admin/products/${p.id}`;
+                    nav?.beginNavigation(href);
+                    router.push(href);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      router.push(`/admin/products/${p.id}`);
+                      const href = `/admin/products/${p.id}`;
+                      nav?.beginNavigation(href);
+                      router.push(href);
                     }
                   }}
                   onDragOver={(e) => onRowDragOver(e, index)}

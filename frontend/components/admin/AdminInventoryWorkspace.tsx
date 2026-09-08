@@ -1363,32 +1363,52 @@ export function AdminInventoryWorkspace() {
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="flex flex-wrap items-center gap-2">
-        {dropShipTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => {
-              setDropShipFilter(tab.id);
-              setListFadeKey((k) => k + 1);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors duration-200 ${
-              dropShipFilter === tab.id
-                ? "border-[#1e3a2f] bg-gradient-to-br from-[#1c352a] to-[#2d5040] font-semibold text-[#fffbf5] shadow-sm"
-                : "border-stone-200 bg-white text-stone-600 hover:bg-[#eef6f1] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800"
-            }`}
-          >
-            <span>{tab.label}</span>
-            <span
-              className={`min-w-[18px] rounded-full px-1.5 py-0.5 text-center text-sm font-bold tabular-nums ${
-                dropShipFilter === tab.id
-                  ? "bg-white/20 text-[#fffbf5]"
-                  : "bg-[#f0ece6] text-[#5a4a40]"
-              }`}
+        {dropShipTabs.map((tab) => {
+          const active = dropShipFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setDropShipFilter(tab.id);
+                setListFadeKey((k) => k + 1);
+              }}
+              style={{
+                padding: "7px 14px",
+                borderRadius: "999px",
+                fontSize: "16px",
+                fontWeight: 500,
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: active ? "#1e3a2f" : "var(--admin-card-border, #e8e2d9)",
+                background: active
+                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
+                  : "var(--admin-card-bg, #fff)",
+                color: active ? "#fffbf5" : "#6b5c52",
+                transition: "all 0.15s",
+                boxShadow: active ? "0 2px 8px rgba(28,53,42,0.20)" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px"
+              }}
             >
-              {dropShipTabCounts[tab.id]}
-            </span>
-          </button>
-        ))}
+              <span>{tab.label}</span>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  minWidth: "18px",
+                  padding: "1px 6px",
+                  borderRadius: "999px",
+                  background: active ? "rgba(255,255,255,0.18)" : "#f0ece6",
+                  color: active ? "#fffbf5" : "#5a4a40"
+                }}
+              >
+                {dropShipTabCounts[tab.id]}
+              </span>
+            </button>
+          );
+        })}
         {showZohoSync ? (
           <div className="ml-auto flex flex-wrap gap-2">
             <button
@@ -1428,7 +1448,7 @@ export function AdminInventoryWorkspace() {
           }}
           placeholder="Search inventory SKUs, products…"
           aria-label="Search inventory"
-          className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-base text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
+          className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-[15px] text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
         />
         {searchFocused && searchInput.trim() && headerSuggestions.length > 0 ? (
           <div className="absolute left-0 right-0 z-40 mt-1 max-h-80 overflow-auto rounded-xl border border-stone-200 bg-white py-1 shadow-xl dark:border-stone-600 dark:bg-stone-900">

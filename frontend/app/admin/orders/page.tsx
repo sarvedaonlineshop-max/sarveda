@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
+import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import type { AdminOrdersQuery, OrdersListData } from "@/lib/admin-api";
@@ -13,20 +15,20 @@ import { formatMinorFromPaise } from "@/lib/money";
 import { formatAdminOrderStatusLabel } from "@/lib/order-status-display";
 
 const onlineBuckets = [
-  { value: "all", label: "All" },
   { value: "new", label: "New" },
   { value: "processed", label: "Processed" },
   { value: "abandoned", label: "Abandoned" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" }
+  { value: "refunded", label: "Refunded" },
+  { value: "all", label: "All" }
 ] as const;
 
 const codBuckets = [
-  { value: "all", label: "All" },
   { value: "new", label: "New" },
   { value: "processed", label: "Processed" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" }
+  { value: "refunded", label: "Refunded" },
+  { value: "all", label: "All" }
 ] as const;
 
 function StatusBadge({
@@ -145,8 +147,10 @@ function todayYmd(): string {
 }
 
 export default function AdminOrdersPage() {
+  const router = useRouter();
+  const nav = useAdminNavOptional();
   const [channel, setChannel] = useState<"online" | "cod">("online");
-  const [bucket, setBucket] = useState<string>("all");
+  const [bucket, setBucket] = useState<string>("new");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<OrdersListData | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -350,7 +354,7 @@ export default function AdminOrdersPage() {
               type="button"
               onClick={() => {
                 setChannel(ch.value);
-                setBucket("all");
+                setBucket("new");
                 setPage(1);
               }}
               style={{
@@ -721,7 +725,9 @@ export default function AdminOrdersPage() {
                   <tr
                     key={o.id}
                     onClick={() => {
-                      window.location.href = `/admin/orders/${o.id}`;
+                      const href = `/admin/orders/${o.id}`;
+                      nav?.beginNavigation(href);
+                      router.push(href);
                     }}
                     style={{ cursor: "pointer" }}
                     onMouseEnter={(e) => {
@@ -734,6 +740,7 @@ export default function AdminOrdersPage() {
                     <td style={tdSt}>
                       <Link
                         href={`/admin/orders/${o.id}`}
+                        onClick={(e) => e.stopPropagation()}
                         style={{
                           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                           fontWeight: 600,

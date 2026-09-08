@@ -1,24 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
+import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import type { AdminShipmentsQuery, ShipmentsListData } from "@/lib/admin-api";
 import { adminSyncOrderShipments, fetchAdminShipments } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 
 const buckets = [
-  { value: "all", label: "All shipments" },
   { value: "ready", label: "Ready to ship" },
   { value: "created", label: "Created" },
   { value: "picked", label: "Picked" },
   { value: "intransit", label: "In transit" },
   { value: "ofd", label: "Out for delivery" },
   { value: "delivered", label: "Delivered" },
-  { value: "rto", label: "RTO" }
+  { value: "rto", label: "RTO" },
+  { value: "all", label: "All shipments" }
 ] as const;
 
 function initialBucket(): string {
@@ -107,21 +109,23 @@ const tdSt: React.CSSProperties = {
 const inputSt: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
-  padding: "8px 10px",
+  padding: "6px 8px",
   borderRadius: "8px",
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   background: "var(--admin-card-bg, #fff)",
   color: "var(--admin-text, #2c2420)",
-  fontSize: "15px"
+  fontSize: "15px",
+  minWidth: 0
 };
 const labelSt: React.CSSProperties = {
   display: "block",
-  fontSize: "12px",
-  fontWeight: 700,
-  letterSpacing: "0.08em",
+  fontSize: "13px",
+  fontWeight: 600,
+  letterSpacing: "0.04em",
   textTransform: "uppercase",
   color: "var(--admin-text-muted, #8a7060)",
-  marginBottom: "4px"
+  marginBottom: "3px",
+  whiteSpace: "nowrap"
 };
 
 function todayYmd(): string {
@@ -129,6 +133,8 @@ function todayYmd(): string {
 }
 
 export default function AdminShipmentsPage() {
+  const router = useRouter();
+  const nav = useAdminNavOptional();
   const [bucket, setBucket] = useState<string>(initialBucket);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ShipmentsListData | null>(null);
@@ -492,10 +498,9 @@ export default function AdminShipmentsPage() {
                     <tr
                       key={row.id}
                       onClick={() => {
-                        window.location.href =
-                          row.kind === "ready"
-                            ? `/admin/shipments/${row.orderId}`
-                            : `/admin/shipments/${row.orderId}`;
+                        const href = `/admin/shipments/${row.orderId}`;
+                        nav?.beginNavigation(href);
+                        router.push(href);
                       }}
                       style={{ cursor: "pointer" }}
                       onMouseEnter={(e) => {

@@ -11,6 +11,7 @@ import {
   startAdminWhatsAppChat,
   type EnquiryThreadListItem
 } from "@/lib/admin-api";
+import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 
 const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
@@ -88,6 +89,7 @@ function previewText(thread: EnquiryThreadListItem) {
 
 export function AdminChatsInbox() {
   const router = useRouter();
+  const nav = useAdminNavOptional();
   const pathname = usePathname();
   const activeId = pathname.startsWith("/admin/chats/")
     ? pathname.split("/")[3] ?? null
@@ -230,7 +232,9 @@ export function AdminChatsInbox() {
           ? `?notice=${encodeURIComponent(result.warning.slice(0, 120))}`
           : "";
       await load();
-      router.push(`/admin/chats/${result.threadId}${qs}`);
+      const href = `/admin/chats/${result.threadId}${qs}`;
+      nav?.beginNavigation(href);
+      router.push(href);
     } catch (err) {
       setStartError(err instanceof Error ? err.message : "Could not start chat");
     } finally {

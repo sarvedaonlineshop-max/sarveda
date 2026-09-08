@@ -81,10 +81,10 @@ const primaryNav: NavItem[] = [
   { href: "/admin/returns", label: "Returns", icon: icon.reports },
   { href: "/admin/products", label: "Products", icon: icon.products },
   { href: "/admin/inventory", label: "Inventory", icon: icon.inventory },
-  { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments },
-  { href: "/admin/courses", label: "Courses", icon: icon.courses },
+  { href: "/admin/content?type=courses", label: "Courses", icon: icon.courses },
   { href: "/admin/content?type=events", label: "Events", icon: icon.events },
-  { href: "/admin/customers", label: "Customers", icon: icon.customers }
+  { href: "/admin/customers", label: "Customers", icon: icon.customers },
+  { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments }
 ];
 
 const secondaryNav: NavItem[] = [
@@ -136,6 +136,15 @@ function NavLink({
       Boolean(pendingHref?.includes("type=events")) ||
       (activePath === "/admin/content" && contentType === "events") ||
       activePath.startsWith("/admin/content/events");
+  }
+
+  if (item.href.includes("type=courses")) {
+    isActive =
+      Boolean(pendingHref?.includes("type=courses")) ||
+      (activePath === "/admin/content" && contentType === "courses") ||
+      activePath.startsWith("/admin/content/courses") ||
+      activePath === "/admin/courses" ||
+      activePath.startsWith("/admin/courses/");
   }
 
   return (
@@ -195,18 +204,19 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         />
         <AdminOrdersSidebarLink onNavigate={onNavigate} />
         <AdminShipmentsSidebarLink onNavigate={onNavigate} />
-        {primaryNav.slice(1, 4).map((item) => (
+        {primaryNav.slice(1, 7).map((item) => (
           <NavLink
             key={item.href}
             item={item}
             activePath={activePath}
             pendingHref={pendingHref}
             onNavigate={onNavigate}
+            contentType={contentType}
             beginNavigation={beginNavigation}
           />
         ))}
         <AdminChatsSidebarLink onNavigate={onNavigate} />
-        {primaryNav.slice(4).map((item) => (
+        {primaryNav.slice(7).map((item) => (
           <NavLink
             key={item.href}
             item={item}

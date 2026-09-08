@@ -22,7 +22,7 @@ const card: React.CSSProperties = {
 
 const thSt: React.CSSProperties = {
   padding: "11px 16px",
-  fontSize: "11px",
+  fontSize: "14px",
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -34,22 +34,24 @@ const thSt: React.CSSProperties = {
 
 const tdSt: React.CSSProperties = {
   padding: "12px 16px",
-  fontSize: "13px",
+  fontSize: "16px",
   color: "var(--admin-text, #4a3f38)",
   borderBottom: "1px solid var(--admin-card-border, #f0ece6)",
   verticalAlign: "top"
 };
 
 const inputSt: React.CSSProperties = {
-  height: "40px",
-  padding: "0 14px",
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "6px 8px",
   borderRadius: "8px",
   border: "1px solid var(--admin-card-border, #e8e2d9)",
-  fontSize: "13px",
+  fontSize: "15px",
   background: "var(--admin-card-bg, #fff)",
   color: "var(--admin-text, #2c2420)",
   outline: "none",
-  transition: "all 0.15s"
+  transition: "all 0.15s",
+  minWidth: 0
 };
 
 function formatWhen(iso: string) {
@@ -185,12 +187,11 @@ export default function AdminEnrollmentsPage() {
           <button
             type="submit"
             style={{
-              height: "40px",
-              padding: "0 20px",
+              padding: "7px 12px",
               borderRadius: "8px",
               background: "linear-gradient(135deg, #1c352a, #2d5040)",
               color: "#fffbf5",
-              fontSize: "13px",
+              fontSize: "15px",
               fontWeight: 600,
               border: "none",
               cursor: "pointer",

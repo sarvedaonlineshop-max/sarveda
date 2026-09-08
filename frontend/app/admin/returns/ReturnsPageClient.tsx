@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 
+import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { getApiBase } from "@/lib/api";
 
@@ -69,21 +70,24 @@ const tdSt: React.CSSProperties = {
 };
 const labelSt: React.CSSProperties = {
   display: "block",
-  fontSize: "12px",
-  fontWeight: 700,
-  letterSpacing: "0.08em",
+  fontSize: "13px",
+  fontWeight: 600,
+  letterSpacing: "0.04em",
   textTransform: "uppercase",
   color: "var(--admin-text-muted, #8a7060)",
-  marginBottom: "4px"
+  marginBottom: "3px",
+  whiteSpace: "nowrap"
 };
 const inputSt: React.CSSProperties = {
   width: "100%",
-  padding: "8px 10px",
+  boxSizing: "border-box",
+  padding: "6px 8px",
   borderRadius: "8px",
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   background: "var(--admin-card-bg, #fff)",
   fontSize: "15px",
-  color: "var(--admin-text, #2c2420)"
+  color: "var(--admin-text, #2c2420)",
+  minWidth: 0
 };
 
 function StageBadge({ label, overdue }: { label: string; overdue?: boolean }) {
@@ -142,6 +146,8 @@ function StageBadge({ label, overdue }: { label: string; overdue?: boolean }) {
 }
 
 export default function AdminReturnsPageInner() {
+  const router = useRouter();
+  const nav = useAdminNavOptional();
   const searchParams = useSearchParams();
   const initialStage = searchParams.get("stage") || "all";
   const [rows, setRows] = useState<ReturnCaseRow[]>([]);
@@ -233,7 +239,7 @@ export default function AdminReturnsPageInner() {
           type="button"
           onClick={() => void load()}
           style={{
-            padding: "8px 14px",
+            padding: "7px 12px",
             borderRadius: "8px",
             border: "1px solid #1e3a2f",
             background: "linear-gradient(135deg, #1c352a, #2d5040)",
@@ -254,7 +260,7 @@ export default function AdminReturnsPageInner() {
             setStage("all");
           }}
           style={{
-            padding: "8px 12px",
+            padding: "7px 12px",
             borderRadius: "8px",
             border: "1px solid var(--admin-card-border, #e8e2d9)",
             background: "transparent",
@@ -309,7 +315,9 @@ export default function AdminReturnsPageInner() {
                 <tr
                   key={row.id}
                   onClick={() => {
-                    window.location.href = `/admin/returns/${encodeURIComponent(row.caseNumber)}`;
+                    const href = `/admin/returns/${encodeURIComponent(row.caseNumber)}`;
+                    nav?.beginNavigation(href);
+                    router.push(href);
                   }}
                   style={{
                     cursor: "pointer",
