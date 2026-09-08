@@ -1,0 +1,208 @@
+.adminDarkScope :global(.admin-product-ui.dark) {
+  color-scheme: dark;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark) {
+  background:
+    radial-gradient(circle at top left, rgba(185, 138, 62, 0.12), transparent 30rem),
+    linear-gradient(180deg, #07120d 0%, #0b1510 42%, #0d1712 100%);
+  color: var(--admin-text, #f4efe6);
+}
+
+.adminDarkScope :global(.admin-product-ui.dark main),
+.adminDarkScope :global(.admin-product-ui.dark [data-admin-main]) {
+  background: transparent !important;
+  color: var(--admin-text, #f4efe6) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .bg-white),
+.adminDarkScope :global(.admin-product-ui.dark .bg-stone-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-stone-50\/80),
+.adminDarkScope :global(.admin-product-ui.dark .bg-stone-100),
+.adminDarkScope :global(.admin-product-ui.dark .bg-\[\#faf7f2\]),
+.adminDarkScope :global(.admin-product-ui.dark .bg-\[\#fff8e8\]),
+.adminDarkScope :global(.admin-product-ui.dark .bg-\[\#fbfcfb\]),
+.adminDarkScope :global(.admin-product-ui.dark .bg-\[\#faf5ec\]),
+.adminDarkScope :global(.admin-product-ui.dark .bg-\[\#fffdf7\]) {
+  background-color: var(--admin-card-bg, #111f18) !important;
+  color: var(--admin-text, #f4efe6) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .bg-amber-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-amber-50\/50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-amber-50\/60),
+.adminDarkScope :global(.admin-product-ui.dark .bg-amber-50\/80),
+.adminDarkScope :global(.admin-product-ui.dark .bg-yellow-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-\[\#fff8e8\]) {
+  background-color: rgba(185, 138, 62, 0.12) !important;
+  color: #f7e7bd !important;
+  border-color: rgba(185, 138, 62, 0.34) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .bg-emerald-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-emerald-50\/60),
+.adminDarkScope :global(.admin-product-ui.dark .bg-emerald-50\/80),
+.adminDarkScope :global(.admin-product-ui.dark .bg-green-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-sky-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-blue-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-violet-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-purple-50) {
+  background-color: rgba(25, 135, 84, 0.14) !important;
+  color: #d7f8e5 !important;
+  border-color: rgba(71, 189, 132, 0.28) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .bg-red-50),
+.adminDarkScope :global(.admin-product-ui.dark .bg-rose-50) {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  color: #ffd7d7 !important;
+  border-color: rgba(248, 113, 113, 0.32) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .border-stone-100),
+.adminDarkScope :global(.admin-product-ui.dark .border-stone-200),
+.adminDarkScope :global(.admin-product-ui.dark .border-stone-300),
+.adminDarkScope :global(.admin-product-ui.dark .border-amber-200),
+.adminDarkScope :global(.admin-product-ui.dark .border-emerald-200),
+.adminDarkScope :global(.admin-product-ui.dark .border-sky-200),
+.adminDarkScope :global(.admin-product-ui.dark .divide-stone-100 > :not([hidden]) ~ :not([hidden])) {
+  border-color: var(--admin-card-border, rgba(185, 138, 62, 0.18)) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .shadow-sm),
+.adminDarkScope :global(.admin-product-ui.dark .shadow),
+.adminDarkScope :global(.admin-product-ui.dark .shadow-md),
+.adminDarkScope :global(.admin-product-ui.dark .shadow-lg),
+.adminDarkScope :global(.admin-product-ui.dark .shadow-xl) {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26), 0 1px 0 rgba(255, 255, 255, 0.03) inset !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-950),
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-900),
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-800),
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-700),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#1c352a\]),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#2c2420\]),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#143026\]) {
+  color: var(--admin-text, #f4efe6) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-600),
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-500),
+.adminDarkScope :global(.admin-product-ui.dark .text-stone-400),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#8a7060\]),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#4a3f38\]),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#4a6b58\]) {
+  color: var(--admin-text-muted, #a9b9ad) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .text-amber-900),
+.adminDarkScope :global(.admin-product-ui.dark .text-amber-800),
+.adminDarkScope :global(.admin-product-ui.dark .text-amber-700),
+.adminDarkScope :global(.admin-product-ui.dark .text-\[\#8a6428\]),
+.adminDarkScope :global(.admin-product-ui.dark .text-brand-gold) {
+  color: #f0c978 !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .text-emerald-900),
+.adminDarkScope :global(.admin-product-ui.dark .text-emerald-800),
+.adminDarkScope :global(.admin-product-ui.dark .text-emerald-700),
+.adminDarkScope :global(.admin-product-ui.dark .text-green-900),
+.adminDarkScope :global(.admin-product-ui.dark .text-green-800) {
+  color: #87e2b1 !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .text-sky-950),
+.adminDarkScope :global(.admin-product-ui.dark .text-sky-900),
+.adminDarkScope :global(.admin-product-ui.dark .text-sky-800),
+.adminDarkScope :global(.admin-product-ui.dark .text-blue-900),
+.adminDarkScope :global(.admin-product-ui.dark .text-blue-800) {
+  color: #9fd2ff !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark table),
+.adminDarkScope :global(.admin-product-ui.dark thead),
+.adminDarkScope :global(.admin-product-ui.dark tbody),
+.adminDarkScope :global(.admin-product-ui.dark tr),
+.adminDarkScope :global(.admin-product-ui.dark td),
+.adminDarkScope :global(.admin-product-ui.dark th) {
+  border-color: rgba(185, 138, 62, 0.14) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark thead),
+.adminDarkScope :global(.admin-product-ui.dark thead tr),
+.adminDarkScope :global(.admin-product-ui.dark thead th) {
+  background: var(--admin-table-head, linear-gradient(180deg, #16251d, #101d16)) !important;
+  color: var(--admin-th-text, #e8d9a8) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark tbody tr:hover > td),
+.adminDarkScope :global(.admin-product-ui.dark tbody tr:hover > th) {
+  background-color: var(--admin-row-hover, rgba(185, 138, 62, 0.08)) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark input:not([type="checkbox"]):not([type="radio"])),
+.adminDarkScope :global(.admin-product-ui.dark select),
+.adminDarkScope :global(.admin-product-ui.dark textarea) {
+  background: var(--admin-input-bg, #0c1711) !important;
+  border-color: var(--admin-input-border, rgba(185, 138, 62, 0.28)) !important;
+  color: var(--admin-text, #f4efe6) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark input::placeholder),
+.adminDarkScope :global(.admin-product-ui.dark textarea::placeholder) {
+  color: rgba(211, 222, 215, 0.48) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark select option) {
+  background: #0f1c15;
+  color: #f4efe6;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark button.border),
+.adminDarkScope :global(.admin-product-ui.dark a.border) {
+  border-color: rgba(185, 138, 62, 0.34) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark button:not(.bg-red-700):not(.bg-emerald-700):not(.bg-stone-900):not(.bg-amber-500)),
+.adminDarkScope :global(.admin-product-ui.dark a.rounded-lg:not(.bg-red-700):not(.bg-emerald-700):not(.bg-stone-900):not(.bg-amber-500)) {
+  color: var(--admin-text, #f4efe6);
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .rounded-xl),
+.adminDarkScope :global(.admin-product-ui.dark .rounded-2xl),
+.adminDarkScope :global(.admin-product-ui.dark .rounded-lg) {
+  border-color: var(--admin-card-border, rgba(185, 138, 62, 0.18));
+}
+
+.adminDarkScope :global(.admin-product-ui.dark [style*="#faf5ec"]),
+.adminDarkScope :global(.admin-product-ui.dark [style*="#faf7f2"]),
+.adminDarkScope :global(.admin-product-ui.dark [style*="#fff"]),
+.adminDarkScope :global(.admin-product-ui.dark [style*="rgb(255, 255, 255)"]) {
+  color: var(--admin-text, #f4efe6) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .admin-surface),
+.adminDarkScope :global(.admin-product-ui.dark .admin-route-skeleton-card),
+.adminDarkScope :global(.admin-product-ui.dark .admin-route-skeleton-panel) {
+  background: var(--admin-card-bg, #111f18) !important;
+  border-color: var(--admin-card-border, rgba(185, 138, 62, 0.18)) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .admin-inv-product-row.is-expanded),
+.adminDarkScope :global(.admin-product-ui.dark .admin-inv-variant-row) {
+  background: #111f18 !important;
+  box-shadow: inset 3px 0 0 #b98a3e, 0 12px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark .ProseMirror),
+.adminDarkScope :global(.admin-product-ui.dark [contenteditable="true"]) {
+  background: #0d1812 !important;
+  color: #f4efe6 !important;
+}
+
+.adminDarkScope :global(.admin-product-ui.dark img),
+.adminDarkScope :global(.admin-product-ui.dark video) {
+  border-color: rgba(185, 138, 62, 0.16);
+}
