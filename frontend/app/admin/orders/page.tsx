@@ -227,14 +227,14 @@ export default function AdminOrdersPage() {
       hideSearch: true,
       leading: (
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, maxWidth: "920px" }}>
-          <ShoppingCart size={24} strokeWidth={2.25} color="#1c352a" aria-hidden />
+          <ShoppingCart size={24} strokeWidth={2.25} color="#e8d5a8" aria-hidden />
           <div style={{ minWidth: 0 }}>
             <h1
               style={{
                 margin: 0,
                 fontSize: "23px",
                 fontWeight: 700,
-                color: "var(--admin-text, #1c352a)",
+                color: "#faf5ec",
                 lineHeight: 1.2,
                 letterSpacing: "-0.02em"
               }}
@@ -246,11 +246,11 @@ export default function AdminOrdersPage() {
                 margin: "3px 0 0",
                 fontSize: "14px",
                 lineHeight: 1.4,
-                color: "var(--admin-text-muted, #4a6b58)"
+                color: "#a8c4b0"
               }}
             >
               {ordersLegend.replace(/ · Labels under Shipments → Ready to ship$/, "")} · Labels under{" "}
-              <Link href="/admin/shipments?bucket=ready" style={{ color: "#8a6428", fontWeight: 600 }}>
+              <Link href="/admin/shipments?bucket=ready" style={{ color: "#e8d5a8", fontWeight: 600 }}>
                 Shipments → Ready to ship
               </Link>
             </p>
@@ -440,16 +440,16 @@ export default function AdminOrdersPage() {
         })}
       </div>
 
-      {/* Line 3 — one-line search + exports */}
+      {/* Line 3 — search filters + exports (wrap so Exports stays visible) */}
       <div
         style={{
           ...card,
           padding: "12px 14px",
           display: "flex",
-          flexWrap: "nowrap",
+          flexWrap: "wrap",
           alignItems: "flex-end",
           gap: "8px",
-          overflowX: "auto"
+          overflow: "visible"
         }}
       >
         <div style={{ flex: "1 1 90px", minWidth: "90px" }}>
@@ -591,7 +591,7 @@ export default function AdminOrdersPage() {
         >
           Clear
         </button>
-        <div ref={exportMenuRef} style={{ position: "relative", flex: "0 0 auto" }}>
+        <div ref={exportMenuRef} style={{ position: "relative", flex: "0 0 auto", marginLeft: "auto", zIndex: 30 }}>
           <button
             type="button"
             disabled={exportLoading !== null}
@@ -618,12 +618,12 @@ export default function AdminOrdersPage() {
                 position: "absolute",
                 right: 0,
                 top: "calc(100% + 4px)",
-                zIndex: 20,
-                minWidth: "150px",
-                background: "var(--admin-card-bg, #fff)",
+                zIndex: 40,
+                minWidth: "160px",
+                background: "#ffffff",
                 border: "1px solid var(--admin-card-border, #e8e2d9)",
                 borderRadius: "10px",
-                boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
+                boxShadow: "0 12px 28px rgba(15,23,42,0.18)",
                 padding: "6px",
                 display: "flex",
                 flexDirection: "column",

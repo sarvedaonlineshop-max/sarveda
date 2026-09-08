@@ -197,10 +197,10 @@ function AdminShellInner({
               position: "sticky",
               top: 0,
               zIndex: 30,
-              background: isDark ? headerBg : "rgba(243,248,245,0.94)",
-              backdropFilter: "saturate(180%) blur(14px)",
-              WebkitBackdropFilter: "saturate(180%) blur(14px)",
-              borderBottom: `1px solid ${headerBorder}`,
+              background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+              backdropFilter: "none",
+              WebkitBackdropFilter: "none",
+              borderBottom: "1px solid rgba(185,138,62,0.22)",
               minHeight: "72px",
               height: "auto",
               display: "flex",
@@ -208,9 +208,7 @@ function AdminShellInner({
               flexWrap: "wrap",
               padding: "12px 24px",
               gap: "12px 14px",
-              boxShadow: isDark
-                ? "0 1px 0 rgba(185,138,62,0.10), 0 10px 24px rgba(0,0,0,0.20)"
-                : "0 1px 0 rgba(20,48,38,0.06), 0 8px 24px rgba(20,48,38,0.04)"
+              boxShadow: "0 8px 24px rgba(10,22,14,0.28)"
             }}
           >
             <button
@@ -223,14 +221,12 @@ function AdminShellInner({
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
-                color: mutedColor
+                color: "#d7e6dc"
               }}
               className="md:hidden block"
               aria-label="Open navigation"
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = isDark
-                  ? "rgba(185,138,62,0.14)"
-                  : "rgba(28,53,42,0.08)";
+                e.currentTarget.style.background = "rgba(185,138,62,0.18)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
@@ -265,7 +261,7 @@ function AdminShellInner({
                     style={{
                       fontSize: "23px",
                       fontWeight: 700,
-                      color: titleColor,
+                      color: "#faf5ec",
                       margin: 0,
                       lineHeight: 1.2,
                       letterSpacing: "-0.02em"

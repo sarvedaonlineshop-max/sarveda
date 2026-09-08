@@ -52,7 +52,7 @@ export function useAdminPageHeader(
                 margin: 0,
                 fontSize: "20px",
                 fontWeight: 700,
-                color: "var(--admin-text, #1c352a)",
+                color: "#faf5ec",
                 lineHeight: 1.2,
                 letterSpacing: "-0.02em"
               }}
@@ -65,7 +65,7 @@ export function useAdminPageHeader(
                   margin: "3px 0 0",
                   fontSize: "13px",
                   lineHeight: 1.4,
-                  color: "var(--admin-text-muted, #4a6b58)"
+                  color: "#a8c4b0"
                 }}
               >
                 {subtitle}

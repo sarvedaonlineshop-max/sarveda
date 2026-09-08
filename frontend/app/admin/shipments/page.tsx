@@ -219,7 +219,7 @@ export default function AdminShipmentsPage() {
         <>
           Ready → <strong>Create label</strong> (sets order to Processing) → Created · Then Picked /
           In transit / OFD / Delivered come from <strong>Delhivery sync</strong> · Returns under{" "}
-          <a href="/admin/returns" style={{ color: "#b98a3e", fontWeight: 600 }}>
+          <a href="/admin/returns" style={{ color: "#e8d5a8", fontWeight: 600 }}>
             Returns
           </a>
         </>
