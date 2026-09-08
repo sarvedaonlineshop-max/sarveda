@@ -2021,9 +2021,9 @@ export default function AdminOrderDetailPage() {
       leading: (
         <Link
           href="/admin/orders"
-          className="inline-flex items-center gap-2.5 text-[17px] font-semibold text-[#1c352a] no-underline transition-colors hover:text-[#8a6428] dark:text-stone-100 dark:hover:text-amber-300"
+          className="inline-flex items-center gap-2.5 text-[20px] font-semibold text-[#1c352a] no-underline transition-colors hover:text-[#8a6428] dark:text-stone-100 dark:hover:text-amber-300"
         >
-          <ChevronLeft size={28} strokeWidth={2.5} aria-hidden />
+          <ChevronLeft size={32} strokeWidth={2.5} aria-hidden />
           Back to Orders
         </Link>
       )
