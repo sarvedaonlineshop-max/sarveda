@@ -223,40 +223,42 @@ export default function AdminOrdersPage() {
 
   const ordersLegend =
     channel === "online"
-      ? "Online paid · New = just paid (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned · Labels under Shipments → Ready to ship"
-      : "COD · New = just placed · Processed = processing through delivered · Cancelled = stopped · Refunded = cash/manual return if collected · Labels under Shipments → Ready to ship";
+      ? "Online paid · New = just paid (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
+      : "COD · New = just placed · Processed = processing through delivered · Cancelled = stopped · Refunded = cash/manual return if collected";
 
   useRegisterAdminHeaderSlot(
     () => ({
       hideSearch: true,
       leading: (
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, maxWidth: "920px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, maxWidth: "100%" }}>
           <ShoppingCart size={24} strokeWidth={2.25} color="#e8d5a8" aria-hidden />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, overflow: "hidden" }}>
             <h1
               style={{
                 margin: 0,
                 fontSize: "23px",
                 fontWeight: 700,
                 color: "#faf5ec",
-                lineHeight: 1.2,
-                letterSpacing: "-0.02em"
+                lineHeight: 1.15,
+                letterSpacing: "-0.02em",
+                whiteSpace: "nowrap"
               }}
             >
               Orders
             </h1>
             <p
               style={{
-                margin: "3px 0 0",
-                fontSize: "14px",
-                lineHeight: 1.4,
-                color: "#a8c4b0"
+                margin: "2px 0 0",
+                fontSize: "13px",
+                lineHeight: 1.25,
+                color: "#a8c4b0",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
               }}
+              title={ordersLegend}
             >
-              {ordersLegend.replace(/ · Labels under Shipments → Ready to ship$/, "")} · Labels under{" "}
-              <Link href="/admin/shipments?bucket=ready" style={{ color: "#e8d5a8", fontWeight: 600 }}>
-                Shipments → Ready to ship
-              </Link>
+              {ordersLegend}
             </p>
           </div>
         </div>

@@ -2784,6 +2784,17 @@ export const ADMIN_CONTENT_TYPES = [
 
 export type AdminContentType = (typeof ADMIN_CONTENT_TYPES)[number];
 
+/** CMS hub tabs — courses/events have their own sidebar entries. */
+export const ADMIN_CONTENT_HUB_TYPES = [
+  "pages",
+  "blog",
+  "vaidyas",
+  "mentors",
+  "retreats",
+  "offers",
+  "testimonials"
+] as const satisfies ReadonlyArray<AdminContentType>;
+
 export const ADMIN_CONTENT_LABELS: Record<AdminContentType, string> = {
   pages: "Pages",
   courses: "Courses",

@@ -1055,7 +1055,9 @@ export function AdminInventoryWorkspace() {
   const actionOutline = `${actionBtn} border border-stone-200 bg-white text-stone-700 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200`;
 
   const thClass =
-    "px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-stone-500 dark:text-stone-400";
+    "px-4 py-[11px] text-left text-[14px] font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)] dark:text-stone-400";
+  const tdClass =
+    "px-4 py-3 text-[16px] text-[var(--admin-text,#4a3f38)] border-b border-[var(--admin-card-border,#f0ece6)] dark:text-stone-200 dark:border-stone-700";
 
   function renderZohoRowActions(r: InventoryRow) {
     const scenario = effectiveZohoScenario(r);
@@ -1124,16 +1126,16 @@ export function AdminInventoryWorkspace() {
         <td className="w-10 px-3 py-3">
           <IconChevron open={expanded} />
         </td>
-        <td className="px-4 py-3" colSpan={2}>
-          <span className="text-base font-semibold text-stone-900 dark:text-stone-100">{g.productName}</span>
-          <p className="mt-0.5 text-xs text-stone-500">
+        <td className={`${tdClass}`} colSpan={2}>
+          <span className="text-[16px] font-semibold text-[var(--admin-text,#4a3f38)] dark:text-stone-100">{g.productName}</span>
+          <p className="mt-0.5 text-[14px] text-[var(--admin-text-muted,#8a7060)]">
             {g.variantCount} variant{g.variantCount === 1 ? "" : "s"}
             {showZohoSync && g.zohoOutOfSync > 0 ? ` · ${g.zohoOutOfSync} out of sync` : ""}
             {` · ${g.rows.filter((r) => r.dropShipEnabled).length}/${g.variantCount} drop ship`}
           </p>
         </td>
         {showZohoSync ? (
-          <td className="px-4 py-3">
+          <td className={tdClass}>
             {g.zohoOutOfSync > 0 ? (
               <span
                 style={{
@@ -1141,25 +1143,25 @@ export function AdminInventoryWorkspace() {
                   color: "#92400e",
                   borderRadius: "999px",
                   padding: "2px 8px",
-                  fontSize: "11px",
+                  fontSize: "14px",
                   fontWeight: 700
                 }}
               >
                 Review SKUs
               </span>
             ) : g.zohoSynced > 0 ? (
-              <span className="text-xs text-emerald-700 dark:text-emerald-400">Synced</span>
+              <span className="text-[14px] text-emerald-700 dark:text-emerald-400">Synced</span>
             ) : (
-              <span className="text-xs text-stone-400">—</span>
+              <span className="text-[14px] text-stone-400">—</span>
             )}
           </td>
         ) : null}
-        <td className="px-4 py-3 text-center text-stone-400">—</td>
-        <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-stone-800 dark:text-stone-100">
+        <td className={`${tdClass} text-center text-stone-400`}>—</td>
+        <td className={`${tdClass} text-right font-semibold tabular-nums text-[var(--admin-text,#4a3f38)] dark:text-stone-100`}>
           {g.totalAvailable}
         </td>
-        <td className="px-4 py-3 text-right text-stone-400">—</td>
-        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+        <td className={`${tdClass} text-right text-stone-400`}>—</td>
+        <td className={tdClass} onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-wrap justify-end gap-1.5">
             <Link
               href={`/admin/products/${g.productId}`}
@@ -1206,36 +1208,36 @@ export function AdminInventoryWorkspace() {
             r.low ? "bg-red-50/40 dark:bg-red-950/10" : ""
           } ${thresholdDirty || availableDirty ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}`}
         >
-          <td className="px-3 py-2.5" />
-          <td className="px-4 py-2.5 pl-8 text-sm font-medium text-stone-800 dark:text-stone-200">
+          <td className={`${tdClass} px-3`} />
+          <td className={`${tdClass} pl-8 font-medium`}>
             {r.variantLabel ?? "Default"}
             {r.low ? (
-              <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-800 dark:bg-red-900/60 dark:text-red-100">
+              <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[12px] font-bold uppercase text-red-800 dark:bg-red-900/60 dark:text-red-100">
                 Low
               </span>
             ) : null}
           </td>
-          <td className="px-4 py-2.5 font-mono text-xs font-semibold text-stone-800 dark:text-stone-200">
+          <td className={`${tdClass} font-semibold`}>
             {r.sku}
           </td>
           {showZohoSync ? (
-            <td className="px-4 py-2.5">
+            <td className={tdClass}>
               <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
             </td>
           ) : null}
-          <td className="px-4 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+          <td className={`${tdClass} text-center`} onClick={(e) => e.stopPropagation()}>
             <div className="inline-flex flex-col items-center gap-0.5">
               <DropShipToggle
                 enabled={Boolean(r.dropShipEnabled)}
                 busy={dropShipBusyId === r.variantId}
                 onToggle={() => void toggleDropShip(r)}
               />
-              <span className="text-[10px] font-medium text-stone-500">
+              <span className="text-[12px] font-medium text-stone-500">
                 {r.dropShipEnabled ? "On" : "Off"}
               </span>
             </div>
           </td>
-          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+          <td className={`${tdClass} text-right`} onClick={(e) => e.stopPropagation()}>
             <input
               type="text"
               inputMode="numeric"
@@ -1248,18 +1250,18 @@ export function AdminInventoryWorkspace() {
                   [r.variantId]: sanitizeNonNegIntInput(e.target.value)
                 }))
               }
-              className="w-20 rounded border border-stone-200 px-2 py-1.5 text-right font-mono text-sm text-stone-900 outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              className="w-20 rounded border border-stone-200 px-2 py-1.5 text-right text-[15px] text-stone-900 outline-none focus:border-[#1c352a] focus:ring-1 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
             {showZohoSync && r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
-              <span className="mt-0.5 block text-[10px] font-normal text-stone-400">
+              <span className="mt-0.5 block text-[12px] font-normal text-stone-400">
                 Zoho: {r.zohoStockOnHand}
               </span>
             ) : null}
             {r.reserved > 0 ? (
-              <span className="mt-0.5 block text-[10px] font-normal text-stone-400">{r.reserved} held</span>
+              <span className="mt-0.5 block text-[12px] font-normal text-stone-400">{r.reserved} held</span>
             ) : null}
           </td>
-          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+          <td className={`${tdClass} text-right`} onClick={(e) => e.stopPropagation()}>
             <input
               type="text"
               inputMode="numeric"
@@ -1272,12 +1274,12 @@ export function AdminInventoryWorkspace() {
                   [r.variantId]: sanitizeNonNegIntInput(e.target.value)
                 }))
               }
-              className="w-16 rounded border border-stone-200 px-2 py-1.5 text-right font-mono text-sm text-stone-900 outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              className="w-16 rounded border border-stone-200 px-2 py-1.5 text-right text-[15px] text-stone-900 outline-none focus:border-[#1c352a] focus:ring-1 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
           </td>
-          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+          <td className={`${tdClass} text-right`} onClick={(e) => e.stopPropagation()}>
             {showZohoSync ? renderZohoRowActions(r) : (
-              <span className="text-xs text-stone-400">—</span>
+              <span className="text-[14px] text-stone-400">—</span>
             )}
           </td>
         </tr>
@@ -1448,7 +1450,7 @@ export function AdminInventoryWorkspace() {
           }}
           placeholder="Search inventory SKUs, products…"
           aria-label="Search inventory"
-          className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-[15px] text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
+          className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-[15px] text-stone-900 shadow-sm outline-none focus:border-[#1c352a] focus:ring-1 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
         />
         {searchFocused && searchInput.trim() && headerSuggestions.length > 0 ? (
           <div className="absolute left-0 right-0 z-40 mt-1 max-h-80 overflow-auto rounded-xl border border-stone-200 bg-white py-1 shadow-xl dark:border-stone-600 dark:bg-stone-900">
@@ -1735,7 +1737,7 @@ export function AdminInventoryWorkspace() {
           className="admin-inv-list-fade overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900"
         >
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className="min-w-full" style={{ fontFamily: "inherit" }}>
               <thead className="sticky top-0 z-10 border-b border-stone-200 bg-gradient-to-b from-stone-100/95 to-stone-50/95 backdrop-blur dark:border-stone-600 dark:bg-stone-800/95">
                 <tr>
                   <th className={`${thClass} w-10`} aria-label="Expand" />

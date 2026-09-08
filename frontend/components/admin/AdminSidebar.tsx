@@ -10,6 +10,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   MapPinHouse,
@@ -30,7 +31,6 @@ import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLin
 import { AdminShipmentsSidebarLink } from "@/components/admin/AdminShipmentsSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
-import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { adminTheme as t } from "@/lib/admin-theme";
 import {
   applySidebarHover,
@@ -65,6 +65,7 @@ const icon = {
   pickup: <MapPinHouse {...iconProps} />,
   catalogGaps: <ScanSearch {...iconProps} />,
   purchases: <ShoppingCart {...iconProps} />,
+  content: <FileText {...iconProps} />,
   activity: <Activity {...iconProps} />
 };
 
@@ -84,7 +85,8 @@ const primaryNav: NavItem[] = [
   { href: "/admin/content?type=courses", label: "Courses", icon: icon.courses },
   { href: "/admin/content?type=events", label: "Events", icon: icon.events },
   { href: "/admin/customers", label: "Customers", icon: icon.customers },
-  { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments }
+  { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments },
+  { href: "/admin/content", label: "Contents", icon: icon.content }
 ];
 
 const secondaryNav: NavItem[] = [
@@ -145,6 +147,26 @@ function NavLink({
       activePath.startsWith("/admin/content/courses") ||
       activePath === "/admin/courses" ||
       activePath.startsWith("/admin/courses/");
+  }
+
+  // Hub "Contents" — active for CMS types except courses/events (those have their own nav).
+  if (item.href === "/admin/content") {
+    const isCourseOrEvent =
+      contentType === "courses" ||
+      contentType === "events" ||
+      activePath.startsWith("/admin/content/courses") ||
+      activePath.startsWith("/admin/content/events") ||
+      Boolean(pendingHref?.includes("type=courses")) ||
+      Boolean(pendingHref?.includes("type=events"));
+    isActive =
+      !isCourseOrEvent &&
+      (Boolean(pendingHref?.startsWith("/admin/content") &&
+        !pendingHref?.includes("type=courses") &&
+        !pendingHref?.includes("type=events")) ||
+        activePath === "/admin/content" ||
+        (activePath.startsWith("/admin/content/") &&
+          !activePath.startsWith("/admin/content/courses") &&
+          !activePath.startsWith("/admin/content/events")));
   }
 
   return (
@@ -321,27 +343,29 @@ export function AdminSidebar({
       className="flex h-full flex-col"
       style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}` }}
     >
-      <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid rgba(185,138,62,0.15)" }}>
+      <div style={{ padding: "14px 12px 12px", borderBottom: "1px solid rgba(185,138,62,0.15)" }}>
         <Link
           href="/admin"
           onClick={onNavigate}
-          style={{ display: "block", textDecoration: "none" }}
+          style={{ display: "block", textDecoration: "none", width: "100%" }}
           aria-label="Sarveda admin home"
         >
-          <SarvedaLogo href={undefined} tone="admin" iconHeight={52} showWordmark />
-          <p
+          {/* Storefront footer mark — full sidebar width */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/brand/sarveda-logo-on-dark.svg"
+            alt="Sarveda"
+            width={426}
+            height={144}
             style={{
-              color: t.accent,
-              fontSize: "13px",
-              fontWeight: 600,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              paddingLeft: "2px",
-              margin: "6px 0 0"
+              display: "block",
+              width: "100%",
+              height: "auto",
+              objectFit: "contain",
+              objectPosition: "left center"
             }}
-          >
-            Admin
-          </p>
+            decoding="async"
+          />
         </Link>
       </div>
 

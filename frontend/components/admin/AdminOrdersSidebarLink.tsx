@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 
 import { fetchPendingServiceRequestCount } from "@/lib/order-service-request";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
@@ -52,7 +52,7 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
           transition: "color 0.15s ease"
         }}
       >
-        <ShoppingBag size={18} strokeWidth={2} />
+        <ShoppingCart size={18} strokeWidth={2} />
       </span>
       <span style={{ flex: 1 }}>Orders</span>
       {pending > 0 ? (

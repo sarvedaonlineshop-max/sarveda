@@ -40,10 +40,10 @@ type Props = {
 };
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm transition-colors duration-150 focus:border-[#b98a3e] focus:ring-1 focus:ring-[#b98a3e]/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+  "mt-1 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] transition-colors duration-150 focus:border-[#b98a3e] focus:ring-1 focus:ring-[rgba(185,138,62,0.15)] dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
 
-const courseInputClass =
-  "mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 transition-colors duration-150 focus:border-[#b98a3e] focus:ring-1 focus:ring-[#b98a3e]/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+const labelClass =
+  "text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]";
 
 export function ContentForm({ type, itemId }: Props) {
   const isCourse = type === "courses";
@@ -203,33 +203,28 @@ export function ContentForm({ type, itemId }: Props) {
     return <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
   }
 
-  const fieldInput = isCourse ? courseInputClass : inputClass;
-  const formClass = isCourse
-    ? "mx-auto w-full max-w-6xl space-y-5 pb-28 font-sans"
-    : "mx-auto max-w-3xl space-y-6";
-  const cardClass = isCourse
-    ? "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900"
-    : "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900";
+  const fieldInput = inputClass;
+  const formClass = "mx-auto w-full max-w-[1680px] space-y-5 pb-28 font-sans";
+  const cardClass =
+    "space-y-4 rounded-xl border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900";
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className={formClass}>
       <div>
         <Link
-          href={isCourse ? "/admin/courses" : `/admin/content?type=${type}`}
-          className={`inline-flex items-center gap-1 text-sm font-semibold hover:underline ${
-            isCourse ? "text-[#b98a3e] dark:text-amber-400" : "text-[#b98a3e] dark:text-amber-400"
-          }`}
+          href={
+            isCourse
+              ? "/admin/content?type=courses"
+              : type === "events"
+                ? "/admin/content?type=events"
+                : `/admin/content?type=${type}`
+          }
+          className="inline-flex items-center gap-1 text-sm font-semibold text-[#b98a3e] hover:underline dark:text-amber-400"
         >
           <ChevronLeft size={14} aria-hidden />
           {label}
         </Link>
-        <h1
-          className={
-            isCourse
-              ? "mt-1 text-3xl font-bold text-stone-900 dark:text-stone-100"
-              : "mt-2 font-serif text-3xl italic text-stone-900 dark:text-stone-100"
-          }
-        >
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--admin-text,#2c2420)] dark:text-stone-100">
           {isNew ? `New ${label.slice(0, -1)}` : `Edit ${label.slice(0, -1)}`}
         </h1>
         {isCourse ? (
@@ -789,7 +784,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase text-stone-600 dark:text-stone-400">
+      <label className={`block ${labelClass}`}>
         {label}
         {required ? " *" : ""}
       </label>

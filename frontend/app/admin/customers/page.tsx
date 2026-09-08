@@ -115,9 +115,9 @@ export default function AdminCustomersPage() {
             alignItems: "center",
             padding: "6px 12px",
             borderRadius: "999px",
-            background: "transparent",
-            color: "var(--admin-text, #1c352a)",
-            border: "1px solid var(--admin-card-border, #e0d8ce)",
+            background: "rgba(255,255,255,0.1)",
+            color: "#faf5ec",
+            border: "1px solid rgba(232,213,168,0.45)",
             fontSize: "14px",
             fontWeight: 700,
             whiteSpace: "nowrap"
@@ -230,17 +230,7 @@ export default function AdminCustomersPage() {
                           {initial}
                         </div>
                       </td>
-                      <td
-                        style={{
-                          ...tdSt,
-                          fontWeight: 500,
-                          color: "#2c2420",
-                          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                          fontSize: "14px"
-                        }}
-                      >
-                        {u.email}
-                      </td>
+                      <td style={{ ...tdSt, fontWeight: 500, color: "#2c2420" }}>{u.email}</td>
                       <td style={tdSt}>{u.name ?? "—"}</td>
                       <td
                         style={{

@@ -34,7 +34,10 @@ export function AdminNavProvider({ children }: { children: React.ReactNode }) {
       const nextPath = hrefPath(href);
       if (nextPath === pathname && !href.includes("?")) return;
       setPendingHref(href);
-      setIsNavigating(true);
+      // Chat list ↔ thread stays in the same split layout — avoid full-page loader.
+      const softChatPane =
+        pathname.startsWith("/admin/chats") && nextPath.startsWith("/admin/chats");
+      if (!softChatPane) setIsNavigating(true);
     },
     [pathname]
   );

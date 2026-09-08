@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
-  ArrowRight,
   BadgeIndianRupee,
   Box,
   Layers3,
@@ -123,29 +122,6 @@ export default function AdminDashboardPage() {
           Store operations overview — orders, products, inventory risk, customers, and recent
           activity. Financial statements live under Accounting → Financial Reports.
         </>
-      ),
-      actions: (
-        <Link
-          href="/admin/orders"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "8px 12px",
-            borderRadius: "999px",
-            textDecoration: "none",
-            color: "#fff",
-            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
-            fontSize: "13px",
-            fontWeight: 700,
-            border: "none",
-            cursor: "pointer",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Open orders
-          <ArrowRight size={15} />
-        </Link>
       )
     }),
     []

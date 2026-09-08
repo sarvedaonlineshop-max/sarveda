@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
-import { ADMIN_CONTENT_LABELS, ADMIN_CONTENT_TYPES, type AdminContentRow, type AdminContentType, deleteAdminContent, fetchAdminContentList } from "@/lib/admin-api";
+import { ADMIN_CONTENT_HUB_TYPES, ADMIN_CONTENT_LABELS, ADMIN_CONTENT_TYPES, type AdminContentRow, type AdminContentType, deleteAdminContent, fetchAdminContentList } from "@/lib/admin-api";
 
 function parseType(raw: string | null): AdminContentType {
   if (raw && (ADMIN_CONTENT_TYPES as readonly string[]).includes(raw)) return raw as AdminContentType;
@@ -22,8 +22,7 @@ const CONTENT_TYPE_ICONS: Record<string, string> = {
   vaidyas: "🌿",
   retreats: "🏔️",
   offers: "🏷️",
-  testimonials: "💬",
-  directory: "📋"
+  testimonials: "💬"
 };
 
 const card: React.CSSProperties = {
@@ -152,9 +151,14 @@ function AdminContentList() {
 
   useAdminPageHeader(
     () => ({
-      title: "Content",
-      icon: "📄",
-      subtitle: <>Pages, courses, events, blog, and directory entries.</>,
+      title: type === "courses" || type === "events" ? ADMIN_CONTENT_LABELS[type] : "Contents",
+      icon: type === "courses" ? "📚" : type === "events" ? "🎉" : "📄",
+      subtitle:
+        type === "courses" || type === "events" ? (
+          <>Manage {ADMIN_CONTENT_LABELS[type].toLowerCase()}.</>
+        ) : (
+          <>Pages, blog, and directory entries.</>
+        ),
       actions: (
         <Link
           href={`/admin/content/${type}/new`}
@@ -181,10 +185,14 @@ function AdminContentList() {
     [type]
   );
 
+  const hubTabs = type === "courses" || type === "events" ? ([type] as const) : ADMIN_CONTENT_HUB_TYPES;
+  const showHubPills = type !== "courses" && type !== "events";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {showHubPills ? (
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        {ADMIN_CONTENT_TYPES.map((t) => {
+        {hubTabs.map((t) => {
           const active = t === type;
           return (
             <button
@@ -212,6 +220,7 @@ function AdminContentList() {
           );
         })}
       </div>
+      ) : null}
 
       <div
         style={{

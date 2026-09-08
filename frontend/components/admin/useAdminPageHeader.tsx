@@ -31,7 +31,8 @@ export function useAdminPageHeader(
             alignItems: "center",
             gap: "12px",
             minWidth: 0,
-            maxWidth: "920px"
+            maxWidth: "100%",
+            overflow: "hidden"
           }}
         >
           {icon ? (
@@ -46,15 +47,16 @@ export function useAdminPageHeader(
               {icon}
             </span>
           ) : null}
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, overflow: "hidden" }}>
             <h1
               style={{
                 margin: 0,
-                fontSize: "20px",
+                fontSize: "23px",
                 fontWeight: 700,
                 color: "#faf5ec",
-                lineHeight: 1.2,
-                letterSpacing: "-0.02em"
+                lineHeight: 1.15,
+                letterSpacing: "-0.02em",
+                whiteSpace: "nowrap"
               }}
             >
               {title}
@@ -62,10 +64,13 @@ export function useAdminPageHeader(
             {subtitle ? (
               <div
                 style={{
-                  margin: "3px 0 0",
+                  margin: "2px 0 0",
                   fontSize: "13px",
-                  lineHeight: 1.4,
-                  color: "#a8c4b0"
+                  lineHeight: 1.25,
+                  color: "#a8c4b0",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
                 }}
               >
                 {subtitle}

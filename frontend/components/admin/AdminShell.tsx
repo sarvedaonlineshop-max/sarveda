@@ -202,13 +202,14 @@ function AdminShellInner({
               WebkitBackdropFilter: "none",
               borderBottom: "1px solid rgba(185,138,62,0.22)",
               minHeight: "72px",
-              height: "auto",
+              height: "72px",
               display: "flex",
               alignItems: "center",
-              flexWrap: "wrap",
-              padding: "12px 24px",
+              flexWrap: "nowrap",
+              padding: "0 24px",
               gap: "12px 14px",
-              boxShadow: "0 8px 24px rgba(10,22,14,0.28)"
+              boxShadow: "0 8px 24px rgba(10,22,14,0.28)",
+              overflow: "hidden"
             }}
           >
             <button
@@ -456,7 +457,7 @@ function AdminShellInner({
           <main className="admin-workspace" style={{ flex: 1, padding: "24px 30px 48px", position: "relative" }}>
             <AdminLoadingOverlay show={isNavigating} label="Loading page…" />
             <div
-              key={pathname}
+              key={pathname.startsWith("/admin/chats") ? "/admin/chats" : pathname}
               className="admin-content-enter"
               style={{
                 width: "100%",

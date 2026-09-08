@@ -374,15 +374,32 @@ export default function AdminProductsPage() {
       />
 
       <div
-        className="flex flex-wrap items-end gap-2 rounded-xl border p-[12px_14px]"
         style={{
           background: "var(--admin-card-bg, #fff)",
-          borderColor: "var(--admin-card-border, #e8e2d9)",
-          boxShadow: "0 1px 2px rgba(15,23,42,0.045), 0 8px 24px rgba(15,23,42,0.04)"
+          border: "1px solid var(--admin-card-border, #e8e2d9)",
+          borderRadius: "12px",
+          boxShadow: "0 1px 2px rgba(15,23,42,0.045), 0 8px 24px rgba(15,23,42,0.04)",
+          padding: "12px 14px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "flex-end",
+          gap: "8px"
         }}
       >
-        <div className="min-w-[12rem] flex-1">
-          <label htmlFor="q" className="mb-[3px] block text-[13px] font-semibold uppercase tracking-[0.04em] text-[var(--admin-text-muted,#8a7060)]">
+        <div style={{ flex: "1 1 180px", minWidth: "140px" }}>
+          <label
+            htmlFor="q"
+            style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "var(--admin-text-muted, #8a7060)",
+              marginBottom: "3px",
+              whiteSpace: "nowrap"
+            }}
+          >
             Search
           </label>
           <input
@@ -391,11 +408,35 @@ export default function AdminProductsPage() {
             onChange={(e) => setQ(e.target.value)}
             onBlur={() => setPage(1)}
             placeholder="Product name…"
-            className="mt-0 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-[15px] text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "6px 8px",
+              borderRadius: "8px",
+              border: "1px solid var(--admin-card-border, #e8e2d9)",
+              background: "var(--admin-card-bg, #fff)",
+              color: "var(--admin-text, #2c2420)",
+              fontSize: "15px",
+              minWidth: 0,
+              fontFamily: "inherit",
+              outline: "none"
+            }}
           />
         </div>
-        <div className="min-w-[10rem]">
-          <label htmlFor="category" className="mb-[3px] block text-[13px] font-semibold uppercase tracking-[0.04em] text-[var(--admin-text-muted,#8a7060)]">
+        <div style={{ flex: "0 1 160px", minWidth: "140px" }}>
+          <label
+            htmlFor="category"
+            style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "var(--admin-text-muted, #8a7060)",
+              marginBottom: "3px",
+              whiteSpace: "nowrap"
+            }}
+          >
             Category
           </label>
           <select
@@ -405,7 +446,19 @@ export default function AdminProductsPage() {
               setPage(1);
               setCategory(e.target.value);
             }}
-            className="mt-0 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-[15px] text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "6px 8px",
+              borderRadius: "8px",
+              border: "1px solid var(--admin-card-border, #e8e2d9)",
+              background: "var(--admin-card-bg, #fff)",
+              color: "var(--admin-text, #2c2420)",
+              fontSize: "15px",
+              minWidth: 0,
+              fontFamily: "inherit",
+              outline: "none"
+            }}
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -415,8 +468,20 @@ export default function AdminProductsPage() {
             ))}
           </select>
         </div>
-        <div className="min-w-[8rem]">
-          <label htmlFor="status" className="mb-[3px] block text-[13px] font-semibold uppercase tracking-[0.04em] text-[var(--admin-text-muted,#8a7060)]">
+        <div style={{ flex: "0 1 140px", minWidth: "120px" }}>
+          <label
+            htmlFor="status"
+            style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "var(--admin-text-muted, #8a7060)",
+              marginBottom: "3px",
+              whiteSpace: "nowrap"
+            }}
+          >
             Status
           </label>
           <select
@@ -426,7 +491,19 @@ export default function AdminProductsPage() {
               setPage(1);
               setStatus(e.target.value);
             }}
-            className="mt-0 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-[15px] text-[var(--admin-text,#2c2420)] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "6px 8px",
+              borderRadius: "8px",
+              border: "1px solid var(--admin-card-border, #e8e2d9)",
+              background: "var(--admin-card-bg, #fff)",
+              color: "var(--admin-text, #2c2420)",
+              fontSize: "15px",
+              minWidth: 0,
+              fontFamily: "inherit",
+              outline: "none"
+            }}
           >
             <option value="">Active + Draft</option>
             <option value="ACTIVE">Active only</option>
@@ -437,11 +514,19 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="shrink-0 rounded-lg px-3 py-[7px] text-[15px] font-semibold text-[#fffbf5] shadow-[0_2px_6px_rgba(28,53,42,0.2)]"
           style={{
+            padding: "7px 12px",
+            borderRadius: "8px",
+            border: "1px solid #1e3a2f",
             background: "linear-gradient(135deg, #1c352a, #2d5040)",
-            border: "none",
-            cursor: "pointer"
+            color: "#fffbf5",
+            fontSize: "15px",
+            fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto",
+            fontFamily: "inherit",
+            boxShadow: "0 2px 6px rgba(28,53,42,0.18)"
           }}
         >
           Apply
@@ -450,6 +535,7 @@ export default function AdminProductsPage() {
           className="relative mt-auto inline-grid h-[32px] shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
           role="group"
           aria-label="List view mode"
+          style={{ flex: "0 0 auto" }}
         >
           <span
             aria-hidden

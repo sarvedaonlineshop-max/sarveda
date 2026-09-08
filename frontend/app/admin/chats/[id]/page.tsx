@@ -382,26 +382,26 @@ function AdminChatDetailInner() {
           <h1 className="truncate text-[16px] font-semibold text-[#faf5ec]">
             {thread.customerName}
           </h1>
-          <p className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-[#a8c4b0]">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[16px] font-semibold text-[#faf5ec]/90">
             {isWhatsApp ? (
               <MaskedPhoneReveal
                 phone={thread.customerPhone ?? thread.waPhone}
                 light
-                className="text-[#a8c4b0]"
+                className="text-[#faf5ec]/90"
               />
             ) : (
               <>
-                <span className="truncate">{thread.customerEmail}</span>
+                <span className="truncate font-semibold">{thread.customerEmail}</span>
                 {thread.customerPhone ? (
                   <>
-                    <span>·</span>
-                    <MaskedPhoneReveal phone={thread.customerPhone} light className="text-[#a8c4b0]" />
+                    <span className="font-normal text-[#a8c4b0]">·</span>
+                    <MaskedPhoneReveal phone={thread.customerPhone} light className="text-[#faf5ec]/90" />
                   </>
                 ) : null}
               </>
             )}
-            <span>·</span>
-            <span>
+            <span className="font-normal text-[#a8c4b0]">·</span>
+            <span className="text-[14px] font-normal text-[#a8c4b0]">
               {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
               {thread.orderNumber ? ` · ${thread.orderNumber}` : ""}
             </span>
