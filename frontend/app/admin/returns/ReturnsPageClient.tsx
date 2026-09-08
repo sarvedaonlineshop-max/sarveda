@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { RotateCcw } from "lucide-react";
 
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { getApiBase } from "@/lib/api";
 
 type ReturnCaseRow = {
@@ -43,11 +45,101 @@ const STAGES: Array<{ value: string; label: string }> = [
 ];
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: "var(--admin-card-bg, #fff)",
   borderRadius: "12px",
-  border: "1px solid #e8e2d9",
-  boxShadow: "0 1px 4px rgba(44,36,32,0.06)"
+  border: "1px solid var(--admin-card-border, #e8e2d9)",
+  boxShadow: "0 1px 2px rgba(15,23,42,0.045), 0 8px 24px rgba(15,23,42,0.04)"
 };
+const thSt: React.CSSProperties = {
+  padding: "11px 16px",
+  fontSize: "14px",
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--admin-text-muted, #8a7060)",
+  background: "var(--admin-table-head, linear-gradient(180deg,#f2ede5,#f9f7f4))",
+  textAlign: "left",
+  whiteSpace: "nowrap"
+};
+const tdSt: React.CSSProperties = {
+  padding: "12px 16px",
+  fontSize: "16px",
+  color: "var(--admin-text, #4a3f38)",
+  borderBottom: "1px solid var(--admin-card-border, #f0ece6)"
+};
+const labelSt: React.CSSProperties = {
+  display: "block",
+  fontSize: "12px",
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--admin-text-muted, #8a7060)",
+  marginBottom: "4px"
+};
+const inputSt: React.CSSProperties = {
+  width: "100%",
+  padding: "8px 10px",
+  borderRadius: "8px",
+  border: "1px solid var(--admin-card-border, #e8e2d9)",
+  background: "var(--admin-card-bg, #fff)",
+  fontSize: "15px",
+  color: "var(--admin-text, #2c2420)"
+};
+
+function StageBadge({ label, overdue }: { label: string; overdue?: boolean }) {
+  const s = label.toUpperCase();
+  let bg = "#f3f4f6";
+  let color = "#374151";
+  if (s.includes("REFUND") || s.includes("REPLACEMENT")) {
+    bg = "#fef3c7";
+    color = "#92400e";
+  } else if (s.includes("COMPLETE") || s.includes("APPROVED")) {
+    bg = "#dcfce7";
+    color = "#166534";
+  } else if (s.includes("REJECT")) {
+    bg = "#fee2e2";
+    color = "#991b1b";
+  } else if (s.includes("TRANSIT") || s.includes("RECEIVED") || s.includes("QC")) {
+    bg = "#dbeafe";
+    color = "#1e40af";
+  } else if (s.includes("PENDING") || s.includes("DISCUSSION") || s.includes("MORE INFO")) {
+    bg = "#fef3c7";
+    color = "#92400e";
+  }
+  if (overdue) {
+    bg = "#fee2e2";
+    color = "#991b1b";
+  }
+  return (
+    <span
+      style={{
+        background: bg,
+        color,
+        fontSize: "14px",
+        fontWeight: 600,
+        padding: "3px 10px",
+        borderRadius: "999px",
+        whiteSpace: "nowrap",
+        border: `1px solid ${color}30`,
+        display: "inline-flex",
+        alignItems: "center"
+      }}
+    >
+      <span
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          background: color,
+          display: "inline-block",
+          marginRight: "5px",
+          flexShrink: 0
+        }}
+      />
+      {label}
+    </span>
+  );
+}
 
 export default function AdminReturnsPageInner() {
   const searchParams = useSearchParams();
@@ -57,6 +149,15 @@ export default function AdminReturnsPageInner() {
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState(initialStage);
   const [q, setQ] = useState(searchParams.get("q") || "");
+
+  useAdminPageHeader(
+    () => ({
+      title: "Returns & Refunds",
+      subtitle: "Return, refund, and replacement cases — open a Case ID for the full workflow.",
+      icon: <RotateCcw size={22} strokeWidth={2.25} color="#e8d5a8" aria-hidden />
+    }),
+    []
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,81 +186,157 @@ export default function AdminReturnsPageInner() {
   }, [searchParams]);
 
   return (
-    <div style={{ padding: "24px", maxWidth: 1280, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Returns & Refunds</h1>
-      <p style={{ color: "#6b635b", marginBottom: 20, fontSize: 14 }}>
-        Operational workspace for return, refund, and replacement cases. Open a Case ID to manage the
-        full workflow.
-      </p>
-
-      <div style={{ ...card, padding: 16, marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <select
-          value={stage}
-          onChange={(e) => setStage(e.target.value)}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd" }}
-        >
-          {STAGES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search case / order / email"
-          style={{ flex: 1, minWidth: 200, padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd" }}
-        />
+    <div className="w-full space-y-4">
+      <div
+        style={{
+          ...card,
+          padding: "12px 14px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "flex-end",
+          gap: "8px"
+        }}
+      >
+        <div style={{ flex: "0 1 220px", minWidth: "180px" }}>
+          <label style={labelSt} htmlFor="ret-stage">
+            Stage
+          </label>
+          <select
+            id="ret-stage"
+            value={stage}
+            onChange={(e) => setStage(e.target.value)}
+            style={inputSt}
+          >
+            {STAGES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ flex: "1 1 240px", minWidth: "200px" }}>
+          <label style={labelSt} htmlFor="ret-q">
+            Search
+          </label>
+          <input
+            id="ret-q"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void load();
+            }}
+            placeholder="Case / order / email"
+            style={inputSt}
+          />
+        </div>
         <button
           type="button"
           onClick={() => void load()}
           style={{
-            padding: "8px 16px",
-            borderRadius: 8,
-            background: "#2c2420",
-            color: "#fff",
-            border: "none",
-            fontWeight: 600
+            padding: "8px 14px",
+            borderRadius: "8px",
+            border: "1px solid #1e3a2f",
+            background: "linear-gradient(135deg, #1c352a, #2d5040)",
+            color: "#fffbf5",
+            fontSize: "15px",
+            fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto"
           }}
         >
-          Refresh
+          Search
         </button>
-        <span style={{ alignSelf: "center", fontSize: 13, color: "#6b635b" }}>{total} cases</span>
+        <button
+          type="button"
+          onClick={() => {
+            setQ("");
+            setStage("all");
+          }}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid var(--admin-card-border, #e8e2d9)",
+            background: "transparent",
+            color: "#6b5c52",
+            fontSize: "15px",
+            fontWeight: 500,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto"
+          }}
+        >
+          Clear
+        </button>
+        <span
+          style={{
+            alignSelf: "center",
+            marginLeft: "auto",
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "var(--admin-text-muted, #8a7060)",
+            whiteSpace: "nowrap"
+          }}
+        >
+          {total} cases
+        </span>
       </div>
 
-      <div style={{ ...card, overflow: "hidden" }}>
+      <div style={{ ...card, overflowX: "auto" }}>
         {loading ? (
-          <p style={{ padding: 24 }}>Loading…</p>
+          <p style={{ padding: 24, fontSize: 16, color: "var(--admin-text-muted, #8a7060)" }}>
+            Loading…
+          </p>
         ) : rows.length === 0 ? (
-          <p style={{ padding: 24, color: "#6b635b" }}>No return cases match these filters.</p>
+          <p style={{ padding: 24, fontSize: 16, color: "var(--admin-text-muted, #8a7060)" }}>
+            No return cases match these filters.
+          </p>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f7f4ef", textAlign: "left" }}>
-                <th style={{ padding: 12 }}>Case</th>
-                <th style={{ padding: 12 }}>Order</th>
-                <th style={{ padding: 12 }}>Customer</th>
-                <th style={{ padding: 12 }}>Item(s)</th>
-                <th style={{ padding: 12 }}>Qty</th>
-                <th style={{ padding: 12 }}>Reason</th>
-                <th style={{ padding: 12 }}>Stage</th>
-                <th style={{ padding: 12 }}>Age</th>
-                <th style={{ padding: 12 }}>Created</th>
+              <tr style={{ borderBottom: "2px solid #f0ece6" }}>
+                {["Case", "Order", "Customer", "Item(s)", "Qty", "Reason", "Stage", "Age", "Created"].map(
+                  (h) => (
+                    <th key={h} style={thSt}>
+                      {h}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr
                   key={row.id}
+                  onClick={() => {
+                    window.location.href = `/admin/returns/${encodeURIComponent(row.caseNumber)}`;
+                  }}
                   style={{
-                    borderTop: "1px solid #eee",
+                    cursor: "pointer",
                     background: row.slaOverdue ? "#fff7f5" : undefined
                   }}
+                  onMouseEnter={(e) => {
+                    if (!row.slaOverdue) {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "var(--admin-row-hover, #faf5ec)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = row.slaOverdue
+                      ? "#fff7f5"
+                      : "";
+                  }}
                 >
-                  <td style={{ padding: 12 }}>
+                  <td style={tdSt}>
                     <Link
                       href={`/admin/returns/${encodeURIComponent(row.caseNumber)}`}
-                      style={{ fontWeight: 700, color: "#2c2420", textDecoration: "underline" }}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                        fontWeight: 600,
+                        color: "#b98a3e",
+                        textDecoration: "none"
+                      }}
                     >
                       {row.caseNumber}
                     </Link>
@@ -167,35 +344,97 @@ export default function AdminReturnsPageInner() {
                       <span
                         style={{
                           marginLeft: 8,
-                          fontSize: 10,
+                          fontSize: "12px",
                           fontWeight: 700,
                           color: "#b45309",
-                          textTransform: "uppercase"
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em"
                         }}
                       >
                         SLA
                       </span>
                     ) : null}
                   </td>
-                  <td style={{ padding: 12 }}>
-                    <Link href={`/admin/orders/${row.orderId}`} style={{ color: "#4a5568" }}>
+                  <td style={tdSt}>
+                    <Link
+                      href={`/admin/orders/${row.orderId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                        fontWeight: 600,
+                        color: "#b98a3e",
+                        textDecoration: "none"
+                      }}
+                    >
                       {row.orderNumber}
                     </Link>
                   </td>
-                  <td style={{ padding: 12 }}>{row.customerEmail}</td>
-                  <td style={{ padding: 12, maxWidth: 220 }}>{row.itemSummary || "—"}</td>
-                  <td style={{ padding: 12 }}>{row.qtyRequested ?? "—"}</td>
-                  <td style={{ padding: 12 }}>{row.reasonLabel || "—"}</td>
-                  <td style={{ padding: 12 }}>{row.stageLabel || row.status}</td>
-                  <td style={{ padding: 12 }}>
+                  <td style={tdSt}>
+                    <div style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)" }}>
+                      {row.customerEmail}
+                    </div>
+                  </td>
+                  <td style={tdSt}>
+                    <div
+                      title={row.itemSummary || undefined}
+                      style={{
+                        fontSize: "15px",
+                        maxWidth: "240px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {row.itemSummary || "—"}
+                    </div>
+                  </td>
+                  <td style={{ ...tdSt, fontWeight: 700 }}>{row.qtyRequested ?? "—"}</td>
+                  <td style={tdSt}>
+                    <div
+                      title={row.reasonLabel || undefined}
+                      style={{
+                        fontSize: "15px",
+                        maxWidth: "200px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {row.reasonLabel || "—"}
+                    </div>
+                  </td>
+                  <td style={tdSt}>
+                    <StageBadge
+                      label={row.stageLabel || row.status}
+                      overdue={row.slaOverdue}
+                    />
+                  </td>
+                  <td
+                    style={{
+                      ...tdSt,
+                      fontSize: "15px",
+                      color: "var(--admin-text-muted, #8a7060)",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
                     {row.ageHours != null
                       ? row.ageHours < 48
                         ? `${row.ageHours}h`
                         : `${Math.round(row.ageHours / 24)}d`
                       : "—"}
                   </td>
-                  <td style={{ padding: 12 }}>
-                    {new Date(row.createdAt).toLocaleString("en-IN", { dateStyle: "medium" })}
+                  <td
+                    style={{
+                      ...tdSt,
+                      fontSize: "15px",
+                      color: "var(--admin-text-muted, #8a7060)",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {new Date(row.createdAt).toLocaleString("en-IN", {
+                      dateStyle: "medium",
+                      timeStyle: "short"
+                    })}
                   </td>
                 </tr>
               ))}

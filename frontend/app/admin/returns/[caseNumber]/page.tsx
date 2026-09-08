@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 
 import { AdminOrderReturnReplacementPanel } from "@/components/admin/AdminOrderReturnReplacementPanel";
 import { AdminOrderRtoWorkflow } from "@/components/admin/AdminOrderRtoWorkflow";
+import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
 import { formatMinorFromPaise } from "@/lib/money";
 import { adminFetchReturnCaseByNumber, adminReviewReturnCaseLine, approveServiceRequest, rejectServiceRequest } from "@/lib/order-service-request";
 
@@ -84,8 +86,37 @@ export default function AdminReturnCaseDetailPage() {
     try { await fn(); await load(); } catch (err) { setError(err instanceof Error ? err.message : "Action failed"); } finally { setBusy(null); }
   }
 
-  if (loading) return <div className="p-8 text-base text-stone-600">Loading return case…</div>;
-  if (!data) return <div className="p-8 text-base text-red-700">{error || "Not found"}</div>;
+  useRegisterAdminHeaderSlot(
+    () => ({
+      hideSearch: true,
+      leading: (
+        <Link
+          href="/admin/returns"
+          className="inline-flex items-center gap-2.5 text-[20px] font-semibold text-[#faf5ec] no-underline transition-colors hover:text-[#e8d5a8]"
+        >
+          <ChevronLeft size={32} strokeWidth={2.5} aria-hidden />
+          Back to Returns
+        </Link>
+      ),
+      actions: data ? (
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm font-semibold text-[#a8c4b0] sm:inline">
+            Order {data.request.orderNumber}
+          </span>
+          <Link
+            href={`/admin/orders/${data.order.id}`}
+            className="rounded-xl border border-[#e8d5a8]/40 bg-white/10 px-4 py-2 text-sm font-bold text-[#faf5ec] no-underline transition-colors hover:bg-white/15"
+          >
+            View order ↗
+          </Link>
+        </div>
+      ) : null
+    }),
+    [data]
+  );
+
+  if (loading) return <div className="p-2 text-base text-stone-600">Loading return case…</div>;
+  if (!data) return <div className="p-2 text-base text-red-700">{error || "Not found"}</div>;
 
   const { request, order, paymentProvider, stageLabel, events } = data;
   const pending = ["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "PARTIALLY_APPROVED"].includes(request.status);
@@ -119,12 +150,7 @@ export default function AdminReturnCaseDetailPage() {
   const rejectedCount = items.filter((i) => i.reviewDecision === "REJECTED").length;
   const pendingCount = items.filter((i) => !i.reviewDecision || ["PENDING", "MORE_INFO_REQUIRED"].includes(i.reviewDecision)).length;
 
-  return <div className="mx-auto max-w-[1380px] space-y-5 p-5 lg:p-7">
-    <div className="flex items-center justify-between gap-4 px-1">
-      <Link href="/admin/returns" className="text-base font-bold text-stone-700 hover:text-stone-950">← Back to returns</Link>
-      <div className="flex items-center gap-3"><span className="text-sm font-semibold text-stone-500">Order {request.orderNumber}</span><Link href={`/admin/orders/${order.id}`} className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50">View order ↗</Link></div>
-    </div>
-
+  return <div className="w-full space-y-5">
     <section className="overflow-hidden rounded-[26px] border border-stone-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.07)]">
       <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-4"><div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><span className="text-2xl">▣</span></div><div><p className="text-xs font-extrabold uppercase tracking-[.16em] text-stone-400">{isCancellation ? "Cancellation case" : "Return case"}</p><div className="mt-1.5 flex flex-wrap items-center gap-2.5"><h1 className="text-3xl font-extrabold tracking-tight text-stone-950">{request.caseNumber}</h1><span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-800">{stageLabel}</span><span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-700">{statusLabel}</span></div><p className="mt-2 text-sm text-stone-500">Created {new Date(request.createdAt).toLocaleString("en-IN")} · {request.customerEmail}</p></div></div>

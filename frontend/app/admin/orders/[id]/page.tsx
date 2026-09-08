@@ -1368,7 +1368,7 @@ function AdminOrderProductionView({
     "rounded-2xl bg-stone-50 px-4 py-3 text-left transition hover:bg-stone-100/80 dark:bg-stone-800/60";
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-5 p-5 lg:p-7">
+    <div className="w-full space-y-5">
       <section className="overflow-hidden rounded-[26px] border border-stone-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.07)] dark:border-stone-700 dark:bg-stone-900">
         <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">

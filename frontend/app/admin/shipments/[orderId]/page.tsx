@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { AdminSkeleton } from "@/components/admin/AdminSkeleton";
+import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
 import { AdminToast } from "@/components/admin/AdminToast";
 import {
   adminCancelWaybill,
@@ -145,6 +147,35 @@ export default function AdminShipmentCreateLabelPage() {
     };
     orderShippingCharged: number;
   } | null>(null);
+
+  useRegisterAdminHeaderSlot(
+    () => ({
+      hideSearch: true,
+      leading: (
+        <Link
+          href="/admin/shipments?bucket=ready"
+          className="inline-flex items-center gap-2.5 text-[20px] font-semibold text-[#faf5ec] no-underline transition-colors hover:text-[#e8d5a8]"
+        >
+          <ChevronLeft size={32} strokeWidth={2.5} aria-hidden />
+          Back to Shipments
+        </Link>
+      ),
+      actions: order ? (
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm font-semibold text-[#a8c4b0] sm:inline">
+            Order {order.orderNumber}
+          </span>
+          <Link
+            href={`/admin/orders/${order.id}`}
+            className="rounded-xl border border-[#e8d5a8]/40 bg-white/10 px-4 py-2 text-sm font-bold text-[#faf5ec] no-underline transition-colors hover:bg-white/15"
+          >
+            View order ↗
+          </Link>
+        </div>
+      ) : null
+    }),
+    [order]
+  );
 
   const pushToast = (message: string, error = false) => setToast({ message, error });
 
@@ -346,13 +377,7 @@ export default function AdminShipmentCreateLabelPage() {
 
   if (err) {
     return (
-      <div className="mx-auto max-w-[1380px] space-y-4 p-5 lg:p-7">
-        <Link
-          href="/admin/shipments?bucket=ready"
-          className="text-base font-bold text-stone-700 hover:text-stone-950"
-        >
-          ← Back to shipments
-        </Link>
+      <div className="w-full space-y-4">
         <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-800" role="alert">
           {err}
         </p>
@@ -368,26 +393,8 @@ export default function AdminShipmentCreateLabelPage() {
     n == null ? "—" : `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-5 p-5 lg:p-7">
+    <div className="w-full space-y-5">
       {toast ? <AdminToast toast={toast} onDismiss={() => setToast(null)} /> : null}
-
-      <div className="flex items-center justify-between gap-4 px-1">
-        <Link
-          href="/admin/shipments?bucket=ready"
-          className="text-base font-bold text-stone-700 hover:text-stone-950"
-        >
-          ← Back to shipments
-        </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-stone-500">Order {order.orderNumber}</span>
-          <Link
-            href={`/admin/orders/${order.id}`}
-            className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
-          >
-            View order ↗
-          </Link>
-        </div>
-      </div>
 
       <section className="overflow-hidden rounded-[26px] border border-stone-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.07)]">
         <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
