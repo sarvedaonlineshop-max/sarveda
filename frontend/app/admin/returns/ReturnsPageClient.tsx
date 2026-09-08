@@ -160,9 +160,27 @@ export default function AdminReturnsPageInner() {
     () => ({
       title: "Returns & Refunds",
       subtitle: "Return, refund, and replacement cases — open a Case ID for the full workflow.",
-      icon: <RotateCcw size={22} strokeWidth={2.25} color="#e8d5a8" aria-hidden />
+      icon: <RotateCcw size={22} strokeWidth={2.25} color="#e8d5a8" aria-hidden />,
+      actions: (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "5px 10px",
+            borderRadius: "999px",
+            background: "rgba(255,255,255,0.1)",
+            color: "#faf5ec",
+            border: "1px solid rgba(232,213,168,0.45)",
+            fontSize: "12px",
+            fontWeight: 700,
+            whiteSpace: "nowrap"
+          }}
+        >
+          {total.toLocaleString("en-IN")} cases
+        </span>
+      )
     }),
-    []
+    [total]
   );
 
   const load = useCallback(async () => {
@@ -274,18 +292,6 @@ export default function AdminReturnsPageInner() {
         >
           Clear
         </button>
-        <span
-          style={{
-            alignSelf: "center",
-            marginLeft: "auto",
-            fontSize: "15px",
-            fontWeight: 600,
-            color: "var(--admin-text-muted, #8a7060)",
-            whiteSpace: "nowrap"
-          }}
-        >
-          {total} cases
-        </span>
       </div>
 
       <div style={{ ...card, overflowX: "auto" }}>

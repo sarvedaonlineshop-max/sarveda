@@ -89,6 +89,7 @@ router.get("/notifications", admin.adminNotifications);
 router.use("/enquiries", enquiriesAdminRoutes);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);
 router.get("/customers", admin.customersList);
+router.get("/customers/:id/orders", admin.customerOrders);
 router.get("/enrollments/courses", enrollments.courseEnrollmentsCourses);
 router.get("/enrollments", enrollments.courseEnrollmentsList);
 router.get("/payments/reconciliation", admin.paymentsReconciliation);
@@ -563,6 +564,7 @@ router.post("/courses/seo-suggest", seoSuggest.suggestCourseSeo);
 router.post("/mentors/seo-suggest", seoSuggest.suggestMentorSeo);
 
 router.get("/inventory", admin.inventoryList);
+router.get("/inventory/stock-revisions", admin.inventoryStockRevisionsList);
 router.get("/inventory/xl-sheet", admin.inventoryXlSheetList);
 router.put(
   "/inventory/xl-sheet",

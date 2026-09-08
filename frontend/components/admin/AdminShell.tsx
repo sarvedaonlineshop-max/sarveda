@@ -445,7 +445,8 @@ function AdminShellInner({
                     alignItems: "center",
                     gap: "8px",
                     flex: "0 0 auto",
-                    flexWrap: "wrap"
+                    flexWrap: "wrap",
+                    marginLeft: "auto"
                   }}
                 >
                   {headerSlot.actions}

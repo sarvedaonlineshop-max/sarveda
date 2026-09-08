@@ -178,7 +178,9 @@ router.get("/", async (req, res, next) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 50;
     const unreadOnly = req.query.unreadOnly === "true";
-    const source = typeof req.query.source === "string" ? req.query.source : undefined;
+    const rawSource = typeof req.query.source === "string" ? req.query.source.trim() : "";
+    const allowed = new Set(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS", "WHATSAPP"]);
+    const source = rawSource && allowed.has(rawSource) ? rawSource : undefined;
     const q = typeof req.query.q === "string" ? req.query.q : undefined;
     const data = await listEnquiryThreads({
       page,

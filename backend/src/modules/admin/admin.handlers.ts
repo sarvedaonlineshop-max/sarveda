@@ -894,7 +894,12 @@ export async function customersList(req: Request, res: Response, next: NextFunct
           role: true,
           wooCommerceId: true,
           createdAt: true,
-          _count: { select: { orders: true } }
+          _count: { select: { orders: true } },
+          addresses: {
+            orderBy: [{ isDefault: "desc" }],
+            take: 1,
+            select: { city: true, state: true, country: true, phone: true }
+          }
         }
       })
     ]);
@@ -902,15 +907,118 @@ export async function customersList(req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       data: {
-        items: rows.map((u) => ({
-          id: u.id,
-          email: u.email,
-          name: u.name,
-          phone: u.phone,
-          role: u.role,
-          wooCommerceId: u.wooCommerceId,
-          orderCount: u._count.orders,
-          createdAt: u.createdAt
+        items: rows.map((u) => {
+          const addr = u.addresses[0];
+          return {
+            id: u.id,
+            email: u.email,
+            name: u.name,
+            phone: u.phone ?? addr?.phone ?? null,
+            place: [addr?.city, addr?.state].filter(Boolean).join(", ") || null,
+            country: addr?.country ?? null,
+            role: u.role,
+            wooCommerceId: u.wooCommerceId,
+            orderCount: u._count.orders,
+            createdAt: u.createdAt
+          };
+        }),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit) || 1
+        }
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function customerOrders(req: Request, res: Response, next: NextFunction) {
+  try {
+    const customerId = String(req.params.id ?? "");
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const user = await prisma.user.findUnique({
+      where: { id: customerId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        addresses: {
+          orderBy: [{ isDefault: "desc" }],
+          take: 1,
+          select: { city: true, state: true, country: true, phone: true }
+        }
+      }
+    });
+    if (!user) {
+      res.status(404).json({ success: false, error: "Customer not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const where = { customerId };
+    const [total, rows] = await prisma.$transaction([
+      prisma.order.count({ where }),
+      prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          paymentStatus: true,
+          grandTotalInPaise: true,
+          currency: true,
+          createdAt: true,
+          placedAt: true,
+          _count: { select: { items: true } },
+          payments: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { provider: true }
+          },
+          addresses: {
+            where: { type: AddressType.SHIPPING },
+            take: 1,
+            select: { city: true, state: true, country: true }
+          }
+        }
+      })
+    ]);
+
+    const addr = user.addresses[0];
+    res.json({
+      success: true,
+      data: {
+        customer: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone ?? addr?.phone ?? null,
+          place: [addr?.city, addr?.state].filter(Boolean).join(", ") || null,
+          country: addr?.country ?? null
+        },
+        items: rows.map((o) => ({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          status: o.status,
+          paymentStatus: o.paymentStatus,
+          paymentProvider: o.payments[0]?.provider ?? null,
+          grandTotalInPaise: o.grandTotalInPaise,
+          currency: o.currency,
+          itemCount: o._count.items,
+          place: [o.addresses[0]?.city, o.addresses[0]?.state, o.addresses[0]?.country]
+            .filter(Boolean)
+            .join(", "),
+          createdAt: o.createdAt,
+          placedAt: o.placedAt
         })),
         pagination: {
           page,
@@ -920,6 +1028,20 @@ export async function customersList(req: Request, res: Response, next: NextFunct
         }
       }
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function inventoryStockRevisionsList(req: Request, res: Response, next: NextFunction) {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const q = String(req.query.q ?? "").trim() || undefined;
+    const variantId = String(req.query.variantId ?? "").trim() || undefined;
+    const { listInventoryStockRevisions } = await import("./inventory-stock-revision");
+    const data = await listInventoryStockRevisions({ page, limit, q, variantId });
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
@@ -2171,7 +2293,7 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
 
     const existing = await prisma.inventory.findUnique({
       where: { variantId },
-      select: { id: true }
+      select: { id: true, onHand: true }
     });
     if (!existing) {
       res.status(404).json({
@@ -2186,6 +2308,19 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
       await prisma.inventory.update({
         where: { variantId },
         data
+      });
+    }
+
+    if (body.onHand !== undefined && body.onHand !== existing.onHand) {
+      const admin = (req as Request & { authUser?: { id?: string; email?: string } }).authUser;
+      const { recordInventoryStockRevision } = await import("./inventory-stock-revision");
+      await recordInventoryStockRevision({
+        variantId,
+        previousOnHand: existing.onHand,
+        newOnHand: body.onHand,
+        reason: "ADMIN_MANUAL",
+        actorUserId: admin?.id ?? null,
+        actorLabel: admin?.email ? `Admin · ${admin.email}` : "Admin"
       });
     }
 
@@ -2223,17 +2358,40 @@ export async function bulkPatchInventory(req: Request, res: Response, next: Next
     const { updates } = req.body as z.infer<typeof bulkInventoryPatchSchema>;
     let updated = 0;
     const touchedVariantIds = new Set<string>();
+    const admin = (req as Request & { authUser?: { id?: string; email?: string } }).authUser;
+    const { recordInventoryStockRevision } = await import("./inventory-stock-revision");
 
     for (const u of updates) {
       const data: { onHand?: number; lowStockThreshold?: number } = {};
       if (u.onHand !== undefined) data.onHand = u.onHand;
       if (u.lowStockThreshold !== undefined) data.lowStockThreshold = u.lowStockThreshold;
+
+      const existing =
+        u.onHand !== undefined
+          ? await prisma.inventory.findUnique({
+              where: { variantId: u.variantId },
+              select: { onHand: true }
+            })
+          : null;
+
       const result = await prisma.inventory.updateMany({
         where: { variantId: u.variantId },
         data
       });
       updated += result.count;
-      if (u.onHand !== undefined && result.count > 0) touchedVariantIds.add(u.variantId);
+      if (u.onHand !== undefined && result.count > 0) {
+        touchedVariantIds.add(u.variantId);
+        if (existing && existing.onHand !== u.onHand) {
+          await recordInventoryStockRevision({
+            variantId: u.variantId,
+            previousOnHand: existing.onHand,
+            newOnHand: u.onHand,
+            reason: "ADMIN_MANUAL",
+            actorUserId: admin?.id ?? null,
+            actorLabel: admin?.email ? `Admin · ${admin.email}` : "Admin"
+          });
+        }
+      }
     }
 
     if (touchedVariantIds.size > 0) {

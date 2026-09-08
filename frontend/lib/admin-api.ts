@@ -608,10 +608,37 @@ export type CustomersListData = {
     email: string;
     name: string | null;
     phone: string | null;
+    place: string | null;
+    country: string | null;
     role: string;
     wooCommerceId: number | null;
     orderCount: number;
     createdAt: string;
+  }>;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export type CustomerOrdersData = {
+  customer: {
+    id: string;
+    email: string;
+    name: string | null;
+    phone: string | null;
+    place: string | null;
+    country: string | null;
+  };
+  items: Array<{
+    id: string;
+    orderNumber: string;
+    status: string;
+    paymentStatus: string;
+    paymentProvider: string | null;
+    grandTotalInPaise: number;
+    currency: string;
+    itemCount: number;
+    place: string;
+    createdAt: string;
+    placedAt: string | null;
   }>;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 };
@@ -623,6 +650,56 @@ export function fetchAdminCustomers(params: { q?: string; page?: number; limit?:
   if (params.limit) search.set("limit", String(params.limit));
   const qs = search.toString();
   return adminFetch<CustomersListData>(`/api/admin/customers${qs ? `?${qs}` : ""}`);
+}
+
+export function fetchAdminCustomerOrders(
+  customerId: string,
+  params?: { page?: number; limit?: number }
+) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return adminFetch<CustomerOrdersData>(
+    `/api/admin/customers/${encodeURIComponent(customerId)}/orders${qs ? `?${qs}` : ""}`
+  );
+}
+
+export type InventoryStockRevisionRow = {
+  id: string;
+  variantId: string;
+  productName: string;
+  variantName: string | null;
+  sku: string;
+  previousOnHand: number;
+  newOnHand: number;
+  increased: number;
+  decreased: number;
+  reason: string;
+  actorLabel: string | null;
+  orderId: string | null;
+  orderNumber: string | null;
+  actorUserId: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
+export function fetchAdminInventoryStockRevisions(params?: {
+  page?: number;
+  limit?: number;
+  q?: string;
+  variantId?: string;
+}) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+  if (params?.q) search.set("q", params.q);
+  if (params?.variantId) search.set("variantId", params.variantId);
+  const qs = search.toString();
+  return adminFetch<{
+    items: InventoryStockRevisionRow[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }>(`/api/admin/inventory/stock-revisions${qs ? `?${qs}` : ""}`);
 }
 
 export type CourseEnrollmentRow = {

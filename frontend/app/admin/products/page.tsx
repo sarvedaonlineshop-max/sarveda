@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, Download, FileSpreadsheet, GripVertical, ScanSearch } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminToast } from "@/components/admin/AdminToast";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
@@ -33,15 +32,13 @@ function flattenCategoryOptions(nodes: CategoryNode[], depth = 0): { slug: strin
 }
 
 const thClass =
-  "px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)] transition-colors";
+  "px-4 py-[11px] text-left text-[14px] font-bold uppercase tracking-[0.08em] text-[var(--admin-text-muted,#8a7060)] whitespace-nowrap";
 
 const ROW_H = 72;
 const FULL_LIST_VISIBLE_ROWS = 24;
 const FULL_LIST_MAX_H = ROW_H * FULL_LIST_VISIBLE_ROWS;
 const AUTO_SCROLL_EDGE = 48;
 const AUTO_SCROLL_STEP = 10;
-
-type ViewMode = "paginated" | "full";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -50,7 +47,6 @@ export default function AdminProductsPage() {
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>("full");
   const [items, setItems] = useState<AdminProductRow[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 24, total: 0, totalPages: 1 });
   const [categories, setCategories] = useState<{ slug: string; label: string }[]>([]);
@@ -69,13 +65,10 @@ export default function AdminProductsPage() {
   const autoScrollDir = useRef<0 | 1 | -1>(0);
 
   const searchActive = q.trim().length > 0;
-  const canReorder = viewMode === "full" && !searchActive && !savingOrder;
-  const reorderHint =
-    viewMode !== "full"
-      ? "Switch to Full list to drag-reorder products."
-      : searchActive
-        ? "Clear search to enable drag-reorder."
-        : "Drag the grip handle to set storefront order. Saves automatically.";
+  const canReorder = !searchActive && !savingOrder;
+  const reorderHint = searchActive
+    ? "Clear search to enable drag-reorder."
+    : "Drag the grip handle to set storefront order. Saves automatically.";
 
   useEffect(() => {
     fetchCategoryTree({ cache: "no-store" })
@@ -120,8 +113,8 @@ export default function AdminProductsPage() {
         q: q || undefined,
         category: category || undefined,
         status: status || undefined,
-        page: viewMode === "full" ? 1 : page,
-        limit: viewMode === "full" ? 2000 : 24
+        page: 1,
+        limit: 2000
       });
       setItems(data.items);
       setPagination(data.pagination);
@@ -129,7 +122,7 @@ export default function AdminProductsPage() {
       setErr(e instanceof Error ? e.message : "Failed to load products");
       setItems([]);
     }
-  }, [q, category, status, page, viewMode]);
+  }, [q, category, status]);
 
   useEffect(() => {
     void load();
@@ -273,13 +266,13 @@ export default function AdminProductsPage() {
   const secondaryActionStyle: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
-    gap: "6px",
-    padding: "8px 12px",
+    gap: "5px",
+    padding: "5px 10px",
     borderRadius: "999px",
     background: "rgba(255,255,255,0.08)",
     color: "#faf5ec",
     border: "1px solid rgba(232,213,168,0.45)",
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: 600,
     cursor: "pointer",
     textDecoration: "none",
@@ -531,48 +524,6 @@ export default function AdminProductsPage() {
         >
           Apply
         </button>
-        <div
-          className="relative mt-auto inline-grid h-[32px] shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
-          role="group"
-          aria-label="List view mode"
-          style={{ flex: "0 0 auto" }}
-        >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-[#dc2626] shadow-sm transition-transform duration-300 ease-out"
-            style={{
-              transform: viewMode === "full" ? "translateX(100%)" : "translateX(0)"
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setViewMode("paginated");
-              setPage(1);
-            }}
-            className={`relative z-10 rounded-md px-3.5 text-sm font-semibold transition-colors duration-300 ${
-              viewMode === "paginated"
-                ? "text-white"
-                : "text-[#1c352a] dark:text-[#5c4033]"
-            }`}
-          >
-            Paginated
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setViewMode("full");
-              setPage(1);
-            }}
-            className={`relative z-10 rounded-md px-3.5 text-sm font-semibold transition-colors duration-300 ${
-              viewMode === "full"
-                ? "text-white"
-                : "text-[#1c352a] dark:text-[#5c4033]"
-            }`}
-          >
-            Full list
-          </button>
-        </div>
       </div>
 
       {savingOrder ? (
@@ -594,14 +545,12 @@ export default function AdminProductsPage() {
         onDragLeave={(e) => {
           if (!scrollRef.current?.contains(e.relatedTarget as Node)) stopAutoScroll();
         }}
-        className={`overflow-x-auto rounded-lg border ${
-          viewMode === "full" ? "overflow-y-auto" : ""
-        }`}
+        className="overflow-x-auto overflow-y-auto rounded-lg border"
         style={{
           background: "var(--admin-card-bg, #fff)",
           boxShadow: "0 4px 20px rgba(28,53,42,0.08)",
           borderColor: "var(--admin-card-border, #e8e2d9)",
-          ...(viewMode === "full" ? { maxHeight: FULL_LIST_MAX_H } : {})
+          maxHeight: FULL_LIST_MAX_H
         }}
       >
         <table className="min-w-full text-left text-sm">
@@ -749,21 +698,10 @@ export default function AdminProductsPage() {
         </table>
       </div>
 
-      {viewMode === "paginated" ? (
-        <AdminPagination
-          page={page}
-          totalPages={pagination.totalPages}
-          total={pagination.total}
-          itemLabel="products"
-          onPrev={() => setPage((pg) => Math.max(1, pg - 1))}
-          onNext={() => setPage((pg) => Math.min(pagination.totalPages, pg + 1))}
-        />
-      ) : (
-        <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>
-          Showing {items.length} of {pagination.total} products
-          {pagination.total > items.length ? " (list capped at 2000)" : ""}
-        </p>
-      )}
+      <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>
+        Showing {items.length} of {pagination.total} products
+        {pagination.total > items.length ? " (list capped at 2000)" : ""}
+      </p>
     </div>
   );
 }

@@ -294,6 +294,32 @@ model Inventory {
   variant           ProductVariant @relation(fields: [variantId], references: [id])
 }
 
+/// Append-only stock quantity ledger (bank-statement style).
+model InventoryStockRevision {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId     String   @db.Uuid
+  productName   String
+  variantName   String?
+  sku           String
+  previousOnHand Int
+  newOnHand     Int
+  increased     Int      @default(0)
+  decreased     Int      @default(0)
+  /// ADMIN_MANUAL | ORDER_CONFIRM | ORDER_RELEASE | REFUND_RESTOCK | IMPORT | ZOHO_SYNC | OTHER
+  reason        String
+  /// "Admin · email" or "Order · SRV-…"
+  actorLabel    String?
+  orderId       String?  @db.Uuid
+  orderNumber   String?
+  actorUserId   String?  @db.Uuid
+  note          String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([variantId, createdAt])
+  @@index([sku, createdAt])
+}
+
 enum MarketplaceChannelCode {
   AMAZON
   FLIPKART

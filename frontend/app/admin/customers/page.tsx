@@ -1,10 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
-import type { CustomersListData } from "@/lib/admin-api";
-import { fetchAdminCustomers } from "@/lib/admin-api";
+import type { CustomerOrdersData, CustomersListData } from "@/lib/admin-api";
+import { fetchAdminCustomerOrders, fetchAdminCustomers } from "@/lib/admin-api";
+import { formatMinorFromPaise } from "@/lib/money";
+import { formatAdminOrderStatusLabel } from "@/lib/order-status-display";
 
 const card: React.CSSProperties = {
   background: "var(--admin-card-bg, #fff)",
@@ -50,43 +56,19 @@ const labelSt: React.CSSProperties = {
   whiteSpace: "nowrap"
 };
 
-function orderCountPill(count: number): React.CSSProperties {
-  if (count >= 5) {
-    return {
-      background: "linear-gradient(135deg, #dcfce7, #bbf7d0)",
-      color: "#166534",
-      borderRadius: "999px",
-      padding: "3px 10px",
-      fontSize: "14px",
-      fontWeight: 700
-    };
-  }
-  if (count >= 1) {
-    return {
-      background: "#fef3c7",
-      color: "#92400e",
-      borderRadius: "999px",
-      padding: "3px 10px",
-      fontSize: "14px",
-      fontWeight: 700
-    };
-  }
-  return {
-    background: "#f3f4f6",
-    color: "#6b7280",
-    borderRadius: "999px",
-    padding: "3px 10px",
-    fontSize: "14px",
-    fontWeight: 700
-  };
-}
-
 export default function AdminCustomersPage() {
+  const router = useRouter();
+  const nav = useAdminNavOptional();
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<CustomersListData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ordersData, setOrdersData] = useState<CustomerOrdersData | null>(null);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersErr, setOrdersErr] = useState<string | null>(null);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -103,22 +85,68 @@ export default function AdminCustomersPage() {
     void load();
   }, [load]);
 
+  const loadOrders = useCallback(async (customerId: string, p: number) => {
+    setOrdersLoading(true);
+    setOrdersErr(null);
+    try {
+      const res = await fetchAdminCustomerOrders(customerId, { page: p, limit: 20 });
+      setOrdersData(res);
+    } catch (e) {
+      setOrdersErr(e instanceof Error ? e.message : "Failed to load orders");
+      setOrdersData(null);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    void loadOrders(selectedId, ordersPage);
+  }, [selectedId, ordersPage, loadOrders]);
+
   useAdminPageHeader(
     () => ({
-      title: "Customers",
+      title: selectedId && ordersData ? ordersData.customer.name || ordersData.customer.email : "Customers",
       icon: "👥",
-      subtitle: <>Customers sign in with OTP or Google.</>,
-      actions: data ? (
+      subtitle: selectedId ? (
+        <>Customer orders</>
+      ) : (
+        <>Customers sign in with OTP or Google.</>
+      ),
+      actions: selectedId ? (
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedId(null);
+            setOrdersData(null);
+            setOrdersPage(1);
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "5px 10px",
+            borderRadius: "999px",
+            background: "rgba(255,255,255,0.08)",
+            color: "#faf5ec",
+            border: "1px solid rgba(232,213,168,0.45)",
+            fontSize: "12px",
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          ← Back to customers
+        </button>
+      ) : data ? (
         <span
           style={{
             display: "inline-flex",
             alignItems: "center",
-            padding: "6px 12px",
+            padding: "5px 10px",
             borderRadius: "999px",
             background: "rgba(255,255,255,0.1)",
             color: "#faf5ec",
             border: "1px solid rgba(232,213,168,0.45)",
-            fontSize: "14px",
+            fontSize: "12px",
             fontWeight: 700,
             whiteSpace: "nowrap"
           }}
@@ -127,8 +155,115 @@ export default function AdminCustomersPage() {
         </span>
       ) : undefined
     }),
-    [data]
+    [data, selectedId, ordersData]
   );
+
+  if (selectedId) {
+    const c = ordersData?.customer;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {c ? (
+          <div style={{ ...card, padding: "14px 16px", display: "flex", flexWrap: "wrap", gap: "16px" }}>
+            <div>
+              <div style={{ fontSize: "13px", color: "#8a7060", textTransform: "uppercase", fontWeight: 600 }}>
+                Email
+              </div>
+              <div style={{ fontSize: "16px" }}>{c.email}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "13px", color: "#8a7060", textTransform: "uppercase", fontWeight: 600 }}>
+                Phone
+              </div>
+              <div style={{ fontSize: "16px" }}>{c.phone || "—"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "13px", color: "#8a7060", textTransform: "uppercase", fontWeight: 600 }}>
+                Place
+              </div>
+              <div style={{ fontSize: "16px" }}>{c.place || "—"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "13px", color: "#8a7060", textTransform: "uppercase", fontWeight: 600 }}>
+                Country
+              </div>
+              <div style={{ fontSize: "16px" }}>{c.country || "—"}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {ordersErr ? (
+          <p style={{ color: "#dc2626", fontSize: "16px" }} role="alert">
+            {ordersErr}
+          </p>
+        ) : null}
+
+        <div style={{ ...card, overflowX: "auto" }}>
+          {ordersLoading && !ordersData ? (
+            <p style={{ padding: 24, color: "#8a7060" }}>Loading orders…</p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #f0ece6" }}>
+                  {["Order", "Items", "Amount", "Status", "Place", "Date"].map((h) => (
+                    <th key={h} style={thSt}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(ordersData?.items ?? []).map((o) => (
+                  <tr
+                    key={o.id}
+                    onClick={() => {
+                      const href = `/admin/orders/${o.id}`;
+                      nav?.beginNavigation(href);
+                      router.push(href);
+                    }}
+                    style={{ cursor: "pointer" }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "var(--admin-row-hover, #faf5ec)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "";
+                    }}
+                  >
+                    <td style={{ ...tdSt, fontWeight: 600, color: "#b98a3e" }}>{o.orderNumber}</td>
+                    <td style={tdSt}>{o.itemCount}</td>
+                    <td style={tdSt}>{formatMinorFromPaise(o.grandTotalInPaise, o.currency)}</td>
+                    <td style={tdSt}>
+                      {formatAdminOrderStatusLabel(o.status, o.paymentStatus, o.paymentProvider)}
+                    </td>
+                    <td style={tdSt}>{o.place || "—"}</td>
+                    <td style={tdSt}>
+                      {new Date(o.placedAt ?? o.createdAt).toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                ))}
+                {(ordersData?.items.length ?? 0) === 0 && !ordersLoading ? (
+                  <tr>
+                    <td colSpan={6} style={{ ...tdSt, textAlign: "center", color: "#8a7060" }}>
+                      No orders for this customer
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {ordersData ? (
+          <AdminPagination
+            page={ordersPage}
+            totalPages={ordersData.pagination.totalPages}
+            total={ordersData.pagination.total}
+            itemLabel="orders"
+            onPrev={() => setOrdersPage((p) => Math.max(1, p - 1))}
+            onNext={() => setOrdersPage((p) => Math.min(ordersData.pagination.totalPages, p + 1))}
+          />
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -189,8 +324,8 @@ export default function AdminCustomersPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #f0ece6" }}>
-                  <th key="avatar" style={thSt} />
-                  {["Email", "Name", "Woo ID", "Orders", "Joined"].map((h) => (
+                  <th style={thSt} />
+                  {["Email", "Name", "Phone", "Place", "Country", "Orders", "Joined"].map((h) => (
                     <th key={h} style={thSt}>
                       {h}
                     </th>
@@ -203,6 +338,11 @@ export default function AdminCustomersPage() {
                   return (
                     <tr
                       key={u.id}
+                      onClick={() => {
+                        setSelectedId(u.id);
+                        setOrdersPage(1);
+                      }}
+                      style={{ cursor: "pointer" }}
                       onMouseEnter={(e) => {
                         (e.currentTarget as HTMLElement).style.background = "var(--admin-row-hover, #faf5ec)";
                       }}
@@ -222,8 +362,7 @@ export default function AdminCustomersPage() {
                             fontWeight: 700,
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
-                            textTransform: "uppercase"
+                            justifyContent: "center"
                           }}
                           aria-hidden
                         >
@@ -232,19 +371,10 @@ export default function AdminCustomersPage() {
                       </td>
                       <td style={{ ...tdSt, fontWeight: 500, color: "#2c2420" }}>{u.email}</td>
                       <td style={tdSt}>{u.name ?? "—"}</td>
-                      <td
-                        style={{
-                          ...tdSt,
-                          fontFamily: "monospace",
-                          fontSize: "14px",
-                          color: "#b98a3e"
-                        }}
-                      >
-                        {u.wooCommerceId ?? "—"}
-                      </td>
-                      <td style={{ ...tdSt, fontWeight: 600 }}>
-                        <span style={orderCountPill(u.orderCount)}>{u.orderCount}</span>
-                      </td>
+                      <td style={tdSt}>{u.phone ?? "—"}</td>
+                      <td style={tdSt}>{u.place ?? "—"}</td>
+                      <td style={tdSt}>{u.country ?? "—"}</td>
+                      <td style={{ ...tdSt, fontWeight: 600 }}>{u.orderCount}</td>
                       <td style={{ ...tdSt, color: "#8a7060" }}>
                         {new Date(u.createdAt).toLocaleDateString("en-IN")}
                       </td>
@@ -265,20 +395,7 @@ export default function AdminCustomersPage() {
         </>
       ) : (
         !err && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              color: "#8a7060",
-              padding: "40px 16px",
-              justifyContent: "center"
-            }}
-            role="status"
-          >
-            <span style={{ fontSize: "20px" }}>👥</span>
-            <span style={{ fontSize: "16px" }}>Loading customers…</span>
-          </div>
+          <p style={{ color: "#8a7060", textAlign: "center", padding: "40px 16px" }}>Loading customers…</p>
         )
       )}
     </div>

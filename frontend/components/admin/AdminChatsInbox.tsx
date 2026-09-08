@@ -15,13 +15,14 @@ import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 
 const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
-  { value: "", label: "All" },
+  { value: "__unread__", label: "Unread" },
   { value: "WHATSAPP", label: "WhatsApp" },
   { value: "CONTACT", label: "Contact" },
   { value: "CORPORATE", label: "Corporate" },
   { value: "COURSE", label: "Course" },
   { value: "EVENT", label: "Event" },
-  { value: "INSIGHTS", label: "Insights" }
+  { value: "INSIGHTS", label: "Insights" },
+  { value: "", label: "All" }
 ];
 
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
@@ -433,33 +434,34 @@ export function AdminChatsInbox() {
 
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {SOURCE_FILTERS.map((f) => {
-            const active = source === f.value;
+            const isUnread = f.value === "__unread__";
+            const active = isUnread ? unreadOnly && !source : !unreadOnly && source === f.value;
             return (
               <button
                 key={f.value || "all"}
                 type="button"
-                onClick={() => setSource(f.value)}
+                onClick={() => {
+                  if (isUnread) {
+                    setUnreadOnly(true);
+                    setSource("");
+                  } else {
+                    setUnreadOnly(false);
+                    setSource(f.value);
+                  }
+                }}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                   active
-                    ? "bg-[#1c352a] text-[#faf5ec]"
+                    ? isUnread
+                      ? "bg-[#b98a3e] text-white"
+                      : "bg-[#1c352a] text-[#faf5ec]"
                     : "bg-white text-stone-600 ring-1 ring-[#d9d1c4] hover:bg-[#faf5ec]"
                 }`}
               >
                 {f.label}
+                {isUnread && unreadCount > 0 ? ` ${unreadCount}` : ""}
               </button>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setUnreadOnly((v) => !v)}
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              unreadOnly
-                ? "bg-[#b98a3e] text-white"
-                : "bg-white text-stone-600 ring-1 ring-[#d9d1c4] hover:bg-[#faf5ec]"
-            }`}
-          >
-            Unread
-          </button>
         </div>
       </div>
 

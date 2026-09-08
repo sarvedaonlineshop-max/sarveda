@@ -72,6 +72,10 @@ export async function releaseStockTx(tx: Prisma.TransactionClient, orderId: stri
  * Handles legacy rows where `reserved` may be 0 (only decrements onHand by line qty).
  */
 export async function confirmStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
+  const order = await tx.order.findUnique({
+    where: { id: orderId },
+    select: { orderNumber: true }
+  });
   const items = await tx.orderItem.findMany({
     where: { orderId },
     select: {
@@ -82,6 +86,8 @@ export async function confirmStockTx(tx: Prisma.TransactionClient, orderId: stri
     }
   });
 
+  const { recordInventoryStockRevision } = await import("../admin/inventory-stock-revision");
+
   for (const item of items) {
     if (!item.variantId) continue;
     const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
@@ -89,12 +95,24 @@ export async function confirmStockTx(tx: Prisma.TransactionClient, orderId: stri
     const warehouseQty = orderItemWarehouseUnits(item);
     if (warehouseQty <= 0) continue;
     const decReserved = Math.min(warehouseQty, inv.reserved);
+    const previousOnHand = inv.onHand;
+    const newOnHand = Math.max(0, previousOnHand - warehouseQty);
     await tx.inventory.update({
       where: { id: inv.id },
       data: {
         onHand: { decrement: warehouseQty },
         ...(decReserved > 0 ? { reserved: { decrement: decReserved } } : {})
       }
+    });
+    await recordInventoryStockRevision({
+      tx,
+      variantId: item.variantId,
+      previousOnHand,
+      newOnHand,
+      reason: "ORDER_CONFIRM",
+      orderId,
+      orderNumber: order?.orderNumber ?? null,
+      actorLabel: order?.orderNumber ? `Order · ${order.orderNumber}` : "Order"
     });
   }
 }
