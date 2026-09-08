@@ -10,7 +10,6 @@ import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 import type {
   InventoryRow,
-  InventoryStockRevisionRow,
   ZohoOnlyItem,
   ZohoStockSyncHistoryEntry,
   ZohoSyncSummary
@@ -18,7 +17,6 @@ import type {
 import {
   bulkPatchAdminInventory,
   fetchAdminInventory,
-  fetchAdminInventoryStockRevisions,
   fetchZohoStockSyncHistory,
   ignoreZohoItemsAdmin,
   patchAdminInventoryVariant,
@@ -330,11 +328,6 @@ export function AdminInventoryWorkspace() {
   const [thresholdDrafts, setThresholdDrafts] = useState<Record<string, string>>({});
   const [syncHistory, setSyncHistory] = useState<ZohoStockSyncHistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [revisionOpen, setRevisionOpen] = useState(false);
-  const [revisions, setRevisions] = useState<InventoryStockRevisionRow[]>([]);
-  const [revisionsLoading, setRevisionsLoading] = useState(false);
-  const [revisionsErr, setRevisionsErr] = useState<string | null>(null);
-  const [revisionsQ, setRevisionsQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [lastZohoSync, setLastZohoSync] = useState<string | null>(null);
   const [zohoInventorySyncEnabled, setZohoInventorySyncEnabled] = useState(false);
@@ -645,24 +638,6 @@ export function AdminInventoryWorkspace() {
     setListFadeKey((k) => k + 1);
   }
 
-  async function loadRevisions(qOverride?: string) {
-    setRevisionsLoading(true);
-    setRevisionsErr(null);
-    try {
-      const data = await fetchAdminInventoryStockRevisions({
-        page: 1,
-        limit: 100,
-        q: (qOverride ?? revisionsQ).trim() || undefined
-      });
-      setRevisions(data.items);
-    } catch (e) {
-      setRevisionsErr(e instanceof Error ? e.message : "Could not load revision history");
-      setRevisions([]);
-    } finally {
-      setRevisionsLoading(false);
-    }
-  }
-
   function collapseAll() {
     setExpandedProducts(new Set());
     setListFadeKey((k) => k + 1);
@@ -905,16 +880,9 @@ export function AdminInventoryWorkspace() {
               </div>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setRevisionOpen(true);
-              void loadRevisions();
-            }}
-            className={headerBtnClass}
-          >
+          <Link href="/admin/inventory/revisions" className={headerBtnClass}>
             Revision history
-          </button>
+          </Link>
           {canReconcile ? (
             <button
               type="button"
@@ -1400,120 +1368,6 @@ export function AdminInventoryWorkspace() {
         .admin-inv-list-fade { animation: admin-inv-fade 0.38s ease; }
       `}</style>
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
-
-      {revisionOpen ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-start justify-center bg-black/40 p-4 pt-16"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Inventory revision history"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setRevisionOpen(false);
-          }}
-        >
-          <div className="flex max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-2xl dark:border-stone-600 dark:bg-stone-900">
-            <div className="flex flex-wrap items-center gap-3 border-b border-stone-200 px-4 py-3 dark:border-stone-700">
-              <h2 className="text-lg font-semibold text-[#1c352a] dark:text-stone-100">Revision history</h2>
-              <p className="text-sm text-stone-500">Stock count changes — like a bank statement</p>
-              <div className="ml-auto flex items-center gap-2">
-                <input
-                  type="search"
-                  value={revisionsQ}
-                  onChange={(e) => setRevisionsQ(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void loadRevisions();
-                  }}
-                  placeholder="Search SKU, product, order…"
-                  className="rounded-lg border border-stone-200 px-2 py-1.5 text-[13px] outline-none focus:border-[#1c352a] dark:border-stone-600 dark:bg-stone-950"
-                />
-                <button
-                  type="button"
-                  onClick={() => void loadRevisions()}
-                  className="rounded-lg bg-[#1c352a] px-3 py-1.5 text-[12px] font-semibold text-[#fffbf5]"
-                >
-                  Search
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRevisionOpen(false)}
-                  className="rounded-lg border border-stone-200 px-3 py-1.5 text-[12px] font-semibold text-stone-700 dark:border-stone-600 dark:text-stone-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto">
-              {revisionsErr ? (
-                <p className="p-4 text-sm text-red-600">{revisionsErr}</p>
-              ) : revisionsLoading ? (
-                <p className="p-4 text-sm text-stone-500">Loading…</p>
-              ) : (
-                <table className="min-w-full">
-                  <thead className="sticky top-0 bg-[#eef6f1]">
-                    <tr>
-                      {[
-                        "Product",
-                        "Variant",
-                        "SKU",
-                        "Increased",
-                        "Decreased",
-                        "Current",
-                        "Reason",
-                        "Date & time",
-                        "Order / Admin"
-                      ].map((h) => (
-                        <th key={h} className={thClass}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {revisions.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className={`${tdClass} text-center text-stone-500`}>
-                          No stock revisions yet. Admin saves and order stock confirmations will appear here.
-                        </td>
-                      </tr>
-                    ) : (
-                      revisions.map((r) => (
-                        <tr key={r.id} className="border-t border-stone-100 dark:border-stone-800">
-                          <td className={tdClass}>{r.productName}</td>
-                          <td className={tdClass}>{r.variantName || "—"}</td>
-                          <td className={tdClass}>{r.sku}</td>
-                          <td className={`${tdClass} text-emerald-700`}>
-                            {r.increased > 0 ? `+${r.increased}` : "—"}
-                          </td>
-                          <td className={`${tdClass} text-red-700`}>
-                            {r.decreased > 0 ? `−${r.decreased}` : "—"}
-                          </td>
-                          <td className={`${tdClass} font-semibold`}>{r.newOnHand}</td>
-                          <td className={tdClass}>{r.reason.replace(/_/g, " ")}</td>
-                          <td className={tdClass}>
-                            {new Date(r.createdAt).toLocaleString("en-IN")}
-                          </td>
-                          <td className={tdClass}>
-                            {r.orderId && r.orderNumber ? (
-                              <Link
-                                href={`/admin/orders/${r.orderId}`}
-                                className="font-semibold text-[#b98a3e] hover:underline"
-                              >
-                                {r.orderNumber}
-                              </Link>
-                            ) : (
-                              r.actorLabel || "—"
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         {dropShipTabs.map((tab) => {
