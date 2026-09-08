@@ -120,8 +120,10 @@ function IconLeaf() {
 
 function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-[#e7dcc9]/90 bg-white/80 px-4 py-5 text-center shadow-[0_14px_40px_rgba(28,53,42,0.07)] backdrop-blur-md">
-      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center">{icon}</div>
+    <div className="group rounded-2xl border border-[#e7dcc9]/90 bg-white/80 px-4 py-5 text-center shadow-[0_14px_40px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1.5 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_22px_56px_rgba(28,53,42,0.16)]">
+      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center transition duration-300 group-hover:scale-105">
+        {icon}
+      </div>
       <div className="text-[13px] font-semibold leading-snug text-[#10201a]">{title}</div>
     </div>
   );
@@ -287,7 +289,7 @@ export function AuthShell({
       {/* Desktop landing */}
       <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
         {/* Shifted right + down vs earlier flush-left placement */}
-        <section className="absolute left-[12%] top-[11%] max-w-[560px] xl:left-[13%] 2xl:left-[14%]">
+        <section className="absolute left-[16.5%] top-[11%] max-w-[560px] xl:left-[17.5%] 2xl:left-[18%]">
           <SarvedaLogo iconHeight={104} tone="onLight" />
           <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.45em] text-[#6f7b67]">
             Yoga · Sound · Wellbeing
@@ -357,9 +359,9 @@ export function AuthShell({
           </div>
         </section>
 
-        {/* Login card — aligned to sample right margin */}
-        <section className="absolute right-[15.5%] top-[8.5%] w-[30.5rem] xl:right-[16%] 2xl:right-[16.5%]">
-          <div className="min-h-[38.5rem] rounded-[1.75rem] border border-[#ece4d7] bg-white px-9 py-10 shadow-[0_34px_100px_rgba(28,53,42,0.16)]">
+        {/* Login card — further right, deeper shadow */}
+        <section className="absolute right-[7%] top-[8.5%] w-[30.5rem] xl:right-[6.5%] 2xl:right-[6%]">
+          <div className="min-h-[38.5rem] rounded-[1.75rem] border border-[#ece4d7] bg-white px-9 py-10 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)]">
             <div className="text-left">
               <h1 className="font-serif text-[2.35rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
                 {title}
@@ -369,19 +371,12 @@ export function AuthShell({
             <div className="mt-7">{children}</div>
             {footer ? <div className="mt-8 border-t border-[#eadfcd] pt-6">{footer}</div> : null}
           </div>
-        </section>
-
-        {/* Tagline to the right of the form */}
-        <aside className="absolute right-[5.5%] top-[34%] hidden w-[11.5rem] xl:block 2xl:right-[6%]">
-          <div className="h-0.5 w-12 bg-[#c28a2b]" />
-          <p className="mt-5 font-serif text-[1.65rem] italic leading-tight text-[#3f4f46]">
-            More
-            <br />
-            than a store.
+          <p className="mt-5 text-right font-serif text-[1.45rem] italic leading-tight text-[#3f4f46]">
+            More than a store.
             <br />
             A way of life.
           </p>
-        </aside>
+        </section>
 
         {/* Quote sits on the dark stone (no blur plate) */}
         <p className="pointer-events-none absolute bottom-[6.2rem] left-[7%] max-w-[300px] font-serif text-[1.85rem] italic leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] xl:left-[8%] xl:text-[2rem]">
