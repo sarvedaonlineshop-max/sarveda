@@ -125,20 +125,6 @@ function IconShield() {
   );
 }
 
-function IconLeaf() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M5 19C5 11.5 10.2 5.5 19 5c0 8.8-6 14-14 14Z"
-        stroke={TRUST_INK}
-        strokeWidth="1.55"
-        strokeLinejoin="round"
-      />
-      <path d="M8.5 15.5 15 9" stroke={TRUST_INK} strokeWidth="1.55" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
   return (
     <div className="group rounded-xl border border-[#e7dcc9]/90 bg-white/85 px-3.5 py-4 text-center shadow-[0_10px_28px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_18px_44px_rgba(28,53,42,0.14)]">
