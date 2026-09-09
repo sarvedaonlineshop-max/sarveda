@@ -4,7 +4,7 @@ type GoogleSignInButtonProps = {
   nextPath: string;
   label?: string;
   compact?: boolean;
-  /** `primary` = leaf-green pill matching OTP/Sign in. Default outline for other screens. */
+  /** `primary` = pill shape for login; no filled background. Default outline for other screens. */
   variant?: "outline" | "primary";
 };
 
@@ -23,7 +23,7 @@ export function GoogleSignInButton({
         compact ? "min-h-[44px] py-2.5" : "min-h-[48px] py-3"
       } ${
         isPrimary
-          ? "rounded-full bg-gradient-to-b from-[#8fd46a] to-[#5fbe48] text-white shadow-[0_10px_24px_rgba(95,190,72,0.32)] hover:-translate-y-0.5 hover:from-[#7fc85c] hover:to-[#52b03e]"
+          ? "rounded-full border border-[#E3D9C8] bg-transparent text-brand-ink hover:border-brand-gold/60 hover:bg-white/50"
           : "rounded-xl border border-[#E3D9C8] bg-white text-brand-ink hover:border-brand-gold/60 hover:bg-brand-cream"
       }`}
     >
