@@ -182,7 +182,7 @@ function LoginForm() {
         </div>
       </div>
 
-      <div key={mode} className="animate-[fadeSlide_280ms_ease-out]">
+      <div key={mode} className="auth-mode-expand">
         {mode === "otp" ? (
           <OtpLoginForm
             inputClass={inputClass}

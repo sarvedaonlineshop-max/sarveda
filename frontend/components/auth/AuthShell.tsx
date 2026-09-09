@@ -311,7 +311,7 @@ export function AuthShell({
           </section>
 
           <div className="flex shrink-0 items-start gap-5 2xl:gap-6">
-            <div className="flex w-[25.75rem] flex-col rounded-[1.65rem] border border-[#ece4d7] bg-white px-6 py-7 shadow-[0_24px_64px_rgba(28,53,42,0.16),0_44px_120px_rgba(28,53,42,0.18)] transition-all duration-300 2xl:w-[26.5rem] 2xl:px-7">
+            <div className="flex w-[25.75rem] flex-col rounded-[1.65rem] border border-[#ece4d7] bg-white px-6 py-7 shadow-[0_12px_40px_rgba(28,53,42,0.12),0_28px_80px_rgba(28,53,42,0.18),0_0_0_1px_rgba(255,255,255,0.4),0_0_48px_rgba(143,212,106,0.22)] transition-all duration-300 2xl:w-[26.5rem] 2xl:px-7">
               <div className="text-left">
                 <h1 className="font-serif text-[1.9rem] font-medium italic leading-tight tracking-[-0.03em] text-[#10201a]">
                   {title}
@@ -384,7 +384,7 @@ export function AuthShell({
           </header>
 
           <div className="mx-auto flex w-full max-w-[24.5rem] flex-1 flex-col justify-start pt-1">
-            <div className="rounded-[1.35rem] border border-[#ece4d7]/90 bg-white px-4 py-3.5 shadow-[0_18px_48px_rgba(28,53,42,0.16)] sm:px-5 sm:py-4">
+            <div className="rounded-[1.35rem] border border-[#ece4d7]/90 bg-white px-4 py-3.5 shadow-[0_10px_36px_rgba(28,53,42,0.14),0_24px_64px_rgba(28,53,42,0.2),0_0_40px_rgba(143,212,106,0.28),0_0_72px_rgba(194,138,43,0.12)] sm:px-5 sm:py-4">
               <div className="text-center">
                 <h1 className="font-serif text-[1.55rem] font-medium italic leading-tight tracking-[-0.03em] text-[#10201a]">
                   {title}
@@ -398,7 +398,13 @@ export function AuthShell({
               <div className="mt-3">{children}</div>
               {footer ? <div className="mt-2">{footer}</div> : null}
             </div>
-            <p className="mt-4 text-center font-serif text-[1.15rem] font-semibold italic leading-snug tracking-normal text-[#1c352a] drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)] sm:text-[1.25rem]">
+            <p
+              className="mt-4 text-center font-serif text-[1.15rem] font-semibold italic leading-snug tracking-normal text-[#c28a2b] sm:text-[1.25rem]"
+              style={{
+                textShadow:
+                  "0 0 10px rgba(194,138,43,0.55), 0 0 22px rgba(194,138,43,0.4), 0 0 36px rgba(255,220,140,0.35), 0 1px 2px rgba(28,53,42,0.25)"
+              }}
+            >
               More than a store. A way of life.
             </p>
           </div>
