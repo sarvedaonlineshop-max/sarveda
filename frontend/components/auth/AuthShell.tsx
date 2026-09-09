@@ -216,8 +216,12 @@ export function AuthShell({
   return (
     <div className="relative min-h-dvh bg-transparent font-sans text-[#10201a] xl:min-h-screen xl:bg-[#f8f1e7]">
       <div
-        className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat xl:block"
-        style={{ backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})` }}
+        className="pointer-events-none absolute inset-0 hidden bg-no-repeat xl:block"
+        style={{
+          backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})`,
+          backgroundSize: "110% auto",
+          backgroundPosition: "center bottom"
+        }}
         aria-hidden="true"
       />
 
@@ -231,9 +235,9 @@ export function AuthShell({
           }}
         >
           <section className="flex w-full max-w-[500px] shrink-0 flex-col 2xl:max-w-[540px]">
-            <SarvedaLogo iconHeight={88} tone="onLight" />
-            <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-[#6f7b67]">
-              Yoga · Sound · Wellbeing
+            <SarvedaLogo iconHeight={176} widthPx={280} tone="onLight" />
+            <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-[#6f7b67]">
+              Sound Healing · Yoga · Conscious Living
             </p>
             <h2 className="mt-5 font-serif text-[2.85rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] 2xl:text-[3.25rem]">
               Welcome to your
@@ -357,18 +361,22 @@ export function AuthShell({
       </div>
 
       {/* Mobile / tablet — background is painted on this layer (not behind an opaque parent) */}
-      <div className="relative min-h-dvh xl:hidden">
+      <div className="relative min-h-dvh bg-[#d8e5cf] xl:hidden">
         <div
-          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${LOGIN_BACKGROUND_MOBILE_ASSET})` }}
+          className="pointer-events-none absolute inset-0 bg-no-repeat"
+          style={{
+            backgroundImage: `url(${LOGIN_BACKGROUND_MOBILE_ASSET})`,
+            backgroundSize: "100% auto",
+            backgroundPosition: "center bottom"
+          }}
           aria-hidden="true"
         />
 
         <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-[calc(3.25rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
           <header className="mb-5 flex flex-col items-center pt-1 text-center">
-            <SarvedaLogo iconHeight={compactMobile ? 52 : 48} tone="onLight" />
-            <p className="mt-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.38em] text-[#6f7b67]">
-              Yoga · Sound · Wellbeing
+            <SarvedaLogo iconHeight={104} widthPx={165} tone="onLight" />
+            <p className="mt-1.5 text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-[#6f7b67] sm:text-[0.62rem] sm:tracking-[0.28em]">
+              Sound Healing · Yoga · Conscious Living
             </p>
             <p className="mt-3 whitespace-nowrap font-serif text-[1.05rem] font-normal italic leading-none tracking-normal text-[#3f4f46] sm:text-[1.15rem]">
               More than a store. A way of life.

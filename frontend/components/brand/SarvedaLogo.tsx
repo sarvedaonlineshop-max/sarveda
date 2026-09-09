@@ -14,6 +14,11 @@ type SarvedaLogoProps = {
   className?: string;
   /** Logo height in px (desktop baseline; mobile scales via CSS when responsive). */
   iconHeight?: number;
+  /**
+   * Optional rendered width in px. When omitted, width follows the artboard aspect ratio.
+   * Use with a custom height when the layout needs a non-uniform scale.
+   */
+  widthPx?: number;
   showWordmark?: boolean;
   /** Scale logo down on small screens so the header stays usable. */
   responsive?: boolean;
@@ -39,13 +44,14 @@ export function SarvedaLogo({
   href = "/",
   className = "",
   iconHeight = 64,
+  widthPx,
   showWordmark = true,
   responsive = false,
   tone = "onLight"
 }: SarvedaLogoProps) {
   const src = logoSrc(tone);
   const height = Math.max(36, Math.round(iconHeight * (showWordmark ? 0.72 : 0.9)));
-  const width = Math.round(height * (LOGO_W / LOGO_H));
+  const width = widthPx ?? Math.round(height * (LOGO_W / LOGO_H));
 
   const content = (
     <div className={`flex items-center overflow-visible ${className}`}>
@@ -58,9 +64,9 @@ export function SarvedaLogo({
         className={
           responsive
             ? "h-[40px] w-auto shrink-0 object-contain object-left sm:h-[48px] md:h-[56px]"
-            : "w-auto shrink-0 object-contain object-left"
+            : "shrink-0 object-contain object-left"
         }
-        style={responsive ? { width: "auto" } : { height, width: "auto" }}
+        style={responsive ? { width: "auto" } : { height, width }}
         decoding="async"
         fetchPriority="high"
         aria-hidden={!showWordmark}

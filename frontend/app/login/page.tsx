@@ -146,10 +146,10 @@ function LoginForm() {
         <span className="h-px flex-1 bg-brand-cream-dark" />
       </div>
 
-      {/* Slim sliding mode toggle. */}
-      <div className="relative mb-3 rounded-full border border-brand-cream-dark bg-[#f8f0e4] p-1 shadow-[inset_0_1px_2px_rgba(16,32,26,0.04)]">
+      {/* Slim sliding mode toggle — leaf green to match the nature background. */}
+      <div className="relative mb-3 rounded-full border border-[#c5d6b8] bg-[#eef5e8] p-1 shadow-[inset_0_1px_2px_rgba(16,32,26,0.04)]">
         <div
-          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#166D46] shadow-[0_7px_18px_rgba(22,109,70,0.18)] transition-transform duration-300 ease-out"
+          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#4a8c3f] shadow-[0_7px_18px_rgba(74,140,63,0.28)] transition-transform duration-300 ease-out"
           style={{ transform: mode === "password" ? "translateX(100%)" : "translateX(0)" }}
           aria-hidden
         />
@@ -158,7 +158,7 @@ function LoginForm() {
             type="button"
             onClick={() => switchMode("otp")}
             className={`rounded-full px-2 py-1.5 text-[13px] font-bold transition-colors duration-300 sm:px-3 sm:py-2 sm:text-sm ${
-              mode === "otp" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
+              mode === "otp" ? "text-white" : "text-[#3f5a38]/75 hover:text-[#2f4529]"
             }`}
           >
             OTP Login
@@ -167,7 +167,7 @@ function LoginForm() {
             type="button"
             onClick={() => switchMode("password")}
             className={`rounded-full px-2 py-1.5 text-[13px] font-bold transition-colors duration-300 sm:px-3 sm:py-2 sm:text-sm ${
-              mode === "password" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
+              mode === "password" ? "text-white" : "text-[#3f5a38]/75 hover:text-[#2f4529]"
             }`}
           >
             Password Login
