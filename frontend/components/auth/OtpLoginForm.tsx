@@ -166,7 +166,7 @@ export function OtpLoginForm({
       <button type="submit" disabled={submitting} className={BTN_GREEN}>
         {submitting ? "Sending…" : "Send OTP"}
       </button>
-      <p className="min-h-[1rem] text-center text-xs text-brand-ink/55">
+      <p className="text-center text-xs text-brand-ink/55">
         We’ll send a secure OTP to your email address.
       </p>
     </form>

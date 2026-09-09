@@ -316,7 +316,11 @@ export function AuthShell({
                 <h1 className="font-serif text-[1.9rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
                   {title}
                 </h1>
-                {subtitle ? <p className="mt-2 text-[14px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
+                {subtitle ? (
+                  <p className="mt-2 font-serif text-[14px] font-normal italic leading-relaxed text-[#526158]">
+                    {subtitle}
+                  </p>
+                ) : null}
               </div>
               <div className="mt-4.5 flex flex-col">
                 <div>{children}</div>
@@ -372,23 +376,27 @@ export function AuthShell({
         />
 
         <div className="relative z-10 flex h-full flex-col px-4 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6">
-          <header className="mb-2.5 flex shrink-0 flex-col items-center pt-0.5 text-center">
+          <header className="mb-1 flex shrink-0 flex-col items-center pt-0.5 text-center">
             <SarvedaLogo iconHeight={88} widthPx={140} tone="onLight" />
-            <p className="mt-1 font-serif text-[0.78rem] font-normal italic tracking-[0.04em] text-[#3f4f46] sm:text-[0.85rem]">
+            <p className="-mt-0.5 font-serif text-[0.78rem] font-normal italic tracking-[0.04em] text-[#3f4f46] sm:text-[0.85rem]">
               Sound Healing · Yoga · Conscious Living
             </p>
           </header>
 
-          <div className="mx-auto flex w-full max-w-[24.5rem] flex-1 flex-col justify-center">
+          <div className="mx-auto flex w-full max-w-[24.5rem] flex-1 flex-col justify-start pt-1">
             <div className="rounded-[1.35rem] border border-[#ece4d7]/90 bg-white px-4 py-3.5 shadow-[0_18px_48px_rgba(28,53,42,0.16)] sm:px-5 sm:py-4">
               <div className="text-center">
                 <h1 className="font-serif text-[1.55rem] font-semibold leading-tight tracking-[-0.04em] text-[#10201a]">
                   {title}
                 </h1>
-                {subtitle ? <p className="mt-1 text-[13px] leading-snug text-[#526158]">{subtitle}</p> : null}
+                {subtitle ? (
+                  <p className="mt-1 font-serif text-[13px] font-normal italic leading-snug text-[#526158]">
+                    {subtitle}
+                  </p>
+                ) : null}
               </div>
               <div className="mt-3">{children}</div>
-              {footer ? <div className="mt-3">{footer}</div> : null}
+              {footer ? <div className="mt-2">{footer}</div> : null}
             </div>
           </div>
         </div>

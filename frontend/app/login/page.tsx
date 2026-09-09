@@ -108,27 +108,25 @@ function LoginForm() {
       subtitle="Sign in to continue your Sarveda journey."
       footer={
         <div>
-          <div className="min-h-[2.75rem]">
-            {mode === "password" ? (
-              <>
-                <div className="h-px w-full bg-[#eadfcd]" />
-                <p className="py-2.5 text-center">
-                  <Link
-                    href={
-                      email.trim()
-                        ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
-                        : "/forgot-password"
-                    }
-                    className="text-sm font-medium text-[#4a8c3f] underline underline-offset-2 hover:text-[#3f7a36]"
-                  >
-                    Forgot password?
-                  </Link>
-                </p>
-                <div className="h-px w-full bg-[#eadfcd]" />
-              </>
-            ) : null}
-          </div>
-          <p className="mt-2 text-center text-sm">
+          {mode === "password" ? (
+            <>
+              <div className="h-px w-full bg-[#eadfcd]" />
+              <p className="py-2.5 text-center">
+                <Link
+                  href={
+                    email.trim()
+                      ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
+                      : "/forgot-password"
+                  }
+                  className="text-sm font-medium text-[#4a8c3f] underline underline-offset-2 hover:text-[#3f7a36]"
+                >
+                  Forgot password?
+                </Link>
+              </p>
+              <div className="h-px w-full bg-[#eadfcd]" />
+            </>
+          ) : null}
+          <p className={`${mode === "password" ? "mt-2" : "mt-0"} text-center text-sm`}>
             <span className="text-[#526158]">New here?</span>{" "}
             <Link
               href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
@@ -140,9 +138,9 @@ function LoginForm() {
         </div>
       }
     >
-      <GoogleSignInButton nextPath={googleNextPath} compact />
+      <GoogleSignInButton nextPath={googleNextPath} compact variant="primary" />
 
-      <div className="my-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45">
+      <div className="my-2 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45">
         <span className="h-px flex-1 bg-brand-cream-dark" />
         <span>OR</span>
         <span className="h-px flex-1 bg-brand-cream-dark" />
@@ -177,7 +175,7 @@ function LoginForm() {
         </div>
       </div>
 
-      <div key={mode} className="min-h-[11.5rem] animate-[fadeSlide_280ms_ease-out]">
+      <div key={mode} className="animate-[fadeSlide_280ms_ease-out]">
         {mode === "otp" ? (
           <OtpLoginForm
             inputClass={inputClass}

@@ -4,21 +4,30 @@ type GoogleSignInButtonProps = {
   nextPath: string;
   label?: string;
   compact?: boolean;
+  /** `primary` = leaf-green pill matching OTP/Sign in. Default outline for other screens. */
+  variant?: "outline" | "primary";
 };
 
 export function GoogleSignInButton({
   nextPath,
   label = "Continue with Google",
-  compact = false
+  compact = false,
+  variant = "outline"
 }: GoogleSignInButtonProps) {
+  const isPrimary = variant === "primary";
+
   return (
     <a
       href={googleSignInUrl(nextPath)}
-      className={`inline-flex w-full items-center justify-center gap-3 rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-gold/60 hover:bg-brand-cream ${
+      className={`inline-flex w-full items-center justify-center gap-3 px-4 text-sm font-semibold transition duration-300 ${
         compact ? "min-h-[44px] py-2.5" : "min-h-[48px] py-3"
+      } ${
+        isPrimary
+          ? "rounded-full bg-[#4a8c3f] text-white shadow-[0_12px_28px_rgba(74,140,63,0.28)] hover:-translate-y-0.5 hover:bg-[#3f7a36]"
+          : "rounded-xl border border-[#E3D9C8] bg-white text-brand-ink hover:border-brand-gold/60 hover:bg-brand-cream"
       }`}
     >
-      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 rounded-sm bg-white p-0.5" aria-hidden="true">
         <path
           fill="#4285F4"
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
