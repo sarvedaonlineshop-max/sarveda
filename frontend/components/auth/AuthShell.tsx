@@ -134,12 +134,12 @@ function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
   );
 }
 
-/** Trust row under Shop now — gold ink to match the CTA mock. */
+/** Trust row under Shop now — forest green like the original mock. */
 function TrustStat({ icon, line1, line2 }: { icon: ReactNode; line1: string; line2: string }) {
   return (
     <div className="inline-flex items-center gap-2.5">
-      <span className="shrink-0 text-[#b98a3e]">{icon}</span>
-      <span className="text-[13px] font-semibold leading-tight text-[#b98a3e]">
+      <span className="shrink-0 text-[#166D46]">{icon}</span>
+      <span className="text-[13px] font-semibold leading-tight text-[#166D46]">
         {line1}
         <br />
         {line2}
@@ -257,10 +257,10 @@ export function AuthShell({
         aria-hidden="true"
       />
 
-      {/* Desktop landing — form + tagline anchored so “More than a store” starts ~15% from right */}
+      {/* Desktop: logo + form share the same top edge; peace words sit beside the form */}
       <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
         <div
-          className="flex min-h-[calc(100vh-72px)] w-full items-center justify-end gap-8 px-6 py-10 xl:gap-10"
+          className="flex min-h-[calc(100vh-72px)] w-full items-start justify-end gap-7 px-6 pt-10 xl:gap-9"
           style={{ paddingRight: "max(0.75rem, calc(15% - 11rem))" }}
         >
           <section className="flex w-full max-w-[520px] shrink-0 flex-col xl:max-w-[540px]">
@@ -327,8 +327,8 @@ export function AuthShell({
               </Link>
             </div>
 
-            {/* Trust row sits on the next line under Shop now, slightly indented */}
-            <div className="mt-5 max-w-[500px] border-t border-[#d9cbb4]/80 pt-5 pl-7">
+            {/* Trust row under Shop now — green icons + copy, slightly indented */}
+            <div className="mt-5 max-w-[500px] border-t border-[#166D46]/30 pt-5 pl-7">
               <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
                 <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
                 <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
@@ -337,35 +337,39 @@ export function AuthShell({
             </div>
           </section>
 
-          {/* Form ~10% narrower; equal vertical padding; no forced tall min-height */}
-          <div className="flex w-[27rem] shrink-0 flex-col rounded-[1.75rem] border border-[#ece4d7] bg-white px-7 py-7 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)] xl:w-[27.9rem]">
-            <div className="text-left">
-              <h1 className="font-serif text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
-                {title}
-              </h1>
-              {subtitle ? <p className="mt-2 text-[14px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
+          {/* Form top aligns with logo; aside is locked beside the form (not the viewport) */}
+          <div className="flex shrink-0 items-start gap-7 xl:gap-8">
+            <div className="flex min-h-[40.5rem] w-[27rem] flex-col rounded-[1.75rem] border border-[#ece4d7] bg-white px-7 py-8 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)] xl:w-[27.9rem]">
+              <div className="text-left">
+                <h1 className="font-serif text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
+                  {title}
+                </h1>
+                {subtitle ? <p className="mt-2 text-[14px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
+              </div>
+              <div className="mt-5 flex flex-1 flex-col">
+                <div className="flex-1">{children}</div>
+                {footer ? <div className="mt-5">{footer}</div> : null}
+              </div>
             </div>
-            <div className="mt-5">{children}</div>
-            {footer ? <div className="mt-4">{footer}</div> : null}
-          </div>
 
-          {/* Practice/Breathe sit above; Heal lines up with Continue with Google */}
-          <aside className="hidden w-[11rem] shrink-0 self-start pt-[4.15rem] xl:block">
-            <div className="space-y-3 font-serif text-[0.95rem] italic leading-none tracking-[0.12em] text-[#3f4f46]">
-              <p>Practice</p>
-              <p>Breathe</p>
-              <p>Heal</p>
-              <p>Belong</p>
-            </div>
-            <div className="mt-6 h-0.5 w-12 bg-[#c28a2b]" />
-            <p className="mt-5 font-serif text-[1.45rem] italic leading-tight text-[#3f4f46]">
-              More
-              <br />
-              than a store.
-              <br />
-              A way of life.
-            </p>
-          </aside>
+            {/* UPPERCASE sans like original; HEAL lines up with Continue with Google */}
+            <aside className="hidden w-[10.5rem] shrink-0 pt-[6.85rem] xl:block">
+              <div className="space-y-3.5 font-sans text-[0.7rem] font-semibold uppercase leading-none tracking-[0.34em] text-[#3f4f46]">
+                <p>Practice</p>
+                <p>Breathe</p>
+                <p>Heal</p>
+                <p>Belong</p>
+              </div>
+              <div className="mt-7 h-px w-11 bg-[#c28a2b]" />
+              <p className="mt-5 font-serif text-[1.35rem] italic leading-[1.2] tracking-normal text-[#3f4f46]">
+                More
+                <br />
+                than a store.
+                <br />
+                A way of life.
+              </p>
+            </aside>
+          </div>
         </div>
 
         {/* Quote sits on the dark stone (no blur plate) */}
