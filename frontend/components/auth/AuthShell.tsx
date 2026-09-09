@@ -353,7 +353,7 @@ export function AuthShell({
             </div>
 
             {/* UPPERCASE sans like original; HEAL lines up with Continue with Google */}
-            <aside className="hidden w-[10.5rem] shrink-0 pt-[6.85rem] xl:block">
+            <aside className="hidden w-[10.5rem] shrink-0 pt-[4.4rem] xl:block">
               <div className="space-y-3.5 font-sans text-[0.7rem] font-semibold uppercase leading-none tracking-[0.34em] text-[#3f4f46]">
                 <p>Practice</p>
                 <p>Breathe</p>
@@ -361,7 +361,7 @@ export function AuthShell({
                 <p>Belong</p>
               </div>
               <div className="mt-7 h-px w-11 bg-[#c28a2b]" />
-              <p className="mt-5 font-serif text-[1.35rem] italic leading-[1.2] tracking-normal text-[#3f4f46]">
+              <p className="mt-5 font-serif text-[1.5rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
                 More
                 <br />
                 than a store.
