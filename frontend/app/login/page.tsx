@@ -47,7 +47,7 @@ function LoginForm() {
     if (err === "google") return "Google sign-in was cancelled or failed. Please try again.";
     if (err === "google_profile") return "We could not read your Google profile. Try another account.";
     if (err) return `Sign-in error: ${err}`;
-    if (reason === "reauth") return "Please sign in again — your session needs to be refreshed for admin access.";
+    if (reason === "reauth") return "Please sign in again to continue.";
     return "";
   });
 
@@ -105,21 +105,18 @@ function LoginForm() {
       variant="light"
       showMobileLogo
       compactMobile
-      adminMode={adminOnly}
-      title={adminOnly ? "Admin sign-in" : "Welcome back"}
-      subtitle={adminOnly ? "Secure staff access for the Sarveda operations workspace." : "Sign in to continue your Sarveda journey."}
+      title="Welcome back"
+      subtitle="Sign in to continue your Sarveda journey."
       footer={
-        !adminOnly ? (
-          <p className="text-center text-sm">
-            <span className="text-[#b98a3e]">New here?</span>{" "}
-            <Link
-              href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-              className="font-bold text-[#c62828] hover:text-[#a51f1f]"
-            >
-              Create an account
-            </Link>
-          </p>
-        ) : null
+        <p className="text-center text-sm">
+          <span className="text-[#b98a3e]">New here?</span>{" "}
+          <Link
+            href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+            className="font-bold text-[#c62828] hover:text-[#a51f1f]"
+          >
+            Create an account
+          </Link>
+        </p>
       }
     >
       <GoogleSignInButton nextPath={googleNextPath} compact />

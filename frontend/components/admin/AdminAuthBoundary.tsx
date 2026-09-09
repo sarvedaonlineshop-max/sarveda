@@ -10,8 +10,20 @@ type Props = {
   children: React.ReactNode;
 };
 
+async function fetchMeWithRetry(attempts = 3): Promise<PublicUser | null> {
+  for (let i = 0; i < attempts; i++) {
+    const me = await fetchMe();
+    if (me) return me;
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 150 * (i + 1)));
+    }
+  }
+  return null;
+}
+
 /**
  * Client guard for /admin (middleware is primary). Handles stale sessions after DB role changes.
+ * Retries /me briefly after Google OAuth so a just-set cookie is visible before reauth.
  */
 export function AdminAuthBoundary({ children }: Props) {
   const router = useRouter();
@@ -20,7 +32,7 @@ export function AdminAuthBoundary({ children }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchMe().then((me) => {
+    void fetchMeWithRetry().then((me) => {
       if (cancelled) return;
       if (!me) {
         router.replace(`/login?next=${encodeURIComponent("/admin")}&reason=reauth`);

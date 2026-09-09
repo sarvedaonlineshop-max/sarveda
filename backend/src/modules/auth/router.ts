@@ -15,9 +15,11 @@ import { setAuthCookie, signAccessToken } from "../../utils/jwt";
 import { googleOAuthConfigured } from "./passport";
 import { recordAdminLogin, recordAdminLogout } from "./admin-session";
 import {
-  getPrimaryFrontendBase,
+  captureOAuthReturnOrigin,
   OAUTH_NEXT_COOKIE,
+  OAUTH_RETURN_ORIGIN_COOKIE,
   postOAuthFrontendPath,
+  resolveOAuthFrontendBase,
   safeRelativeRedirect
 } from "./redirect";
 import {
@@ -430,13 +432,15 @@ authRouter.get("/google", (req, res, next) => {
   const nextPath =
     typeof req.query.next === "string" ? req.query.next : "/";
   const secure = process.env.NODE_ENV === "production";
-  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/"), {
+  const oauthCookie = {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     maxAge: 10 * 60 * 1000,
     path: "/"
-  });
+  };
+  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/"), oauthCookie);
+  res.cookie(OAUTH_RETURN_ORIGIN_COOKIE, captureOAuthReturnOrigin(req), oauthCookie);
   passport.authenticate("google", {
     scope: ["email", "profile"],
     session: false,
@@ -446,13 +450,15 @@ authRouter.get("/google", (req, res, next) => {
 
 authRouter.get(
   "/google/callback",
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: `${getPrimaryFrontendBase()}/login?error=google`
-  }),
+  (req, res, next) => {
+    passport.authenticate("google", {
+      session: false,
+      failureRedirect: `${resolveOAuthFrontendBase(req)}/login?error=google`
+    })(req, res, next);
+  },
   asyncHandler(async (req, res) => {
     const profile = req.user as Profile | undefined;
-    const frontendBase = getPrimaryFrontendBase();
+    const frontendBase = resolveOAuthFrontendBase(req);
     if (!profile?.id) {
       res.redirect(`${frontendBase}/login?error=google_profile`);
       return;
@@ -466,6 +472,7 @@ authRouter.get(
     await recordAdminLogin(user.id, user.role, req);
     const rawNext = req.cookies?.[OAUTH_NEXT_COOKIE] as string | undefined;
     res.clearCookie(OAUTH_NEXT_COOKIE, { path: "/" });
+    res.clearCookie(OAUTH_RETURN_ORIGIN_COOKIE, { path: "/" });
     const destination = postOAuthFrontendPath(user.role, rawNext);
     res.redirect(`${frontendBase}${destination}`);
   })
