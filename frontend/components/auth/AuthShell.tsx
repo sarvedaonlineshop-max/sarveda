@@ -214,7 +214,7 @@ export function AuthShell({
   }
 
   return (
-    <div className="relative min-h-dvh bg-[#f8f1e7] font-sans text-[#10201a] xl:min-h-screen">
+    <div className="relative min-h-dvh bg-transparent font-sans text-[#10201a] xl:min-h-screen xl:bg-[#f8f1e7]">
       <div
         className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat xl:block"
         style={{ backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})` }}
@@ -356,24 +356,22 @@ export function AuthShell({
         </footer>
       </div>
 
-      {/* Mobile / tablet — sharp portrait background; content scrolls so the bottom stays reachable */}
-      <div className="relative xl:hidden">
+      {/* Mobile / tablet — background is painted on this layer (not behind an opaque parent) */}
+      <div className="relative min-h-dvh xl:hidden">
         <div
-          className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${LOGIN_BACKGROUND_MOBILE_ASSET})` }}
           aria-hidden="true"
         />
 
-        <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
+        <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-[calc(3.25rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
           <header className="mb-5 flex flex-col items-center pt-1 text-center">
             <SarvedaLogo iconHeight={compactMobile ? 52 : 48} tone="onLight" />
             <p className="mt-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.38em] text-[#6f7b67]">
               Yoga · Sound · Wellbeing
             </p>
-            <p className="mt-3 font-serif text-[1.15rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
-              More than a store.
-              <br />
-              A way of life.
+            <p className="mt-3 whitespace-nowrap font-serif text-[1.05rem] font-normal italic leading-none tracking-normal text-[#3f4f46] sm:text-[1.15rem]">
+              More than a store. A way of life.
             </p>
           </header>
 
@@ -388,35 +386,29 @@ export function AuthShell({
             {footer ? <div className="mt-4">{footer}</div> : null}
           </div>
 
-          <div className="mx-auto mt-6 flex w-full max-w-[26.5rem] items-start justify-between gap-2 border-t border-[#166D46]/25 pt-4">
+          <div className="mx-auto mt-6 mb-4 flex w-full max-w-[26.5rem] items-start justify-between gap-2 border-t border-[#166D46]/25 pt-4">
             <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
             <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
             <TrustStat icon={<IconPerson />} line1="20K+" line2="happy customers" />
           </div>
-
-          <p className="mx-auto mt-8 mb-6 max-w-[18rem] text-center font-serif text-[1.35rem] font-normal italic leading-snug tracking-normal text-[#10201a] sm:text-[1.5rem]">
-            “A calmer you,
-            <br />
-            a kinder world.”
-          </p>
-
-          <footer className="mt-2 flex items-center justify-between gap-3 border-t border-[#eadfcd]/80 bg-white/95 px-1 py-3.5 text-[11px] text-[#526158] sm:text-xs">
-            <p className="shrink-0">© 2026 Sarveda. All rights reserved.</p>
-            <div className="flex flex-wrap items-center justify-end gap-x-1.5 text-right">
-              <Link href="/privacy" className="hover:text-[#166D46]">
-                Privacy
-              </Link>
-              <span className="text-[#cdbda2]">|</span>
-              <Link href="/terms" className="hover:text-[#166D46]">
-                Terms
-              </Link>
-              <span className="text-[#cdbda2]">|</span>
-              <Link href="/contact" className="hover:text-[#166D46]">
-                Contact
-              </Link>
-            </div>
-          </footer>
         </div>
+
+        <footer className="fixed bottom-0 left-0 right-0 z-30 flex h-[3.25rem] items-center justify-between border-t border-[#eadfcd] bg-white px-4 text-[11px] text-[#526158] sm:px-6 sm:text-xs xl:hidden">
+          <p className="shrink-0">© 2026 Sarveda. All rights reserved.</p>
+          <div className="flex flex-wrap items-center justify-end gap-x-1.5 text-right">
+            <Link href="/privacy" className="hover:text-[#166D46]">
+              Privacy
+            </Link>
+            <span className="text-[#cdbda2]">|</span>
+            <Link href="/terms" className="hover:text-[#166D46]">
+              Terms
+            </Link>
+            <span className="text-[#cdbda2]">|</span>
+            <Link href="/contact" className="hover:text-[#166D46]">
+              Contact
+            </Link>
+          </div>
+        </footer>
       </div>
     </div>
   );
