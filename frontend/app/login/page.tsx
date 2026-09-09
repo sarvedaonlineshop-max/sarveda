@@ -114,7 +114,7 @@ function LoginForm() {
             <span className="text-[#b98a3e]">New here?</span>{" "}
             <Link
               href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-              className="font-bold text-[#166D46] hover:text-[#145a3a]"
+              className="font-bold text-[#c62828] hover:text-[#a51f1f]"
             >
               Create an account
             </Link>
