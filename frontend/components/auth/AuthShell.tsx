@@ -72,7 +72,9 @@ function BenefitCard({ imageSrc, imageAlt, title }: { imageSrc: string; imageAlt
         {/* eslint-disable-next-line @next/next/no-img-element -- small static auth asset */}
         <img src={imageSrc} alt={imageAlt} width={64} height={64} className="h-full w-full object-contain" />
       </div>
-      <div className="text-[12.5px] font-semibold leading-[1.28] text-[#10201a]">{title}</div>
+      <div className="font-serif text-[14px] font-semibold leading-[1.28] tracking-[-0.01em] text-[#10201a]">
+        {title}
+      </div>
     </div>
   );
 }
@@ -80,14 +82,14 @@ function BenefitCard({ imageSrc, imageAlt, title }: { imageSrc: string; imageAlt
 function PeaceWords({ className = "" }: { className?: string }) {
   return (
     <div className={className}>
-      <div className="space-y-3.5 font-sans text-[0.68rem] font-semibold uppercase leading-none tracking-[0.32em] text-[#3f4f46]">
+      <div className="space-y-6 font-serif text-[0.85rem] font-semibold uppercase leading-none tracking-[0.28em] text-[#3f4f46]">
         <p>Practice</p>
         <p>Breathe</p>
         <p>Heal</p>
         <p>Belong</p>
       </div>
-      <div className="mt-6 h-px w-10 bg-[#c28a2b]" />
-      <p className="mt-4.5 font-serif text-[1.4rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
+      <div className="mt-7 h-px w-10 bg-[#c28a2b]" />
+      <p className="mt-5 font-serif text-[1.4rem] font-semibold italic leading-[1.25] tracking-normal text-[#c62828]">
         More
         <br />
         than a store.
@@ -216,11 +218,10 @@ export function AuthShell({
   return (
     <div className="relative min-h-dvh bg-transparent font-sans text-[#10201a] xl:min-h-screen xl:bg-[#f8f1e7]">
       <div
-        className="pointer-events-none absolute inset-0 hidden bg-no-repeat xl:block"
+        className="pointer-events-none absolute inset-0 hidden bg-cover bg-no-repeat xl:block"
         style={{
           backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})`,
-          backgroundSize: "auto 105%",
-          backgroundPosition: "left bottom"
+          backgroundPosition: "center bottom"
         }}
         aria-hidden="true"
       />
@@ -236,7 +237,7 @@ export function AuthShell({
         >
           <section className="flex w-full max-w-[500px] shrink-0 flex-col 2xl:max-w-[540px]">
             <SarvedaLogo iconHeight={176} widthPx={280} tone="onLight" />
-            <p className="mt-2 font-serif text-[0.9rem] font-semibold italic tracking-[0.04em] text-[#2f4529]">
+            <p className="mt-2.5 font-serif text-[1.2rem] font-semibold italic tracking-[0.03em] text-[#2f4529] 2xl:text-[1.35rem]">
               Sound Healing · Yoga · Conscious Living
             </p>
             <h2 className="mt-5 font-serif text-[2.85rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] 2xl:text-[3.25rem]">
@@ -301,7 +302,7 @@ export function AuthShell({
               </Link>
             </div>
 
-            <div className="mt-4.5 max-w-[500px] border-t border-[#166D46]/25 pt-4 pl-5">
+            <div className="mt-9 max-w-[500px] border-t border-[#166D46]/25 pt-5 pl-5">
               <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5">
                 <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
                 <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />

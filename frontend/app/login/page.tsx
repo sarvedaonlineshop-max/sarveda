@@ -140,7 +140,7 @@ function LoginForm() {
     >
       <GoogleSignInButton nextPath={googleNextPath} compact variant="primary" />
 
-      <div className="my-2 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45">
+      <div className="my-2 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45 xl:my-4">
         <span className="h-px flex-1 bg-brand-cream-dark" />
         <span>OR</span>
         <span className="h-px flex-1 bg-brand-cream-dark" />
