@@ -140,7 +140,13 @@ function WelcomeUserChip({ name }: { name: string }) {
 
 function isShopListingPath(pathname: string | null): boolean {
   if (!pathname) return false;
-  return pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product-category");
+  return (
+    pathname === "/store" ||
+    pathname.startsWith("/store/") ||
+    pathname === "/shop" ||
+    pathname.startsWith("/shop/") ||
+    pathname.startsWith("/product-category")
+  );
 }
 
 function isProfilePath(pathname: string | null): boolean {
@@ -284,7 +290,7 @@ export function Header() {
   const chromeVisibility = hideOnMobile ? "hidden md:block" : "";
 
   function goNav(href: string) {
-    if (isMainNavActive(pathname, href)) return;
+    if (pathname === href) return;
     setPendingHref(href);
     dispatchNavStart();
     // Shop browse uses a Suspense-heavy layout — push outside a transition so the RSC tree commits.

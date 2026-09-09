@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { siteSearchHref, type SiteSearchSuggestion } from "@/lib/api";
+import { usePricingZone } from "@/hooks/usePricingZone";
 import { resolveMediaUrl } from "@/lib/media-cdn";
-import { formatINRFromPaise } from "@/lib/money";
+import { zoneToCurrency } from "@/lib/currency";
+import { formatMinorFromPaise } from "@/lib/money";
 
 type Props = {
   item: SiteSearchSuggestion;
@@ -14,12 +16,13 @@ type Props = {
 };
 
 export function SearchSuggestionRow({ item, onNavigate, className = "" }: Props) {
+  const zone = usePricingZone();
   const href = siteSearchHref(item);
   const priceLabel =
     item.priceInPaise != null
       ? item.priceInPaise === 0
         ? "Free"
-        : formatINRFromPaise(item.priceInPaise)
+        : formatMinorFromPaise(item.priceInPaise, zoneToCurrency(zone))
       : null;
 
   return (

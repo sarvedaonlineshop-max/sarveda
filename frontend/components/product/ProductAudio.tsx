@@ -6,7 +6,7 @@ import { resolveMediaUrl } from "@/lib/media-cdn";
 
 type Props = {
   audioUrl: string;
-  /** Product name used in the storefront “Hear this …” label. */
+  /** Product name used in the storefront audio label. */
   productName?: string;
   /** Shown only on non-storefront variant (legacy layout). */
   title?: string;
@@ -15,11 +15,10 @@ type Props = {
 
 function hearThisLabel(productName?: string): string {
   const name = productName?.trim();
-  if (!name) return "Hear this sample";
-  // Keep the uppercase eyebrow readable on long titles.
-  if (name.length <= 42) return `Hear this ${name}`;
+  if (!name) return "Audio sample";
+  if (name.length <= 42) return name;
   const clipped = name.slice(0, 40).replace(/\s+\S*$/, "").trim();
-  return `Hear this ${clipped || name.slice(0, 40)}`;
+  return clipped || name.slice(0, 40);
 }
 
 export function ProductAudio({ audioUrl, productName, title, variant = "default" }: Props) {

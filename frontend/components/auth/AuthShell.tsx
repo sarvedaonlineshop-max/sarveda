@@ -86,7 +86,7 @@ function PeaceWords({ className = "" }: { className?: string }) {
         <p>Practice</p>
         <p>Breathe</p>
         <p>Heal</p>
-        <p>Belong</p>
+        <p>Live peacefully</p>
       </div>
       <div className="mt-7 h-px w-10 bg-[#c28a2b]" />
       <p className="mt-5 font-serif text-[1.4rem] font-semibold italic leading-[1.25] tracking-normal text-[#c62828]">
@@ -318,7 +318,7 @@ export function AuthShell({
                   {title}
                 </h1>
                 {subtitle ? (
-                  <p className="mt-2 font-serif text-[14px] font-normal italic leading-relaxed text-[#526158]">
+                  <p className="mt-2.5 font-serif text-[1.08rem] font-medium italic leading-relaxed text-[#526158]">
                     {subtitle}
                   </p>
                 ) : null}
@@ -391,7 +391,7 @@ export function AuthShell({
                   {title}
                 </h1>
                 {subtitle ? (
-                  <p className="mt-1 font-serif text-[13px] font-normal italic leading-snug text-[#526158]">
+                  <p className="mt-1.5 font-serif text-[1rem] font-medium italic leading-snug text-[#526158]">
                     {subtitle}
                   </p>
                 ) : null}

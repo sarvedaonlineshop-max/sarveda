@@ -30,8 +30,7 @@ import { galleryHasVideoItems } from "@/lib/gallery-media";
 import {
   availableStock,
   stockDisplay,
-  UNTRACKED_STOCK_ON_HAND,
-  variantDisplayLabel
+  UNTRACKED_STOCK_ON_HAND
 } from "@/lib/variant-utils";
 import { resolveVariantIdFromMerchantParams } from "@/lib/merchant-variant-selection";
 import type { ProductDetail, ProductListItem } from "@/lib/types";
@@ -160,7 +159,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   }, [variant, sortedImages]);
 
   const audioUrl = resolveMediaUrl(resolveVariantAudioUrl(variant, product));
-  const variantLabel = variant ? variantDisplayLabel(variant, 0) : product.name;
 
   const inRate = variant?.shippingRates?.find((r) => r.country === "IN");
   const shippingDays = inRate?.estimatedDays?.trim() || "4 - 7 Days";
@@ -261,7 +259,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                 <ProductAudio
                   key={audioUrl}
                   audioUrl={audioUrl}
-                  productName={variantLabel || product.name}
+                  productName={product.name}
                   variant="storefront"
                 />
               </div>

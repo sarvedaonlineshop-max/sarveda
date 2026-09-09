@@ -77,11 +77,13 @@ export function CourseSessionsList({ sessions }: Props) {
                 </p>
               ) : null}
               {session.content?.trim() ? (
-                <div className="course-session-content min-w-0 break-words text-sm leading-relaxed" style={{ color: "var(--brand-ink)" }}>
+                <div className="course-session-content min-w-0 break-words text-sm leading-[1.75]" style={{ color: "var(--brand-ink)" }}>
                   <style>{`
-                    .course-session-content ul { padding-left: 1.25rem; margin: 0.5rem 0; }
-                    .course-session-content li { margin-bottom: 0.35rem; }
-                    .course-session-content p { margin-bottom: 0.75rem; }
+                    .course-session-content > * + * { margin-top: 0.85rem; }
+                    .course-session-content ul, .course-session-content ol { padding-left: 1.25rem; margin: 0.75rem 0; }
+                    .course-session-content li { margin-bottom: 0.45rem; line-height: 1.75; }
+                    .course-session-content p { margin-bottom: 0.9rem; line-height: 1.75; }
+                    .course-session-content br + br { display: block; content: ""; margin-top: 0.7rem; }
                     .course-session-content img, .course-session-content iframe { max-width: 100% !important; height: auto !important; }
                   `}</style>
                   <ProductRichText html={session.content} />

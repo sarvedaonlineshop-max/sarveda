@@ -10,14 +10,15 @@ import {
   parseCourseTeachers
 } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
+import { descriptionParagraphs, htmlToPlainText } from "@/lib/sanitize-html";
 
 import { InstructorAvatars } from "./InstructorAvatars";
 
 type Props = { course: CourseListItem; compact?: boolean };
 
-/** Fixed card height so carousel / grid rows stay even. */
-const CONTENT_CARD_HEIGHT = "h-[36rem] sm:h-[38rem]";
-const IMAGE_BAND = "h-[15.5rem] sm:h-[17rem]";
+/** Fixed but leaner height so course grids stay even without oversized cards. */
+const CONTENT_CARD_HEIGHT = "h-[32rem] sm:h-[33.5rem]";
+const IMAGE_BAND = "h-[14rem] sm:h-[15.25rem]";
 
 function prettyDate(s: string | null | undefined) {
   if (!s) return null;
@@ -44,6 +45,12 @@ function courseExplanation(course: CourseListItem, aboutTheCourse?: string | nul
   return plainText(course.shortDescription) || plainText(aboutTheCourse);
 }
 
+function courseExplanationParagraphs(course: CourseListItem, aboutTheCourse?: string | null): string[] {
+  const source = course.shortDescription?.trim() || aboutTheCourse?.trim();
+  if (!source) return [];
+  return descriptionParagraphs(htmlToPlainText(source)).slice(0, 2);
+}
+
 export function CourseCard({ course, compact = false }: Props) {
   const extra = parseCourseExtra(course.extra);
   const teachers = parseCourseTeachers(extra);
@@ -54,6 +61,7 @@ export function CourseCard({ course, compact = false }: Props) {
   const duration = formatCourseDuration(extra);
   const tagLabel = courseCardTypeLabel(extra);
   const explanation = courseExplanation(course, extra.aboutTheCourse);
+  const explanationParagraphs = courseExplanationParagraphs(course, extra.aboutTheCourse);
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -108,7 +116,7 @@ export function CourseCard({ course, compact = false }: Props) {
         />
 
         {/* Never overflow-y:auto here — nested scroll traps page scroll on mobile. */}
-        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5">
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-4.5">
           <h3
             className={`font-serif font-semibold leading-snug text-white ${
               compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.25rem]" : "text-[1.2rem] sm:text-[1.3rem]"
@@ -117,26 +125,36 @@ export function CourseCard({ course, compact = false }: Props) {
             {course.title}
           </h3>
 
-          {explanation ? (
-            <p
-              className={`mt-2 leading-relaxed text-white/85 ${
-                compact
-                  ? "line-clamp-2 text-[13px] sm:text-[14px]"
-                  : "line-clamp-3 text-[13px] sm:text-[14px]"
-              }`}
-            >
+          {explanationParagraphs.length > 0 ? (
+            <div className="mt-2.5 space-y-2 text-white/85">
+              {explanationParagraphs.map((paragraph, index) => (
+                <p
+                  key={`${course.slug}-summary-${index}`}
+                  className={`leading-[1.55] ${
+                    compact ? "line-clamp-2 text-[13px] sm:text-[14px]" : "line-clamp-2 text-[13px] sm:text-[14px]"
+                  }`}
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          ) : explanation ? (
+            <p className="mt-2.5 line-clamp-2 text-[13px] leading-[1.55] text-white/85 sm:text-[14px]">
               {explanation}
             </p>
           ) : null}
 
-          <div className="mt-3 min-w-0 border-l-4 border-white/90 pl-3">
-            {teacherNames.slice(0, compact ? 3 : teacherNames.length).map((name) => (
-              <p key={name} className="text-[14px] leading-snug text-white sm:text-[15px]">
-                {name}
+          <div className="mt-3.5 min-w-0 space-y-1.5 border-l-4 border-white/85 pl-3">
+            {teacherNames.length ? (
+              <p className="line-clamp-1 text-[13px] leading-snug text-white sm:text-[14px]">
+                {teacherNames.join(", ")}
               </p>
-            ))}
-            {dateRange ? <p className="mt-1 text-[14px] text-white/90 sm:text-[15px]">{dateRange}</p> : null}
-            {duration ? <p className="text-[14px] text-white sm:text-[15px]">{duration}</p> : null}
+            ) : null}
+            {dateRange || duration ? (
+              <p className="line-clamp-2 text-[13px] leading-snug text-white/90 sm:text-[14px]">
+                {[dateRange, duration].filter(Boolean).join(" · ")}
+              </p>
+            ) : null}
           </div>
         </div>
 

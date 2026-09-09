@@ -2,6 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import { usePricingZone } from "@/hooks/usePricingZone";
+import { zoneToCurrency } from "@/lib/currency";
+import { formatMinorFromPaise } from "@/lib/money";
 import { SHOP_MERCH_FILTERS, SHOP_PRICE_MAX, SHOP_PRICE_MIN } from "@/lib/shop-merch-filters";
 
 type Props = {
@@ -55,6 +58,7 @@ export function ShopFilterPanel({
   onClose,
   className
 }: Props) {
+  const zone = usePricingZone();
   const [localMin, setLocalMin] = useState(minPrice);
   const [localMax, setLocalMax] = useState(maxPrice);
   const debounceRef = useRef<number | undefined>(undefined);
@@ -88,6 +92,8 @@ export function ShopFilterPanel({
   const span = SHOP_PRICE_MAX - SHOP_PRICE_MIN || 1;
   const leftPct = ((localMin - SHOP_PRICE_MIN) / span) * 100;
   const widthPct = ((localMax - localMin) / span) * 100;
+
+  const currency = zoneToCurrency(zone);
 
   if (!open) return null;
 
@@ -173,8 +179,8 @@ export function ShopFilterPanel({
           />
         </div>
         <div className="mt-2 flex justify-between text-sm text-brand-muted">
-          <span>₹{localMin}</span>
-          <span>₹{localMax}</span>
+          <span>{formatMinorFromPaise(localMin, currency)}</span>
+          <span>{formatMinorFromPaise(localMax, currency)}</span>
         </div>
       </div>
     </div>

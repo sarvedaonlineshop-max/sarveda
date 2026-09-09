@@ -36,27 +36,6 @@ export default async function CoursesPage() {
           <p className="sv-listing-hero-fade-late" style={{ color: "rgba(253,246,237,0.78)", fontSize: "1rem", lineHeight: 1.65, marginTop: "10px", maxWidth: "540px" }}>
             Deepen your practice through guided immersions in sound therapy, yoga, and mindful living — online and in person.
           </p>
-          <div className="sv-listing-hero-fade-late" style={{ marginTop: "18px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            <Link
-              href="/contact?subject=COURSE"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                minHeight: "44px",
-                padding: "0 18px",
-                borderRadius: "999px",
-                background: "var(--brand-gold)",
-                color: "#1a2e26",
-                fontSize: "13px",
-                fontWeight: 700,
-                textDecoration: "none"
-              }}
-            >
-              Contact us
-              <span aria-hidden>→</span>
-            </Link>
-          </div>
           <div className="sv-listing-hero-fade-late" style={{ marginTop: "14px", height: "2px", width: "48px", background: "var(--brand-gold)" }} />
         </div>
       </section>
