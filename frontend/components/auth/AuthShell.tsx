@@ -236,7 +236,7 @@ export function AuthShell({
         >
           <section className="flex w-full max-w-[500px] shrink-0 flex-col 2xl:max-w-[540px]">
             <SarvedaLogo iconHeight={176} widthPx={280} tone="onLight" />
-            <p className="mt-2 font-serif text-[0.85rem] font-normal italic tracking-[0.04em] text-[#3f4f46]">
+            <p className="mt-2 font-serif text-[0.9rem] font-semibold italic tracking-[0.04em] text-[#2f4529]">
               Sound Healing · Yoga · Conscious Living
             </p>
             <h2 className="mt-5 font-serif text-[2.85rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] 2xl:text-[3.25rem]">
@@ -313,7 +313,7 @@ export function AuthShell({
           <div className="flex shrink-0 items-start gap-5 2xl:gap-6">
             <div className="flex w-[25.75rem] flex-col rounded-[1.65rem] border border-[#ece4d7] bg-white px-6 py-7 shadow-[0_24px_64px_rgba(28,53,42,0.16),0_44px_120px_rgba(28,53,42,0.18)] transition-all duration-300 2xl:w-[26.5rem] 2xl:px-7">
               <div className="text-left">
-                <h1 className="font-serif text-[1.9rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
+                <h1 className="font-serif text-[1.9rem] font-medium italic leading-tight tracking-[-0.03em] text-[#10201a]">
                   {title}
                 </h1>
                 {subtitle ? (
@@ -378,7 +378,7 @@ export function AuthShell({
         <div className="relative z-10 flex h-full flex-col px-4 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6">
           <header className="mb-1 flex shrink-0 flex-col items-center pt-0.5 text-center">
             <SarvedaLogo iconHeight={88} widthPx={140} tone="onLight" />
-            <p className="-mt-0.5 font-serif text-[0.78rem] font-normal italic tracking-[0.04em] text-[#3f4f46] sm:text-[0.85rem]">
+            <p className="-mt-0.5 font-serif text-[0.82rem] font-semibold italic tracking-[0.04em] text-[#2f4529] sm:text-[0.9rem]">
               Sound Healing · Yoga · Conscious Living
             </p>
           </header>
@@ -386,7 +386,7 @@ export function AuthShell({
           <div className="mx-auto flex w-full max-w-[24.5rem] flex-1 flex-col justify-start pt-1">
             <div className="rounded-[1.35rem] border border-[#ece4d7]/90 bg-white px-4 py-3.5 shadow-[0_18px_48px_rgba(28,53,42,0.16)] sm:px-5 sm:py-4">
               <div className="text-center">
-                <h1 className="font-serif text-[1.55rem] font-semibold leading-tight tracking-[-0.04em] text-[#10201a]">
+                <h1 className="font-serif text-[1.55rem] font-medium italic leading-tight tracking-[-0.03em] text-[#10201a]">
                   {title}
                 </h1>
                 {subtitle ? (
@@ -398,6 +398,9 @@ export function AuthShell({
               <div className="mt-3">{children}</div>
               {footer ? <div className="mt-2">{footer}</div> : null}
             </div>
+            <p className="mt-4 text-center font-serif text-[1.15rem] font-semibold italic leading-snug tracking-normal text-[#1c352a] drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)] sm:text-[1.25rem]">
+              More than a store. A way of life.
+            </p>
           </div>
         </div>
 

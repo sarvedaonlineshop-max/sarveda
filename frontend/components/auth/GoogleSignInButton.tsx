@@ -19,15 +19,15 @@ export function GoogleSignInButton({
   return (
     <a
       href={googleSignInUrl(nextPath)}
-      className={`inline-flex w-full items-center justify-center gap-3 px-4 text-sm font-semibold transition duration-300 ${
+      className={`inline-flex w-full items-center justify-center gap-2.5 px-4 text-sm font-semibold transition duration-300 ${
         compact ? "min-h-[44px] py-2.5" : "min-h-[48px] py-3"
       } ${
         isPrimary
-          ? "rounded-full bg-[#4a8c3f] text-white shadow-[0_12px_28px_rgba(74,140,63,0.28)] hover:-translate-y-0.5 hover:bg-[#3f7a36]"
+          ? "rounded-full bg-gradient-to-b from-[#8fd46a] to-[#5fbe48] text-white shadow-[0_10px_24px_rgba(95,190,72,0.32)] hover:-translate-y-0.5 hover:from-[#7fc85c] hover:to-[#52b03e]"
           : "rounded-xl border border-[#E3D9C8] bg-white text-brand-ink hover:border-brand-gold/60 hover:bg-brand-cream"
       }`}
     >
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 rounded-sm bg-white p-0.5" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" aria-hidden="true">
         <path
           fill="#4285F4"
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
