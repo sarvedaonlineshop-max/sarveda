@@ -18,10 +18,10 @@ import {
 } from "@/lib/auth-client";
 
 const inputClass =
-  "w-full rounded-2xl border border-[#E3D9C8] bg-white/88 px-4 py-3.5 font-sans text-brand-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] placeholder:text-brand-ink/42 transition focus:border-[#166D46] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#166D46]/12";
+  "w-full rounded-full border border-[#E3D9C8] bg-white/88 px-4 py-3 font-sans text-brand-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] placeholder:text-brand-ink/42 transition focus:border-[#4a8c3f] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#4a8c3f]/15";
 
 const BTN_GREEN =
-  "w-full rounded-2xl bg-[#166D46] py-3.5 text-sm font-bold text-white shadow-[0_16px_34px_rgba(22,109,70,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#145a3a] hover:shadow-[0_20px_42px_rgba(22,109,70,0.28)] disabled:opacity-60";
+  "w-full rounded-full bg-[#4a8c3f] py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(74,140,63,0.28)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#3f7a36] hover:shadow-[0_16px_34px_rgba(74,140,63,0.34)] disabled:opacity-60";
 
 type LoginMode = "password" | "otp";
 
@@ -108,25 +108,27 @@ function LoginForm() {
       subtitle="Sign in to continue your Sarveda journey."
       footer={
         <div>
-          {mode === "password" ? (
-            <>
-              <div className="h-px w-full bg-[#eadfcd]" />
-              <p className="py-3 text-center">
-                <Link
-                  href={
-                    email.trim()
-                      ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
-                      : "/forgot-password"
-                  }
-                  className="text-sm font-medium text-[#166D46] underline underline-offset-2 hover:text-[#145a3a]"
-                >
-                  Forgot password?
-                </Link>
-              </p>
-              <div className="h-px w-full bg-[#eadfcd]" />
-            </>
-          ) : null}
-          <p className={`${mode === "password" ? "mt-3.5" : "mt-0.5"} text-center text-sm`}>
+          <div className="min-h-[2.75rem]">
+            {mode === "password" ? (
+              <>
+                <div className="h-px w-full bg-[#eadfcd]" />
+                <p className="py-2.5 text-center">
+                  <Link
+                    href={
+                      email.trim()
+                        ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
+                        : "/forgot-password"
+                    }
+                    className="text-sm font-medium text-[#4a8c3f] underline underline-offset-2 hover:text-[#3f7a36]"
+                  >
+                    Forgot password?
+                  </Link>
+                </p>
+                <div className="h-px w-full bg-[#eadfcd]" />
+              </>
+            ) : null}
+          </div>
+          <p className="mt-2 text-center text-sm">
             <span className="text-[#526158]">New here?</span>{" "}
             <Link
               href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
@@ -175,7 +177,7 @@ function LoginForm() {
         </div>
       </div>
 
-      <div key={mode} className="animate-[fadeSlide_280ms_ease-out]">
+      <div key={mode} className="min-h-[11.5rem] animate-[fadeSlide_280ms_ease-out]">
         {mode === "otp" ? (
           <OtpLoginForm
             inputClass={inputClass}
@@ -220,14 +222,14 @@ function LoginForm() {
                 Password expired. Please set your new password using{" "}
                 <Link
                   href={`/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}
-                  className="font-medium text-[#166D46] underline hover:text-[#145a3a]"
+                  className="font-medium text-[#4a8c3f] underline hover:text-[#3f7a36]"
                 >
                   this link
                 </Link>{" "}
                 or{" "}
                 <button
                   type="button"
-                  className="font-medium text-[#166D46] underline hover:text-[#145a3a]"
+                  className="font-medium text-[#4a8c3f] underline hover:text-[#3f7a36]"
                   onClick={() => switchMode("otp")}
                 >
                   use OTP login

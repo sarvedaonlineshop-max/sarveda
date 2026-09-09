@@ -219,8 +219,8 @@ export function AuthShell({
         className="pointer-events-none absolute inset-0 hidden bg-no-repeat xl:block"
         style={{
           backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})`,
-          backgroundSize: "110% auto",
-          backgroundPosition: "center bottom"
+          backgroundSize: "auto 105%",
+          backgroundPosition: "left bottom"
         }}
         aria-hidden="true"
       />
@@ -236,7 +236,7 @@ export function AuthShell({
         >
           <section className="flex w-full max-w-[500px] shrink-0 flex-col 2xl:max-w-[540px]">
             <SarvedaLogo iconHeight={176} widthPx={280} tone="onLight" />
-            <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-[#6f7b67]">
+            <p className="mt-2 font-serif text-[0.85rem] font-normal italic tracking-[0.04em] text-[#3f4f46]">
               Sound Healing · Yoga · Conscious Living
             </p>
             <h2 className="mt-5 font-serif text-[2.85rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] 2xl:text-[3.25rem]">
@@ -360,59 +360,51 @@ export function AuthShell({
         </footer>
       </div>
 
-      {/* Mobile / tablet — background is painted on this layer (not behind an opaque parent) */}
-      <div className="relative min-h-dvh bg-[#d8e5cf] xl:hidden">
+      {/* Mobile / tablet — single-screen layout, no page scroll */}
+      <div className="fixed inset-0 z-10 overflow-hidden xl:hidden">
         <div
-          className="pointer-events-none absolute inset-0 bg-no-repeat"
+          className="pointer-events-none absolute inset-0 bg-cover bg-no-repeat"
           style={{
             backgroundImage: `url(${LOGIN_BACKGROUND_MOBILE_ASSET})`,
-            backgroundSize: "100% auto",
             backgroundPosition: "center bottom"
           }}
           aria-hidden="true"
         />
 
-        <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-[calc(3.25rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
-          <header className="mb-5 flex flex-col items-center pt-1 text-center">
-            <SarvedaLogo iconHeight={104} widthPx={165} tone="onLight" />
-            <p className="mt-1.5 text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-[#6f7b67] sm:text-[0.62rem] sm:tracking-[0.28em]">
+        <div className="relative z-10 flex h-full flex-col px-4 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6">
+          <header className="mb-2.5 flex shrink-0 flex-col items-center pt-0.5 text-center">
+            <SarvedaLogo iconHeight={88} widthPx={140} tone="onLight" />
+            <p className="mt-1 font-serif text-[0.78rem] font-normal italic tracking-[0.04em] text-[#3f4f46] sm:text-[0.85rem]">
               Sound Healing · Yoga · Conscious Living
-            </p>
-            <p className="mt-3 whitespace-nowrap font-serif text-[1.05rem] font-normal italic leading-none tracking-normal text-[#3f4f46] sm:text-[1.15rem]">
-              More than a store. A way of life.
             </p>
           </header>
 
-          <div className="mx-auto w-full max-w-[26.5rem] rounded-[1.5rem] border border-[#ece4d7]/90 bg-white px-5 py-5 shadow-[0_22px_60px_rgba(28,53,42,0.18)] sm:px-6 sm:py-6">
-            <div className="text-center">
-              <h1 className="font-serif text-[1.85rem] font-semibold leading-tight tracking-[-0.04em] text-[#10201a]">
-                {title}
-              </h1>
-              {subtitle ? <p className="mt-1.5 text-sm leading-relaxed text-[#526158]">{subtitle}</p> : null}
+          <div className="mx-auto flex w-full max-w-[24.5rem] flex-1 flex-col justify-center">
+            <div className="rounded-[1.35rem] border border-[#ece4d7]/90 bg-white px-4 py-3.5 shadow-[0_18px_48px_rgba(28,53,42,0.16)] sm:px-5 sm:py-4">
+              <div className="text-center">
+                <h1 className="font-serif text-[1.55rem] font-semibold leading-tight tracking-[-0.04em] text-[#10201a]">
+                  {title}
+                </h1>
+                {subtitle ? <p className="mt-1 text-[13px] leading-snug text-[#526158]">{subtitle}</p> : null}
+              </div>
+              <div className="mt-3">{children}</div>
+              {footer ? <div className="mt-3">{footer}</div> : null}
             </div>
-            <div className="mt-4">{children}</div>
-            {footer ? <div className="mt-4">{footer}</div> : null}
-          </div>
-
-          <div className="mx-auto mt-6 mb-4 flex w-full max-w-[26.5rem] items-start justify-between gap-2 border-t border-[#166D46]/25 pt-4">
-            <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
-            <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
-            <TrustStat icon={<IconPerson />} line1="20K+" line2="happy customers" />
           </div>
         </div>
 
-        <footer className="fixed bottom-0 left-0 right-0 z-30 flex h-[3.25rem] items-center justify-between border-t border-[#eadfcd] bg-white px-4 text-[11px] text-[#526158] sm:px-6 sm:text-xs xl:hidden">
+        <footer className="fixed bottom-0 left-0 right-0 z-30 flex h-[2.75rem] items-center justify-between border-t border-[#eadfcd] bg-white px-4 text-[10px] text-[#526158] sm:px-6 sm:text-[11px] xl:hidden">
           <p className="shrink-0">© 2026 Sarveda. All rights reserved.</p>
           <div className="flex flex-wrap items-center justify-end gap-x-1.5 text-right">
-            <Link href="/privacy" className="hover:text-[#166D46]">
+            <Link href="/privacy" className="hover:text-[#4a8c3f]">
               Privacy
             </Link>
             <span className="text-[#cdbda2]">|</span>
-            <Link href="/terms" className="hover:text-[#166D46]">
+            <Link href="/terms" className="hover:text-[#4a8c3f]">
               Terms
             </Link>
             <span className="text-[#cdbda2]">|</span>
-            <Link href="/contact" className="hover:text-[#166D46]">
+            <Link href="/contact" className="hover:text-[#4a8c3f]">
               Contact
             </Link>
           </div>
