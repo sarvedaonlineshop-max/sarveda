@@ -178,7 +178,6 @@ function LoginForm() {
       <div key={mode} className="animate-[fadeSlide_280ms_ease-out]">
         {mode === "otp" ? (
           <OtpLoginForm
-            key={`otp-${email.trim().toLowerCase()}`}
             inputClass={inputClass}
             onSuccess={finishLogin}
             initialEmail={email}
@@ -246,15 +245,6 @@ function LoginForm() {
           </form>
         )}
       </div>
-
-      {!adminOnly ? (
-        <Link
-          href="/store"
-          className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-full border-2 border-[#166D46] bg-white text-sm font-semibold text-[#166D46] transition-colors hover:bg-[#166D46]/5 sm:mt-4 sm:min-h-[48px] md:hidden"
-        >
-          Shop as guest
-        </Link>
-      ) : null}
     </AuthShell>
   );
 }
