@@ -114,13 +114,16 @@ export default async function CourseDetailPage({ params }: Props) {
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   const courseRichTextCss = `
-    .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
-    .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:1.4rem; font-weight:700; margin-top:2rem; margin-bottom:0.6rem; }
-    .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:1.1rem; font-weight:700; margin-top:1.5rem; margin-bottom:0.5rem; }
-    .course-rich-text p { margin-bottom:1rem; }
-    .course-rich-text ul, .course-rich-text ol { padding-left:1.25rem; margin-bottom:1rem; }
-    .course-rich-text li { margin-bottom:0.4rem; }
+    .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 42rem; }
+    .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.35rem,2.4vw,1.6rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
+    .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.12rem,2vw,1.28rem); font-weight:700; margin-top:1.75rem; margin-bottom:0.7rem; padding-bottom:0.45rem; border-bottom:1px solid var(--brand-cream-dark); }
+    .course-rich-text p { margin: 0 0 1.15rem; line-height: 1.85; }
+    .course-rich-text p:last-child { margin-bottom: 0; }
+    .course-rich-text .course-slot-time { display:inline-block; margin-top:0.15rem; color:var(--brand-forest); font-weight:700; font-size:14px; letter-spacing:0.01em; }
+    .course-rich-text ul, .course-rich-text ol { padding-left:1.25rem; margin:0 0 1.15rem; }
+    .course-rich-text li { margin-bottom:0.55rem; line-height:1.75; }
     .course-rich-text strong { color:var(--brand-forest); }
+    .course-rich-text em { font-style: italic; }
     .course-rich-text a { color:var(--brand-gold); text-decoration:underline; overflow-wrap: anywhere; }
     .course-rich-text img, .course-rich-text video, .course-rich-text iframe { max-width: 100% !important; height: auto !important; }
     .course-rich-text table { display: block; max-width: 100%; overflow-x: auto; }
@@ -269,24 +272,35 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             )}
 
+            {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
+            {layout !== "CUSTOM" && showMainDescription && course.description && (
+              <div className="course-rich-text min-w-0" style={{ marginBottom: "40px" }}>
+                <style>{courseRichTextCss}</style>
+                <ProductRichText html={course.description} />
+              </div>
+            )}
+
             {extra.courseIncludes?.trim() && (
-              <section style={{ marginBottom:"40px" }}>
-                <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"16px" }}>
+              <section style={{ marginBottom: "40px" }}>
+                <h2 className="font-serif" style={{ color: "var(--brand-forest)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "16px" }}>
                   What&apos;s Included
                 </h2>
-                <div className="course-rich-text min-w-0" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                <div
+                  className="course-rich-text min-w-0"
+                  style={{
+                    color: "var(--brand-ink)",
+                    lineHeight: 1.85,
+                    fontSize: "15px",
+                    border: "1px solid var(--brand-cream-dark)",
+                    background: "var(--brand-ivory)",
+                    padding: "18px 20px",
+                    borderLeft: "4px solid var(--brand-gold)"
+                  }}
+                >
                   <style>{courseRichTextCss}</style>
                   <ProductRichText html={extra.courseIncludes} />
                 </div>
               </section>
-            )}
-
-            {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
-            {layout !== "CUSTOM" && showMainDescription && course.description && (
-              <div className="course-rich-text min-w-0">
-                <style>{courseRichTextCss}</style>
-                <ProductRichText html={course.description} />
-              </div>
             )}
 
             {/* FAQs */}

@@ -6,7 +6,7 @@ import {
   htmlToPlainText,
   looksLikeHtml,
   normalizeProductText,
-  sanitizeProductHtml
+  structureRichTextHtml
 } from "@/lib/sanitize-html";
 
 type ProductRichTextProps = {
@@ -21,11 +21,11 @@ export function ProductRichText({ html, className = "", emphasize = false }: Pro
   if (!text.trim()) return null;
 
   if (looksLikeHtml(text)) {
-    const raw = sanitizeProductHtml(text);
+    const raw = structureRichTextHtml(text);
     const markup = emphasize ? emphasizeDescriptionParagraphs(raw) : raw;
     return (
       <div
-        className={`rich-features max-w-[72ch] text-base leading-[1.6] text-brand-ink/80 ${className}`}
+        className={`rich-features max-w-[72ch] text-base leading-[1.75] text-brand-ink/80 ${className}`}
         dangerouslySetInnerHTML={{ __html: markup }}
       />
     );
@@ -34,7 +34,7 @@ export function ProductRichText({ html, className = "", emphasize = false }: Pro
   const paragraphs = descriptionParagraphs(text);
   if (paragraphs.length > 1 || emphasize) {
     return (
-      <div className={`pdp-description rich-features max-w-[72ch] text-base leading-[1.6] text-brand-ink/80 ${className}`}>
+      <div className={`pdp-description rich-features max-w-[72ch] text-base leading-[1.75] text-brand-ink/80 ${className}`}>
         {paragraphs.map((para, index) => (
           <p
             key={`${index}-${para.slice(0, 24)}`}
@@ -48,7 +48,7 @@ export function ProductRichText({ html, className = "", emphasize = false }: Pro
   }
 
   return (
-    <p className={`text-base leading-[1.6] text-brand-ink/75 ${className}`}>
+    <p className={`text-base leading-[1.75] text-brand-ink/75 ${className}`}>
       {decodeHtmlEntities(text)}
     </p>
   );
