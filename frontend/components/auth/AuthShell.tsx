@@ -68,16 +68,16 @@ function IconHeart() {
   );
 }
 
-const TRUST_BRONZE = "#a07b4a";
+const TRUST_INK = "#1c352a";
 
 function IconGlobe() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke={TRUST_BRONZE} strokeWidth="1.55" />
-      <path d="M3 12h18" stroke={TRUST_BRONZE} strokeWidth="1.55" />
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke={TRUST_INK} strokeWidth="1.55" />
+      <path d="M3 12h18" stroke={TRUST_INK} strokeWidth="1.55" />
       <path
         d="M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z"
-        stroke={TRUST_BRONZE}
+        stroke={TRUST_INK}
         strokeWidth="1.55"
       />
     </svg>
@@ -86,16 +86,16 @@ function IconGlobe() {
 
 function IconShield() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M12 3.5 5 6.2v5.3c0 4.4 2.9 7.5 7 8.8 4.1-1.3 7-4.4 7-8.8V6.2L12 3.5Z"
-        stroke={TRUST_BRONZE}
+        stroke={TRUST_INK}
         strokeWidth="1.55"
         strokeLinejoin="round"
       />
       <path
         d="m9 12 2 2 4-4"
-        stroke={TRUST_BRONZE}
+        stroke={TRUST_INK}
         strokeWidth="1.55"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -106,35 +106,35 @@ function IconShield() {
 
 function IconLeaf() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M5 19C5 11.5 10.2 5.5 19 5c0 8.8-6 14-14 14Z"
-        stroke={TRUST_BRONZE}
+        stroke={TRUST_INK}
         strokeWidth="1.55"
         strokeLinejoin="round"
       />
-      <path d="M8.5 15.5 15 9" stroke={TRUST_BRONZE} strokeWidth="1.55" strokeLinecap="round" />
+      <path d="M8.5 15.5 15 9" stroke={TRUST_INK} strokeWidth="1.55" strokeLinecap="round" />
     </svg>
   );
 }
 
 function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
   return (
-    <div className="group rounded-2xl border border-[#e7dcc9]/90 bg-white/80 px-4 py-5 text-center shadow-[0_14px_40px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1.5 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_22px_56px_rgba(28,53,42,0.16)]">
-      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center transition duration-300 group-hover:scale-105">
+    <div className="group rounded-xl border border-[#e7dcc9]/90 bg-white/85 px-3 py-3.5 text-center shadow-[0_10px_28px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_18px_44px_rgba(28,53,42,0.14)]">
+      <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center transition duration-300 group-hover:scale-105">
         {icon}
       </div>
-      <div className="text-[13px] font-semibold leading-snug text-[#10201a]">{title}</div>
+      <div className="text-[12px] font-semibold leading-snug text-[#10201a]">{title}</div>
     </div>
   );
 }
 
-/** Storefront-style trust row: bronze icon + two-line label (no pill chrome). */
+/** Trust row: dark forest ink for contrast on the photo. */
 function TrustStat({ icon, line1, line2 }: { icon: ReactNode; line1: string; line2: string }) {
   return (
-    <div className="inline-flex items-center gap-3">
+    <div className="inline-flex items-center gap-2.5">
       <span className="shrink-0">{icon}</span>
-      <span className="text-[15px] font-medium leading-tight text-[#a07b4a]">
+      <span className="text-[13px] font-semibold leading-tight text-[#1c352a]">
         {line1}
         <br />
         {line2}
@@ -286,100 +286,113 @@ export function AuthShell({
         aria-hidden="true"
       />
 
-      {/* Desktop landing */}
+      {/* Desktop landing — left column ≈ form height, closer together */}
       <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
-        {/* Shifted right + down vs earlier flush-left placement */}
-        <section className="absolute left-[16.5%] top-[11%] max-w-[560px] xl:left-[17.5%] 2xl:left-[18%]">
-          <SarvedaLogo iconHeight={104} tone="onLight" />
-          <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.45em] text-[#6f7b67]">
-            Yoga · Sound · Wellbeing
-          </p>
-          <h2 className="mt-9 font-serif text-[3.9rem] font-semibold leading-[0.95] tracking-[-0.058em] text-[#10201a] xl:text-[4.35rem]">
-            Welcome to your
-            <br />
-            Sarveda space
-          </h2>
-          <p className="mt-5 max-w-[540px] text-lg leading-8 text-[#4f5f56] xl:text-xl">
-            Track your orders, continue your courses, save your favourites, and return to the practices that support
-            your daily wellbeing.
-          </p>
+        <div className="mx-auto flex min-h-[calc(100vh-72px)] max-w-[1280px] items-center justify-center gap-8 px-6 xl:gap-10 xl:px-10 2xl:max-w-[1360px]">
+          <section className="w-full max-w-[480px] shrink-0 xl:max-w-[500px]">
+            <SarvedaLogo iconHeight={78} tone="onLight" />
+            <p className="mt-2 text-[0.68rem] font-semibold uppercase tracking-[0.42em] text-[#6f7b67]">
+              Yoga · Sound · Wellbeing
+            </p>
+            <h2 className="mt-5 font-serif text-[2.55rem] font-semibold leading-[1.02] tracking-[-0.045em] text-[#10201a] xl:text-[2.85rem]">
+              Welcome to your
+              <br />
+              Sarveda space
+            </h2>
+            <p className="mt-3 max-w-[460px] text-[15px] leading-6 text-[#4f5f56]">
+              Track your orders, continue your courses, save your favourites, and return to the practices that support
+              your daily wellbeing.
+            </p>
 
-          <div className="mt-7 grid max-w-[520px] grid-cols-3 gap-4">
-            <BenefitCard
-              icon={<IconPackage />}
-              title={
-                <>
-                  Track orders
-                  <br />
-                  and returns
-                </>
-              }
-            />
-            <BenefitCard
-              icon={<IconGraduation />}
-              title={
-                <>
-                  Access courses
-                  <br />
-                  and events
-                </>
-              }
-            />
-            <BenefitCard
-              icon={<IconHeart />}
-              title={
-                <>
-                  Save cart
-                  <br />
-                  and wishlist
-                </>
-              }
-            />
-          </div>
-
-          <div className="mt-7 flex flex-wrap gap-4">
-            <Link
-              href="/store"
-              className="group inline-flex min-h-[54px] items-center justify-center gap-2 rounded-full bg-[#c28a2b] px-9 text-base font-bold text-white shadow-[0_18px_38px_rgba(194,138,43,0.28)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ad7924]"
-            >
-              Shop now <span className="transition duration-300 group-hover:translate-x-1">→</span>
-            </Link>
-            <Link
-              href="/courses"
-              className="inline-flex min-h-[54px] items-center justify-center rounded-full border border-[#b98a3e] bg-white/75 px-9 text-base font-bold text-[#9a6f2d] shadow-[0_12px_30px_rgba(28,53,42,0.06)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-white"
-            >
-              Explore courses
-            </Link>
-          </div>
-
-          <div className="mt-8 flex max-w-[560px] flex-wrap items-center gap-x-10 gap-y-4">
-            <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
-            <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
-            <TrustStat icon={<IconLeaf />} line1="169+" line2="products" />
-          </div>
-        </section>
-
-        {/* Login card — further right, deeper shadow */}
-        <section className="absolute right-[7%] top-[8.5%] w-[30.5rem] xl:right-[6.5%] 2xl:right-[6%]">
-          <div className="min-h-[38.5rem] rounded-[1.75rem] border border-[#ece4d7] bg-white px-9 py-10 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)]">
-            <div className="text-left">
-              <h1 className="font-serif text-[2.35rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
-                {title}
-              </h1>
-              {subtitle ? <p className="mt-3 text-base leading-relaxed text-[#526158]">{subtitle}</p> : null}
+            <div className="mt-5 grid max-w-[460px] grid-cols-3 gap-3">
+              <BenefitCard
+                icon={<IconPackage />}
+                title={
+                  <>
+                    Purchase Sound
+                    <br />
+                    healing instruments
+                  </>
+                }
+              />
+              <BenefitCard
+                icon={<IconGraduation />}
+                title={
+                  <>
+                    Access sound healing
+                    <br />
+                    courses and events
+                  </>
+                }
+              />
+              <BenefitCard
+                icon={<IconHeart />}
+                title={
+                  <>
+                    Track orders
+                    <br />
+                    and events
+                  </>
+                }
+              />
             </div>
-            <div className="mt-7">{children}</div>
-            {footer ? <div className="mt-8 border-t border-[#eadfcd] pt-6">{footer}</div> : null}
-          </div>
-          <p className="mt-5 text-right font-serif text-[1.45rem] italic leading-tight text-[#3f4f46]">
-            More than a store.
-            <br />
-            A way of life.
-          </p>
-        </section>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/store"
+                className="group inline-flex min-h-[46px] items-center justify-center gap-2 rounded-full bg-[#c28a2b] px-7 text-sm font-bold text-white shadow-[0_14px_30px_rgba(194,138,43,0.26)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ad7924]"
+              >
+                Shop now <span className="transition duration-300 group-hover:translate-x-1">→</span>
+              </Link>
+              <Link
+                href="/courses"
+                className="inline-flex min-h-[46px] items-center justify-center rounded-full border border-[#b98a3e] bg-white/75 px-7 text-sm font-bold text-[#9a6f2d] shadow-[0_10px_24px_rgba(28,53,42,0.06)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-white"
+              >
+                Explore courses
+              </Link>
+            </div>
+
+            <div className="mt-5 flex max-w-[480px] flex-wrap items-center gap-x-7 gap-y-3">
+              <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
+              <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
+              <TrustStat icon={<IconLeaf />} line1="20K+" line2="repeated customers" />
+            </div>
+          </section>
+
+          <section className="flex shrink-0 items-start gap-4">
+            <div className="flex min-h-[42rem] w-[29.5rem] flex-col rounded-[1.75rem] border border-[#ece4d7] bg-white px-8 py-9 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)] xl:w-[30.5rem]">
+              <div className="text-left">
+                <h1 className="font-serif text-[2.15rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
+                  {title}
+                </h1>
+                {subtitle ? <p className="mt-2.5 text-[15px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
+              </div>
+              <div className="mt-6 flex-1">{children}</div>
+              {footer ? <div className="mt-7 border-t border-[#eadfcd] pt-5">{footer}</div> : null}
+            </div>
+
+            {/* Peace words + tagline — same serif italic family as “More than a store” */}
+            <aside className="hidden w-[11rem] pt-16 xl:block">
+              <div className="space-y-3 font-serif text-[0.95rem] italic leading-none tracking-[0.12em] text-[#3f4f46]">
+                <p>Practice</p>
+                <p>Breathe</p>
+                <p>Heal</p>
+                <p>Belong</p>
+              </div>
+              <div className="mt-6 h-0.5 w-12 bg-[#c28a2b]" />
+              <p className="mt-5 font-serif text-[1.45rem] italic leading-tight text-[#3f4f46]">
+                More
+                <br />
+                than a store.
+                <br />
+                A way of life.
+              </p>
+            </aside>
+          </section>
+        </div>
 
         {/* Quote sits on the dark stone (no blur plate) */}
-        <p className="pointer-events-none absolute bottom-[6.2rem] left-[7%] max-w-[300px] font-serif text-[1.85rem] italic leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] xl:left-[8%] xl:text-[2rem]">
+        <p className="pointer-events-none absolute bottom-[6.2rem] left-[5%] max-w-[280px] font-serif text-[1.7rem] italic leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] xl:left-[6%] xl:text-[1.85rem]">
           “A calmer you,
           <br />
           a kinder world.”
