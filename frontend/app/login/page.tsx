@@ -108,27 +108,43 @@ function LoginForm() {
       title="Welcome back"
       subtitle="Sign in to continue your Sarveda journey."
       footer={
-        <p className="text-center text-sm">
-          <span className="text-[#b98a3e]">New here?</span>{" "}
-          <Link
-            href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-            className="font-bold text-[#c62828] hover:text-[#a51f1f]"
-          >
-            Create an account
-          </Link>
-        </p>
+        <div>
+          <div className="h-px w-full bg-[#eadfcd]" />
+          <p className="py-3.5 text-center">
+            <Link
+              href={
+                email.trim()
+                  ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
+                  : "/forgot-password"
+              }
+              className="text-sm font-medium text-[#166D46] underline underline-offset-2 hover:text-[#145a3a]"
+            >
+              Forgot password?
+            </Link>
+          </p>
+          <div className="h-px w-full bg-[#eadfcd]" />
+          <p className="mt-4 text-center text-sm">
+            <span className="text-[#526158]">New here?</span>{" "}
+            <Link
+              href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+              className="font-bold text-[#b98a3e] hover:text-[#9a6f2d]"
+            >
+              Create an account
+            </Link>
+          </p>
+        </div>
       }
     >
       <GoogleSignInButton nextPath={googleNextPath} compact />
 
-      <div className="my-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45 sm:my-5">
+      <div className="my-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink/45">
         <span className="h-px flex-1 bg-brand-cream-dark" />
         <span>OR</span>
         <span className="h-px flex-1 bg-brand-cream-dark" />
       </div>
 
       {/* Sliding mode toggle — OTP first because most customers prefer fast sign-in. */}
-      <div className="relative mb-4 rounded-full border border-brand-cream-dark bg-[#f8f0e4] p-1 shadow-[inset_0_1px_2px_rgba(16,32,26,0.04)] sm:mb-5">
+      <div className="relative mb-3 rounded-full border border-brand-cream-dark bg-[#f8f0e4] p-1 shadow-[inset_0_1px_2px_rgba(16,32,26,0.04)]">
         <div
           className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#166D46] shadow-[0_10px_24px_rgba(22,109,70,0.25)] transition-transform duration-300 ease-out"
           style={{ transform: mode === "password" ? "translateX(100%)" : "translateX(0)" }}
@@ -163,6 +179,7 @@ function LoginForm() {
             inputClass={inputClass}
             onSuccess={finishLogin}
             initialEmail={email}
+            onEmailChange={setEmail}
             compact
           />
         ) : (
@@ -195,18 +212,6 @@ function LoginForm() {
                 placeholder="Password"
                 className={inputClass}
               />
-              <p className="mt-1.5 text-right text-sm sm:mt-2">
-                <Link
-                  href={
-                    email.trim()
-                      ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
-                      : "/forgot-password"
-                  }
-                  className="font-medium text-[#166D46] hover:text-[#145a3a]"
-                >
-                  Forgot password?
-                </Link>
-              </p>
             </div>
             {passwordExpired ? (
               <p className="text-sm text-red-600" role="alert">

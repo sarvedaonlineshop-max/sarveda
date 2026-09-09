@@ -16,7 +16,6 @@ type AuthShellProps = {
 const LOGIN_BACKGROUND_ASSET = "/assets/auth/sarveda-login-background.png";
 
 const ICON_GOLD = "#b98a3e";
-const TRUST_INK = "#1c352a";
 
 function IconPackage() {
   return (
@@ -79,10 +78,10 @@ function IconBag() {
 function IconPerson() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="8" r="3.4" stroke={TRUST_INK} strokeWidth="1.55" />
+      <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.55" />
       <path
         d="M5.5 19.2c.8-3.2 3.2-5 6.5-5s5.7 1.8 6.5 5"
-        stroke={TRUST_INK}
+        stroke="currentColor"
         strokeWidth="1.55"
         strokeLinecap="round"
       />
@@ -93,11 +92,11 @@ function IconPerson() {
 function IconGlobe() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke={TRUST_INK} strokeWidth="1.55" />
-      <path d="M3 12h18" stroke={TRUST_INK} strokeWidth="1.55" />
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.55" />
+      <path d="M3 12h18" stroke="currentColor" strokeWidth="1.55" />
       <path
         d="M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z"
-        stroke={TRUST_INK}
+        stroke="currentColor"
         strokeWidth="1.55"
       />
     </svg>
@@ -109,13 +108,13 @@ function IconShield() {
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M12 3.5 5 6.2v5.3c0 4.4 2.9 7.5 7 8.8 4.1-1.3 7-4.4 7-8.8V6.2L12 3.5Z"
-        stroke={TRUST_INK}
+        stroke="currentColor"
         strokeWidth="1.55"
         strokeLinejoin="round"
       />
       <path
         d="m9 12 2 2 4-4"
-        stroke={TRUST_INK}
+        stroke="currentColor"
         strokeWidth="1.55"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -135,17 +134,31 @@ function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
   );
 }
 
-/** Trust row: dark forest ink for contrast on the photo. */
+/** Trust row under Shop now — gold ink to match the CTA mock. */
 function TrustStat({ icon, line1, line2 }: { icon: ReactNode; line1: string; line2: string }) {
   return (
     <div className="inline-flex items-center gap-2.5">
-      <span className="shrink-0">{icon}</span>
-      <span className="text-[13px] font-semibold leading-tight text-[#1c352a]">
+      <span className="shrink-0 text-[#b98a3e]">{icon}</span>
+      <span className="text-[13px] font-semibold leading-tight text-[#b98a3e]">
         {line1}
         <br />
         {line2}
       </span>
     </div>
+  );
+}
+
+function ShopNowArrow() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden className="ml-0.5">
+      <path
+        d="M4 12h14.5M13.5 6.5 20 12l-6.5 5.5"
+        stroke="currentColor"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -247,94 +260,97 @@ export function AuthShell({
       {/* Desktop landing — form + tagline anchored so “More than a store” starts ~15% from right */}
       <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
         <div
-          className="flex min-h-[calc(100vh-72px)] w-full items-stretch justify-end gap-8 px-6 pt-[6.5%] xl:gap-10"
+          className="flex min-h-[calc(100vh-72px)] w-full items-center justify-end gap-8 px-6 py-10 xl:gap-10"
           style={{ paddingRight: "max(0.75rem, calc(15% - 11rem))" }}
         >
-          <section className="flex w-full max-w-[520px] shrink-0 flex-col justify-between xl:max-w-[540px]">
-            <div>
-              <SarvedaLogo iconHeight={92} tone="onLight" />
-              <p className="mt-2.5 text-[0.72rem] font-semibold uppercase tracking-[0.42em] text-[#6f7b67]">
-                Yoga · Sound · Wellbeing
-              </p>
-              <h2 className="mt-6 font-serif text-[3.05rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] xl:text-[3.35rem]">
-                Welcome to your
-                <br />
-                Sarveda space
-              </h2>
-              <p className="mt-4 max-w-[500px] text-base leading-7 text-[#4f5f56] xl:text-[17px] xl:leading-7">
-                Track your orders, continue your courses, save your favourites, and return to the practices that
-                support your daily wellbeing.
-              </p>
+          <section className="flex w-full max-w-[520px] shrink-0 flex-col xl:max-w-[540px]">
+            <SarvedaLogo iconHeight={92} tone="onLight" />
+            <p className="mt-2.5 text-[0.72rem] font-semibold uppercase tracking-[0.42em] text-[#6f7b67]">
+              Yoga · Sound · Wellbeing
+            </p>
+            <h2 className="mt-6 font-serif text-[3.05rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] xl:text-[3.35rem]">
+              Welcome to your
+              <br />
+              Sarveda space
+            </h2>
+            <p className="mt-4 max-w-[500px] text-base leading-7 text-[#4f5f56] xl:text-[17px] xl:leading-7">
+              Track your orders, continue your courses, save your favourites, and return to the practices that
+              support your daily wellbeing.
+            </p>
 
-              <div className="mt-6 grid max-w-[500px] grid-cols-3 gap-3.5">
-                <BenefitCard
-                  icon={<IconBag />}
-                  title={
-                    <>
-                      Discover Sound
-                      <br />
-                      healing instruments
-                    </>
-                  }
-                />
-                <BenefitCard
-                  icon={<IconGraduation />}
-                  title={
-                    <>
-                      Access sound healing
-                      <br />
-                      courses and events
-                    </>
-                  }
-                />
-                <BenefitCard
-                  icon={<IconPackage />}
-                  title={
-                    <>
-                      Track orders
-                      <br />
-                      and events
-                    </>
-                  }
-                />
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3.5">
-                <Link
-                  href="/store"
-                  className="group inline-flex min-h-[50px] items-center justify-center gap-2 rounded-full bg-[#c28a2b] px-8 text-[15px] font-bold text-white shadow-[0_14px_30px_rgba(194,138,43,0.26)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ad7924]"
-                >
-                  Shop now <span className="transition duration-300 group-hover:translate-x-1">→</span>
-                </Link>
-                <Link
-                  href="/courses"
-                  className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-[#b98a3e] bg-white/75 px-8 text-[15px] font-bold text-[#9a6f2d] shadow-[0_10px_24px_rgba(28,53,42,0.06)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-white"
-                >
-                  Explore courses
-                </Link>
-              </div>
+            <div className="mt-6 grid max-w-[500px] grid-cols-3 gap-3.5">
+              <BenefitCard
+                icon={<IconBag />}
+                title={
+                  <>
+                    Discover Sound
+                    <br />
+                    healing instruments
+                  </>
+                }
+              />
+              <BenefitCard
+                icon={<IconGraduation />}
+                title={
+                  <>
+                    Access sound healing
+                    <br />
+                    courses and events
+                  </>
+                }
+              />
+              <BenefitCard
+                icon={<IconPackage />}
+                title={
+                  <>
+                    Track orders
+                    <br />
+                    and events
+                  </>
+                }
+              />
             </div>
 
-            <div className="mt-8 flex max-w-[520px] flex-wrap items-center gap-x-8 gap-y-3">
-              <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
-              <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
-              <TrustStat icon={<IconPerson />} line1="20K+" line2="repeated customers" />
+            <div className="mt-6 flex flex-wrap gap-3.5">
+              <Link
+                href="/store"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#c28a2b] px-8 text-[15px] font-bold text-white shadow-[0_14px_30px_rgba(194,138,43,0.26)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ad7924]"
+              >
+                Shop now
+                <ShopNowArrow />
+              </Link>
+              <Link
+                href="/courses"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-[#b98a3e] bg-transparent px-8 text-[15px] font-bold text-[#b98a3e] transition duration-300 hover:-translate-y-0.5 hover:bg-white/50"
+              >
+                Explore courses
+              </Link>
+            </div>
+
+            {/* Trust row sits on the next line under Shop now, slightly indented */}
+            <div className="mt-5 max-w-[500px] border-t border-[#d9cbb4]/80 pt-5 pl-7">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
+                <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
+                <TrustStat icon={<IconPerson />} line1="20K+" line2="repeated customers" />
+              </div>
             </div>
           </section>
 
-          <div className="flex min-h-[44rem] w-[30rem] shrink-0 flex-col rounded-[1.75rem] border border-[#ece4d7] bg-white px-8 py-9 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)] xl:w-[31rem]">
+          {/* Form ~10% narrower; equal vertical padding; no forced tall min-height */}
+          <div className="flex w-[27rem] shrink-0 flex-col rounded-[1.75rem] border border-[#ece4d7] bg-white px-7 py-7 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)] xl:w-[27.9rem]">
             <div className="text-left">
-              <h1 className="font-serif text-[2.15rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
+              <h1 className="font-serif text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
                 {title}
               </h1>
-              {subtitle ? <p className="mt-2.5 text-[15px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
+              {subtitle ? <p className="mt-2 text-[14px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
             </div>
-            <div className="mt-6 flex-1">{children}</div>
-            {footer ? <div className="mt-7 border-t border-[#eadfcd] pt-5">{footer}</div> : null}
+            <div className="mt-5">{children}</div>
+            {footer ? <div className="mt-4">{footer}</div> : null}
           </div>
 
-          {/* Peace words + tagline — left edge of this block sits at ~15% from right */}
-          <aside className="hidden w-[11rem] shrink-0 self-center xl:block">
+          {/* Practice/Breathe sit above; Heal lines up with Continue with Google */}
+          <aside className="hidden w-[11rem] shrink-0 self-start pt-[4.15rem] xl:block">
             <div className="space-y-3 font-serif text-[0.95rem] italic leading-none tracking-[0.12em] text-[#3f4f46]">
               <p>Practice</p>
               <p>Breathe</p>

@@ -13,6 +13,7 @@ type OtpLoginFormProps = {
   onSuccess: (user: PublicUser) => void;
   initialEmail?: string;
   compact?: boolean;
+  onEmailChange?: (email: string) => void;
 };
 
 type OtpStep = "email" | "code";
@@ -21,7 +22,8 @@ export function OtpLoginForm({
   inputClass,
   onSuccess,
   initialEmail = "",
-  compact = false
+  compact = false,
+  onEmailChange
 }: OtpLoginFormProps) {
   const [step, setStep] = useState<OtpStep>("email");
   const [email, setEmail] = useState(initialEmail);
@@ -148,7 +150,10 @@ export function OtpLoginForm({
           autoComplete="email"
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            onEmailChange?.(e.target.value);
+          }}
           placeholder="Enter your email address"
           className={inputClass}
         />
