@@ -77,53 +77,17 @@ function BenefitCard({ imageSrc, imageAlt, title }: { imageSrc: string; imageAlt
   );
 }
 
-function MobileBenefitCard({
-  imageSrc,
-  imageAlt,
-  eyebrow,
-  title
-}: {
-  imageSrc: string;
-  imageAlt: string;
-  eyebrow: string;
-  title: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-[#e7dcc9]/90 bg-white/92 px-2 py-3 text-center shadow-[0_10px_28px_rgba(28,53,42,0.1)] backdrop-blur-sm">
-      <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element -- small static auth asset */}
-        <img src={imageSrc} alt={imageAlt} width={48} height={48} className="h-full w-full object-contain" />
-      </div>
-      <p className="text-[12px] font-bold leading-tight text-[#166D46]">{eyebrow}</p>
-      <p className="mt-0.5 text-[10px] font-medium leading-snug text-[#5a6a61]">{title}</p>
-    </div>
-  );
-}
-
-function PeaceWords({ className = "", size = "desktop" }: { className?: string; size?: "desktop" | "mobile" }) {
-  const isMobile = size === "mobile";
+function PeaceWords({ className = "" }: { className?: string }) {
   return (
     <div className={className}>
-      <div
-        className={
-          isMobile
-            ? "space-y-2 font-sans text-[0.58rem] font-semibold uppercase leading-none tracking-[0.28em] text-[#3f4f46] sm:text-[0.65rem] sm:tracking-[0.32em]"
-            : "space-y-3.5 font-sans text-[0.68rem] font-semibold uppercase leading-none tracking-[0.32em] text-[#3f4f46]"
-        }
-      >
+      <div className="space-y-3.5 font-sans text-[0.68rem] font-semibold uppercase leading-none tracking-[0.32em] text-[#3f4f46]">
         <p>Practice</p>
         <p>Breathe</p>
         <p>Heal</p>
         <p>Belong</p>
       </div>
-      <div className={isMobile ? "mt-3 h-px w-8 bg-[#c28a2b]" : "mt-6 h-px w-10 bg-[#c28a2b]"} />
-      <p
-        className={
-          isMobile
-            ? "mt-3 font-serif text-[0.95rem] font-normal italic leading-[1.2] tracking-normal text-[#3f4f46] sm:text-[1.05rem]"
-            : "mt-4.5 font-serif text-[1.4rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]"
-        }
-      >
+      <div className="mt-6 h-px w-10 bg-[#c28a2b]" />
+      <p className="mt-4.5 font-serif text-[1.4rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
         More
         <br />
         than a store.
@@ -250,7 +214,7 @@ export function AuthShell({
   }
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-[#f8f1e7] font-sans text-[#10201a] xl:min-h-screen">
+    <div className="relative min-h-dvh bg-[#f8f1e7] font-sans text-[#10201a] xl:min-h-screen">
       <div
         className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat xl:block"
         style={{ backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})` }}
@@ -392,24 +356,25 @@ export function AuthShell({
         </footer>
       </div>
 
-      {/* Mobile / tablet compact landing — portrait background + stacked form */}
+      {/* Mobile / tablet — sharp portrait background; content scrolls so the bottom stays reachable */}
       <div className="relative xl:hidden">
         <div
-          className="pointer-events-none absolute inset-0 bg-cover bg-[center_top] bg-no-repeat"
+          className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${LOGIN_BACKGROUND_MOBILE_ASSET})` }}
           aria-hidden="true"
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f8f1e7]/55 via-transparent to-[#f8f1e7]/35" aria-hidden="true" />
 
-        <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-0 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
-          <header className="relative mb-5 min-h-[7.5rem] pt-1">
-            <div className="flex flex-col items-center text-center">
-              <SarvedaLogo iconHeight={compactMobile ? 52 : 48} tone="onLight" />
-              <p className="mt-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.38em] text-[#6f7b67]">
-                Yoga · Sound · Wellbeing
-              </p>
-            </div>
-            <PeaceWords size="mobile" className="absolute right-0 top-0 max-w-[6.75rem] text-left sm:right-1" />
+        <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
+          <header className="mb-5 flex flex-col items-center pt-1 text-center">
+            <SarvedaLogo iconHeight={compactMobile ? 52 : 48} tone="onLight" />
+            <p className="mt-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.38em] text-[#6f7b67]">
+              Yoga · Sound · Wellbeing
+            </p>
+            <p className="mt-3 font-serif text-[1.15rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
+              More than a store.
+              <br />
+              A way of life.
+            </p>
           </header>
 
           <div className="mx-auto w-full max-w-[26.5rem] rounded-[1.5rem] border border-[#ece4d7]/90 bg-white px-5 py-5 shadow-[0_22px_60px_rgba(28,53,42,0.18)] sm:px-6 sm:py-6">
@@ -423,40 +388,19 @@ export function AuthShell({
             {footer ? <div className="mt-4">{footer}</div> : null}
           </div>
 
-          <div className="mx-auto mt-5 grid w-full max-w-[26.5rem] grid-cols-3 gap-2.5">
-            <MobileBenefitCard
-              imageSrc="/assets/auth/benefits/instruments.png"
-              imageAlt="Sound healing instruments"
-              eyebrow="Discover"
-              title="Sound healing instruments"
-            />
-            <MobileBenefitCard
-              imageSrc="/assets/auth/benefits/courses.png"
-              imageAlt="Courses and events"
-              eyebrow="Learn"
-              title="Courses and events"
-            />
-            <MobileBenefitCard
-              imageSrc="/assets/auth/benefits/orders.png"
-              imageAlt="Orders and events"
-              eyebrow="Track"
-              title="Orders and events"
-            />
-          </div>
-
-          <div className="mx-auto mt-5 flex w-full max-w-[26.5rem] items-start justify-between gap-2 border-t border-[#166D46]/25 pt-4">
+          <div className="mx-auto mt-6 flex w-full max-w-[26.5rem] items-start justify-between gap-2 border-t border-[#166D46]/25 pt-4">
             <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
             <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
             <TrustStat icon={<IconPerson />} line1="20K+" line2="happy customers" />
           </div>
 
-          <p className="mx-auto mt-8 mb-6 max-w-[18rem] text-center font-serif text-[1.35rem] font-normal italic leading-snug tracking-normal text-[#10201a] drop-shadow-[0_1px_8px_rgba(255,255,255,0.65)] sm:text-[1.5rem]">
+          <p className="mx-auto mt-8 mb-6 max-w-[18rem] text-center font-serif text-[1.35rem] font-normal italic leading-snug tracking-normal text-[#10201a] sm:text-[1.5rem]">
             “A calmer you,
             <br />
             a kinder world.”
           </p>
 
-          <footer className="mt-auto flex items-center justify-between gap-3 border-t border-[#eadfcd] bg-white/92 px-1 py-3.5 text-[11px] text-[#526158] backdrop-blur-sm sm:text-xs">
+          <footer className="mt-2 flex items-center justify-between gap-3 border-t border-[#eadfcd]/80 bg-white/95 px-1 py-3.5 text-[11px] text-[#526158] sm:text-xs">
             <p className="shrink-0">© 2026 Sarveda. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-end gap-x-1.5 text-right">
               <Link href="/privacy" className="hover:text-[#166D46]">
