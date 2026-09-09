@@ -1,29 +1,122 @@
 /**
- * About page copy from https://sarveda.com/about/ (Elementor page — not in WP XML export).
- * Wording matches the live site; only href targets use new-site paths.
+ * About page — redesigned section copy (Aug/Sep 2026 brand narrative).
+ * Photo assets live under /public/images/about/.
  */
+
 export const aboutPage = {
-  title: "About Sarveda",
-  metaTitle: "About Sarveda- Yoga, Meditation, Sound Therapy & Mindful Living",
+  metaTitle: "About Sarveda — Instruments, Learning & Experiences",
   metaDescription:
-    "We at Sarveda believe in living a conscious, compassionate and healthy life inspired by the ancient wisdom of Yoga, Sound Therapy & Meditation",
-  html: `
-<h2>The Sarveda Journey</h2>
-<p>Sarveda, founded in 2021 by Arjun Arora, seeks to integrate creativity, philosophy, music, and holistic wellness with the vision of creating meaningful impact and fostering positive change. Technically, Arjun is an engineering graduate from IIT Madras, but his true passion lies in understanding the mechanics of life. With a vision to bridge the gap between ancient wisdom and modern scientific knowledge, Sarveda brings together various holistic wellness modalities through courses, workshops, retreats and a range of wellness accessories under one umbrella. We directly work with craftsmen, artisans and weavers to create our range of accessories, ensuring ethical sourcing and promoting traditional craftsmanship. We regularly host courses, workshops and retreats that delve into the teachings of yoga, ancient philosophies, meditation practices, and the use of sound and music for therapeutic purposed and self-discovery. We also invite wellness practioners to share their wealth of knowledge and experience through our "Jnana Series" webinars that we host regularly. You can learn more about our upcoming and past webinars and events at <a href="/events">sarveda.com/events</a> If you'd like to learn more about our upcoming programs or connect with us, you can email us directly at <a href="mailto:care@sarveda.com">care@sarveda.com</a> or write to us on our contact section at <a href="/contact">sarveda.com/contact</a> <a href="/store">sarveda.com/store</a>.</p>
-
-<h2>Our Philosophy</h2>
-<p>Holistic Wellbeing is at the heart of everything we do, be it engaging with local communities to help create our range of musical instruments and wellness accessories or collaborating with Yoga practitioners, Sound therapists and holistic wellness practioners to share their wealth of knowledge and wisdom.</p>
-<p>Staying true to the essence of Yoga, we believe that health and happiness extends beyond our individual boundaries which is why we ensure that everything we do benefits not just us but our whole planet.</p>
-
-<h2>Our Values</h2>
-
-<h3>Purpose Driven</h3>
-<p>Our vision is to create an ecosystem where everyone can benefit from the vast knowledge and wealth of Yoga, Meditation, Sound healing and holistic wellness modalities. Be it through transformational webinars, courses, retreats or bringing to you authentically and sustainably sourced accessories, we are driven to make this profound science of well being accessible and available.</p>
-
-<h3>Empowering Traditional Craftsmen, Artisans &amp; Weavers</h3>
-<p>At Sarveda, we are committed to honoring and preserving the rich cultural heritage of traditional craftsmanship. Our yoga and meditation accessories, as well as our sound healing instruments, are crafted in collaboration with skilled artisans, craftsmen, and weavers who have dedicated their lives to age-old techniques passed down through generations. By partnering with these talented individuals, we are not only reviving ancient arts but also supporting their livelihoods and promoting their exceptional craftsmanship on a global stage.</p>
-
-<h3>Supporting Rural Communities</h3>
-<p>At Sarveda, we are dedicated to empowering rural communities by integrating traditional craftsmanship with modern distribution. By operating our facility in the small town of Kollegal, near Mysore, we have created valuable job opportunities for local residents. From this modest yet dynamic hub, we have successfully shipped to over 50 countries, demonstrating how rural innovation and global reach can coexist. Through these efforts, we contribute to the growth and development of rural communities while showcasing the exceptional talents of its people to the world.</p>
-`.trim()
-};
+    "Tools, knowledge and experiences for the journey within. Sarveda brings together instruments, learning, experiences and wellbeing from Mysore, India.",
+  hero: {
+    eyebrow: "About",
+    title: "Sarveda",
+    tagline: "Tools, knowledge and experiences for the journey within.",
+    intro:
+      "Sarveda brings together instruments, learning, experiences and wellbeing to inspire exploration, creativity and a deeper relationship with ourselves.",
+    image: {
+      src: "/images/about/hero-mysore-warehouse.jpg",
+      alt: "Sarveda Mysore warehouse — singing bowls, handpans and instrument collection"
+    }
+  },
+  story: {
+    eyebrow: "Our story",
+    title: "Born from exploration",
+    paragraphs: [
+      "Founded in 2021 by Arjun Arora, Sarveda grew from a personal exploration of music, philosophy, yoga and mindful living into a platform for instruments, learning and experiences.",
+      "From our facility in Mysore, we curate and develop a wide range of sound and musical instruments and mindful-living products, working with craftspeople, makers and specialist manufacturers in India and internationally.",
+      "Alongside this, we collaborate with musicians, facilitators, teachers and practitioners to create courses, workshops, retreats, performances and wellbeing experiences.",
+      "The intention remains the same as when we began: to create meaningful tools and experiences that encourage exploration — within and beyond."
+    ]
+  },
+  whatWeDo: {
+    eyebrow: "What we do",
+    items: [
+      {
+        key: "instruments",
+        title: "Instruments & Mindful Living",
+        body: "Curated sound and musical instruments, yoga and meditation accessories, and tools for practitioners, musicians and explorers worldwide.",
+        href: "/store"
+      },
+      {
+        key: "learning",
+        title: "Learning",
+        body: "Courses and certification programs across sound therapy, music, yoga, meditation and related practices — online and in person.",
+        href: "/courses"
+      },
+      {
+        key: "experiences",
+        title: "Experiences",
+        body: "Workshops, retreats, sound experiences, performances and gatherings created with artists and facilitators.",
+        href: "/events"
+      },
+      {
+        key: "organisations",
+        title: "Wellbeing for Organisations",
+        body: "Sound, mindfulness, yoga and creative wellbeing programs for companies, hotels, spas, retreats and other organisations.",
+        href: "/corporate-wellness"
+      }
+    ]
+  },
+  founder: {
+    eyebrow: "Meet the founder",
+    name: "Arjun Arora",
+    role: "Founder, Sarveda",
+    image: {
+      src: "/images/about/founder-arjun-instruments.jpg",
+      alt: "Arjun Arora, founder of Sarveda, seated among sound instruments"
+    },
+    paragraphs: [
+      "An engineering graduate from IIT Madras, musician, yoga practitioner and lifelong explorer, Arjun's journey has moved through startups, music, philosophy and an enduring curiosity about the inner workings of human experience.",
+      "Sarveda emerged from this exploration — as a space where instruments, knowledge and experiences come together to support deeper understanding, creativity and wellbeing."
+    ],
+    closing:
+      "For Arjun, Sarveda is less about arriving at answers and more about staying curious and creating opportunities to explore."
+  },
+  team: {
+    eyebrow: "Our team",
+    title: "The people behind Sarveda",
+    paragraphs: [
+      "Sarveda is built by a team working across product development, quality, operations, customer experience, design, education, content and partnerships.",
+      "Our Mysore team works alongside a wider network of craftspeople, musicians, practitioners, educators and collaborators across India and internationally."
+    ],
+    image: {
+      src: "/images/about/team-mysore.jpg",
+      alt: "The Sarveda team"
+    },
+    caption: "The Sarveda team."
+  },
+  guides: {
+    eyebrow: "What guides us",
+    items: [
+      {
+        key: "quality",
+        title: "Quality through continuous improvement",
+        body: "We listen, learn and improve — from our instruments and courses to customer support and experiences."
+      },
+      {
+        key: "craft",
+        title: "Respect for craft",
+        body: "We value the makers, musical traditions and knowledge behind every instrument while continuing to explore new ideas from around the world."
+      },
+      {
+        key: "collaboration",
+        title: "Learning through collaboration",
+        body: "We work with musicians, practitioners, artists and thinkers to bring different perspectives and experiences together."
+      },
+      {
+        key: "curiosity",
+        title: "Creativity & Curiosity",
+        body: "Music, movement, art and exploration are fundamental expressions of being human. Curiosity remains at the heart of what we do."
+      }
+    ]
+  },
+  journey: {
+    title: "An evolving journey",
+    body: "Sarveda continues to expand, explore and create — bringing together tools, knowledge and experiences that inspire the journey within.",
+    ctas: [
+      { label: "Explore Instruments", href: "/store" },
+      { label: "Explore Courses & Experiences", href: "/courses" },
+      { label: "Work With Sarveda", href: "/corporate-wellness" }
+    ]
+  }
+} as const;
