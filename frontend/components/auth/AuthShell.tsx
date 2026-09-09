@@ -17,63 +17,6 @@ const LOGIN_BACKGROUND_ASSET = "/assets/auth/sarveda-login-background.png";
 
 const ICON_GOLD = "#b98a3e";
 
-function IconPackage() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M21 8.5V16.2a2 2 0 0 1-1.1 1.8l-6.4 3.2a2 2 0 0 1-1.8 0l-6.4-3.2A2 2 0 0 1 4 16.2V8.5a2 2 0 0 1 1.1-1.8l6.4-3.2a2 2 0 0 1 1.8 0l6.4 3.2A2 2 0 0 1 21 8.5Z"
-        stroke={ICON_GOLD}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M12 22V12" stroke={ICON_GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M3.6 7.2 12 12l8.4-4.8" stroke={ICON_GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M16.2 5.2 7.8 9.4" stroke={ICON_GOLD} strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconGraduation() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M2.5 9.2 12 4.5l9.5 4.7L12 13.9 2.5 9.2Z"
-        stroke={ICON_GOLD}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6.5 11.4v4.1c0 .7 2.5 2.5 5.5 2.5s5.5-1.8 5.5-2.5v-4.1"
-        stroke={ICON_GOLD}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M21.5 9.4v5.2" stroke={ICON_GOLD} strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/** Shopping bag — for Discover / shop instruments. */
-function IconBag() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M6.5 9h11l-.7 10.2a1.5 1.5 0 0 1-1.5 1.4H8.7a1.5 1.5 0 0 1-1.5-1.4L6.5 9Z"
-        stroke={ICON_GOLD}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9 9V7.2A3 3 0 0 1 12 4.2 3 3 0 0 1 15 7.2V9"
-        stroke={ICON_GOLD}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 /** Person / profile — for repeated customers. */
 function IconPerson() {
   return (
@@ -123,11 +66,12 @@ function IconShield() {
   );
 }
 
-function BenefitCard({ icon, title }: { icon: ReactNode; title: ReactNode }) {
+function BenefitCard({ imageSrc, imageAlt, title }: { imageSrc: string; imageAlt: string; title: ReactNode }) {
   return (
-    <div className="group rounded-xl border border-[#e7dcc9]/90 bg-white/85 px-3.5 py-4 text-center shadow-[0_10px_28px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_18px_44px_rgba(28,53,42,0.14)]">
-      <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center transition duration-300 group-hover:scale-105">
-        {icon}
+    <div className="group rounded-xl border border-[#e7dcc9]/90 bg-white/85 px-3 py-3.5 text-center shadow-[0_10px_28px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_18px_44px_rgba(28,53,42,0.14)]">
+      <div className="mx-auto mb-2.5 flex h-14 w-14 items-center justify-center overflow-hidden transition duration-300 group-hover:scale-105">
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static auth asset */}
+        <img src={imageSrc} alt={imageAlt} width={56} height={56} className="h-full w-full object-contain" />
       </div>
       <div className="text-[13px] font-semibold leading-snug text-[#10201a]">{title}</div>
     </div>
@@ -280,7 +224,8 @@ export function AuthShell({
 
             <div className="mt-6 grid max-w-[500px] grid-cols-3 gap-3.5">
               <BenefitCard
-                icon={<IconBag />}
+                imageSrc="/assets/auth/benefits/instruments.png"
+                imageAlt="Sound healing instruments"
                 title={
                   <>
                     Discover Sound
@@ -290,7 +235,8 @@ export function AuthShell({
                 }
               />
               <BenefitCard
-                icon={<IconGraduation />}
+                imageSrc="/assets/auth/benefits/courses.png"
+                imageAlt="Sound healing courses and events"
                 title={
                   <>
                     Access sound healing
@@ -300,7 +246,8 @@ export function AuthShell({
                 }
               />
               <BenefitCard
-                icon={<IconPackage />}
+                imageSrc="/assets/auth/benefits/orders.png"
+                imageAlt="Track orders and events"
                 title={
                   <>
                     Track orders
