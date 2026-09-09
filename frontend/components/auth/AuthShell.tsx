@@ -15,8 +15,6 @@ type AuthShellProps = {
 
 const LOGIN_BACKGROUND_ASSET = "/assets/auth/sarveda-login-background.png";
 
-const ICON_GOLD = "#b98a3e";
-
 /** Person / profile — for repeated customers. */
 function IconPerson() {
   return (
@@ -204,8 +202,12 @@ export function AuthShell({
       {/* Desktop: logo + form share the same top edge; peace words sit beside the form */}
       <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
         <div
-          className="flex min-h-[calc(100vh-72px)] w-full items-start justify-end gap-7 px-6 pt-10 xl:gap-9"
-          style={{ paddingRight: "max(0.75rem, calc(15% - 11rem))" }}
+          className="flex min-h-[calc(100vh-72px)] w-full items-start justify-end gap-7 px-6 xl:gap-9"
+          style={{
+            paddingRight: "max(0.75rem, calc(15% - 11rem))",
+            /* ~1in lower than before; scales gently with viewport height across desktops */
+            paddingTop: "clamp(5.5rem, calc(1in + 2.5vh), 9rem)"
+          }}
         >
           <section className="flex w-full max-w-[520px] shrink-0 flex-col xl:max-w-[540px]">
             <SarvedaLogo iconHeight={92} tone="onLight" />
@@ -217,7 +219,7 @@ export function AuthShell({
               <br />
               Sarveda space
             </h2>
-            <p className="mt-4 max-w-[500px] text-base leading-7 text-[#4f5f56] xl:text-[17px] xl:leading-7">
+            <p className="mt-4 max-w-[500px] font-serif text-[1.15rem] font-normal italic leading-[1.55] tracking-normal text-[#3f4f46] xl:text-[1.25rem] xl:leading-[1.55]">
               Track your orders, continue your courses, save your favourites, and return to the practices that
               support your daily wellbeing.
             </p>
