@@ -135,13 +135,6 @@ function LoginForm() {
               Create an account
             </Link>
           </p>
-          {!adminOnly ? (
-            <p className="mt-2 text-center text-sm">
-              <Link href="/store" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">
-                Shop as guest
-              </Link>
-            </p>
-          ) : null}
         </div>
       }
     >

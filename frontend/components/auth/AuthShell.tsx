@@ -399,10 +399,10 @@ export function AuthShell({
               {footer ? <div className="mt-2">{footer}</div> : null}
             </div>
             <p
-              className="mt-4 text-center font-serif text-[1.15rem] font-semibold italic leading-snug tracking-normal text-[#c28a2b] sm:text-[1.25rem]"
+              className="mt-4 text-center font-serif text-[1.15rem] font-semibold italic leading-snug tracking-normal text-[#c62828] sm:text-[1.25rem]"
               style={{
                 textShadow:
-                  "0 0 10px rgba(194,138,43,0.55), 0 0 22px rgba(194,138,43,0.4), 0 0 36px rgba(255,220,140,0.35), 0 1px 2px rgba(28,53,42,0.25)"
+                  "0 0 10px rgba(198,40,40,0.55), 0 0 22px rgba(198,40,40,0.4), 0 0 36px rgba(255,160,160,0.35), 0 1px 2px rgba(28,53,42,0.25)"
               }}
             >
               More than a store. A way of life.
