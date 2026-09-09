@@ -15,10 +15,10 @@ type AuthShellProps = {
 
 const LOGIN_BACKGROUND_ASSET = "/assets/auth/sarveda-login-background.png";
 
-/** Person / profile — for repeated customers. */
+/** Person / profile — for repeat customers. */
 function IconPerson() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.55" />
       <path
         d="M5.5 19.2c.8-3.2 3.2-5 6.5-5s5.7 1.8 6.5 5"
@@ -32,7 +32,7 @@ function IconPerson() {
 
 function IconGlobe() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.55" />
       <path d="M3 12h18" stroke="currentColor" strokeWidth="1.55" />
       <path
@@ -46,7 +46,7 @@ function IconGlobe() {
 
 function IconShield() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M12 3.5 5 6.2v5.3c0 4.4 2.9 7.5 7 8.8 4.1-1.3 7-4.4 7-8.8V6.2L12 3.5Z"
         stroke="currentColor"
@@ -66,22 +66,22 @@ function IconShield() {
 
 function BenefitCard({ imageSrc, imageAlt, title }: { imageSrc: string; imageAlt: string; title: ReactNode }) {
   return (
-    <div className="group rounded-xl border border-[#e7dcc9]/90 bg-white/85 px-3 py-3.5 text-center shadow-[0_10px_28px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_18px_44px_rgba(28,53,42,0.14)]">
-      <div className="mx-auto mb-2.5 flex h-14 w-14 items-center justify-center overflow-hidden transition duration-300 group-hover:scale-105">
+    <div className="group flex min-h-[9.25rem] flex-col justify-center rounded-xl border border-[#e7dcc9]/90 bg-white/85 px-3 py-3.5 text-center shadow-[0_10px_28px_rgba(28,53,42,0.07)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-[#c89435]/70 hover:bg-white hover:shadow-[0_18px_44px_rgba(28,53,42,0.14)]">
+      <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center overflow-hidden transition duration-300 group-hover:scale-105">
         {/* eslint-disable-next-line @next/next/no-img-element -- small static auth asset */}
-        <img src={imageSrc} alt={imageAlt} width={56} height={56} className="h-full w-full object-contain" />
+        <img src={imageSrc} alt={imageAlt} width={64} height={64} className="h-full w-full object-contain" />
       </div>
-      <div className="text-[13px] font-semibold leading-snug text-[#10201a]">{title}</div>
+      <div className="text-[12.5px] font-semibold leading-[1.28] text-[#10201a]">{title}</div>
     </div>
   );
 }
 
-/** Trust row under Shop now — forest green like the original mock. */
+/** Trust row under Shop now — deliberately quieter than the primary actions. */
 function TrustStat({ icon, line1, line2 }: { icon: ReactNode; line1: string; line2: string }) {
   return (
-    <div className="inline-flex items-center gap-2.5">
-      <span className="shrink-0 text-[#166D46]">{icon}</span>
-      <span className="text-[13px] font-semibold leading-tight text-[#166D46]">
+    <div className="inline-flex items-center gap-2">
+      <span className="shrink-0 text-[#166D46]/90">{icon}</span>
+      <span className="text-[12.5px] font-semibold leading-tight text-[#166D46]/90">
         {line1}
         <br />
         {line2}
@@ -192,39 +192,38 @@ export function AuthShell({
   }
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#f8f1e7] font-sans text-[#10201a] lg:min-h-screen">
+    <div className="relative min-h-dvh overflow-x-hidden bg-[#f8f1e7] font-sans text-[#10201a] xl:min-h-screen">
       <div
-        className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat lg:block"
+        className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat xl:block"
         style={{ backgroundImage: `url(${LOGIN_BACKGROUND_ASSET})` }}
         aria-hidden="true"
       />
 
-      {/* Desktop: logo + form share the same top edge; peace words sit beside the form */}
-      <div className="relative hidden min-h-screen w-full pb-[72px] lg:block">
+      {/* Scenic desktop composition starts at xl; tablet/laptop widths use the safer compact shell. */}
+      <div className="relative hidden min-h-screen w-full pb-[72px] xl:block">
         <div
-          className="flex min-h-[calc(100vh-72px)] w-full items-start justify-end gap-7 px-6 xl:gap-9"
+          className="flex min-h-[calc(100vh-72px)] w-full items-start justify-end gap-5 px-5 2xl:gap-7"
           style={{
-            paddingRight: "max(0.75rem, calc(15% - 11rem))",
-            /* ~1in lower than before; scales gently with viewport height across desktops */
-            paddingTop: "clamp(5.5rem, calc(1in + 2.5vh), 9rem)"
+            paddingRight: "max(1rem, calc(10% - 6rem))",
+            paddingTop: "clamp(4.6rem, calc(0.72in + 1.8vh), 7rem)"
           }}
         >
-          <section className="flex w-full max-w-[520px] shrink-0 flex-col xl:max-w-[540px]">
-            <SarvedaLogo iconHeight={92} tone="onLight" />
-            <p className="mt-2.5 text-[0.72rem] font-semibold uppercase tracking-[0.42em] text-[#6f7b67]">
+          <section className="flex w-full max-w-[500px] shrink-0 flex-col 2xl:max-w-[540px]">
+            <SarvedaLogo iconHeight={88} tone="onLight" />
+            <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-[#6f7b67]">
               Yoga · Sound · Wellbeing
             </p>
-            <h2 className="mt-6 font-serif text-[3.05rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] xl:text-[3.35rem]">
+            <h2 className="mt-5 font-serif text-[2.85rem] font-semibold leading-[1.02] tracking-[-0.05em] text-[#10201a] 2xl:text-[3.25rem]">
               Welcome to your
               <br />
               Sarveda space
             </h2>
-            <p className="mt-4 max-w-[500px] font-serif text-[1.15rem] font-normal italic leading-[1.55] tracking-normal text-[#3f4f46] xl:text-[1.25rem] xl:leading-[1.55]">
+            <p className="mt-3.5 max-w-[500px] font-serif text-[1.08rem] font-normal italic leading-[1.5] tracking-normal text-[#3f4f46] 2xl:text-[1.18rem] 2xl:leading-[1.55]">
               Track your orders, continue your courses, save your favourites, and return to the practices that
               support your daily wellbeing.
             </p>
 
-            <div className="mt-6 grid max-w-[500px] grid-cols-3 gap-3.5">
+            <div className="mt-5 grid max-w-[520px] grid-cols-3 gap-2.5 2xl:gap-3.5">
               <BenefitCard
                 imageSrc="/assets/auth/benefits/instruments.png"
                 imageAlt="Sound healing instruments"
@@ -260,57 +259,55 @@ export function AuthShell({
               />
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3.5">
+            <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 href="/store"
-                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#c28a2b] px-8 text-[15px] font-bold text-white shadow-[0_14px_30px_rgba(194,138,43,0.26)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ad7924]"
+                className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#c28a2b] px-7 text-[14px] font-bold text-white shadow-[0_14px_30px_rgba(194,138,43,0.26)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ad7924]"
               >
                 Shop now
                 <ShopNowArrow />
               </Link>
               <Link
                 href="/courses"
-                className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-[#b98a3e] bg-transparent px-8 text-[15px] font-bold text-[#b98a3e] transition duration-300 hover:-translate-y-0.5 hover:bg-white/50"
+                className="inline-flex min-h-[46px] items-center justify-center rounded-full border border-[#b98a3e] bg-transparent px-7 text-[14px] font-bold text-[#b98a3e] transition duration-300 hover:-translate-y-0.5 hover:bg-white/50"
               >
                 Explore courses
               </Link>
             </div>
 
-            {/* Trust row under Shop now — green icons + copy, slightly indented */}
-            <div className="mt-5 max-w-[500px] border-t border-[#166D46]/30 pt-5 pl-7">
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div className="mt-4.5 max-w-[500px] border-t border-[#166D46]/25 pt-4 pl-5">
+              <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5">
                 <TrustStat icon={<IconGlobe />} line1="Worldwide" line2="shipping" />
                 <TrustStat icon={<IconShield />} line1="Secure" line2="checkout" />
-                <TrustStat icon={<IconPerson />} line1="20K+" line2="repeated customers" />
+                <TrustStat icon={<IconPerson />} line1="20K+" line2="happy customers" />
               </div>
             </div>
           </section>
 
-          {/* Form top aligns with logo; aside is locked beside the form (not the viewport) */}
-          <div className="flex shrink-0 items-start gap-7 xl:gap-8">
-            <div className="flex min-h-[40.5rem] w-[27rem] flex-col rounded-[1.75rem] border border-[#ece4d7] bg-white px-7 py-8 shadow-[0_28px_70px_rgba(28,53,42,0.18),0_48px_140px_rgba(28,53,42,0.22)] xl:w-[27.9rem]">
+          <div className="flex shrink-0 items-start gap-5 2xl:gap-6">
+            <div className="flex w-[25.75rem] flex-col rounded-[1.65rem] border border-[#ece4d7] bg-white px-6 py-7 shadow-[0_24px_64px_rgba(28,53,42,0.16),0_44px_120px_rgba(28,53,42,0.18)] transition-all duration-300 2xl:w-[26.5rem] 2xl:px-7">
               <div className="text-left">
-                <h1 className="font-serif text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
+                <h1 className="font-serif text-[1.9rem] font-semibold leading-tight tracking-[-0.05em] text-[#10201a]">
                   {title}
                 </h1>
                 {subtitle ? <p className="mt-2 text-[14px] leading-relaxed text-[#526158]">{subtitle}</p> : null}
               </div>
-              <div className="mt-5 flex flex-1 flex-col">
-                <div className="flex-1">{children}</div>
-                {footer ? <div className="mt-5">{footer}</div> : null}
+              <div className="mt-4.5 flex flex-col">
+                <div>{children}</div>
+                {footer ? <div className="mt-4.5">{footer}</div> : null}
               </div>
             </div>
 
-            {/* UPPERCASE sans like original; HEAL lines up with Continue with Google */}
-            <aside className="hidden w-[10.5rem] shrink-0 pt-[4.4rem] xl:block">
-              <div className="space-y-3.5 font-sans text-[0.7rem] font-semibold uppercase leading-none tracking-[0.34em] text-[#3f4f46]">
+            {/* Decorative copy is reserved for roomy desktop widths so it never crowds the form. */}
+            <aside className="hidden w-[9.5rem] shrink-0 pt-[4.2rem] 2xl:block">
+              <div className="space-y-3.5 font-sans text-[0.68rem] font-semibold uppercase leading-none tracking-[0.32em] text-[#3f4f46]">
                 <p>Practice</p>
                 <p>Breathe</p>
                 <p>Heal</p>
                 <p>Belong</p>
               </div>
-              <div className="mt-7 h-px w-11 bg-[#c28a2b]" />
-              <p className="mt-5 font-serif text-[1.5rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
+              <div className="mt-6 h-px w-10 bg-[#c28a2b]" />
+              <p className="mt-4.5 font-serif text-[1.4rem] font-normal italic leading-[1.25] tracking-normal text-[#3f4f46]">
                 More
                 <br />
                 than a store.
@@ -321,14 +318,12 @@ export function AuthShell({
           </div>
         </div>
 
-        {/* Quote sits on the dark stone (no blur plate) */}
-        <p className="pointer-events-none absolute bottom-[6.2rem] left-[5%] max-w-[280px] font-serif text-[1.7rem] italic leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] xl:left-[6%] xl:text-[1.85rem]">
+        <p className="pointer-events-none absolute bottom-[6rem] left-[5%] max-w-[280px] font-serif text-[1.6rem] italic leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] 2xl:left-[6%] 2xl:text-[1.8rem]">
           “A calmer you,
           <br />
           a kinder world.”
         </p>
 
-        {/* Solid footer bar — always visible */}
         <footer className="absolute bottom-0 left-0 right-0 z-20 flex h-[64px] items-center justify-between border-t border-[#eadfcd] bg-white px-[4.5%] text-sm text-[#526158]">
           <p>© 2026 Sarveda. All rights reserved.</p>
           <div className="flex items-center gap-5">
@@ -352,8 +347,8 @@ export function AuthShell({
         </footer>
       </div>
 
-      {/* Mobile */}
-      <div className="relative flex min-h-dvh items-center justify-center px-4 py-6 sm:px-6 lg:hidden">
+      {/* Mobile and tablet/laptop compact layout, including the 1024–1279px transition zone. */}
+      <div className="relative flex min-h-dvh items-center justify-center px-4 py-6 sm:px-6 xl:hidden">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute -left-28 -top-28 h-80 w-80 rounded-full bg-[#d8ebd8]/70 blur-3xl" />
           <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#f4dc9b]/20 blur-3xl" />
