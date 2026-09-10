@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { requireAdmin } from "../../middleware/admin";
 import { validateBody } from "../../middleware/validate";
 import * as h from "./crm.handlers";
 import {
@@ -26,9 +27,13 @@ import {
 } from "./crm.schemas";
 
 /**
- * Mounted at /api/admin/crm — parent router already applies requireAdmin + logAdminMutations.
+ * Mounted at /api/admin/crm.
+ * Parent admin router already applies requireAdmin + logAdminMutations.
+ * Re-apply requireAdmin here so crmAdminRoutes cannot become public if remounted elsewhere
+ * (same defensive pattern as enquiries admin routes).
  */
 const router = Router();
+router.use(requireAdmin);
 
 router.get("/pipelines", h.listPipelines);
 router.post("/pipelines/seed-default", h.seedDefaultPipeline);

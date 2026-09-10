@@ -207,12 +207,19 @@ export async function requireDefaultPipelineStage(
   pipelineId?: string | null,
   stageId?: string | null
 ) {
+  // Explicit pair: must belong together AND be an active OPEN stage for conversion/defaulting.
   if (pipelineId && stageId) {
     const stage = await tx.crmPipelineStage.findFirst({
       where: { id: stageId, pipelineId },
       include: { pipeline: true }
     });
     if (!stage) throw crmBadRequest("stageId does not belong to pipelineId");
+    if (!stage.isActive || stage.stageType !== "OPEN") {
+      throw crmConflict(
+        "Conversion requires an active OPEN pipeline stage",
+        "NO_OPEN_STAGE"
+      );
+    }
     return stage;
   }
 
@@ -223,19 +230,37 @@ export async function requireDefaultPipelineStage(
     (await tx.crmPipeline.findFirst({ where: { isActive: true }, orderBy: { createdAt: "asc" } }));
 
   if (!pipeline) throw crmBadRequest("No CRM pipeline configured — seed a default pipeline first");
+  if (!pipeline.isActive) {
+    throw crmConflict("Selected CRM pipeline is inactive", "PIPELINE_INACTIVE");
+  }
 
-  const stage =
-    (stageId
-      ? await tx.crmPipelineStage.findFirst({ where: { id: stageId, pipelineId: pipeline.id } })
-      : await tx.crmPipelineStage.findFirst({
-          where: { pipelineId: pipeline.id, isActive: true, stageType: "OPEN" },
-          orderBy: { position: "asc" }
-        })) ??
-    (await tx.crmPipelineStage.findFirst({
-      where: { pipelineId: pipeline.id, isActive: true },
-      orderBy: { position: "asc" }
-    }));
+  if (stageId) {
+    const stage = await tx.crmPipelineStage.findFirst({
+      where: { id: stageId, pipelineId: pipeline.id },
+      include: { pipeline: true }
+    });
+    if (!stage) throw crmBadRequest("stageId does not belong to selected pipeline");
+    if (!stage.isActive || stage.stageType !== "OPEN") {
+      throw crmConflict(
+        "Conversion requires an active OPEN pipeline stage",
+        "NO_OPEN_STAGE"
+      );
+    }
+    return stage;
+  }
 
-  if (!stage) throw crmBadRequest("Pipeline has no stages");
-  return { ...stage, pipeline };
+  const openStage = await tx.crmPipelineStage.findFirst({
+    where: { pipelineId: pipeline.id, isActive: true, stageType: "OPEN" },
+    orderBy: { position: "asc" },
+    include: { pipeline: true }
+  });
+
+  if (!openStage) {
+    throw crmConflict(
+      "No active OPEN stage available on the selected pipeline",
+      "NO_OPEN_STAGE"
+    );
+  }
+
+  return openStage;
 }

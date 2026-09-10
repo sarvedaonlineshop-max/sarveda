@@ -2,7 +2,7 @@ import type { CrmDealStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { writeAdminActivity } from "../../middleware/adminActivity";
-import { crmBadRequest, crmNotFound } from "./crm-errors";
+import { crmBadRequest, crmConflict, crmNotFound } from "./crm-errors";
 import { nextCrmNumberInTx } from "./crm-number";
 import {
   assertAdminUserId,
@@ -57,7 +57,8 @@ function closureFieldsForStageType(
     status: "OPEN",
     wonAt: null,
     lostAt: null,
-    closedAt: null
+    closedAt: null,
+    lostReason: null
   };
 }
 
@@ -516,6 +517,34 @@ export async function linkQuotation(
   });
   if (!quotation) throw crmNotFound("Quotation");
 
+  if (deal.quotationId && deal.quotationId !== quotationId) {
+    throw crmConflict(
+      "Deal already has a different quotation linked; unlink or keep the existing link",
+      "QUOTATION_ALREADY_LINKED"
+    );
+  }
+
+  if (deal.quotationId === quotationId) {
+    return {
+      deal: await prisma.crmDeal.findUniqueOrThrow({
+        where: { id: dealId },
+        include: {
+          quotation: {
+            select: {
+              id: true,
+              quoteNumber: true,
+              status: true,
+              grandTotalInPaise: true,
+              currency: true
+            }
+          }
+        }
+      }),
+      quotation,
+      idempotent: true
+    };
+  }
+
   const updated = await prisma.$transaction(async (tx) => {
     const d = await tx.crmDeal.update({
       where: { id: dealId },
@@ -552,7 +581,7 @@ export async function linkQuotation(
     return d;
   });
 
-  return { deal: updated, quotation };
+  return { deal: updated, quotation, idempotent: false };
 }
 
 export async function linkOrder(
@@ -574,6 +603,35 @@ export async function linkOrder(
     }
   });
   if (!order) throw crmNotFound("Order");
+
+  if (deal.orderId && deal.orderId !== orderId) {
+    throw crmConflict(
+      "Deal already has a different order linked; unlink or keep the existing link",
+      "ORDER_ALREADY_LINKED"
+    );
+  }
+
+  if (deal.orderId === orderId) {
+    return {
+      deal: await prisma.crmDeal.findUniqueOrThrow({
+        where: { id: dealId },
+        include: {
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              paymentStatus: true,
+              grandTotalInPaise: true,
+              currency: true
+            }
+          }
+        }
+      }),
+      order,
+      idempotent: true
+    };
+  }
 
   // Link only — never mutate order lifecycle / payments / accounting.
   const updated = await prisma.$transaction(async (tx) => {
@@ -624,5 +682,5 @@ export async function linkOrder(
     entityId: dealId
   });
 
-  return { deal: updated, order };
+  return { deal: updated, order, idempotent: false };
 }

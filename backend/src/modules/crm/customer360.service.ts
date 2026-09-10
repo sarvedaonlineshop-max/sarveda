@@ -204,7 +204,8 @@ export async function getContact360(contactId: string) {
     communication: { enquiryThreads },
     support: { complaints },
     accounting: {
-      note: "Read-only estimates from linked orders/payments by email — not a CRM ledger",
+      note: "Read-only commercial estimates matched by email — not authoritative accounting/GL data",
+      estimate: true,
       invoicedAmountInPaise: commercial.totalSalesInPaise,
       paidAmountInPaise: commercial.paidAmountInPaise,
       outstandingAmountInPaise: commercial.outstandingAmountInPaise
@@ -262,7 +263,8 @@ export async function getAccount360(accountId: string) {
     leads: account.convertedLeads,
     sales: commercial,
     accounting: {
-      note: "Read-only estimates from linked orders/payments by email — not a CRM ledger",
+      note: "Read-only commercial estimates matched by email — not authoritative accounting/GL data",
+      estimate: true,
       invoicedAmountInPaise: commercial.totalSalesInPaise,
       paidAmountInPaise: commercial.paidAmountInPaise,
       outstandingAmountInPaise: commercial.outstandingAmountInPaise

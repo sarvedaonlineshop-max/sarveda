@@ -190,6 +190,18 @@ describe("CRM foundation", () => {
     expect(lostDeal.status).toBe("LOST");
     expect(lostDeal.lostAt).toBeTruthy();
     expect(lostDeal.wonAt).toBeNull();
+    expect(lostDeal.lostReason).toBe("Budget");
+
+    const reopened = await dealService.updateDeal(
+      deal.id,
+      { stageId: stage.id, pipelineId: pipeline.id },
+      actor
+    );
+    expect(reopened.status).toBe("OPEN");
+    expect(reopened.lostAt).toBeNull();
+    expect(reopened.wonAt).toBeNull();
+    expect(reopened.closedAt).toBeNull();
+    expect(reopened.lostReason).toBeNull();
   });
 
   it("converts lead transactionally and rejects double conversion; no journal rows", async () => {
@@ -340,7 +352,8 @@ describe("CRM foundation", () => {
     const data = await customer360.getContact360(converted.convertedContactId!);
     expect(data.contact.id).toBe(converted.convertedContactId);
     expect(data.sales).toBeTruthy();
-    expect(data.accounting?.note).toContain("not a CRM ledger");
+    expect(data.accounting?.note).toMatch(/authoritative accounting\/GL/);
+    expect(data.accounting?.estimate).toBe(true);
   });
 
   it("deal product does not alter inventory", async () => {
@@ -398,5 +411,142 @@ describe("CRM foundation", () => {
       actor.id
     );
     expect(note.type).toBe("NOTE");
+  });
+
+  it("rejects conversion when pipeline has no OPEN stage and leaves no partials", async () => {
+    const pipeline = await pipelineService.createPipeline({
+      name: `${PREFIX} Closed-Only Pipeline`,
+      isDefault: false
+    });
+    await pipelineService.createStage(pipeline.id, {
+      name: `${PREFIX} Only Won`,
+      stageType: "WON",
+      probabilityPercent: 100
+    });
+    await pipelineService.createStage(pipeline.id, {
+      name: `${PREFIX} Only Lost`,
+      stageType: "LOST",
+      probabilityPercent: 0
+    });
+
+    const lead = await leadService.createLead(
+      { name: `${PREFIX} No Open Convert`, email: `${PREFIX}-noopen@example.com` },
+      actor
+    );
+    const accountsBefore = await prisma.crmAccount.count({
+      where: { name: { contains: PREFIX } }
+    });
+
+    await expect(
+      leadService.convertLead(
+        lead.id,
+        { createDeal: true, deal: { pipelineId: pipeline.id } },
+        actor
+      )
+    ).rejects.toMatchObject({ code: "NO_OPEN_STAGE", statusCode: 409 });
+
+    const after = await prisma.crmLead.findUnique({ where: { id: lead.id } });
+    expect(after?.status).toBe("NEW");
+    expect(after?.convertedAt).toBeNull();
+    expect(after?.convertedAccountId).toBeNull();
+    expect(after?.convertedContactId).toBeNull();
+    expect(after?.convertedDealId).toBeNull();
+    expect(
+      await prisma.crmAccount.count({ where: { name: { contains: PREFIX } } })
+    ).toBe(accountsBefore);
+  });
+
+  it("concurrent conversion allows only one success", async () => {
+    const lead = await leadService.createLead(
+      { name: `${PREFIX} Concurrent Lead`, email: `${PREFIX}-concurrent@example.com` },
+      actor
+    );
+    const results = await Promise.allSettled([
+      leadService.convertLead(lead.id, {}, actor),
+      leadService.convertLead(lead.id, {}, actor)
+    ]);
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled.length).toBe(1);
+    expect(rejected.length).toBe(1);
+    if (rejected[0]?.status === "rejected") {
+      expect((rejected[0].reason as { code?: string }).code).toBe("LEAD_ALREADY_CONVERTED");
+    }
+    const deals = await prisma.crmDeal.count({ where: { sourceLeadId: lead.id } });
+    expect(deals).toBe(1);
+  });
+
+  it("quotation/order link is idempotent; different link returns 409", async () => {
+    const seeded = await pipelineService.ensureDefaultSalesPipeline();
+    const stage = seeded.pipeline.stages.find((s) => s.stageType === "OPEN")!;
+    const deal = await dealService.createDeal(
+      {
+        name: `${PREFIX} Link Conflict Deal`,
+        pipelineId: seeded.pipeline.id,
+        stageId: stage.id
+      },
+      actor
+    );
+    const q1 = await prisma.quotation.create({
+      data: {
+        quoteNumber: `QT-CRM-A-${Date.now()}`,
+        customerName: `${PREFIX} Buyer A`,
+        email: `${PREFIX}-linka@example.com`,
+        billingAddress: {},
+        shippingAddress: {},
+        subtotalInPaise: 1000,
+        grandTotalInPaise: 1000
+      }
+    });
+    const q2 = await prisma.quotation.create({
+      data: {
+        quoteNumber: `QT-CRM-B-${Date.now()}`,
+        customerName: `${PREFIX} Buyer B`,
+        email: `${PREFIX}-linkb@example.com`,
+        billingAddress: {},
+        shippingAddress: {},
+        subtotalInPaise: 2000,
+        grandTotalInPaise: 2000
+      }
+    });
+    const first = await dealService.linkQuotation(deal.id, q1.id, actor);
+    expect(first.idempotent).toBe(false);
+    const again = await dealService.linkQuotation(deal.id, q1.id, actor);
+    expect(again.idempotent).toBe(true);
+    await expect(dealService.linkQuotation(deal.id, q2.id, actor)).rejects.toMatchObject({
+      code: "QUOTATION_ALREADY_LINKED",
+      statusCode: 409
+    });
+
+    const o1 = await prisma.order.create({
+      data: {
+        orderNumber: `SRV-CRM-A-${Date.now()}`,
+        email: `${PREFIX}-linka@example.com`,
+        phone: "9999900011",
+        status: "PAID",
+        paymentStatus: "CAPTURED",
+        subtotalInPaise: 1000,
+        grandTotalInPaise: 1000
+      }
+    });
+    const o2 = await prisma.order.create({
+      data: {
+        orderNumber: `SRV-CRM-B-${Date.now()}`,
+        email: `${PREFIX}-linkb@example.com`,
+        phone: "9999900012",
+        status: "PAID",
+        paymentStatus: "CAPTURED",
+        subtotalInPaise: 2000,
+        grandTotalInPaise: 2000
+      }
+    });
+    const linkedO = await dealService.linkOrder(deal.id, o1.id, actor);
+    expect(linkedO.idempotent).toBe(false);
+    const linkedAgain = await dealService.linkOrder(deal.id, o1.id, actor);
+    expect(linkedAgain.idempotent).toBe(true);
+    await expect(dealService.linkOrder(deal.id, o2.id, actor)).rejects.toMatchObject({
+      code: "ORDER_ALREADY_LINKED",
+      statusCode: 409
+    });
   });
 });

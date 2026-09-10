@@ -337,13 +337,22 @@ export async function convertLead(
   input: ConvertLeadInput,
   actor: { id: string; email: string; name?: string | null }
 ) {
-  const lead = await prisma.crmLead.findUnique({ where: { id } });
-  if (!lead) throw crmNotFound("Lead");
-  if (lead.status === "CONVERTED" || lead.convertedAt) {
-    throw crmConflict("Lead already converted", "LEAD_ALREADY_CONVERTED");
-  }
-
   const result = await prisma.$transaction(async (tx) => {
+    // Authoritative lock + re-check inside the transaction (prevents concurrent double convert).
+    const locked = await tx.$queryRaw<Array<{ id: string; status: string; convertedAt: Date | null }>>`
+      SELECT id, status::text AS status, "convertedAt"
+      FROM "CrmLead"
+      WHERE id = ${id}::uuid
+      FOR UPDATE
+    `;
+    const leadRow = locked[0];
+    if (!leadRow) throw crmNotFound("Lead");
+    if (leadRow.status === "CONVERTED" || leadRow.convertedAt) {
+      throw crmConflict("Lead already converted", "LEAD_ALREADY_CONVERTED");
+    }
+
+    const lead = await tx.crmLead.findUniqueOrThrow({ where: { id } });
+
     let accountId = input.existingAccountId ?? null;
     let contactId = input.existingContactId ?? null;
     let dealId: string | null = null;
@@ -405,6 +414,12 @@ export async function convertLead(
         input.deal?.pipelineId,
         input.deal?.stageId
       );
+      if (stage.stageType !== "OPEN") {
+        throw crmConflict(
+          "Conversion requires an active OPEN pipeline stage",
+          "NO_OPEN_STAGE"
+        );
+      }
       const dealNumber = await nextCrmNumberInTx(tx, "DEAL");
       const deal = await tx.crmDeal.create({
         data: {

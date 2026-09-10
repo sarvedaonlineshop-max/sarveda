@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { CrmError } from "./crm-errors";
+import { requireUuidParam } from "./crm-params";
 import * as accountService from "./account.service";
 import * as activityService from "./activity.service";
 import * as contactService from "./contact.service";
@@ -96,7 +97,7 @@ export async function createPipeline(req: Request, res: Response, next: NextFunc
 
 export async function getPipeline(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await pipelineService.getPipeline(req.params.id);
+    const data = await pipelineService.getPipeline(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -106,7 +107,7 @@ export async function getPipeline(req: Request, res: Response, next: NextFunctio
 export async function updatePipeline(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updatePipelineSchema, req.body);
-    const data = await pipelineService.updatePipeline(req.params.id, body);
+    const data = await pipelineService.updatePipeline(requireUuidParam(req.params.id), body);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -116,7 +117,10 @@ export async function updatePipeline(req: Request, res: Response, next: NextFunc
 export async function createStage(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(createStageSchema, req.body);
-    const data = await pipelineService.createStage(req.params.pipelineId, body);
+    const data = await pipelineService.createStage(
+      requireUuidParam(req.params.pipelineId, "pipelineId"),
+      body
+    );
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -126,7 +130,10 @@ export async function createStage(req: Request, res: Response, next: NextFunctio
 export async function updateStage(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateStageSchema, req.body);
-    const data = await pipelineService.updateStage(req.params.stageId, body);
+    const data = await pipelineService.updateStage(
+      requireUuidParam(req.params.stageId, "stageId"),
+      body
+    );
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -135,7 +142,9 @@ export async function updateStage(req: Request, res: Response, next: NextFunctio
 
 export async function deleteStage(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await pipelineService.deleteStage(req.params.stageId);
+    const data = await pipelineService.deleteStage(
+      requireUuidParam(req.params.stageId, "stageId")
+    );
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -164,7 +173,7 @@ export async function createLead(req: Request, res: Response, next: NextFunction
 
 export async function getLead(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await leadService.getLead(req.params.id);
+    const data = await leadService.getLead(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -174,7 +183,7 @@ export async function getLead(req: Request, res: Response, next: NextFunction) {
 export async function updateLead(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateLeadSchema, req.body);
-    const data = await leadService.updateLead(req.params.id, body, actor(req));
+    const data = await leadService.updateLead(requireUuidParam(req.params.id), body, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -183,7 +192,7 @@ export async function updateLead(req: Request, res: Response, next: NextFunction
 
 export async function deleteLead(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await leadService.deleteLead(req.params.id);
+    const data = await leadService.deleteLead(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -193,7 +202,7 @@ export async function deleteLead(req: Request, res: Response, next: NextFunction
 export async function convertLead(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(convertLeadSchema, req.body ?? {});
-    const data = await leadService.convertLead(req.params.id, body, actor(req));
+    const data = await leadService.convertLead(requireUuidParam(req.params.id), body, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -222,7 +231,7 @@ export async function createAccount(req: Request, res: Response, next: NextFunct
 
 export async function getAccount(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await accountService.getAccount(req.params.id);
+    const data = await accountService.getAccount(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -232,7 +241,7 @@ export async function getAccount(req: Request, res: Response, next: NextFunction
 export async function updateAccount(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateAccountSchema, req.body);
-    const data = await accountService.updateAccount(req.params.id, body);
+    const data = await accountService.updateAccount(requireUuidParam(req.params.id), body);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -241,7 +250,7 @@ export async function updateAccount(req: Request, res: Response, next: NextFunct
 
 export async function getAccount360(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await customer360.getAccount360(req.params.id);
+    const data = await customer360.getAccount360(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -270,7 +279,7 @@ export async function createContact(req: Request, res: Response, next: NextFunct
 
 export async function getContact(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await contactService.getContact(req.params.id);
+    const data = await contactService.getContact(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -280,7 +289,7 @@ export async function getContact(req: Request, res: Response, next: NextFunction
 export async function updateContact(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateContactSchema, req.body);
-    const data = await contactService.updateContact(req.params.id, body);
+    const data = await contactService.updateContact(requireUuidParam(req.params.id), body);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -289,7 +298,7 @@ export async function updateContact(req: Request, res: Response, next: NextFunct
 
 export async function getContact360(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await customer360.getContact360(req.params.id);
+    const data = await customer360.getContact360(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -318,7 +327,7 @@ export async function createDeal(req: Request, res: Response, next: NextFunction
 
 export async function getDeal(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await dealService.getDeal(req.params.id);
+    const data = await dealService.getDeal(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -328,7 +337,7 @@ export async function getDeal(req: Request, res: Response, next: NextFunction) {
 export async function updateDeal(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateDealSchema, req.body);
-    const data = await dealService.updateDeal(req.params.id, body, actor(req));
+    const data = await dealService.updateDeal(requireUuidParam(req.params.id), body, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -338,7 +347,7 @@ export async function updateDeal(req: Request, res: Response, next: NextFunction
 export async function addDealProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(dealProductSchema, req.body);
-    const data = await dealService.addDealProduct(req.params.dealId, body);
+    const data = await dealService.addDealProduct(requireUuidParam(req.params.dealId, "dealId"), body);
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -348,7 +357,7 @@ export async function addDealProduct(req: Request, res: Response, next: NextFunc
 export async function updateDealProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateDealProductSchema, req.body);
-    const data = await dealService.updateDealProduct(req.params.id, body);
+    const data = await dealService.updateDealProduct(requireUuidParam(req.params.id), body);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -357,7 +366,7 @@ export async function updateDealProduct(req: Request, res: Response, next: NextF
 
 export async function deleteDealProduct(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await dealService.deleteDealProduct(req.params.id);
+    const data = await dealService.deleteDealProduct(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -367,7 +376,7 @@ export async function deleteDealProduct(req: Request, res: Response, next: NextF
 export async function linkQuotation(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(linkQuotationSchema, req.body);
-    const data = await dealService.linkQuotation(req.params.dealId, body.quotationId, actor(req));
+    const data = await dealService.linkQuotation(requireUuidParam(req.params.dealId, "dealId"), body.quotationId, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -377,7 +386,7 @@ export async function linkQuotation(req: Request, res: Response, next: NextFunct
 export async function linkOrder(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(linkOrderSchema, req.body);
-    const data = await dealService.linkOrder(req.params.dealId, body.orderId, actor(req));
+    const data = await dealService.linkOrder(requireUuidParam(req.params.dealId, "dealId"), body.orderId, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -426,7 +435,7 @@ export async function createTask(req: Request, res: Response, next: NextFunction
 
 export async function getTask(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await taskService.getTask(req.params.id);
+    const data = await taskService.getTask(requireUuidParam(req.params.id));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -436,7 +445,7 @@ export async function getTask(req: Request, res: Response, next: NextFunction) {
 export async function updateTask(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(updateTaskSchema, req.body);
-    const data = await taskService.updateTask(req.params.id, body);
+    const data = await taskService.updateTask(requireUuidParam(req.params.id), body);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
