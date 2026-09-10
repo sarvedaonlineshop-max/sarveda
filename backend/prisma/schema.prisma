@@ -43,6 +43,14 @@ model User {
   blogComments              BlogComment[]
   accountClosureRequests    AccountClosureRequest[]
   accountClosureApprovals   AccountClosureApproval[]
+  crmOwnedAccounts          CrmAccount[]             @relation("CrmAccountOwner")
+  crmLinkedContact          CrmContact?              @relation("CrmContactLinkedUser")
+  crmOwnedContacts          CrmContact[]             @relation("CrmContactOwner")
+  crmOwnedLeads             CrmLead[]                @relation("CrmLeadOwner")
+  crmOwnedDeals             CrmDeal[]                @relation("CrmDealOwner")
+  crmActivitiesAsActor      CrmActivity[]            @relation("CrmActivityActor")
+  crmAssignedTasks          CrmTask[]                @relation("CrmTaskAssignee")
+  crmCreatedTasks           CrmTask[]                @relation("CrmTaskCreator")
 }
 
 model AccountClosureRequest {
@@ -248,6 +256,7 @@ model ProductVariant {
   purchaseOrderLines         PurchaseOrderLine[]
   vendorBillLines            VendorBillLine[]
   merchantCtxOffer           MerchantCtxOffer?
+  crmDealProducts            CrmDealProduct[]
   createdAt                  DateTime                              @default(now())
   updatedAt                  DateTime                              @updatedAt
 }
@@ -296,24 +305,24 @@ model Inventory {
 
 /// Append-only stock quantity ledger (bank-statement style).
 model InventoryStockRevision {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  variantId     String   @db.Uuid
-  productName   String
-  variantName   String?
-  sku           String
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId      String   @db.Uuid
+  productName    String
+  variantName    String?
+  sku            String
   previousOnHand Int
-  newOnHand     Int
-  increased     Int      @default(0)
-  decreased     Int      @default(0)
+  newOnHand      Int
+  increased      Int      @default(0)
+  decreased      Int      @default(0)
   /// ADMIN_MANUAL | ORDER_CONFIRM | ORDER_RELEASE | REFUND_RESTOCK | IMPORT | ZOHO_SYNC | OTHER
-  reason        String
+  reason         String
   /// "Admin · email" or "Order · SRV-…"
-  actorLabel    String?
-  orderId       String?  @db.Uuid
-  orderNumber   String?
-  actorUserId   String?  @db.Uuid
-  note          String?
-  createdAt     DateTime @default(now())
+  actorLabel     String?
+  orderId        String?  @db.Uuid
+  orderNumber    String?
+  actorUserId    String?  @db.Uuid
+  note           String?
+  createdAt      DateTime @default(now())
 
   @@index([createdAt])
   @@index([variantId, createdAt])
@@ -769,15 +778,15 @@ model Cart {
 }
 
 model CartItem {
-  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cartId         String               @db.Uuid
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId         String                @db.Uuid
   /// Shop product line (mutually exclusive with digitalOfferId).
-  variantId      String?              @db.Uuid
+  variantId      String?               @db.Uuid
   /// Course/event DigitalCheckoutOffer line (mutually exclusive with variantId).
-  digitalOfferId String?              @db.Uuid
-  quantity       Int                  @default(1)
-  cart           Cart                 @relation(fields: [cartId], references: [id])
-  variant        ProductVariant?      @relation(fields: [variantId], references: [id])
+  digitalOfferId String?               @db.Uuid
+  quantity       Int                   @default(1)
+  cart           Cart                  @relation(fields: [cartId], references: [id])
+  variant        ProductVariant?       @relation(fields: [variantId], references: [id])
   digitalOffer   DigitalCheckoutOffer? @relation(fields: [digitalOfferId], references: [id])
 
   @@unique([cartId, variantId])
@@ -786,21 +795,21 @@ model CartItem {
 }
 
 model Order {
-  id                       String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderNumber              String                       @unique
-  wooCommerceId            Int?                         @unique
+  id                       String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber              String                        @unique
+  wooCommerceId            Int?                          @unique
   wooLegacyMeta            Json?
-  customerId               String?                      @db.Uuid
+  customerId               String?                       @db.Uuid
   email                    String
   phone                    String
-  status                   OrderStatus                  @default(PENDING_PAYMENT)
-  paymentStatus            PaymentStatus                @default(PENDING)
-  fulfillmentStatus        FulfillmentStatus            @default(UNFULFILLED)
-  currency                 String                       @default("INR")
+  status                   OrderStatus                   @default(PENDING_PAYMENT)
+  paymentStatus            PaymentStatus                 @default(PENDING)
+  fulfillmentStatus        FulfillmentStatus             @default(UNFULFILLED)
+  currency                 String                        @default("INR")
   subtotalInPaise          Int
-  discountInPaise          Int                          @default(0)
-  shippingInPaise          Int                          @default(0)
-  taxInPaise               Int                          @default(0)
+  discountInPaise          Int                           @default(0)
+  shippingInPaise          Int                           @default(0)
+  taxInPaise               Int                           @default(0)
   grandTotalInPaise        Int
   couponCode               String?
   notes                    String?
@@ -816,17 +825,17 @@ model Order {
   reportingTotalInInrPaise Int?
   deletedAt                DateTime?
   /// Last courier/shipment integration failure (e.g. Delhivery create); cleared on success.
-  shippingLastError        String?                      @db.Text
+  shippingLastError        String?                       @db.Text
   shippingLastErrorAt      DateTime?
   /// Incremented each time a new carrier label is created (Shiprocket order_id suffix on retry).
-  shippingLabelSeq         Int                          @default(0)
+  shippingLabelSeq         Int                           @default(0)
   /// Admin override: AUTO | DELHIVERY | SHIPROCKET | SHIPROCKET_INTERNATIONAL
   preferredCourier         String?
   /// IN | US | GB | OTHER — set at checkout for rate zone display
   shippingZone             String?
-  createdAt                DateTime                     @default(now())
-  updatedAt                DateTime                     @updatedAt
-  customer                 User?                        @relation(fields: [customerId], references: [id])
+  createdAt                DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+  customer                 User?                         @relation(fields: [customerId], references: [id])
   items                    OrderItem[]
   addresses                OrderAddress[]
   payments                 Payment[]
@@ -843,7 +852,9 @@ model Order {
   returnShipments          OrderReturnShipment[]
   replacementFulfillments  OrderReplacementFulfillment[]
   attribution              OrderAttribution?
-  convertedFromQuotations  Quotation[]                  @relation("QuotationConvertedOrder")
+  convertedFromQuotations  Quotation[]                   @relation("QuotationConvertedOrder")
+  crmDeals                 CrmDeal[]
+  crmActivities            CrmActivity[]
 }
 
 /// Pre-sale commercial quotation — NEVER creates accounting, GST ledgers, stock, or payments.
@@ -895,6 +906,8 @@ model Quotation {
   customer          User?           @relation(fields: [customerId], references: [id])
   convertedOrder    Order?          @relation("QuotationConvertedOrder", fields: [convertedOrderId], references: [id])
   items             QuotationItem[]
+  crmDeals          CrmDeal[]
+  crmActivities     CrmActivity[]
 
   @@index([status])
   @@index([createdAt])
@@ -1137,90 +1150,90 @@ enum OrderServiceRequestExecutionStatus {
 }
 
 model OrderServiceRequest {
-  id                 String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                          String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Human-readable immutable case ID (e.g. RC-202609-00001). UUID remains internal PK.
-  caseNumber         String                     @unique
-  orderId            String                     @db.Uuid
-  orderNumber        String
-  customerId         String?                    @db.Uuid
-  customerEmail      String
-  type               OrderServiceRequestType
-  channel            ReturnCaseChannel          @default(WEBSITE)
-  reasonCode         String?
-  reasonLabel        String?
-  otherMessage       String?
-  message            String?
-  secondaryReasonCode String?
-  secondaryReasonLabel String?
+  caseNumber                  String                             @unique
+  orderId                     String                             @db.Uuid
+  orderNumber                 String
+  customerId                  String?                            @db.Uuid
+  customerEmail               String
+  type                        OrderServiceRequestType
+  channel                     ReturnCaseChannel                  @default(WEBSITE)
+  reasonCode                  String?
+  reasonLabel                 String?
+  otherMessage                String?
+  message                     String?
+  secondaryReasonCode         String?
+  secondaryReasonLabel        String?
   /// Internal root-cause classification — never overwrite customer reasonCode.
-  rootCause          ReturnRootCause?
-  rootCauseNote      String?
-  responsibleTeam    ReturnResponsibleTeam?
-  responsibleUserId  String?                    @db.Uuid
-  responsibleUserEmail String?
-  declarationsJson   Json?
-  declarationsAcceptedAt DateTime?
-  moreInfoPrompt     String?
-  moreInfoRequestedAt DateTime?
-  moreInfoResponse   String?
-  moreInfoRespondedAt DateTime?
-  slaPausedAt        DateTime?
-  status             OrderServiceRequestStatus  @default(PENDING_APPROVAL)
-  requestIntent      OrderServiceRequestIntent  @default(CANCEL)
-  adjustmentPayload  Json?
-  executionStatus    OrderServiceRequestExecutionStatus @default(NOT_APPLICABLE)
-  commercialDeltaPaise Int?
-  commercialClassification String?
-  executionSourceId  String?                    @unique
-  executedAt         DateTime?
-  executionError     String?
-  reviewedByUserId   String?                    @db.Uuid
-  reviewedAt         DateTime?
-  reviewedByEmail    String?
-  adminNote          String?
-  codRefundNote      String?
-  refundProcessedAt  DateTime?
-  refundTotalInPaise Int?
-  refundApprovedAt   DateTime?
-  refundInitiatedAt  DateTime?
-  refundCompletedAt  DateTime?
-  refundProviderReference String?
+  rootCause                   ReturnRootCause?
+  rootCauseNote               String?
+  responsibleTeam             ReturnResponsibleTeam?
+  responsibleUserId           String?                            @db.Uuid
+  responsibleUserEmail        String?
+  declarationsJson            Json?
+  declarationsAcceptedAt      DateTime?
+  moreInfoPrompt              String?
+  moreInfoRequestedAt         DateTime?
+  moreInfoResponse            String?
+  moreInfoRespondedAt         DateTime?
+  slaPausedAt                 DateTime?
+  status                      OrderServiceRequestStatus          @default(PENDING_APPROVAL)
+  requestIntent               OrderServiceRequestIntent          @default(CANCEL)
+  adjustmentPayload           Json?
+  executionStatus             OrderServiceRequestExecutionStatus @default(NOT_APPLICABLE)
+  commercialDeltaPaise        Int?
+  commercialClassification    String?
+  executionSourceId           String?                            @unique
+  executedAt                  DateTime?
+  executionError              String?
+  reviewedByUserId            String?                            @db.Uuid
+  reviewedAt                  DateTime?
+  reviewedByEmail             String?
+  adminNote                   String?
+  codRefundNote               String?
+  refundProcessedAt           DateTime?
+  refundTotalInPaise          Int?
+  refundApprovedAt            DateTime?
+  refundInitiatedAt           DateTime?
+  refundCompletedAt           DateTime?
+  refundProviderReference     String?
   /// System-calculated refund at last preview/override (never overwritten by override amount).
-  calculatedRefundPaise Int?
+  calculatedRefundPaise       Int?
   /// Admin-approved override total when Adjust refund amount is used.
   approvedOverrideRefundPaise Int?
-  overrideDifferencePaise Int?
-  overrideReason String?
-  overrideActorId String? @db.Uuid
-  overrideActorEmail String?
-  overrideAt DateTime?
+  overrideDifferencePaise     Int?
+  overrideReason              String?
+  overrideActorId             String?                            @db.Uuid
+  overrideActorEmail          String?
+  overrideAt                  DateTime?
   /// Upward goodwill portion (override - calculated); never folded into GST/merchandise silently.
-  overrideGoodwillPaise Int?
-  closedAt           DateTime?
-  offeredResolution  ReturnReplacementResolution?
-  finalResolution    ReturnReplacementResolution?
-  highValueApprovalRequired Boolean @default(false)
-  highValueApprovedAt    DateTime?
-  highValueApprovedByEmail String?
-  highValueApprovalNote  String?
-  refundSlaDueAt         DateTime?
-  returnPhysicalStatus ReturnPhysicalStatus @default(NOT_REQUIRED)
-  resolutionStatus ReturnResolutionStatus @default(NONE)
-  shippingRefundPolicy ReturnShippingRefundPolicy?
-  returnPayload      Json?
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
-  order              Order                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  photos             OrderServiceRequestPhoto[]
-  items              OrderServiceRequestItem[]
-  returnShipment     OrderReturnShipment?
-  replacementFulfillments OrderReplacementFulfillment[]
-  events             OrderServiceRequestEvent[]
-  receiptLines       OrderReturnReceiptLine[]
-  qcLines            OrderReturnQcLine[]
-  economics          ReturnCaseEconomics?
-  courierClaims      ReturnCourierClaim[]
-  vendorClaims       ReturnVendorClaim[]
+  overrideGoodwillPaise       Int?
+  closedAt                    DateTime?
+  offeredResolution           ReturnReplacementResolution?
+  finalResolution             ReturnReplacementResolution?
+  highValueApprovalRequired   Boolean                            @default(false)
+  highValueApprovedAt         DateTime?
+  highValueApprovedByEmail    String?
+  highValueApprovalNote       String?
+  refundSlaDueAt              DateTime?
+  returnPhysicalStatus        ReturnPhysicalStatus               @default(NOT_REQUIRED)
+  resolutionStatus            ReturnResolutionStatus             @default(NONE)
+  shippingRefundPolicy        ReturnShippingRefundPolicy?
+  returnPayload               Json?
+  createdAt                   DateTime                           @default(now())
+  updatedAt                   DateTime                           @updatedAt
+  order                       Order                              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photos                      OrderServiceRequestPhoto[]
+  items                       OrderServiceRequestItem[]
+  returnShipment              OrderReturnShipment?
+  replacementFulfillments     OrderReplacementFulfillment[]
+  events                      OrderServiceRequestEvent[]
+  receiptLines                OrderReturnReceiptLine[]
+  qcLines                     OrderReturnQcLine[]
+  economics                   ReturnCaseEconomics?
+  courierClaims               ReturnCourierClaim[]
+  vendorClaims                ReturnVendorClaim[]
 
   @@index([orderId])
   @@index([status])
@@ -1233,35 +1246,35 @@ model OrderServiceRequest {
 }
 
 model OrderServiceRequestItem {
-  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  requestId           String                     @db.Uuid
-  orderItemId         String                     @db.Uuid
-  nameSnapshot        String
-  skuSnapshot         String
-  qtySelected         Int
-  reasonCode          String
-  reasonLabel         String
-  otherMessage        String?
-  message             String?
+  id                     String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId              String                       @db.Uuid
+  orderItemId            String                       @db.Uuid
+  nameSnapshot           String
+  skuSnapshot            String
+  qtySelected            Int
+  reasonCode             String
+  reasonLabel            String
+  otherMessage           String?
+  message                String?
   /// Authoritative shipping policy for THIS line, captured at submit (auditable).
-  shippingRefundPolicy ReturnShippingRefundPolicy?
-  reviewDecision      ReturnLineReviewDecision   @default(PENDING)
-  reviewedAt          DateTime?
-  reviewedByUserId    String?                    @db.Uuid
-  reviewedByEmail     String?
+  shippingRefundPolicy   ReturnShippingRefundPolicy?
+  reviewDecision         ReturnLineReviewDecision     @default(PENDING)
+  reviewedAt             DateTime?
+  reviewedByUserId       String?                      @db.Uuid
+  reviewedByEmail        String?
   /// Shown to customer on reject / more-info / partial decisions.
-  customerFacingNote  String?
+  customerFacingNote     String?
   /// Internal only — never sent to customer.
-  internalReviewNote  String?
-  moreInfoPrompt      String?
-  refundAmountInPaise Int?
-  refundedAt          DateTime?
-  refundProviderId    String?
-  requestedResolution ReturnReplacementResolution?
-  requestedVariantId  String?                    @db.Uuid
-  createdAt           DateTime                   @default(now())
-  request             OrderServiceRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  photos              OrderServiceRequestPhoto[]
+  internalReviewNote     String?
+  moreInfoPrompt         String?
+  refundAmountInPaise    Int?
+  refundedAt             DateTime?
+  refundProviderId       String?
+  requestedResolution    ReturnReplacementResolution?
+  requestedVariantId     String?                      @db.Uuid
+  createdAt              DateTime                     @default(now())
+  request                OrderServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  photos                 OrderServiceRequestPhoto[]
   replacementFulfillment OrderReplacementFulfillment?
 
   @@index([requestId])
@@ -1270,45 +1283,45 @@ model OrderServiceRequestItem {
 }
 
 model OrderReturnShipment {
-  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  requestId          String               @unique @db.Uuid
-  orderId            String               @db.Uuid
-  mode               ReturnShipmentMode   @default(MANUAL_RETURN_SHIPMENT)
-  courier            String?
-  awb                String?
-  trackingUrl        String?
-  physicalStatus     ReturnPhysicalStatus @default(AWAITING_RETURN)
-  receivedAt         DateTime?
-  receivedByUserId   String?              @db.Uuid
-  disposition        RtoDisposition?
-  dispositionAt      DateTime?
-  dispositionByUserId String?             @db.Uuid
-  adminNote          String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  request            OrderServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  order              Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId           String               @unique @db.Uuid
+  orderId             String               @db.Uuid
+  mode                ReturnShipmentMode   @default(MANUAL_RETURN_SHIPMENT)
+  courier             String?
+  awb                 String?
+  trackingUrl         String?
+  physicalStatus      ReturnPhysicalStatus @default(AWAITING_RETURN)
+  receivedAt          DateTime?
+  receivedByUserId    String?              @db.Uuid
+  disposition         RtoDisposition?
+  dispositionAt       DateTime?
+  dispositionByUserId String?              @db.Uuid
+  adminNote           String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  request             OrderServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order               Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
 }
 
 model OrderReplacementFulfillment {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  requestId            String                 @db.Uuid
-  requestItemId        String                 @unique @db.Uuid
-  orderId              String                 @db.Uuid
-  replacementVariantId String                 @db.Uuid
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId            String                  @db.Uuid
+  requestItemId        String                  @unique @db.Uuid
+  orderId              String                  @db.Uuid
+  replacementVariantId String                  @db.Uuid
   qty                  Int
-  status               ReturnResolutionStatus @default(REPLACEMENT_PENDING)
-  outboundShipmentId   String?                @db.Uuid
+  status               ReturnResolutionStatus  @default(REPLACEMENT_PENDING)
+  outboundShipmentId   String?                 @db.Uuid
   reservedAt           DateTime?
   shippedAt            DateTime?
   deliveredAt          DateTime?
   commercialDeltaPaise Int?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  request              OrderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  order                Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  request              OrderServiceRequest     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order                Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   requestItem          OrderServiceRequestItem @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
@@ -1334,16 +1347,16 @@ model OrderServiceRequestPhoto {
 }
 
 model OrderServiceRequestEvent {
-  id           String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  requestId    String                       @db.Uuid
-  eventType    OrderServiceRequestEventType
-  message      String?
-  payloadJson  Json?
-  actorUserId  String?                      @db.Uuid
-  actorEmail   String?
-  actorRole    String?
-  createdAt    DateTime                     @default(now())
-  request      OrderServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  id          String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId   String                       @db.Uuid
+  eventType   OrderServiceRequestEventType
+  message     String?
+  payloadJson Json?
+  actorUserId String?                      @db.Uuid
+  actorEmail  String?
+  actorRole   String?
+  createdAt   DateTime                     @default(now())
+  request     OrderServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@index([requestId, createdAt])
 }
@@ -1496,31 +1509,31 @@ model ReturnPolicyConfigAudit {
 }
 
 model OrderItem {
-  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId           String                       @db.Uuid
+  id                      String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId                 String                       @db.Uuid
   /// Shop product line (null for digital course/event lines).
-  variantId         String?                      @db.Uuid
+  variantId               String?                      @db.Uuid
   /// Course/event DigitalCheckoutOffer line (null for shop product lines).
-  digitalOfferId    String?                      @db.Uuid
-  skuSnapshot       String
-  nameSnapshot      String
-  qtyOrdered        Int
+  digitalOfferId          String?                      @db.Uuid
+  skuSnapshot             String
+  nameSnapshot            String
+  qtyOrdered              Int
   /// Snapshot at order time — Sarveda warehouse units (reserve/deduct/restock only this qty).
-  warehouseFulfillmentQty Int                    @default(0)
+  warehouseFulfillmentQty Int                          @default(0)
   /// Snapshot at order time — vendor-direct units (never affects Sarveda onHand).
-  dropShipFulfillmentQty  Int                    @default(0)
-  unitPriceInPaise  Int
-  discountInPaise   Int                          @default(0)
-  taxInPaise        Int                          @default(0)
-  lineTotalInPaise  Int
-  pickupLocationId  String?                      @db.Uuid
-  order             Order                        @relation(fields: [orderId], references: [id])
-  variant           ProductVariant?              @relation(fields: [variantId], references: [id])
-  digitalOffer      DigitalCheckoutOffer?        @relation(fields: [digitalOfferId], references: [id])
-  pickupLocation    PickupLocation?              @relation(fields: [pickupLocationId], references: [id])
-  inventoryRestocks OrderInventoryRestockEvent[]
-  refundAllocations RefundAllocation[]
-  returnReceiptLines OrderReturnReceiptLine[]
+  dropShipFulfillmentQty  Int                          @default(0)
+  unitPriceInPaise        Int
+  discountInPaise         Int                          @default(0)
+  taxInPaise              Int                          @default(0)
+  lineTotalInPaise        Int
+  pickupLocationId        String?                      @db.Uuid
+  order                   Order                        @relation(fields: [orderId], references: [id])
+  variant                 ProductVariant?              @relation(fields: [variantId], references: [id])
+  digitalOffer            DigitalCheckoutOffer?        @relation(fields: [digitalOfferId], references: [id])
+  pickupLocation          PickupLocation?              @relation(fields: [pickupLocationId], references: [id])
+  inventoryRestocks       OrderInventoryRestockEvent[]
+  refundAllocations       RefundAllocation[]
+  returnReceiptLines      OrderReturnReceiptLine[]
 
   @@index([digitalOfferId])
 }
@@ -1669,23 +1682,23 @@ enum SupplementaryPaymentStatus {
 
 /// Gateway refunds: providerRefundId is unique when set (partial index via migration SQL).
 model Refund {
-  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  paymentId        String                 @db.Uuid
-  amountInPaise    Int
-  reason           String?
-  providerRefundId String?
-  status           String                 @default("pending")
-  sourceType       RefundSourceType?
-  sourceId         String?
-  settlementStage  RefundSettlementStage  @default(RESERVED)
-  settlementError  String?
-  accountingPostedAt DateTime?
-  zohoCreditNoteId String?
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId            String                @db.Uuid
+  amountInPaise        Int
+  reason               String?
+  providerRefundId     String?
+  status               String                @default("pending")
+  sourceType           RefundSourceType?
+  sourceId             String?
+  settlementStage      RefundSettlementStage @default(RESERVED)
+  settlementError      String?
+  accountingPostedAt   DateTime?
+  zohoCreditNoteId     String?
   zohoCreditNoteNumber String?
-  zohoSyncError    String?
-  createdAt        DateTime               @default(now())
-  payment          Payment                @relation(fields: [paymentId], references: [id])
-  allocations      RefundAllocation[]
+  zohoSyncError        String?
+  createdAt            DateTime              @default(now())
+  payment              Payment               @relation(fields: [paymentId], references: [id])
+  allocations          RefundAllocation[]
 
   @@index([paymentId, status])
   @@index([sourceType, sourceId])
@@ -1970,31 +1983,31 @@ model PickupLocation {
 }
 
 model Shipment {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId          String            @db.Uuid
-  pickupLocationId String?           @db.Uuid
-  courier          String
-  awb              String?
-  trackingUrl      String?
-  status           ShipmentStatus    @default(CREATED)
-  deliveredAt      DateTime?
-  rtoAt            DateTime?
+  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId                 String                   @db.Uuid
+  pickupLocationId        String?                  @db.Uuid
+  courier                 String
+  awb                     String?
+  trackingUrl             String?
+  status                  ShipmentStatus           @default(CREATED)
+  deliveredAt             DateTime?
+  rtoAt                   DateTime?
   /// Sarveda warehouse physically received the RTO parcel (Phase 1C).
-  rtoReceivedAt         DateTime?
-  rtoReceivedByUserId   String?                @db.Uuid
-  rtoDisposition        RtoDisposition?
-  rtoDispositionAt      DateTime?
-  rtoDispositionByUserId String?               @db.Uuid
+  rtoReceivedAt           DateTime?
+  rtoReceivedByUserId     String?                  @db.Uuid
+  rtoDisposition          RtoDisposition?
+  rtoDispositionAt        DateTime?
+  rtoDispositionByUserId  String?                  @db.Uuid
   rtoRefundWorkflowStatus RtoRefundWorkflowStatus?
-  rtoRefundLastError    String?
+  rtoRefundLastError      String?
   // Shiprocket / carrier ids from last successful create (for cancel).
-  carrierMeta      Json?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  order            Order             @relation(fields: [orderId], references: [id])
-  pickupLocation   PickupLocation?   @relation(fields: [pickupLocationId], references: [id])
-  deliveryChallans DeliveryChallan[]
-  ewayBills        EWayBill[]
+  carrierMeta             Json?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  order                   Order                    @relation(fields: [orderId], references: [id])
+  pickupLocation          PickupLocation?          @relation(fields: [pickupLocationId], references: [id])
+  deliveryChallans        DeliveryChallan[]
+  ewayBills               EWayBill[]
 }
 
 enum RtoDisposition {
@@ -2100,26 +2113,26 @@ model Wishlist {
 }
 
 model Course {
-  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug              String               @unique
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug              String                @unique
   title             String
   description       String?
   shortDescription  String?
-  priceInPaise      Int                  @default(0)
+  priceInPaise      Int                   @default(0)
   priceUsdCents     Int?
-  isFree            Boolean              @default(false)
+  isFree            Boolean               @default(false)
   imageUrl          String?
   videoUrl          String?
-  enrollmentMode    CourseEnrollmentMode @default(ENQUIRY)
-  checkoutVariantId String?              @unique @db.Uuid
-  wpPostId          Int?                 @unique
+  enrollmentMode    CourseEnrollmentMode  @default(ENQUIRY)
+  checkoutVariantId String?               @unique @db.Uuid
+  wpPostId          Int?                  @unique
   extra             Json?
-  status            CourseStatus         @default(DRAFT)
+  status            CourseStatus          @default(DRAFT)
   seoTitle          String?
   seoDescription    String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  checkoutVariant   ProductVariant?      @relation(fields: [checkoutVariantId], references: [id])
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  checkoutVariant   ProductVariant?       @relation(fields: [checkoutVariantId], references: [id])
   checkoutOffer     DigitalCheckoutOffer?
   lessons           Lesson[]
   enrollments       Enrollment[]
@@ -2200,28 +2213,28 @@ model Enrollment {
 }
 
 model Event {
-  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug              String               @unique
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug              String                @unique
   title             String
   description       String?
   shortDescription  String?
   startDate         DateTime
   endDate           DateTime?
   venue             String?
-  isOnline          Boolean              @default(false)
+  isOnline          Boolean               @default(false)
   zoomLink          String?
-  priceInPaise      Int                  @default(0)
+  priceInPaise      Int                   @default(0)
   imageUrl          String?
-  enrollmentMode    CourseEnrollmentMode @default(ENQUIRY)
-  checkoutVariantId String?              @unique @db.Uuid
-  wpPostId          Int?                 @unique
+  enrollmentMode    CourseEnrollmentMode  @default(ENQUIRY)
+  checkoutVariantId String?               @unique @db.Uuid
+  wpPostId          Int?                  @unique
   extra             Json?
-  status            EventStatus          @default(DRAFT)
+  status            EventStatus           @default(DRAFT)
   seoTitle          String?
   seoDescription    String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  checkoutVariant   ProductVariant?      @relation(fields: [checkoutVariantId], references: [id])
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  checkoutVariant   ProductVariant?       @relation(fields: [checkoutVariantId], references: [id])
   checkoutOffer     DigitalCheckoutOffer?
   bookings          Booking[]
 }
@@ -2445,6 +2458,8 @@ model EnquiryThread {
   user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages              EnquiryMessage[]
   whatsappAgentSessions WhatsAppAgentSession[]
+  crmLead               CrmLead?
+  crmActivities         CrmActivity[]
 
   @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
   @@index([customerEmail])
@@ -3904,4 +3919,376 @@ model AccountingOpeningEquityLine {
 
   @@unique([batchId, accountCode])
   @@index([batchId])
+}
+
+// =============================================================================
+// CRM foundation (additive) — mirrors 20260910223000_crm_foundation
+// SQL CHECK constraints on probabilityPercent / quantity remain DB-only.
+// =============================================================================
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  UNQUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum CrmLeadSource {
+  WEBSITE
+  WHATSAPP
+  PHONE
+  EMAIL
+  REFERRAL
+  GOOGLE
+  META
+  MARKETPLACE
+  EVENT
+  OFFLINE
+  IMPORT
+  OTHER
+}
+
+enum CrmDealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum CrmStageType {
+  OPEN
+  WON
+  LOST
+}
+
+enum CrmActivityType {
+  NOTE
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  TASK
+  QUOTATION
+  STATUS_CHANGE
+  SYSTEM
+}
+
+enum CrmTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CrmTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum CrmAccountKind {
+  ORGANIZATION
+  INDIVIDUAL
+}
+
+model CrmAccount {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountNumber   String?        @unique
+  kind            CrmAccountKind @default(ORGANIZATION)
+  name            String
+  displayName     String?
+  industry        String?
+  website         String?
+  email           String?
+  phone           String?
+  whatsappPhone   String?
+  gstin           String?
+  billingAddress  Json?
+  shippingAddress Json?
+  ownerUserId     String?        @db.Uuid
+  source          CrmLeadSource?
+  notes           String?
+  customFields    Json?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  owner           User?          @relation("CrmAccountOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  contacts        CrmContact[]
+  convertedLeads  CrmLead[]      @relation("CrmLeadConvertedAccount")
+  deals           CrmDeal[]
+  activities      CrmActivity[]
+  tasks           CrmTask[]
+
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+  @@index([ownerUserId])
+  @@index([isActive])
+}
+
+model CrmContact {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactNumber     String?        @unique
+  accountId         String?        @db.Uuid
+  linkedUserId      String?        @unique @db.Uuid
+  firstName         String?
+  lastName          String?
+  displayName       String
+  email             String?
+  phone             String?
+  whatsappPhone     String?
+  designation       String?
+  department        String?
+  preferredLanguage String?
+  ownerUserId       String?        @db.Uuid
+  source            CrmLeadSource?
+  notes             String?
+  customFields      Json?
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  account           CrmAccount?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  linkedUser        User?          @relation("CrmContactLinkedUser", fields: [linkedUserId], references: [id], onDelete: SetNull)
+  owner             User?          @relation("CrmContactOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  convertedLeads    CrmLead[]      @relation("CrmLeadConvertedContact")
+  deals             CrmDeal[]
+  activities        CrmActivity[]
+  tasks             CrmTask[]
+
+  @@index([accountId])
+  @@index([email])
+  @@index([phone])
+  @@index([whatsappPhone])
+  @@index([ownerUserId])
+}
+
+model CrmPipeline {
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String             @unique
+  description String?
+  isDefault   Boolean            @default(false)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  stages      CrmPipelineStage[]
+  deals       CrmDeal[]
+
+  @@index([isActive])
+}
+
+model CrmPipelineStage {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pipelineId         String       @db.Uuid
+  name               String
+  stageType          CrmStageType @default(OPEN)
+  position           Int          @default(0)
+  probabilityPercent Int          @default(0)
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  pipeline           CrmPipeline  @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals              CrmDeal[]
+
+  @@unique([pipelineId, name])
+  @@index([pipelineId, position])
+}
+
+model CrmLead {
+  id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadNumber            String?        @unique
+  status                CrmLeadStatus  @default(NEW)
+  source                CrmLeadSource  @default(OTHER)
+  name                  String
+  companyName           String?
+  email                 String?
+  phone                 String?
+  whatsappPhone         String?
+  designation           String?
+  city                  String?
+  state                 String?
+  country               String?        @default("IN")
+  ownerUserId           String?        @db.Uuid
+  estimatedValueInPaise Int?
+  currency              String         @default("INR")
+  expectedCloseDate     DateTime?      @db.Date
+  interestSummary       String?
+  attributionJson       Json?
+  customFields          Json?
+  enquiryThreadId       String?        @unique @db.Uuid
+  convertedAccountId    String?        @db.Uuid
+  convertedContactId    String?        @db.Uuid
+  convertedDealId       String?        @unique @db.Uuid
+  convertedAt           DateTime?
+  lostReason            String?
+  lastContactedAt       DateTime?
+  nextFollowUpAt        DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  owner                 User?          @relation("CrmLeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  enquiryThread         EnquiryThread? @relation(fields: [enquiryThreadId], references: [id], onDelete: SetNull)
+  convertedAccount      CrmAccount?    @relation("CrmLeadConvertedAccount", fields: [convertedAccountId], references: [id], onDelete: SetNull)
+  convertedContact      CrmContact?    @relation("CrmLeadConvertedContact", fields: [convertedContactId], references: [id], onDelete: SetNull)
+  convertedDeal         CrmDeal?       @relation("CrmLeadConvertedDeal", fields: [convertedDealId], references: [id], onDelete: SetNull)
+  sourceDeals           CrmDeal[]      @relation("CrmDealSourceLead")
+  activities            CrmActivity[]
+  tasks                 CrmTask[]
+
+  @@index([status])
+  @@index([source])
+  @@index([ownerUserId, status])
+  @@index([email])
+  @@index([phone])
+  @@index([nextFollowUpAt])
+  @@index([createdAt])
+}
+
+model CrmDeal {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealNumber         String?          @unique
+  name               String
+  status             CrmDealStatus    @default(OPEN)
+  pipelineId         String           @db.Uuid
+  stageId            String           @db.Uuid
+  accountId          String?          @db.Uuid
+  contactId          String?          @db.Uuid
+  sourceLeadId       String?          @db.Uuid
+  ownerUserId        String?          @db.Uuid
+  amountInPaise      Int              @default(0)
+  currency           String           @default("INR")
+  probabilityPercent Int?
+  expectedCloseDate  DateTime?        @db.Date
+  closedAt           DateTime?
+  wonAt              DateTime?
+  lostAt             DateTime?
+  lostReason         String?
+  quotationId        String?          @db.Uuid
+  orderId            String?          @db.Uuid
+  notes              String?
+  customFields       Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  pipeline           CrmPipeline      @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
+  stage              CrmPipelineStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  account            CrmAccount?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact            CrmContact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  sourceLead         CrmLead?         @relation("CrmDealSourceLead", fields: [sourceLeadId], references: [id], onDelete: SetNull)
+  owner              User?            @relation("CrmDealOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  quotation          Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  order              Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  convertedFromLead  CrmLead?         @relation("CrmLeadConvertedDeal")
+  products           CrmDealProduct[]
+  activities         CrmActivity[]
+  tasks              CrmTask[]
+
+  @@index([pipelineId, stageId])
+  @@index([ownerUserId, status])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([sourceLeadId])
+  @@index([expectedCloseDate])
+  @@index([quotationId])
+  @@index([orderId])
+}
+
+model CrmDealProduct {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealId           String          @db.Uuid
+  variantId        String?         @db.Uuid
+  productName      String
+  sku              String?
+  quantity         Int             @default(1)
+  unitPriceInPaise Int             @default(0)
+  discountInPaise  Int             @default(0)
+  lineTotalInPaise Int             @default(0)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deal             CrmDeal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([dealId, sortOrder])
+  @@index([variantId])
+}
+
+model CrmActivity {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type             CrmActivityType
+  subject          String?
+  body             String?
+  occurredAt       DateTime        @default(now())
+  actorUserId      String?         @db.Uuid
+  accountId        String?         @db.Uuid
+  contactId        String?         @db.Uuid
+  leadId           String?         @db.Uuid
+  dealId           String?         @db.Uuid
+  enquiryThreadId  String?         @db.Uuid
+  quotationId      String?         @db.Uuid
+  orderId          String?         @db.Uuid
+  externalProvider String?
+  externalRef      String?
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  actor            User?           @relation("CrmActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  account          CrmAccount?     @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact          CrmContact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead             CrmLead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal             CrmDeal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  enquiryThread    EnquiryThread?  @relation(fields: [enquiryThreadId], references: [id], onDelete: SetNull)
+  quotation        Quotation?      @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  order            Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, occurredAt])
+  @@index([contactId, occurredAt])
+  @@index([leadId, occurredAt])
+  @@index([dealId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([enquiryThreadId])
+  @@index([quotationId])
+  @@index([orderId])
+}
+
+model CrmTask {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  description      String?
+  status           CrmTaskStatus   @default(OPEN)
+  priority         CrmTaskPriority @default(MEDIUM)
+  dueAt            DateTime?
+  reminderAt       DateTime?
+  completedAt      DateTime?
+  assignedToUserId String?         @db.Uuid
+  createdByUserId  String?         @db.Uuid
+  accountId        String?         @db.Uuid
+  contactId        String?         @db.Uuid
+  leadId           String?         @db.Uuid
+  dealId           String?         @db.Uuid
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  assignedTo       User?           @relation("CrmTaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  createdBy        User?           @relation("CrmTaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  account          CrmAccount?     @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact          CrmContact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead             CrmLead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal             CrmDeal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([assignedToUserId, status, dueAt])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([accountId])
+}
+
+model CrmSequence {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sequenceType String
+  prefix       String   @default("")
+  yearMonth    String
+  lastSeq      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sequenceType, yearMonth])
 }
