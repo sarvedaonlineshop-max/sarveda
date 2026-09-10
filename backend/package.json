@@ -79,6 +79,7 @@
     "test:watch": "vitest",
     "test:commerce": "vitest run test/commerce",
     "test:accounting": "vitest run test/accounting",
+    "test:crm": "SARVEDA_CRM_TEST=1 vitest run test/crm",
     "test:hardening": "vitest run test/accounting/hardening.test.ts test/accounting/api-security.test.ts",
     "seed:accounting-coa": "prisma generate && tsx scripts/seed-accounting-coa.ts",
     "hide:accounting-products:dry": "tsx scripts/hide-accounting-test-products.ts",

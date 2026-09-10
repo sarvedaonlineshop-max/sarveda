@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { config as loadDotenv } from "dotenv";
 import { beforeAll } from "vitest";
@@ -5,7 +6,18 @@ import { beforeAll } from "vitest";
 import { assertSafeTestDatabase } from "./helpers/test-db-guard";
 
 const backendRoot = path.resolve(__dirname, "..");
-loadDotenv({ path: path.join(backendRoot, ".env") });
+const crmEnvPath = path.join(backendRoot, ".env.crm");
+const defaultEnvPath = path.join(backendRoot, ".env");
+
+/**
+ * CRM integration tests must use local sarveda_crm_dev via backend/.env.crm.
+ * Set SARVEDA_CRM_TEST=1 when running test/crm (see package script / CI).
+ */
+if (process.env.SARVEDA_CRM_TEST === "1" && fs.existsSync(crmEnvPath)) {
+  loadDotenv({ path: crmEnvPath, override: true });
+} else {
+  loadDotenv({ path: defaultEnvPath });
+}
 
 process.env.NODE_ENV = "test";
 process.env.SARVEDA_TEST_DATABASE = process.env.SARVEDA_TEST_DATABASE ?? "1";
@@ -27,6 +39,15 @@ beforeAll(async () => {
       "postgresql://sarveda:password@localhost:5432/sarveda_db?schema=public";
   }
   assertSafeTestDatabase();
+  if (process.env.SARVEDA_CRM_TEST === "1") {
+    const url = (process.env.DATABASE_URL ?? "").toLowerCase();
+    if (!url.includes("localhost") && !url.includes("127.0.0.1")) {
+      throw new Error("CRM tests refuse non-localhost DATABASE_URL");
+    }
+    if (!url.includes("sarveda_crm_dev")) {
+      throw new Error("CRM tests require DATABASE_URL database sarveda_crm_dev");
+    }
+  }
   if (!process.env.JWT_SECRET?.trim()) {
     process.env.JWT_SECRET = "test-jwt-secret-minimum-32-characters-long";
   }
