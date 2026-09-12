@@ -1111,11 +1111,15 @@ function AdminOrderProductionView({
         .join(", ")
     : "Address unavailable";
 
+  // Manual fulfilment steps stay available even after a label/AWB exists
+  // (courier tracking may lag; ops still need Mark Packed / Shipped / Delivered).
+  const fulfillmentStatusActions = ["PROCESSING", "PACKED", "SHIPPED"].includes(order.status)
+    ? (nextStatuses[order.status] ?? [])
+    : [];
   const showActionBar =
     Boolean(dangerActions) ||
     deliveryStateIncomplete ||
-    (shipUi && awbRows.length === 0) ||
-    (awbRows.length === 0 && (nextStatuses[order.status] ?? []).length > 0);
+    (shipUi && awbRows.length === 0);
 
   const goTo = (sectionId: string, opts?: { openShipmentTimeline?: boolean }) => {
     if (opts?.openShipmentTimeline) setShipmentTimelineOpen(true);
@@ -1509,6 +1513,36 @@ function AdminOrderProductionView({
         </section>
       ) : null}
 
+      {fulfillmentStatusActions.length > 0 ? (
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base font-extrabold text-emerald-950">Update order fulfilment</p>
+              <p className="mt-1 text-sm leading-6 text-emerald-900/80">
+                {order.status === "PROCESSING"
+                  ? "Parcel packed? Mark Packed. A courier label can exist already — this only updates the order status."
+                  : order.status === "PACKED"
+                    ? "Handed to courier? Mark Shipped. Label/AWB can already exist — this only updates the order status."
+                    : "Customer received it? Mark Delivered."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {fulfillmentStatusActions.map((status) => (
+                <button
+                  key={`banner-${status}`}
+                  type="button"
+                  disabled={statusSaving}
+                  onClick={() => onStatusChange(status)}
+                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {statusSaving ? "Updating…" : `Mark ${humanState(status)}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {["PROCESSING", "PACKED"].includes(order.status) && awbRows.length === 0 ? (
         <section className={`${card} p-5`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1557,19 +1591,6 @@ function AdminOrderProductionView({
             </div>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
               <div className="flex flex-wrap gap-2 lg:justify-end">
-                {awbRows.length === 0
-                  ? (nextStatuses[order.status] ?? []).map((status) => (
-                      <button
-                        key={status}
-                        type="button"
-                        disabled={statusSaving}
-                        onClick={() => onStatusChange(status)}
-                        className="rounded-xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-bold text-stone-800 shadow-sm disabled:opacity-50"
-                      >
-                        Mark {humanState(status)}
-                      </button>
-                    ))
-                  : null}
                 {deliveryStateIncomplete ? (
                   <button
                     type="button"

@@ -84,12 +84,17 @@ type OrderPaymentCheck = {
   payments?: Array<{ provider: string }>;
 };
 
-/** India COD: order is PAID but payment row stays PENDING until delivery collection. */
+/**
+ * India COD: order is confirmed (PAID+) but payment row stays PENDING until cash is collected
+ * on delivery. Allow label create + tracking across the full fulfilment pipeline — not only
+ * while status is still exactly PAID (ops usually Mark Processing before creating a label).
+ */
 export function isCodOrderReadyToShip(order: OrderPaymentCheck): boolean {
+  const hasCodPayment = (order.payments ?? []).some((p) => p.provider === "COD");
   return (
-    order.status === "PAID" &&
+    hasCodPayment &&
     order.paymentStatus === "PENDING" &&
-    (order.payments ?? []).some((p) => p.provider === "COD")
+    TRACK_SYNC_ORDER_STATUSES.has(order.status)
   );
 }
 
@@ -104,9 +109,17 @@ function assertPaymentEligibleForShipping(
     return { ok: true };
   }
   if (order.paymentStatus === "PENDING") {
+    const hasCodPayment = (order.payments ?? []).some((p) => p.provider === "COD");
+    if (hasCodPayment) {
+      return {
+        ok: false,
+        error: `COD order is not in a shippable status (current: ${order.status}). Move it to Paid, Processing, or Packed first.`,
+        code: "PAYMENT_NOT_CAPTURED"
+      };
+    }
     return {
       ok: false,
-      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). COD orders are shippable once order status is Paid.`,
+      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). Use admin Sync payment (Razorpay) if the gateway shows paid.`,
       code: "PAYMENT_NOT_CAPTURED"
     };
   }
