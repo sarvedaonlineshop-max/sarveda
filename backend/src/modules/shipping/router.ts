@@ -3,7 +3,6 @@ import type { OrderStatus, PaymentProvider, PaymentStatus, Prisma } from "@prism
 import { prisma } from "../../config/db";
 import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
-import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 
 import * as delhivery from "./delhivery";
 import { resolvePickupForShipment } from "./pickupLocation.resolve";
@@ -338,16 +337,6 @@ export function nextCarrierChannelOrderId(
   return { channelOrderId, nextSeq };
 }
 
-const SHIPPING_RETRY_CODES = new Set([
-  "SHIPMENT_FAILED",
-  "SHIPROCKET_CREATE",
-  "SHIPROCKET_ASSIGN",
-  "SHIPROCKET_PARSE",
-  "SHIPROCKET_AUTH",
-  "DELHIVERY_CREATE",
-  "DELHIVERY_PARSE"
-]);
-
 async function recordShippingFailure(
   orderId: string,
   error: string,
@@ -364,9 +353,6 @@ async function recordShippingFailure(
     });
   } catch (e) {
     logger.warn("shipping_error_persist_failed", { orderId, err: e });
-  }
-  if (SHIPPING_RETRY_CODES.has(code)) {
-    await scheduleShippingRetry(orderId);
   }
 }
 

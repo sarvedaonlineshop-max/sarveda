@@ -3,8 +3,6 @@ import { Queue, Worker, type Job } from "bullmq";
 import { prisma } from "../config/db";
 import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
-import { autoSelectAndCreate } from "../modules/shipping/router";
-
 export const SHIPPING_RETRY_QUEUE = "shipping-retry";
 const RETRY_DELAY_MS = 30 * 60 * 1000;
 const MAX_AUTO_RETRIES = 3;
@@ -62,17 +60,13 @@ async function processRetry(job: Job<{ orderId: string }>): Promise<void> {
     return;
   }
 
-  const result = await autoSelectAndCreate(orderId);
-  if (!result.success) {
-    logger.warn("shipping_retry_failed", { orderId, error: result.error, code: result.code });
-    return;
-  }
-
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { shippingLastError: null, shippingLastErrorAt: null }
+  // Auto AWB creation is disabled — labels are created from Ready to ship
+  // with admin-selected partner + source. Drop queued retries quietly.
+  logger.info("shipping_retry_skipped", {
+    orderId,
+    reason: "manual_label_required",
+    lastError: order.shippingLastError
   });
-  logger.info("shipping_retry_attempted", { orderId, waybill: result.data.waybill });
 }
 
 export function startShippingRetryWorker(): void {

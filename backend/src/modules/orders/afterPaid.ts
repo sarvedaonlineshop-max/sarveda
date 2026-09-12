@@ -98,6 +98,7 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
         data: { status: "PROCESSING" }
       });
       notifyOrderEmail(orderId, "order_processing");
+      // Leave in Ready to ship — admin creates labels with partner + source.
       void onOrderEnteredProcessing(orderId);
     }
   }

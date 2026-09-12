@@ -4,7 +4,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
-import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
+import { assertOrderEligibleForTrackingSync } from "./router";
 import * as shiprocket from "./shiprocket";
 import { notifyOrderEmail } from "../notifications/email";
 
@@ -99,13 +99,12 @@ export async function handleRtoShipment(
   logger.info("rto_recorded_no_auto_restock", { orderId, awb, status });
 }
 
+/**
+ * Processing means warehouse-ready — admin picks partner + source on
+ * Shipments → Ready to ship. Do not auto-create carrier labels here.
+ */
 export async function onOrderEnteredProcessing(orderId: string): Promise<void> {
-  const result = await autoSelectAndCreate(orderId);
-  if (!result.success) {
-    logger.error("shipping_processing_failed", { orderId, error: result.error, code: result.code });
-    return;
-  }
-  logger.info("shipping_processing_ok", { orderId, waybill: result.data.waybill });
+  logger.info("order_ready_to_ship_manual_label", { orderId });
 }
 
 /**
