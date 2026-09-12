@@ -728,19 +728,18 @@ function AdminOrderProductionView({
   deliveryChallan,
   challanBusy,
   canGenerateChallan,
-  shipBusy,
-  shipUi,
-  onCreateShipment,
+  shipBusy: _shipBusy,
+  shipUi: _shipUi,
+  onCreateShipment: _onCreateShipment,
   onGenerateChallan,
   onEditAddress,
   onStatusChange,
   onSetShipmentStatus,
   statusSaving,
-  dangerActions,
   refundContent: _refundContent,
   ewayBill,
   serviceRequests: _serviceRequests,
-  shipmentSetup
+  shipmentSetup: _shipmentSetup
 }: {
   order: OrderLoaded;
   invoice: { invoiceNo: string | null; downloadUrl: string | null; pdfUrl: string | null } | null;
@@ -761,7 +760,6 @@ function AdminOrderProductionView({
   onStatusChange: (status: string) => void;
   onSetShipmentStatus: (waybill: string, status: string) => void;
   statusSaving: boolean;
-  dangerActions: ReactNode;
   refundContent: ReactNode;
   ewayBill: ReactNode;
   serviceRequests: ReactNode;
@@ -787,26 +785,6 @@ function AdminOrderProductionView({
   const billing = order.addresses.find((a) => a.type === "BILLING");
   const customerName = order.customerName ?? shipping?.fullName ?? billing?.fullName ?? "Customer";
   const awbRows = allOrderAwbRows(order.shipments);
-  const paymentLabel = isCod
-    ? isCancelled && !captured
-      ? "COD — Not Collected"
-      : captured
-        ? "COD — Collected"
-        : "COD — Pending Collection"
-    : order.paymentStatus === "CAPTURED"
-      ? `Paid via ${humanState(payment?.provider ?? "Online")}`
-      : order.paymentStatus === "PARTIALLY_REFUNDED"
-        ? "Partially Refunded"
-        : order.paymentStatus === "REFUNDED"
-          ? "Refunded"
-          : order.paymentStatus === "FAILED"
-            ? "Payment Failed"
-            : "Payment Pending";
-  const orderLabel = isCancelled
-    ? "Cancelled"
-    : isUnpaidCheckoutAttempt(order.status, order.paymentStatus, payment?.provider)
-      ? "Abandoned"
-      : formatAdminOrderStatusLabel(order.status, order.paymentStatus, payment?.provider);
   const shipmentHeadline = orderShipmentHeadline(
     order.status,
     isCancelled,
@@ -830,14 +808,6 @@ function AdminOrderProductionView({
       { status: "RTO", label: "Mark RTO" }
     ]
   };
-  const deliveryStateIncomplete =
-    order.status === "DELIVERED" &&
-    awbRows.some((row) => {
-      const meta = order.shipments.find((s) => s.id === row.shipmentId);
-      const isReverse = (meta?.carrierMeta as { direction?: string } | null | undefined)?.direction === "REVERSE";
-      if (isReverse) return false;
-      return row.status !== "DELIVERED";
-    });
   const seenShipmentIds = new Set<string>();
 
   const shippingByItemId = allocateShippingByQty(order.items, order.shippingInPaise);
@@ -1116,10 +1086,6 @@ function AdminOrderProductionView({
   const fulfillmentStatusActions = ["PROCESSING", "PACKED", "SHIPPED"].includes(order.status)
     ? (nextStatuses[order.status] ?? [])
     : [];
-  const showActionBar =
-    Boolean(dangerActions) ||
-    deliveryStateIncomplete ||
-    (shipUi && awbRows.length === 0);
 
   const goTo = (sectionId: string, opts?: { openShipmentTimeline?: boolean }) => {
     if (opts?.openShipmentTimeline) setShipmentTimelineOpen(true);
@@ -1385,29 +1351,16 @@ function AdminOrderProductionView({
                 <h1 className="text-3xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100">
                   #{order.orderNumber}
                 </h1>
-                <span
-                  className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
-                    isCancelled
-                      ? "border-red-200 bg-red-50 text-red-800"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  }`}
-                >
-                  {orderLabel}
-                </span>
-                <span
-                  className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
-                    order.paymentStatus === "FAILED"
-                      ? "border-red-200 bg-red-50 text-red-800"
-                      : isCod && !captured
-                        ? "border-amber-200 bg-amber-50 text-amber-800"
-                        : "border-sky-200 bg-sky-50 text-sky-800"
-                  }`}
-                >
-                  {paymentLabel}
-                </span>
-                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-700">
-                  {shipmentHeadline}
-                </span>
+                {order.status === "PAID" && !isCancelled ? (
+                  <button
+                    type="button"
+                    disabled={statusSaving}
+                    onClick={() => onStatusChange("PROCESSING")}
+                    className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                  >
+                    {statusSaving ? "Updating…" : "Mark Processing"}
+                  </button>
+                ) : null}
               </div>
               <p className="mt-2 text-sm text-stone-500">
                 {customerName} · {order.email}
@@ -1490,29 +1443,6 @@ function AdminOrderProductionView({
         </div>
       </section>
 
-      {order.status === "PAID" && !isCancelled ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-base font-extrabold text-amber-950">
-                New order — acknowledge for warehouse
-              </p>
-              <p className="mt-1 text-sm leading-6 text-amber-900/80">
-                Mark Processing to move this out of New and into Shipments → Ready to ship (create label).
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={statusSaving}
-              onClick={() => onStatusChange("PROCESSING")}
-              className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-            >
-              {statusSaving ? "Updating…" : "Mark Processing"}
-            </button>
-          </div>
-        </section>
-      ) : null}
-
       {fulfillmentStatusActions.length > 0 ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1538,75 +1468,6 @@ function AdminOrderProductionView({
                   {statusSaving ? "Updating…" : `Mark ${humanState(status)}`}
                 </button>
               ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {["PROCESSING", "PACKED"].includes(order.status) && awbRows.length === 0 ? (
-        <section className={`${card} p-5`}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-base font-extrabold text-stone-950">Ready for label</p>
-              <p className="mt-1 text-sm leading-6 text-stone-500">
-                This order is in Shipments → Ready to ship. Create a courier label when the parcel is ready.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {shipUi ? (
-                <button
-                  type="button"
-                  disabled={!!shipBusy}
-                  onClick={onCreateShipment}
-                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  {shipBusy === "create" ? "Creating label…" : "Create label"}
-                </button>
-              ) : null}
-              <Link
-                href="/admin/shipments?bucket=ready"
-                className="rounded-xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
-              >
-                Open Ready to ship
-              </Link>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {showActionBar ? (
-        <section className={`${card} p-5`}>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {shipUi && awbRows.length === 0 ? (
-                <button
-                  type="button"
-                  disabled={!!shipBusy}
-                  onClick={onCreateShipment}
-                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  {shipBusy === "create" ? "Creating label…" : "Create label"}
-                </button>
-              ) : null}
-            </div>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
-              <div className="flex flex-wrap gap-2 lg:justify-end">
-                {deliveryStateIncomplete ? (
-                  <button
-                    type="button"
-                    disabled={statusSaving}
-                    onClick={() => onStatusChange("DELIVERED")}
-                    className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-bold text-amber-950 disabled:opacity-50"
-                  >
-                    Confirm delivery state
-                  </button>
-                ) : null}
-              </div>
-              {dangerActions ? (
-                <div className="border-t border-red-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                  {dangerActions}
-                </div>
-              ) : null}
             </div>
           </div>
         </section>
@@ -2783,13 +2644,6 @@ export default function AdminOrderDetailPage() {
     }
   }
 
-  /** When the line-item refund panel can run, it is the only refund control on the page. */
-  const lineRefundAvailable =
-    order.payments?.[0]?.provider !== "COD" &&
-    !order.shipments.some((s) => s.status === "RTO" || s.rtoAt) &&
-    !["CANCELLED", "REFUNDED"].includes(order.status) &&
-    ["CAPTURED", "PARTIALLY_REFUNDED"].includes(order.paymentStatus);
-
   const showRefundActions =
     !order.shipments.some((s) => s.status === "RTO" || s.rtoAt) &&
     !["CANCELLED", "REFUNDED", "DELIVERED"].includes(order.status) &&
@@ -3037,17 +2891,6 @@ export default function AdminOrderDetailPage() {
         onStatusChange={(status) => setStatusConfirm(status)}
         onSetShipmentStatus={(waybill, status) => void handleSetShipmentStatus(waybill, status)}
         statusSaving={statusSaving}
-        dangerActions={
-          showRefundActions && !lineRefundAvailable ? (
-            <RefundCancelPanel
-              compact
-              orderId={order.id}
-              status={order.status}
-              paymentStatus={order.paymentStatus}
-              onDone={() => void load()}
-            />
-          ) : null
-        }
         refundContent={null}
         serviceRequests={null}
         ewayBill={<AdminOrderEwayBillCard orderId={id} onToast={pushToast} />}

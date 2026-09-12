@@ -1,0 +1,14 @@
+---
+description: Always commit and push completed work without asking
+alwaysApply: true
+---
+
+# Git commit & push
+
+When the user asks for a feature/fix and the work is done on the active branch:
+
+1. **Commit and push automatically** — do not ask “want me to commit/push?”
+2. Follow the existing commit protocol (status/diff/log, HEREDOC message, no secrets, no `--force` on main/master unless explicitly requested).
+3. Push to the tracked remote branch after a successful commit.
+4. Still **do not** commit secrets, `.env`, credentials, or unrelated files (e.g. `tmp/`).
+5. If commit/push is blocked (hooks, auth, conflicts), report the failure and fix or ask only for what is required to unblock.
