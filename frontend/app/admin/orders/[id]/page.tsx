@@ -728,7 +728,7 @@ function AdminOrderProductionView({
   deliveryChallan,
   challanBusy,
   canGenerateChallan,
-  shipBusy: _shipBusy,
+  shipBusy,
   shipUi: _shipUi,
   onCreateShipment: _onCreateShipment,
   onGenerateChallan,
