@@ -739,7 +739,7 @@ function AdminOrderProductionView({
   refundContent: _refundContent,
   ewayBill,
   serviceRequests: _serviceRequests,
-  shipmentSetup: _shipmentSetup
+  shipmentSetup
 }: {
   order: OrderLoaded;
   invoice: { invoiceNo: string | null; downloadUrl: string | null; pdfUrl: string | null } | null;
