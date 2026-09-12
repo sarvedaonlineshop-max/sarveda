@@ -1113,6 +1113,8 @@ export function adminCreateShipmentForOrder(
     chargeableGrams?: number;
     customerShippingInPaise?: number;
     boxes?: DelhiveryShipBox[];
+    orderItemIds?: string[];
+    allowAdditionalShipment?: boolean;
   }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
@@ -1177,8 +1179,12 @@ export function adminSaveManualAwb(
   orderId: string,
   body: {
     awb: string;
-    courier: "DELHIVERY" | "SHIPROCKET" | "FEDEX" | "INDIA_POST" | "OTHER";
+    courier: "DELHIVERY" | "SHIPROCKET" | "FEDEX" | "INDIA_POST" | "ARAMEX" | "OTHER";
     trackingUrl?: string;
+    pickupLocationId?: string | null;
+    orderItemIds?: string[];
+    customCourierName?: string;
+    forceNew?: boolean;
   }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(

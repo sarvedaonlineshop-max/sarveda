@@ -172,6 +172,8 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
         delhiveryFreightInr: z.number().min(0).optional(),
         chargeableGrams: z.number().int().min(0).optional(),
         customerShippingInPaise: z.number().int().min(0).optional(),
+        orderItemIds: z.array(z.string().uuid()).min(1).max(100).optional(),
+        allowAdditionalShipment: z.boolean().optional(),
         boxes: z
           .array(
             z.object({
@@ -212,7 +214,9 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       delhiveryFreightInr,
       chargeableGrams,
       customerShippingInPaise,
-      boxes
+      boxes,
+      orderItemIds,
+      allowAdditionalShipment
     } = bodyParsed.data;
     if (preferredCourier) {
       await prisma.order.update({
@@ -234,7 +238,9 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       ...(delhiveryFreightInr != null ? { delhiveryFreightInr } : {}),
       ...(chargeableGrams != null ? { chargeableGrams } : {}),
       ...(customerShippingInPaise != null ? { customerShippingInPaise } : {}),
-      ...(boxes?.length ? { boxes } : {})
+      ...(boxes?.length ? { boxes } : {}),
+      ...(orderItemIds?.length ? { orderItemIds } : {}),
+      ...(allowAdditionalShipment ? { allowAdditionalShipment: true } : {})
     });
     if (!result.success) {
       res.status(400).json(result);
@@ -539,8 +545,12 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
 
 const manualAwbBody = z.object({
   awb: z.string().min(4).max(64),
-  courier: z.enum(["DELHIVERY", "SHIPROCKET", "FEDEX", "INDIA_POST", "OTHER"]),
-  trackingUrl: z.string().url().max(500).optional().or(z.literal(""))
+  courier: z.enum(["DELHIVERY", "SHIPROCKET", "FEDEX", "INDIA_POST", "ARAMEX", "OTHER"]),
+  trackingUrl: z.string().url().max(500).optional().or(z.literal("")),
+  pickupLocationId: z.string().uuid().optional().nullable(),
+  orderItemIds: z.array(z.string().uuid()).min(1).max(100).optional(),
+  customCourierName: z.string().min(1).max(80).optional(),
+  forceNew: z.boolean().optional()
 });
 
 export async function postManualAwb(req: Request, res: Response, next: NextFunction) {
@@ -554,7 +564,7 @@ export async function postManualAwb(req: Request, res: Response, next: NextFunct
     if (!parsed.success) {
       res.status(400).json({
         success: false,
-        error: "awb, courier, and optional trackingUrl required",
+        error: parsed.error.issues.map((i) => i.message).join("; ") || "Invalid manual AWB body",
         code: "VALIDATION_ERROR"
       });
       return;
@@ -563,7 +573,13 @@ export async function postManualAwb(req: Request, res: Response, next: NextFunct
       orderId,
       parsed.data.awb,
       parsed.data.courier,
-      parsed.data.trackingUrl
+      parsed.data.trackingUrl,
+      {
+        pickupLocationId: parsed.data.pickupLocationId,
+        orderItemIds: parsed.data.orderItemIds,
+        customCourierName: parsed.data.customCourierName,
+        forceNew: parsed.data.forceNew
+      }
     );
     if (!result.success) {
       res.status(result.code === "NOT_FOUND" ? 404 : 400).json(result);

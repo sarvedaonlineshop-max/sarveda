@@ -12,17 +12,25 @@ import {
   adminCancelWaybill,
   adminCreateShipmentForOrder,
   adminEstimateDelhiveryCharge,
+  adminSaveManualAwb,
   adminSyncOrderShipments,
   delhiveryLabelUrl,
   fetchAdminOrderDetail,
   fetchAdminOrderShippingBreakdown,
   fetchAdminPickupLocations,
+  patchAdminOrderItemWarehouses,
   type AdminPickupLocationRow,
   type DelhiveryShipBox
 } from "@/lib/admin-api";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
-  breakdownChargeableWeight,
+  coveredOrderItemIdsFromShipments,
+  type DeliveryPartnerCode,
+  type LineFulfillmentPref,
+  partnerDisplayLabel,
+  ShipmentLineFulfillmentTable
+} from "@/components/admin/ShipmentLineFulfillment";
+import {
   digitsOnly,
   totalChargeableWeightGrams,
   validateBoxDimensions
@@ -31,9 +39,7 @@ import { formatMinorFromPaise } from "@/lib/money";
 import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
 import {
   allOrderAwbRows,
-  paymentModeLabel,
   primaryForwardShipment,
-  shippingModeLabel,
   type ShipmentCarrierMeta
 } from "@/lib/shipment-labels";
 
@@ -137,6 +143,13 @@ export default function AdminShipmentCreateLabelPage() {
   const [syncBusy, setSyncBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [linePrefs, setLinePrefs] = useState<Record<string, LineFulfillmentPref>>({});
+  const [panelSourceId, setPanelSourceId] = useState("");
+  const [panelPartner, setPanelPartner] = useState<DeliveryPartnerCode | "">("");
+  const [panelCustomName, setPanelCustomName] = useState("");
+  const [manualAwb, setManualAwb] = useState("");
+  const [manualTrackingUrl, setManualTrackingUrl] = useState("");
   const [breakdown, setBreakdown] = useState<{
     breakdown: {
       zone: string;
@@ -194,6 +207,29 @@ export default function AdminShipmentCreateLabelPage() {
       const list = pickups ?? [];
       setPickupOptions(list);
       if (list[0] && !selectedPickupId) setSelectedPickupId(list[0].id);
+      setLinePrefs((prev) => {
+        const next = { ...prev };
+        for (const it of loaded.items) {
+          if (!it.id) continue;
+          if (next[it.id]) continue;
+          next[it.id] = {
+            sourceId: it.pickupLocation?.id ?? list[0]?.id ?? "",
+            partner: "",
+            customPartnerName: ""
+          };
+        }
+        return next;
+      });
+      const covered = coveredOrderItemIdsFromShipments(loaded.shipments);
+      const legacy = covered.has("__LEGACY_FULL_ORDER__");
+      const open = loaded.items
+        .filter((it) => {
+          if (!it.id) return false;
+          const qty = typeof it.qtyShippable === "number" ? it.qtyShippable : it.qtyOrdered;
+          return qty > 0 && !legacy && !covered.has(it.id);
+        })
+        .map((it) => it.id!);
+      setSelectedItemIds(new Set(open));
       const isCod = loaded.payments?.[0]?.provider === "COD";
       setShipPaymentMode(isCod ? "COD" : "Pre-paid");
     } catch (e) {
@@ -223,10 +259,38 @@ export default function AdminShipmentCreateLabelPage() {
   const forward = order ? primaryForwardShipment(order.shipments ?? []) : null;
   const awbRows = order ? allOrderAwbRows(order.shipments ?? []) : [];
   const hasForwardAwb = Boolean(forward?.awb?.trim());
-  const forwardMeta = forward?.carrierMeta ?? null;
-  const bookingBoxes = forwardMeta?.boxes ?? [];
-  const delhiveryFreightBooked = forwardMeta?.delhiveryFreightInr;
-  const bookedChargeableG = forwardMeta?.chargeableGrams;
+  const coveredIds = useMemo(
+    () => coveredOrderItemIdsFromShipments(order?.shipments),
+    [order?.shipments]
+  );
+  const legacyFullyCovered = coveredIds.has("__LEGACY_FULL_ORDER__");
+  const openItemIds = useMemo(() => {
+    if (!order || legacyFullyCovered) return [] as string[];
+    return order.items
+      .filter((it) => {
+        if (!it.id) return false;
+        const qty = typeof it.qtyShippable === "number" ? it.qtyShippable : it.qtyOrdered;
+        return qty > 0 && !coveredIds.has(it.id);
+      })
+      .map((it) => it.id!) ;
+  }, [order, coveredIds, legacyFullyCovered]);
+  const canCreateMore = openItemIds.length > 0;
+  const selectedOpenIds = useMemo(
+    () => Array.from(selectedItemIds).filter((id) => openItemIds.includes(id)),
+    [selectedItemIds, openItemIds]
+  );
+  const selectedPrefs = selectedOpenIds.map((id) => linePrefs[id]).filter(Boolean);
+  const selectedPartners = new Set(
+    selectedPrefs.map((p) => p.partner).filter((p): p is DeliveryPartnerCode => Boolean(p))
+  );
+  const selectedSources = new Set(selectedPrefs.map((p) => p.sourceId).filter(Boolean));
+  const createPartner =
+    selectedPartners.size === 1 ? Array.from(selectedPartners)[0] : null;
+  const createSourceId =
+    selectedSources.size === 1 ? Array.from(selectedSources)[0] : selectedPickupId;
+  const isDelhiveryCreate = createPartner === "DELHIVERY";
+  const isManualCreate =
+    createPartner != null && createPartner !== "DELHIVERY" && selectedOpenIds.length > 0;
   const canCancelLabel =
     hasForwardAwb &&
     Boolean(forward?.awb) &&
@@ -253,7 +317,7 @@ export default function AdminShipmentCreateLabelPage() {
     }
   }
   useEffect(() => {
-    if (!order || !shippingAddr || hasForwardAwb) return;
+    if (!order || !shippingAddr || (!canCreateMore && hasForwardAwb)) return;
     const destPin = (shippingAddr.postalCode || "").replace(/\D/g, "");
     if (destPin.length !== 6 || shipBoxes.length === 0) {
       setFreightByMode({ S: null, E: null });
@@ -263,7 +327,10 @@ export default function AdminShipmentCreateLabelPage() {
       return;
     }
     const originPin =
-      pickupOptions.find((p) => p.id === selectedPickupId)?.postalCode?.replace(/\D/g, "") ?? "";
+      pickupOptions.find((p) => p.id === (createSourceId || selectedPickupId))?.postalCode?.replace(
+        /\D/g,
+        ""
+      ) ?? "";
     if (originPin.length !== 6) return;
 
     let cancelled = false;
@@ -305,14 +372,69 @@ export default function AdminShipmentCreateLabelPage() {
     order,
     shippingAddr,
     hasForwardAwb,
+    canCreateMore,
     shipBoxes,
     shipPaymentMode,
     selectedPickupId,
+    createSourceId,
     pickupOptions
   ]);
 
+  function applyPanelToSelected() {
+    if (selectedOpenIds.length === 0) {
+      pushToast("Select at least one open line item.", true);
+      return;
+    }
+    if (!panelSourceId) {
+      pushToast("Select a source location.", true);
+      return;
+    }
+    if (!panelPartner) {
+      pushToast("Select a delivery partner.", true);
+      return;
+    }
+    if (panelPartner === "OTHER" && !panelCustomName.trim()) {
+      pushToast("Enter a custom partner name for Others.", true);
+      return;
+    }
+    setLinePrefs((prev) => {
+      const next = { ...prev };
+      for (const id of selectedOpenIds) {
+        next[id] = {
+          sourceId: panelSourceId,
+          partner: panelPartner,
+          customPartnerName: panelPartner === "OTHER" ? panelCustomName.trim() : ""
+        };
+      }
+      return next;
+    });
+    setSelectedPickupId(panelSourceId);
+    void patchAdminOrderItemWarehouses(
+      orderId,
+      selectedOpenIds.map((orderItemId) => ({
+        orderItemId,
+        pickupLocationId: panelSourceId
+      }))
+    ).catch((e) =>
+      pushToast(e instanceof Error ? e.message : "Could not save source on lines", true)
+    );
+    pushToast(`Assigned ${selectedOpenIds.length} item(s).`);
+  }
+
   async function handleCreateLabel() {
     if (!orderId || !order) return;
+    if (selectedOpenIds.length === 0) {
+      pushToast("Select the items to include on this shipment.", true);
+      return;
+    }
+    if (!isDelhiveryCreate) {
+      pushToast("Selected items must all be assigned to Delhivery for API label create.", true);
+      return;
+    }
+    if (selectedSources.size !== 1 || !createSourceId) {
+      pushToast("Selected Delhivery items must share one Source location.", true);
+      return;
+    }
     const invalid = shipBoxes.find(
       (b) => validateBoxDimensions(b.lengthCm, b.breadthCm, b.heightCm) != null
     );
@@ -324,14 +446,17 @@ export default function AdminShipmentCreateLabelPage() {
       );
       return;
     }
-    if (!selectedPickupId) {
-      pushToast("Select a pickup facility.", true);
-      return;
-    }
     setShipBusy(true);
     try {
+      await patchAdminOrderItemWarehouses(
+        orderId,
+        selectedOpenIds.map((orderItemId) => ({
+          orderItemId,
+          pickupLocationId: createSourceId
+        }))
+      );
       const created = await adminCreateShipmentForOrder(orderId, {
-        pickupLocationId: selectedPickupId,
+        pickupLocationId: createSourceId,
         preferredCourier: "DELHIVERY",
         channel: CHANNEL,
         paymentMode: shipPaymentMode,
@@ -344,13 +469,77 @@ export default function AdminShipmentCreateLabelPage() {
         delhiveryFreightInr: freightByMode[shipMode] ?? undefined,
         chargeableGrams: totalChargeableG,
         customerShippingInPaise: order.shippingInPaise,
-        boxes: shipBoxes
+        boxes: shipBoxes,
+        orderItemIds: selectedOpenIds,
+        allowAdditionalShipment: true
       });
-      pushToast(`Label created — AWB ${created.waybill}. Order moved to Processing.`);
+      pushToast(`Delhivery label created — AWB ${created.waybill}.`);
+      setSelectedItemIds(new Set());
       await load();
-      router.push("/admin/shipments?bucket=created");
+      if (openItemIds.length <= selectedOpenIds.length) {
+        router.push("/admin/shipments?bucket=created");
+      }
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Could not create label", true);
+      void load();
+    } finally {
+      setShipBusy(false);
+    }
+  }
+
+  async function handleSaveManualShipment() {
+    if (!orderId || !order) return;
+    if (selectedOpenIds.length === 0) {
+      pushToast("Select the items for this manual shipment.", true);
+      return;
+    }
+    if (!isManualCreate || !createPartner) {
+      pushToast("Assign a non-Delhivery partner to the selected items first.", true);
+      return;
+    }
+    if (selectedSources.size !== 1 || !createSourceId) {
+      pushToast("Selected items must share one Source location.", true);
+      return;
+    }
+    if (createPartner === "OTHER") {
+      const name = selectedPrefs[0]?.customPartnerName?.trim();
+      if (!name) {
+        pushToast("Enter a custom partner name for Others.", true);
+        return;
+      }
+    }
+    const awb = manualAwb.trim();
+    if (awb.length < 4) {
+      pushToast("Enter the AWB / tracking number (min 4 characters).", true);
+      return;
+    }
+    setShipBusy(true);
+    try {
+      await patchAdminOrderItemWarehouses(
+        orderId,
+        selectedOpenIds.map((orderItemId) => ({
+          orderItemId,
+          pickupLocationId: createSourceId
+        }))
+      );
+      const customName =
+        createPartner === "OTHER" ? selectedPrefs[0]?.customPartnerName?.trim() : undefined;
+      const created = await adminSaveManualAwb(orderId, {
+        awb,
+        courier: createPartner,
+        trackingUrl: manualTrackingUrl.trim() || undefined,
+        pickupLocationId: createSourceId,
+        orderItemIds: selectedOpenIds,
+        customCourierName: customName,
+        forceNew: true
+      });
+      pushToast(`Manual shipment saved — ${created.courier} · ${created.waybill}.`);
+      setManualAwb("");
+      setManualTrackingUrl("");
+      setSelectedItemIds(new Set());
+      await load();
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Could not save manual AWB", true);
       void load();
     } finally {
       setShipBusy(false);
@@ -491,56 +680,37 @@ export default function AdminShipmentCreateLabelPage() {
             </div>
           ) : null}
 
-          <div className="mt-5 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b text-[11px] font-bold uppercase tracking-wide text-stone-400">
-                <tr>
-                  <th className="py-2 pr-2">Item</th>
-                  <th className="py-2 pr-2">SKU</th>
-                  <th className="py-2 pr-2">Qty</th>
-                  <th className="py-2 pr-2">Warehouse</th>
-                  <th className="py-2 text-right">Line</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {order.items
-                  .map((it) => {
-                    const qty =
-                      typeof it.qtyShippable === "number"
-                        ? it.qtyShippable
-                        : it.qtyOrdered;
-                    if (qty <= 0) return null;
-                    const linePaise =
-                      it.qtyOrdered > 0
-                        ? Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered)
-                        : it.lineTotalInPaise;
-                    return (
-                      <tr key={it.id ?? `${it.skuSnapshot}-${qty}`}>
-                        <td className="py-2.5 pr-2">
-                          <div className="font-extrabold text-stone-950">{it.nameSnapshot}</div>
-                          {typeof it.returnedQty === "number" && it.returnedQty > 0 ? (
-                            <div className="mt-0.5 text-xs text-amber-800">
-                              Ordered {it.qtyOrdered}, restocked {it.returnedQty}
-                            </div>
-                          ) : null}
-                        </td>
-                        <td className="py-2.5 pr-2 font-mono text-xs text-stone-500">
-                          {it.skuSnapshot}
-                        </td>
-                        <td className="py-2.5 pr-2 font-extrabold">{qty}</td>
-                        <td className="py-2.5 pr-2 text-stone-600">
-                          {it.pickupLocation?.label ?? "Warehouse"}
-                        </td>
-                        <td className="py-2.5 text-right font-extrabold">
-                          {formatMinorFromPaise(linePaise, order.currency)}
-                        </td>
-                      </tr>
-                    );
-                  })
-                  .filter(Boolean)}
-              </tbody>
-            </table>
-          </div>
+          <ShipmentLineFulfillmentTable
+            items={order.items}
+            currency={order.currency}
+            pickupOptions={pickupOptions}
+            prefs={linePrefs}
+            selectedIds={selectedItemIds}
+            coveredIds={coveredIds}
+            legacyFullyCovered={legacyFullyCovered}
+            panelSourceId={panelSourceId}
+            panelPartner={panelPartner}
+            panelCustomName={panelCustomName}
+            onToggle={(id) => {
+              setSelectedItemIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              });
+            }}
+            onToggleAllOpen={() => {
+              setSelectedItemIds((prev) => {
+                if (openItemIds.length === 0) return prev;
+                const allOn = openItemIds.every((id) => prev.has(id));
+                return allOn ? new Set() : new Set(openItemIds);
+              });
+            }}
+            onPanelSource={setPanelSourceId}
+            onPanelPartner={setPanelPartner}
+            onPanelCustomName={setPanelCustomName}
+            onApplyPanel={applyPanelToSelected}
+          />
 
           <dl className="mt-4 space-y-1 border-t border-stone-100 pt-3 text-sm">
             {typeof order.subtotalInPaise === "number" ? (
@@ -603,68 +773,12 @@ export default function AdminShipmentCreateLabelPage() {
           {hasForwardAwb ? (
             <div className="space-y-4">
               <div className="pb-1">
-                <h2 className="text-2xl font-extrabold text-stone-950">Label already created</h2>
-                <p className="mt-1 text-sm text-stone-500">Courier booking, AWB, and tracking actions.</p>
-              </div>
-
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-900">
-                  Delhivery booking (courier)
+                <h2 className="text-2xl font-extrabold text-stone-950">Existing labels</h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  {canCreateMore
+                    ? "Some lines already have AWBs. Select remaining items to create another shipment."
+                    : "Courier booking, AWB, and tracking actions."}
                 </p>
-                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-white/80 px-3 py-2">
-                    <dt className="text-xs text-stone-500">Delhivery freight quote</dt>
-                    <dd className="mt-1 text-lg font-extrabold text-stone-950">
-                      {delhiveryFreightBooked != null
-                        ? `₹${delhiveryFreightBooked.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
-                        : "—"}
-                    </dd>
-                  </div>
-                  <div className="rounded-2xl bg-white/80 px-3 py-2">
-                    <dt className="text-xs text-stone-500">Customer paid shipping</dt>
-                    <dd className="mt-1 text-lg font-extrabold">
-                      {formatMinorFromPaise(order.shippingInPaise, order.currency)}
-                    </dd>
-                  </div>
-                  <div className="rounded-2xl bg-white/80 px-3 py-2">
-                    <dt className="text-xs text-stone-500">Mode</dt>
-                    <dd className="mt-1 font-extrabold">
-                      {paymentModeLabel(forwardMeta?.paymentMode)} ·{" "}
-                      {shippingModeLabel(forwardMeta?.shippingMode)}
-                    </dd>
-                  </div>
-                  <div className="rounded-2xl bg-white/80 px-3 py-2">
-                    <dt className="text-xs text-stone-500">Total chargeable weight</dt>
-                    <dd className="mt-1 font-extrabold">
-                      {bookedChargeableG != null
-                        ? `${bookedChargeableG.toLocaleString("en-IN")} gm`
-                        : "—"}
-                    </dd>
-                  </div>
-                </dl>
-                {bookingBoxes.length > 0 ? (
-                  <ul className="mt-3 space-y-1.5 border-t border-emerald-200/80 pt-2 text-xs text-stone-700">
-                    {bookingBoxes.map((box, idx) => {
-                      const vol = breakdownChargeableWeight({
-                        lengthCm: box.lengthCm,
-                        breadthCm: box.breadthCm,
-                        heightCm: box.heightCm,
-                        weightGrams: box.weightGrams,
-                        packageType:
-                          (box.packageType as "PLASTIC_COVER" | "CARDBOARD_BOX") ?? "CARDBOARD_BOX"
-                      });
-                      return (
-                        <li key={idx}>
-                          <span className="font-semibold text-stone-900">Box {idx + 1}:</span>{" "}
-                          {box.lengthCm}×{box.breadthCm}×{box.heightCm} cm · dead{" "}
-                          {box.weightGrams.toLocaleString("en-IN")} gm · chargeable{" "}
-                          {vol.chargeableGrams.toLocaleString("en-IN")} gm
-                          {box.packageType ? ` · ${box.packageType.replace(/_/g, " ").toLowerCase()}` : ""}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : null}
               </div>
 
               {awbRows.map((row) => (
@@ -725,24 +839,107 @@ export default function AdminShipmentCreateLabelPage() {
                   </button>
                 ) : null}
               </div>
-              <p className="text-sm leading-6 text-stone-500">
-                Pickup is scheduled in <strong>Delhivery One</strong> (“Add to Pickup”). When their courier
-                collects the parcel, Delhivery marks it Picked — press Sync here (no manual “mark pickup”
-                needed in Sarveda). Then: In transit → Out for delivery → Delivered.
-              </p>
             </div>
-          ) : (
-            <div className="space-y-4">
+          ) : null}
+
+          {canCreateMore ? (
+            <div className={`space-y-4 ${hasForwardAwb ? "mt-8 border-t border-stone-100 pt-6" : ""}`}>
               <div className="pb-1">
-                <h2 className="text-2xl font-extrabold text-stone-950">Delhivery label</h2>
-                <p className="mt-1 text-sm text-stone-500">Facility, package, and freight mode.</p>
+                <h2 className="text-2xl font-extrabold text-stone-950">
+                  {isManualCreate ? "Manual shipment" : "Create shipment"}
+                </h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  Select items, apply Source + Delivery Partner, then{" "}
+                  {isManualCreate
+                    ? "enter the AWB booked outside Sarveda."
+                    : "create a Delhivery label (boxes, SURFACE/EXPRESS unchanged)."}
+                </p>
               </div>
+
+              {selectedOpenIds.length === 0 ? (
+                <p className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-950">
+                  Select one or more open items on the left, assign Source and Delivery Partner, then
+                  continue here.
+                </p>
+              ) : selectedPartners.size === 0 ? (
+                <p className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-950">
+                  Apply a Delivery Partner to the selected items first.
+                </p>
+              ) : selectedPartners.size > 1 ? (
+                <p className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-950">
+                  Selected items have different partners. Select only one partner group at a time.
+                </p>
+              ) : selectedSources.size > 1 ? (
+                <p className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-950">
+                  Selected items have different Source locations. Use one source per shipment.
+                </p>
+              ) : isManualCreate ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-stone-600">
+                    Partner:{" "}
+                    <strong>
+                      {partnerDisplayLabel(selectedPrefs[0]) || createPartner}
+                    </strong>{" "}
+                    · Source:{" "}
+                    <strong>
+                      {pickupOptions.find((p) => p.id === createSourceId)?.label || "—"}
+                    </strong>
+                  </p>
+                  <label className="block text-xs font-semibold text-stone-600">
+                    AWB / tracking number *
+                    <input
+                      value={manualAwb}
+                      onChange={(e) => setManualAwb(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 font-mono text-sm font-normal text-stone-900"
+                      placeholder="Paste carrier AWB"
+                    />
+                  </label>
+                  <label className="block text-xs font-semibold text-stone-600">
+                    Tracking URL (optional)
+                    <input
+                      value={manualTrackingUrl}
+                      onChange={(e) => setManualTrackingUrl(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 text-sm font-normal text-stone-900"
+                      placeholder="https://…"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={shipBusy || !manualAwb.trim()}
+                    onClick={() => void handleSaveManualShipment()}
+                    className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+                  >
+                    {shipBusy ? "Saving…" : "Save manual shipment"}
+                  </button>
+                </div>
+              ) : isDelhiveryCreate ? (
+            <div className="space-y-4">
+              <p className="text-sm text-stone-600">
+                Delhivery · Source:{" "}
+                <strong>
+                  {pickupOptions.find((p) => p.id === createSourceId)?.label || "—"}
+                </strong>{" "}
+                · {selectedOpenIds.length} item(s)
+              </p>
 
               <label className="block">
                 <span className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Facility *</span>
                 <select
-                  value={selectedPickupId}
-                  onChange={(e) => setSelectedPickupId(e.target.value)}
+                  value={createSourceId || selectedPickupId}
+                  onChange={(e) => {
+                    setSelectedPickupId(e.target.value);
+                    setLinePrefs((prev) => {
+                      const next = { ...prev };
+                      for (const id of selectedOpenIds) {
+                        next[id] = {
+                          ...(next[id] ?? { partner: "DELHIVERY", customPartnerName: "" }),
+                          sourceId: e.target.value,
+                          partner: "DELHIVERY"
+                        };
+                      }
+                      return next;
+                    });
+                  }}
                   className="mt-1 w-full rounded-xl border border-stone-300 px-4 py-2.5 text-sm"
                 >
                   {pickupOptions.map((p) => (
@@ -913,14 +1110,18 @@ export default function AdminShipmentCreateLabelPage() {
 
               <button
                 type="button"
-                disabled={shipBusy || !!boxDimError || !selectedPickupId}
+                disabled={shipBusy || !!boxDimError || !createSourceId}
                 onClick={() => void handleCreateLabel()}
                 className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
               >
-                {shipBusy ? "Creating label…" : "Create shipment / label"}
+                {shipBusy ? "Creating label…" : "Create Delhivery shipment / label"}
               </button>
             </div>
-          )}
+              ) : null}
+            </div>
+          ) : !hasForwardAwb ? (
+            <p className="text-sm text-stone-500">No open line items left to ship.</p>
+          ) : null}
         </section>
       </div>
 

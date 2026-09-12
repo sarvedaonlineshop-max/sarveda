@@ -318,6 +318,13 @@ export type AutoShipmentCreateOptions = {
   delhiveryFreightInr?: number;
   chargeableGrams?: number;
   customerShippingInPaise?: number;
+  /** Ship only these order line ids (partial / multi-partner fulfilment). */
+  orderItemIds?: string[];
+  /**
+   * Create another outbound shipment even if the order already has an AWB
+   * (item-wise split across warehouses / partners).
+   */
+  allowAdditionalShipment?: boolean;
 };
 
 /** Shiprocket/Delhivery channel order id — first label uses Sarveda order number; retries get -R2, -R3 after cancel. */
@@ -374,7 +381,10 @@ export async function autoSelectAndCreate(
     where: { orderId },
     orderBy: { createdAt: "desc" }
   });
-  if (existingShip?.awb) {
+  const allowAdditional = Boolean(
+    options?.allowAdditionalShipment || (options?.orderItemIds && options.orderItemIds.length > 0)
+  );
+  if (existingShip?.awb && !allowAdditional) {
     const requestedPickupId = options?.pickupLocationId;
     if (
       requestedPickupId &&
@@ -437,13 +447,19 @@ export async function autoSelectAndCreate(
     prisma,
     order.items.map((i) => i.id)
   );
-  const shippableItems = order.items.filter(
-    (it) => shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0) > 0
-  );
+  const selectedIds = options?.orderItemIds?.length
+    ? new Set(options.orderItemIds)
+    : null;
+  const shippableItems = order.items.filter((it) => {
+    if (selectedIds && !selectedIds.has(it.id)) return false;
+    return shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0) > 0;
+  });
   if (!shippableItems.length) {
     return {
       success: false,
-      error: "No units left to ship — all line quantities were restocked/refunded.",
+      error: selectedIds
+        ? "Selected line items have nothing left to ship (restocked/refunded or already covered)."
+        : "No units left to ship — all line quantities were restocked/refunded.",
       code: "NOTHING_TO_SHIP"
     };
   }
@@ -456,7 +472,10 @@ export async function autoSelectAndCreate(
 
   const weightKg = Math.max(
     0.05,
-    totalWeightGrams(order as OrderWithShippingContext, returnedByItem) / 1000
+    totalWeightGrams(
+      { ...order, items: shippableItems } as OrderWithShippingContext,
+      returnedByItem
+    ) / 1000
   );
   const paymentMode =
     options?.paymentMode ??
@@ -503,7 +522,10 @@ export async function autoSelectAndCreate(
       const delhiveryPickup = await resolveDelhiveryPickupName(orderId, options);
       const computedWeightG = Math.max(
         50,
-        totalWeightGrams(order as OrderWithShippingContext, returnedByItem)
+        totalWeightGrams(
+          { ...order, items: shippableItems } as OrderWithShippingContext,
+          returnedByItem
+        )
       );
       const defaultHsn = process.env.DEFAULT_HSN_CODE?.trim() || "9205";
       const hsnCodes = [
@@ -513,8 +535,14 @@ export async function autoSelectAndCreate(
           )
         )
       ];
-      const productsDesc = productsDescForShipment(order.items, returnedByItem);
-      const orderValueRupees = order.grandTotalInPaise / 100;
+      const productsDesc = productsDescForShipment(shippableItems, returnedByItem);
+      const partialGoodsPaise = shippableItems.reduce((sum, it) => {
+        const qty = shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0);
+        if (qty <= 0 || it.qtyOrdered <= 0) return sum;
+        return sum + Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered);
+      }, 0);
+      const orderValueRupees =
+        (selectedIds ? Math.max(partialGoodsPaise, 100) : order.grandTotalInPaise) / 100;
       const boxes =
         options?.boxes?.length ?
           options.boxes.map((b) => ({
@@ -526,7 +554,12 @@ export async function autoSelectAndCreate(
       const created = await delhivery.createShipment({
         orderNumber: channelOrderId,
         paymentMode,
-        codAmountRupees: paymentMode === "COD" ? codAmountRupees(order as OrderWithShippingContext) : undefined,
+        codAmountRupees:
+          paymentMode === "COD"
+            ? selectedIds
+              ? orderValueRupees
+              : codAmountRupees(order as OrderWithShippingContext)
+            : undefined,
         orderValueRupees,
         productsDesc,
         sellerGstTin: process.env.SELLER_GSTIN?.trim(),
@@ -555,6 +588,7 @@ export async function autoSelectAndCreate(
       }
       const pickupId =
         options?.pickupLocationId ??
+        shippableItems.find((i) => i.pickupLocationId)?.pickupLocationId ??
         order.items.find((i) => i.pickupLocationId)?.pickupLocationId ??
         null;
       await persistShipment(
@@ -566,6 +600,7 @@ export async function autoSelectAndCreate(
         {
           channelOrderId,
           carrier: "DELHIVERY",
+          partnerCode: "DELHIVERY",
           channel: options?.channel ?? "www.sarveda.com",
           lengthCm: options?.lengthCm ?? 10,
           breadthCm: options?.breadthCm ?? 10,
@@ -580,9 +615,11 @@ export async function autoSelectAndCreate(
           mpsWaybills: created.data.mpsWaybills ?? null,
           delhiveryFreightInr: options?.delhiveryFreightInr ?? null,
           chargeableGrams: options?.chargeableGrams ?? null,
-          customerShippingInPaise: options?.customerShippingInPaise ?? null
+          customerShippingInPaise: options?.customerShippingInPaise ?? null,
+          orderItemIds: shippableItems.map((i) => i.id)
         },
-        nextSeq
+        nextSeq,
+        { forceNew: allowAdditional }
       );
       return {
         success: true,
@@ -655,8 +692,12 @@ export async function autoSelectAndCreate(
   }
 }
 
-function courierDisplayName(code: string): string {
-  switch (code.trim().toUpperCase()) {
+function courierDisplayName(code: string, customName?: string | null): string {
+  const upper = code.trim().toUpperCase();
+  if (upper === "OTHER" && customName?.trim()) {
+    return customName.trim().slice(0, 80);
+  }
+  switch (upper) {
     case "DELHIVERY":
       return "Delhivery";
     case "SHIPROCKET":
@@ -667,6 +708,10 @@ function courierDisplayName(code: string): string {
       return "FedEx";
     case "INDIA_POST":
       return "India Post";
+    case "ARAMEX":
+      return "Aramex";
+    case "OTHER":
+      return "Other";
     default:
       return code.trim() || "Other";
   }
@@ -686,6 +731,9 @@ function trackingUrlForManualAwb(courierCode: string, awb: string): string {
   if (upper === "INDIA_POST") {
     return `https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx?consignment=${encodeURIComponent(awb)}`;
   }
+  if (upper === "ARAMEX") {
+    return `https://www.aramex.com/track/results?mode=0&ShipmentNumber=${encodeURIComponent(awb)}`;
+  }
   return "";
 }
 
@@ -693,7 +741,13 @@ export async function persistManualAwb(
   orderId: string,
   awb: string,
   courierCode: string,
-  trackingUrlOverride?: string | null
+  trackingUrlOverride?: string | null,
+  options?: {
+    pickupLocationId?: string | null;
+    orderItemIds?: string[];
+    customCourierName?: string | null;
+    forceNew?: boolean;
+  }
 ): Promise<
   | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
   | { success: false; error: string; code: string }
@@ -710,16 +764,43 @@ export async function persistManualAwb(
     return { success: false, error: "Order not found", code: "NOT_FOUND" };
   }
 
-  const courierName = courierDisplayName(courierCode);
-  const trackingUrl =
-    trackingUrlOverride?.trim() ||
-    trackingUrlForManualAwb(courierCode, trimmed);
+  const eligible = assertOrderEligibleForCreatingShipment(order);
+  if (!eligible.ok) {
+    return { success: false, error: eligible.error, code: eligible.code };
+  }
 
-  await persistShipment(orderId, courierName, trimmed, trackingUrl, null, {
-    carrier: courierCode.trim().toUpperCase(),
-    manual: true,
-    ...(trackingUrlOverride?.trim() ? { trackingUrlManual: trackingUrlOverride.trim() } : {})
-  });
+  const partnerCode = courierCode.trim().toUpperCase();
+  if (partnerCode === "OTHER" && !options?.customCourierName?.trim()) {
+    return {
+      success: false,
+      error: "Enter a custom delivery partner name for Other.",
+      code: "VALIDATION_ERROR"
+    };
+  }
+
+  const courierName = courierDisplayName(partnerCode, options?.customCourierName);
+  const trackingUrl =
+    trackingUrlOverride?.trim() || trackingUrlForManualAwb(partnerCode, trimmed);
+
+  await persistShipment(
+    orderId,
+    courierName,
+    trimmed,
+    trackingUrl,
+    options?.pickupLocationId ?? null,
+    {
+      carrier: partnerCode,
+      partnerCode,
+      manual: true,
+      ...(options?.customCourierName?.trim()
+        ? { customPartnerName: options.customCourierName.trim() }
+        : {}),
+      ...(trackingUrlOverride?.trim() ? { trackingUrlManual: trackingUrlOverride.trim() } : {}),
+      ...(options?.orderItemIds?.length ? { orderItemIds: options.orderItemIds } : {})
+    },
+    undefined,
+    { forceNew: Boolean(options?.forceNew || options?.orderItemIds?.length) }
+  );
 
   return {
     success: true,
@@ -734,13 +815,17 @@ async function persistShipment(
   trackingUrl: string,
   pickupLocationId?: string | null,
   carrierMeta?: Prisma.InputJsonValue | null,
-  shippingLabelSeqAfter?: number
+  shippingLabelSeqAfter?: number,
+  opts?: { forceNew?: boolean }
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    const existing = await tx.shipment.findFirst({
-      where: { orderId, courier },
-      orderBy: { createdAt: "desc" }
-    });
+    const existing =
+      opts?.forceNew
+        ? null
+        : await tx.shipment.findFirst({
+            where: { orderId, courier },
+            orderBy: { createdAt: "desc" }
+          });
 
     if (existing) {
       await tx.shipment.update({
