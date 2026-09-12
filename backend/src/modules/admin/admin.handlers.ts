@@ -31,7 +31,6 @@ import {
   loadLineRefundOptions
 } from "../orders/order-line-refund.service";
 import { notifyOrderEmail } from "../notifications/email";
-import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
 import { isZohoInventorySyncEnabled } from "../zoho/zoho-inventory-sync-flag";
 import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
@@ -1665,7 +1664,8 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
 
     if (status === "PROCESSING" && prevStatus !== "PROCESSING") {
       notifyOrderEmail(id, "order_processing");
-      void onOrderEnteredProcessing(order.id);
+      // Do not auto-create carrier labels here — Processing puts the order in
+      // Shipments → Ready to ship for manual / item-wise label creation.
     }
     if (status === "SHIPPED" && prevStatus !== "SHIPPED" && prevStatus !== "DELIVERED") {
       notifyOrderEmail(id, "order_shipped");

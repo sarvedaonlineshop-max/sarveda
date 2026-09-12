@@ -2670,9 +2670,11 @@ export default function AdminOrderDetailPage() {
         message={
           statusConfirm === "DELIVERED" && order.status === "DELIVERED"
             ? "Confirm delivery state? This syncs shipment tracking to Delivered, sets fulfillment to Fulfilled, and establishes the return-window start time without changing an existing delivered timestamp."
-            : statusConfirm
-              ? `Change status to “${statusConfirm.replace(/_/g, " ")}”? This may trigger fulfilment actions (for example auto-shipment when moving to Processing).`
-              : ""
+            : statusConfirm === "PROCESSING"
+              ? "Change status to “Processing”? The order will move to Shipments → Ready to ship so you can create labels (no auto-shipment)."
+              : statusConfirm
+                ? `Change status to “${statusConfirm.replace(/_/g, " ")}”?`
+                : ""
         }
         confirmLabel="Yes, update"
         busy={statusSaving}
