@@ -95,6 +95,8 @@ type OrderLoaded = {
     /** Remaining to pack after restocks (pre-ship refunds). */
     qtyShippable?: number;
     returnedQty?: number;
+    warehouseFulfillmentQty?: number;
+    dropShipFulfillmentQty?: number;
     unitPriceInPaise: number;
     lineTotalInPaise: number;
     pickupLocation?: { id: string; label: string } | null;

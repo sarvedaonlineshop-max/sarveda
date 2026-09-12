@@ -1,26 +1,36 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
-import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
+import {
+  orderItemDropShipUnits,
+  orderItemWarehouseUnits
+} from "../inventory/order-item-fulfillment";
 
 /**
  * Units still to pack/ship for a line after pre-ship (or other) restocks.
- * `qtyOrdered` / warehouse snapshot stay historical; restock events are the delta.
+ * Includes warehouse + drop-ship units (both need a carrier label from Ready to ship).
+ * Digital offers are not shippable.
+ * `qtyOrdered` / allocation snapshots stay historical; restock events are the delta.
  */
 export function shippableQuantityForOrderItem(
   item: {
     qtyOrdered: number;
     warehouseFulfillmentQty?: number | null;
     dropShipFulfillmentQty?: number | null;
+    digitalOfferId?: string | null;
   },
   returnedQty: number
 ): number {
-  const warehouse = orderItemWarehouseUnits({
+  if (item.digitalOfferId) return 0;
+
+  const snapshot = {
     qtyOrdered: item.qtyOrdered,
     warehouseFulfillmentQty: item.warehouseFulfillmentQty ?? 0,
     dropShipFulfillmentQty: item.dropShipFulfillmentQty ?? 0
-  });
-  return Math.max(0, warehouse - Math.max(0, returnedQty));
+  };
+  const units =
+    orderItemWarehouseUnits(snapshot) + orderItemDropShipUnits(snapshot);
+  return Math.max(0, units - Math.max(0, returnedQty));
 }
 
 /** Batch sum of restock event quantities per order item. */

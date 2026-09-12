@@ -31,6 +31,8 @@ export type ShipmentLineItem = {
   qtyOrdered: number;
   qtyShippable?: number;
   returnedQty?: number;
+  warehouseFulfillmentQty?: number;
+  dropShipFulfillmentQty?: number;
   unitPriceInPaise: number;
   lineTotalInPaise: number;
   pickupLocation?: { id: string; label: string } | null;
@@ -172,6 +174,14 @@ export function ShipmentLineFulfillmentTable({
                   <td className="py-2.5 pr-2 align-top">
                     <div className="font-extrabold text-stone-950">{it.nameSnapshot}</div>
                     <div className="mt-0.5 font-mono text-xs text-stone-500">{it.skuSnapshot}</div>
+                    {(it.dropShipFulfillmentQty ?? 0) > 0 ? (
+                      <div className="mt-0.5 text-xs font-semibold text-violet-800">
+                        Drop-ship
+                        {(it.warehouseFulfillmentQty ?? 0) > 0
+                          ? ` · ${it.dropShipFulfillmentQty} of ${it.qtyOrdered}`
+                          : ""}
+                      </div>
+                    ) : null}
                     {typeof it.returnedQty === "number" && it.returnedQty > 0 ? (
                       <div className="mt-0.5 text-xs text-amber-800">
                         Ordered {it.qtyOrdered}, restocked {it.returnedQty}
