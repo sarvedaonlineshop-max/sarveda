@@ -30,10 +30,13 @@
 
 ## C. Merchant / Ads
 
+- [x] **2026-09-15 fix:** `products.xml` (Source 4 URL) was wrongly serving `gla_*` ids → Google treated all offers as new. Now serves continuity-safe `sarveda-products` catalog (bare Woo ids + `?offer=`). Redeploy backend + request Merchant refetch.
 - [ ] Confirm only **PRODUCTS SOURCE 4** active for native feed (`INCTX` → `https://sarveda.com/api/merchant/google/products.xml`)
+- [ ] In Merchant Center → Business info: upload **Sarveda logo** (square, ≥1200px preferred) — Google Shopping seller badge uses this, not the site favicon
 - [ ] Delete **Source 3** if still paused (demo URL / label `IN`)
-- [ ] Watch feed item count / disapprovals for 2–3 days
+- [ ] Watch feed item count / disapprovals for 2–3 days after continuity restore
 - [ ] Content API (`IN`, ~112 items): decide keep vs pause after soak
+- [ ] Note: generic Google “singing bowls” carousels also show competitors (Amazon/Flipkart/**The Buddhist…**). That “B” badge is **not** Sarveda — verify with a branded query `sarveda singing bowls`
 
 ---
 

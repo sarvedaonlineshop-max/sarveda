@@ -1,22 +1,31 @@
 import type { Request, Response, NextFunction } from "express";
 
 import { logger } from "../../config/logger";
-import { buildGoogleMerchantFeed } from "./googleMerchantFeed";
 import { buildCtxCompatibilityFeed } from "./ctxCompatibilityFeed";
 import { buildSarvedaProductsFeed } from "./sarvedaProductsFeed";
 
-/** GET /api/merchant/google/products.xml — public Merchant File(URL) feed (read-only). */
+/**
+ * GET /api/merchant/google/products.xml
+ *
+ * Production Merchant Source 4 (INCTX) fetches this URL. It MUST emit the
+ * continuity-safe catalog (bare Woo offer ids + ?offer= landings), not the
+ * older gla_* native V1 feed — gla_ ids make Google treat every offer as new
+ * and wipe Shopping / free-listings history.
+ */
 export async function googleProductsXml(
   _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const { xml, diagnostics } = await buildGoogleMerchantFeed();
+    const { xml, diagnostics } = await buildSarvedaProductsFeed();
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     // Merchant schedules fetches; keep short enough that price/stock stay reasonably fresh.
     res.setHeader("Cache-Control", "public, max-age=900, stale-while-revalidate=900");
-    res.setHeader("X-Sarveda-Merchant-Feed-Items", String(diagnostics.eligibleItems));
+    res.setHeader("X-Sarveda-Merchant-Feed-Items", String(diagnostics.totalItems));
+    res.setHeader("X-Sarveda-Merchant-Historical-Items", String(diagnostics.historicalItems));
+    res.setHeader("X-Sarveda-Merchant-Native-Only-Items", String(diagnostics.nativeOnlyItems));
+    res.setHeader("X-Sarveda-Merchant-Feed-Variant", "sarveda-products-continuity");
     res.status(200).send(xml);
   } catch (err) {
     logger.error("merchant_google_feed_failed", {
