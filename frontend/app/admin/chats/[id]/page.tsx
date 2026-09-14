@@ -103,6 +103,28 @@ function WaTicks({ status }: { status?: string | null }) {
   );
 }
 
+function MediaImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <p className="mb-1 rounded-lg bg-stone-50 px-3 py-2 text-[13px] text-stone-600">
+        Image unavailable (WhatsApp link expired). Ask the customer to resend the photo.
+      </p>
+    );
+  }
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="mb-1 max-h-72 w-full rounded-lg object-contain bg-stone-50"
+        onError={() => setFailed(true)}
+      />
+    </a>
+  );
+}
+
 function MessageBubble({
   message,
   isWhatsApp
@@ -154,14 +176,7 @@ function MessageBubble({
         }
       >
         {inlineImageUrl ? (
-          <a href={inlineImageUrl} target="_blank" rel="noopener noreferrer" className="block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={inlineImageUrl}
-              alt={parsed.caption || "WhatsApp image"}
-              className="mb-1 max-h-72 w-full rounded-lg object-contain bg-stone-50"
-            />
-          </a>
+          <MediaImage src={inlineImageUrl} alt={parsed.caption || "WhatsApp image"} />
         ) : null}
         {inlineVideoUrl ? (
           <video
