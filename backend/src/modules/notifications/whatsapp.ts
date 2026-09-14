@@ -108,6 +108,19 @@ function firstNameFromOrder(fullName: string | null | undefined, email: string):
   return (local || "there").slice(0, 60);
 }
 
+/**
+ * Exotel WhatsApp template body params reject newlines/tabs and runs of 5+ spaces
+ * (EX_INVALID_REQUEST 30010). Flatten before send.
+ */
+function sanitizeWhatsAppTemplateText(text: string): string {
+  return text
+    .replace(/[\r\n\t]+/g, " · ")
+    .replace(/ {5,}/g, "    ")
+    .replace(/(?: · ){2,}/g, " · ")
+    .trim()
+    .slice(0, 1024);
+}
+
 /** Compact line-item block for WhatsApp template {{3}} on order_confirmed. {{4}} is grand total. */
 function formatOrderItemsForWhatsApp(
   items: Array<{ nameSnapshot: string; qtyOrdered: number; lineTotalInPaise: number }>,
@@ -117,18 +130,19 @@ function formatOrderItemsForWhatsApp(
   const lines = items.map(
     (i) => `${i.nameSnapshot} × ${i.qtyOrdered} — ${formatOrderTotal(i.lineTotalInPaise, currency)}`
   );
-  let text = lines.join("\n");
-  if (text.length <= 1024) return text;
+  // Single-line separator — Exotel rejects newline/tab in template params.
+  let text = lines.join(" · ");
+  if (text.length <= 1024) return sanitizeWhatsAppTemplateText(text);
 
   let kept: string[] = [];
   for (const line of lines) {
-    const next = kept.length ? `${kept.join("\n")}\n${line}` : line;
+    const next = kept.length ? `${kept.join(" · ")} · ${line}` : line;
     if (next.length > 980) break;
     kept.push(line);
   }
   const omitted = lines.length - kept.length;
-  const suffix = omitted > 0 ? `\n…and ${omitted} more item${omitted === 1 ? "" : "s"}` : "";
-  return `${kept.join("\n")}${suffix}`.slice(0, 1024);
+  const suffix = omitted > 0 ? ` · …and ${omitted} more item${omitted === 1 ? "" : "s"}` : "";
+  return sanitizeWhatsAppTemplateText(`${kept.join(" · ")}${suffix}`);
 }
 
 function isExotelConfigured(): boolean {
@@ -198,7 +212,7 @@ export async function sendWhatsAppNamedTemplate(
                         type: "body",
                         parameters: bodyParams.map((text) => ({
                           type: "text",
-                          text: text.slice(0, 1024)
+                          text: sanitizeWhatsAppTemplateText(String(text ?? ""))
                         }))
                       }
                     ]
