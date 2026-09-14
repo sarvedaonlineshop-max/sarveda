@@ -113,7 +113,7 @@
 | Gateway | Daytime status | Action now |
 |---------|----------------|------------|
 | **Razorpay** | Done | India |
-| **Stripe** | **DO NOW** | Apex webhook + confirm Live keys (already LIVE on Lightsail) |
+| **Stripe** | **BLOCKED (owner OTP)** | Do before soft-open if possible; else intl cards risk until webhook added |
 | **PayPal** | **DO NOW** | Apex webhook + confirm `PAYPAL_MODE=live` (already live on Lightsail) |
 
 Lightsail already has **Stripe LIVE** + **PayPal live** credentials. Missing piece is mainly **apex webhook endpoints** in the provider dashboards (and matching secrets/IDs if new).
