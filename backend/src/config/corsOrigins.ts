@@ -1,5 +1,4 @@
 const STAGING_ORIGINS = [
-  "https://sarveda-demo.xyz",
   "https://sarveda-frontend.vercel.app",
   "https://sarveda.com",
   "https://www.sarveda.com"

@@ -7,7 +7,7 @@ function siteBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
-    "https://sarveda-demo.xyz";
+    "https://sarveda.com";
   return raw.replace(/\/$/, "");
 }
 

@@ -142,6 +142,16 @@ function ensurePricingZoneCookie(request: NextRequest, response: NextResponse): 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  // Staging domain retired — permanent redirect to live apex (also in next.config).
+  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
+  if (host === "sarveda-demo.xyz" || host === "www.sarveda-demo.xyz") {
+    const target = new URL(
+      `${pathname}${request.nextUrl.search}`,
+      "https://sarveda.com"
+    );
+    return NextResponse.redirect(target, 308);
+  }
+
   // Cutover / ops: temporary public maintenance (admin + /api stay open via matcher).
   // /login stays open so staff can re-auth into /admin during the window.
   if (

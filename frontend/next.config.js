@@ -41,6 +41,19 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Close staging host — everything on demo goes to production apex.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "sarveda-demo.xyz" }],
+        destination: "https://sarveda.com/:path*",
+        permanent: true
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.sarveda-demo.xyz" }],
+        destination: "https://sarveda.com/:path*",
+        permanent: true
+      },
       // Trailing slash removal (WooCommerce uses trailing slashes)
       {
         source: "/product/:slug/",
