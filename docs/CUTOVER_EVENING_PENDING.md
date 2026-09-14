@@ -44,7 +44,10 @@
   - Status stays **Deactivated** until cutover; Bypass bots = No; Exclude keeps wp-login
 - [x] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = apex Razorpay webhook secret
 - [ ] Confirm Vercel `NEXT_PUBLIC_RAZORPAY_KEY_ID` = same Live Key ID as Lightsail
-- [ ] **Merchant / Ads** — agree switch time (suggest **21:45**, before midnight cycle)
+- [ ] **Merchant / Ads** — **NOT “recreate Source 3” tonight**  
+  Plan: keep existing **Content API** + **PRODUCTS SOURCE 2**; after site DNS soft-open (~21:30), spot-check Ads landings; ~00:00 feed refresh should hit new PDPs.  
+  Do **not** add Source 3 / swap Source 2 URL during cutover unless Ads owner explicitly signs off (prior 764 clash).  
+  Agreed switch time if any URL change: **____** (suggest avoid tonight)
 - [ ] Optional: lower DNS TTL on DigitalOcean A/www
 - [ ] Draft evening env notes ready (SITE_URL / FRONTEND_URL / GOOGLE_CALLBACK)
 
