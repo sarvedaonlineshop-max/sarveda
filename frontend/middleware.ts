@@ -35,27 +35,31 @@ function maintenanceHtmlResponse(): NextResponse {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>Sarveda — brief maintenance</title>
+  <title>Sarveda — maintenance</title>
   <style>
     :root { color-scheme: light; }
     body {
       margin: 0; min-height: 100vh; display: grid; place-items: center;
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       background: linear-gradient(160deg, #f7f3eb 0%, #e8f0ea 55%, #dfece3 100%);
       color: #1f3d2f;
     }
-    main { max-width: 32rem; padding: 2rem; text-align: center; }
-    h1 { font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 600; margin: 0 0 0.75rem; }
-    p { font-family: system-ui, sans-serif; font-size: 1.05rem; line-height: 1.55; margin: 0; color: #3a5548; }
-    .brand { font-family: system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
-      font-size: 0.75rem; margin-bottom: 1.25rem; color: #5f7a6b; }
+    main { max-width: 34rem; padding: 2rem; text-align: center; }
+    .logo {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.25rem, 6vw, 3rem);
+      font-weight: 600; letter-spacing: 0.02em;
+      margin: 0 0 1.5rem; color: #1a4d36;
+    }
+    p { font-size: 1.08rem; line-height: 1.6; margin: 0 0 0.85rem; color: #3a5548; }
+    p:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
   <main>
-    <p class="brand">Sarveda</p>
-    <h1>We'll be right back</h1>
-    <p>We're finishing a short migration update. The shop will reopen shortly — thank you for your patience.</p>
+    <p class="logo" aria-label="Sarveda">sarveda</p>
+    <p>The website is under maintenance from 14 September, 7:00&nbsp;PM to 15 September, 6:00&nbsp;AM IST.</p>
+    <p>Kindly bear with us. Thank you for your patience.</p>
   </main>
 </body>
 </html>`;
