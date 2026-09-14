@@ -44,10 +44,12 @@
   - Status stays **Deactivated** until cutover; Bypass bots = No; Exclude keeps wp-login
 - [x] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = apex Razorpay webhook secret
 - [ ] Confirm Vercel `NEXT_PUBLIC_RAZORPAY_KEY_ID` = same Live Key ID as Lightsail
-- [ ] **Merchant / Ads** — **NOT “recreate Source 3” tonight**  
-  Plan: keep existing **Content API** + **PRODUCTS SOURCE 2**; after site DNS soft-open (~21:30), spot-check Ads landings; ~00:00 feed refresh should hit new PDPs.  
-  Do **not** add Source 3 / swap Source 2 URL during cutover unless Ads owner explicitly signs off (prior 764 clash).  
-  Agreed switch time if any URL change: **____** (suggest avoid tonight)
+- [ ] **Merchant / Ads — CRITICAL after your correction**  
+  Source 2 file URL is Woo: `https://sarveda.com/wp-content/uploads/woo-feed/google/xml/ind_ctx.xml`  
+  → **breaks after DNS** (Vercel has no `/wp-content/...`).  
+  **Preferred tonight:** host a copy of `ind_ctx.xml` on S3/Lightsail (stable URL) and **edit Source 2 URL** before ~00:00 fetch — keeps INCTX IDs, avoids Source 3 clash.  
+  **Source 3** from `~/Documents/Product sources 3` = Merchant TSV export — only if Ads owner signs off; prior clash risk if IDs overlap Content API / Source 2.  
+  Do **not** blindly re-add Source 3 during DNS without a clash plan.
 - [ ] Optional: lower DNS TTL on DigitalOcean A/www
 - [ ] Draft evening env notes ready (SITE_URL / FRONTEND_URL / GOOGLE_CALLBACK)
 
