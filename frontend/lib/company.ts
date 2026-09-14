@@ -20,7 +20,7 @@ export const COMPANY_REGISTERED_ADDRESS =
 
 /** Sales / tracking / bulk enquiry WhatsApp (live site contact page). */
 export const COMPANY_SALES_WHATSAPP_E164 =
-  process.env.NEXT_PUBLIC_SALES_WHATSAPP_NUMBER?.replace(/\D/g, "") || "919535975075";
+  process.env.NEXT_PUBLIC_SALES_WHATSAPP_NUMBER?.replace(/\D/g, "") || "919611361100";
 
 export function companySalesWhatsAppDisplay(): string {
   const digits = COMPANY_SALES_WHATSAPP_E164.replace(/\D/g, "");

@@ -42,11 +42,21 @@ function statusTitle(order: OrderPublic, codFromUrl: boolean): string {
 }
 
 async function downloadInvoicePdf(orderNumber: string, email: string) {
-  const res = await fetch(orderInvoiceDownloadUrl(orderNumber, email), { credentials: "include" });
+  const href = orderInvoiceDownloadUrl(orderNumber, email);
+  const res = await fetch(href, { credentials: "include" });
   if (!res.ok) {
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(json.error || "Could not download invoice");
   }
+
+  // iOS Safari often ignores <a download> for blob URLs — open the authenticated PDF URL instead.
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+  if (isMobile) {
+    window.location.assign(href);
+    return;
+  }
+
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

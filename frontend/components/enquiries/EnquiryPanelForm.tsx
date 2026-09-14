@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { submitEnquiry } from "@/lib/enquiry-api";
 
 type Props = {
-  source?: "CORPORATE" | "INSIGHTS";
+  source?: "CORPORATE" | "INSIGHTS" | "EVENT" | "COURSE";
   title?: string;
   subtitle?: string;
 };

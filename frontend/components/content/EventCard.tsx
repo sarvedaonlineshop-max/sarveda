@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import type { EventListItem } from "@/lib/event-types";
 import { eventCardTypeLabel, formatEventCardWhen } from "@/lib/content-meta";
+import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise } from "@/lib/money";
 
 type Props = {
@@ -34,6 +35,7 @@ export function EventCard({ event, compact = false }: Props) {
   const typeLabel = eventCardTypeLabel(event);
   const explanation = plainText(event.shortDescription);
   const when = formatEventCardWhen(event);
+  const imageSrc = resolveMediaUrl(event.imageUrl);
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -69,9 +71,9 @@ export function EventCard({ event, compact = false }: Props) {
         <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-brand-gold/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {typeLabel}
         </span>
-        {event.imageUrl ? (
+        {imageSrc ? (
           <img
-            src={event.imageUrl}
+            src={imageSrc}
             alt={event.title}
             className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
           />

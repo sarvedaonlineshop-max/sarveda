@@ -37,6 +37,7 @@ import { whatsappFlowEndpointHandler } from "./modules/whatsapp/whatsapp-flow.en
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
 import { merchantRoutes } from "./modules/merchant/merchant.routes";
+import { legacyUploadsRoutes } from "./modules/media/legacy-uploads.routes";
 import { shippingRoutes } from "./modules/shipping";
 import { chatRoutes } from "./modules/chat/chat.routes";
 import { contactRoutes } from "./modules/contact/contact.routes";
@@ -243,6 +244,7 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRoutes);
 app.use("/api/merchant", merchantRoutes);
+app.use("/api/media/legacy-uploads", legacyUploadsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/courses", coursesRoutes);
 app.use("/api/events", eventsRoutes);

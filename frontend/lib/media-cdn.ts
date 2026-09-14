@@ -8,17 +8,20 @@ export function corporateThemeAsset(relativePath: string): string {
   return `https://sarveda.com/wp-content/themes/sarveda/assets/img/${rel}`;
 }
 
-/** Rewrite WP upload URL to CDN if configured. */
+const WP_UPLOADS_RE = /^https?:\/\/(?:www\.)?sarveda\.com\/wp-content\/uploads\//i;
+
+/**
+ * After DNS cutover, `sarveda.com/wp-content/uploads/...` no longer hits WordPress.
+ * Route those through Express (`/api/media/legacy-uploads/...`) which serves S3 or DO.
+ */
 export function resolveMediaUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  if (WP_UPLOADS_RE.test(trimmed)) {
+    const rel = trimmed.replace(WP_UPLOADS_RE, "");
+    return `/api/media/legacy-uploads/${rel}`;
+  }
   const cdn = process.env.NEXT_PUBLIC_MEDIA_CDN_URL?.replace(/\/$/, "");
-  if (!cdn) return url;
-  if (url.startsWith(cdn)) return url;
-  /**
-   * Product images in DB are already absolute S3 URLs.
-   * Blog/legacy rows still point at sarveda.com/wp-content/uploads — rewriting those
-   * to `${cdn}/media/wp/uploads/...` 403s because blog banners were never uploaded to S3.
-   * Keep the origin URL so Next/Image can load from sarveda.com.
-   */
-  return url;
+  if (cdn && trimmed.startsWith(cdn)) return trimmed;
+  return trimmed;
 }

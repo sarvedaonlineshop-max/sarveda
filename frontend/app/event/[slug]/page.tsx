@@ -9,6 +9,7 @@ import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchEventBySlug, fetchEventSlugs, skipBuildTimeStaticParams } from "@/lib/api";
 import { eventTypeLabel } from "@/lib/content-meta";
+import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise } from "@/lib/money";
 import { breadcrumbJsonLd, eventJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
@@ -89,7 +90,9 @@ export default async function EventDetailPage({ params }: Props) {
     <>
       <JsonLd data={[eventJsonLd(event), breadcrumbJsonLd(breadcrumbItems)]} />
 
-      {event.imageUrl ? <ContentHeroBanner src={event.imageUrl} alt={event.title} priority /> : null}
+      {resolveMediaUrl(event.imageUrl) ? (
+        <ContentHeroBanner src={resolveMediaUrl(event.imageUrl)!} alt={event.title} priority />
+      ) : null}
 
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="page-shell py-5 md:py-6">

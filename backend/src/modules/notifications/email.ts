@@ -240,18 +240,17 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Official spiral mark + wordmark (same assets as website header). */
+/** Same lockup as the storefront header (`/images/brand/sarveda-logo.png`). */
 function emailLogoMarkUrl(): string {
   const override = process.env.EMAIL_LOGO_URL?.trim();
   if (override) return override;
-  return `${siteBaseUrl()}/brand/sarveda-logo-with-name.png`;
+  return `${siteBaseUrl()}/images/brand/sarveda-logo.png`;
 }
 
 function emailWordmarkUrl(): string {
   const override = process.env.EMAIL_WORDMARK_URL?.trim();
   if (override) return override;
-  // Combined lockup already includes the wordmark — reuse for older templates.
-  return `${siteBaseUrl()}/brand/sarveda-logo-with-name.png`;
+  return `${siteBaseUrl()}/images/brand/sarveda-logo.png`;
 }
 
 function supportContactConfig(): {
@@ -335,7 +334,7 @@ ${gmailOpenSpacer()}
   <tr>
     <td style="padding:20px 20px 14px;background:#ffffff">
       <a href="${home}" style="text-decoration:none">
-        <img src="${mark}" alt="Sarveda" width="180" height="64" style="display:inline-block;vertical-align:middle;height:48px;width:auto;border:0;outline:none" />
+        <img src="${mark}" alt="Sarveda" width="213" height="72" style="display:inline-block;vertical-align:middle;height:56px;width:auto;max-width:240px;border:0;outline:none" />
       </a>
       ${addressLine}
       ${emailLine}

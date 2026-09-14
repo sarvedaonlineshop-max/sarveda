@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { fetchRetreats } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise } from "@/lib/money";
 import { canonical, isProductionSite } from "@/lib/site";
 
@@ -45,9 +46,9 @@ export default async function RetreatsPage() {
                   className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:border-amber-300 hover:shadow-md"
                 >
                   <div className="aspect-[16/10] overflow-hidden bg-stone-100">
-                    {r.imageUrl ? (
+                    {resolveMediaUrl(r.imageUrl) ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={resolveMediaUrl(r.imageUrl)!} alt="" className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-stone-400">Sarveda</div>
                     )}
