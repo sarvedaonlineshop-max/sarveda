@@ -32,9 +32,11 @@
 
 ### Still daytime (before 19:00) if not done
 
-- [ ] **Stripe webhook (REQUIRED — intl day‑1)** — add  
+- [ ] **Stripe webhook (REQUIRED — intl day‑1)** — **BLOCKED: needs owner OTP**  
+  Resume ASAP when Arjun reachable:  
   `https://sarveda.com/api/payments/stripe/webhook`  
-  + Live keys on Lightsail/Vercel; webhook signing secret → `STRIPE_WEBHOOK_SECRET`
+  + Live signing secret → `STRIPE_WEBHOOK_SECRET`  
+  ⚠ Without this, intl **card** via Stripe is unsafe for day‑1; PayPal + Razorpay still OK.
 - [x] **PayPal webhook (REQUIRED — intl day‑1)** — apex added  
   `https://sarveda.com/api/payments/paypal/webhook` · ID `2W290169M4234034B` on Lightsail  
   - [ ] **Edit webhook events** — also enable capture completed + denied (not only refunds)
