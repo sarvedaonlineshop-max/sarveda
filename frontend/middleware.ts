@@ -41,24 +41,58 @@ function maintenanceHtmlResponse(): NextResponse {
     body {
       margin: 0; min-height: 100vh; display: grid; place-items: center;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: linear-gradient(160deg, #f7f3eb 0%, #e8f0ea 55%, #dfece3 100%);
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(212, 175, 55, 0.18), transparent 45%),
+        radial-gradient(ellipse at 80% 90%, rgba(26, 77, 54, 0.12), transparent 50%),
+        linear-gradient(165deg, #fbf8f1 0%, #eef5ef 55%, #e4efe8 100%);
       color: #1f3d2f;
     }
-    main { max-width: 34rem; padding: 2rem; text-align: center; }
-    .logo {
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(2.25rem, 6vw, 3rem);
-      font-weight: 600; letter-spacing: 0.02em;
-      margin: 0 0 1.5rem; color: #1a4d36;
+    main {
+      width: min(92vw, 28rem);
+      padding: 2.25rem 1.75rem 2rem;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(31, 61, 47, 0.08);
+      border-radius: 1.25rem;
+      box-shadow: 0 18px 50px rgba(16, 32, 26, 0.08);
+      backdrop-filter: blur(8px);
     }
-    p { font-size: 1.08rem; line-height: 1.6; margin: 0 0 0.85rem; color: #3a5548; }
+    .logo {
+      display: block;
+      width: min(72vw, 240px);
+      height: auto;
+      margin: 0 auto 1.35rem;
+    }
+    .emoji-row {
+      font-size: 1.55rem;
+      letter-spacing: 0.35rem;
+      margin: 0 0 1rem;
+      line-height: 1;
+    }
+    p {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      margin: 0 0 0.85rem;
+      color: #3a5548;
+    }
     p:last-child { margin-bottom: 0; }
+    .window {
+      font-weight: 600;
+      color: #1a4d36;
+    }
   </style>
 </head>
 <body>
   <main>
-    <p class="logo" aria-label="Sarveda">sarveda</p>
-    <p>The website is under maintenance from 14 September, 7:00&nbsp;PM to 15 September, 6:00&nbsp;AM IST.</p>
+    <img
+      class="logo"
+      src="/images/brand/sarveda-logo.svg"
+      width="426"
+      height="144"
+      alt="Sarveda"
+    />
+    <p class="emoji-row" aria-hidden="true">🛠️ ⏳ 🙏</p>
+    <p class="window">The website is under maintenance from 14 September, 7:00&nbsp;PM to 15 September, 6:00&nbsp;AM IST.</p>
     <p>Kindly bear with us. Thank you for your patience.</p>
   </main>
 </body>
@@ -109,7 +143,12 @@ export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   // Cutover / ops: temporary public maintenance (admin + /api stay open via matcher).
-  if (isMaintenanceModeEnabled()) {
+  // /login stays open so staff can re-auth into /admin during the window.
+  if (
+    isMaintenanceModeEnabled() &&
+    pathname !== "/login" &&
+    !pathname.startsWith("/login/")
+  ) {
     if (!hasMaintenanceBypass(request)) {
       return maintenanceHtmlResponse();
     }
