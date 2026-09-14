@@ -42,10 +42,11 @@
   - [x] **Edit webhook events** — capture completed + denied + refunds (verified)
 - [x] **WP maintenance page** ready (LightStart / WP Maintenance Mode) — **do not enable** until ~19:00
   - Status stays **Deactivated** until cutover; Bypass bots = No; Exclude keeps wp-login
-- [ ] **Merchant / Ads** — agree switch time (suggest **21:45**, before midnight cycle)
-- [ ] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = secret used on **new apex** Razorpay webhook
+- [x] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = apex Razorpay webhook secret
 - [ ] Confirm Vercel `NEXT_PUBLIC_RAZORPAY_KEY_ID` = same Live Key ID as Lightsail
+- [ ] **Merchant / Ads** — agree switch time (suggest **21:45**, before midnight cycle)
 - [ ] Optional: lower DNS TTL on DigitalOcean A/www
+- [ ] Draft evening env notes ready (SITE_URL / FRONTEND_URL / GOOGLE_CALLBACK)
 
 ### ~18:30 — Gate GO
 
