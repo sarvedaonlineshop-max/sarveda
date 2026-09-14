@@ -35,9 +35,9 @@
 - [ ] **Stripe webhook (REQUIRED — intl day‑1)** — add  
   `https://sarveda.com/api/payments/stripe/webhook`  
   + Live keys on Lightsail/Vercel; webhook signing secret → `STRIPE_WEBHOOK_SECRET`
-- [ ] **PayPal webhook (REQUIRED — intl day‑1)** — add  
-  `https://sarveda.com/api/payments/paypal/webhook`  
-  + `PAYPAL_MODE=live` + `PAYPAL_WEBHOOK_ID` on Lightsail
+- [x] **PayPal webhook (REQUIRED — intl day‑1)** — apex added  
+  `https://sarveda.com/api/payments/paypal/webhook` · ID `2W290169M4234034B` on Lightsail  
+  - [ ] **Edit webhook events** — also enable capture completed + denied (not only refunds)
 - [ ] **WP maintenance page** ready (plugin/banner) — **do not enable** yet
 - [ ] **Merchant / Ads** — agree switch time (suggest **21:45**, before midnight cycle)
 - [ ] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = secret used on **new apex** Razorpay webhook
@@ -106,26 +106,25 @@
 
 ---
 
-## Stripe & PayPal — status
+## Stripe & PayPal — status (REQUIRED day‑1 intl)
 
-| Gateway | Daytime status | Why |
-|---------|----------------|-----|
-| **Razorpay** | Done (apex webhook + Live keys) | India primary — required tonight |
-| **Stripe** | **Pending** (not done yet) | Needed if you take **international card** on day‑1 |
-| **PayPal** | **Pending** (not done yet) | Needed if you take **PayPal** on day‑1 |
+| Gateway | Daytime status | Action now |
+|---------|----------------|------------|
+| **Razorpay** | Done | India |
+| **Stripe** | **DO NOW** | Apex webhook + confirm Live keys (already LIVE on Lightsail) |
+| **PayPal** | **DO NOW** | Apex webhook + confirm `PAYPAL_MODE=live` (already live on Lightsail) |
 
-We paused Stripe/PayPal after Razorpay to keep daytime prep moving. They are **not forgotten**.
-
-- If tonight = **India only (Razorpay + maybe COD)** → Stripe/PayPal can wait until tomorrow (still add them soon).  
-- If tonight = **intl sales open** → finish Stripe + PayPal webhooks **before 19:00**.
-
-Exact URLs:
+Lightsail already has **Stripe LIVE** + **PayPal live** credentials. Missing piece is mainly **apex webhook endpoints** in the provider dashboards (and matching secrets/IDs if new).
 
 ```
 https://sarveda.com/api/payments/stripe/webhook
 https://sarveda.com/api/payments/paypal/webhook
 ```
 
+**Stripe events to enable:**  
+`checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded` (+ refund.* if offered)
+
+**PayPal:** create webhook on that URL; copy Webhook ID into Lightsail `PAYPAL_WEBHOOK_ID` if it changes.
 ---
 
 ## Rollback (if apex broken)
