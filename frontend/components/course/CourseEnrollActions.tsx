@@ -22,6 +22,13 @@ type Props = {
   embedded?: boolean;
 };
 
+const primaryButton =
+  "inline-flex min-h-[50px] flex-1 items-center justify-center rounded-full bg-[#166D46] px-6 text-sm font-bold text-white shadow-[0_16px_38px_rgba(22,109,70,0.22)] transition hover:-translate-y-0.5 hover:bg-[#145a3a] hover:shadow-[0_20px_48px_rgba(22,109,70,0.28)] disabled:translate-y-0 disabled:opacity-60";
+const outlineButton =
+  "inline-flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-full border border-[#b98a3e] bg-[#fffaf2] px-6 text-sm font-bold text-[#8b6428] transition hover:-translate-y-0.5 hover:bg-white disabled:translate-y-0 disabled:opacity-60";
+const softInput =
+  "w-full rounded-2xl border border-[#eadfcf] bg-white px-4 py-3 text-sm text-[#10201a] shadow-inner outline-none transition placeholder:text-[#8ca094] focus:border-[#166D46] focus:ring-4 focus:ring-[#166D46]/10";
+
 export function CourseEnrollActions({
   item: course,
   pathPrefix,
@@ -42,6 +49,7 @@ export function CourseEnrollActions({
   useEffect(() => {
     setEnquiryMessage(buildCourseEnquiryMessage(course.title));
   }, [course.title]);
+
   const showPay =
     !registrationClosed &&
     (course.enrollmentMode === "CHECKOUT" || course.enrollmentMode === "BOTH") &&
@@ -99,38 +107,24 @@ export function CourseEnrollActions({
     }
   };
 
-  const wrapperClass = embedded ? "space-y-0" : "rounded-2xl border border-stone-200 bg-stone-50 p-5 md:p-6";
+  const wrapperClass = embedded ? "space-y-0" : "rounded-[1.5rem] border border-[#eadfcf] bg-white/82 p-5 shadow-[0_18px_50px_rgba(28,53,42,0.07)] md:p-6";
 
   return (
     <div className={wrapperClass}>
       {registrationClosed ? (
         <>
-          <p
-            className={
-              embedded
-                ? "text-base font-semibold text-stone-900"
-                : "font-serif text-lg font-semibold text-stone-900"
-            }
-          >
+          <p className={embedded ? "text-base font-bold text-[#10201a]" : "font-serif text-xl font-semibold text-[#10201a]"}>
             Registration closed
           </p>
-          <p className="mt-2 text-sm text-stone-600">
+          <p className="mt-2 text-sm leading-6 text-[#65766c]">
             This {pathPrefix === "course" ? "programme" : "event"} has ended. Online enrolment and
             payment are no longer available for this intake.
           </p>
           <div className="mt-5 flex flex-col gap-3">
-            <a
-              href={buildEnquiryWhatsAppUrl(course.title, courseUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-emerald-600 bg-emerald-50 px-5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
-            >
+            <a href={buildEnquiryWhatsAppUrl(course.title, courseUrl)} target="_blank" rel="noopener noreferrer" className={outlineButton}>
               Ask about a future intake
             </a>
-            <Link
-              href={pathPrefix === "course" ? "/courses" : "/events"}
-              className="text-center text-sm font-medium text-amber-800 underline hover:text-amber-900"
-            >
+            <Link href={pathPrefix === "course" ? "/courses" : "/events"} className="text-center text-sm font-bold text-[#8b6428] underline underline-offset-4 hover:text-[#166D46]">
               View {pathPrefix === "course" ? "all courses" : "all events"}
             </Link>
           </div>
@@ -138,69 +132,42 @@ export function CourseEnrollActions({
       ) : (
         <>
           {!embedded && course.priceInPaise > 0 ? (
-            <p className="font-sans text-2xl font-semibold tabular-nums tracking-tight text-stone-900">
+            <p className="font-sans text-3xl font-semibold tabular-nums tracking-tight text-[#10201a]">
               {formatINRFromPaise(course.priceInPaise)}
-              <span className="ml-2 text-sm font-normal text-stone-500">GST inclusive</span>
+              <span className="ml-2 text-sm font-normal text-[#65766c]">GST inclusive</span>
             </p>
           ) : !embedded ? (
-            <p className="font-sans text-xl font-semibold text-stone-900">Enquire for pricing</p>
+            <p className="font-sans text-xl font-semibold text-[#10201a]">Enquire for pricing</p>
           ) : null}
 
           <div className={`flex flex-col gap-3 ${embedded ? "" : "mt-5 sm:flex-row sm:flex-wrap"}`}>
             {showPay ? (
-              <button
-                type="button"
-                onClick={() => void pay()}
-                disabled={loading}
-                className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-50 transition hover:bg-stone-800 disabled:opacity-60"
-              >
-                {loading ? "Please wait…" : payLabel}
+              <button type="button" onClick={() => void pay()} disabled={loading} className={primaryButton}>
+                {loading ? "Preparing checkout…" : payLabel}
               </button>
             ) : null}
 
             {showEnquire ? (
-              <>
-                <a
-                  href={buildEnquiryWhatsAppUrl(course.title, courseUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full border border-emerald-600 bg-emerald-50 px-6 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
-                >
-                  WhatsApp enquiry
-                </a>
-              </>
+              <a href={buildEnquiryWhatsAppUrl(course.title, courseUrl)} target="_blank" rel="noopener noreferrer" className={showPay ? outlineButton : primaryButton}>
+                WhatsApp enquiry
+              </a>
             ) : null}
           </div>
 
           {showEnquire && pathPrefix === "course" ? (
-            <div className={`space-y-3 ${embedded ? "mt-4 border-t border-stone-200 pt-4" : "mt-4"}`}>
-              <p className="text-xs text-stone-500">
-                Or email us — your enquiry is saved and sent to care@sarveda.com
+            <div className={`space-y-3 ${embedded ? "mt-5 border-t border-[#eadfcf] pt-5" : "mt-5"}`}>
+              <p className="text-xs leading-5 text-[#65766c]">
+                Prefer email? Share your questions and our team will reply from care@sarveda.com.
               </p>
               {emailSent ? (
-                <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
+                <p className="rounded-2xl border border-[#bfe8cd] bg-[#eefaf3] px-4 py-3 text-sm font-medium text-[#0e6a42]">
+                  Enquiry sent. We will reply to {email}.
+                </p>
               ) : (
                 <>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your email address"
-                    className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
-                  />
-                  <textarea
-                    value={enquiryMessage}
-                    onChange={(e) => setEnquiryMessage(e.target.value)}
-                    rows={3}
-                    placeholder="Your questions about this course…"
-                    className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void sendEmailEnquiry()}
-                    disabled={emailSending}
-                    className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 transition hover:border-amber-400 hover:bg-amber-50 disabled:opacity-60"
-                  >
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email address" className={softInput} />
+                  <textarea value={enquiryMessage} onChange={(e) => setEnquiryMessage(e.target.value)} rows={3} placeholder="Your questions about this course…" className={`${softInput} resize-y`} />
+                  <button type="button" onClick={() => void sendEmailEnquiry()} disabled={emailSending} className={outlineButton}>
                     {emailSending ? "Sending…" : "Email enquiry"}
                   </button>
                 </>
@@ -211,16 +178,16 @@ export function CourseEnrollActions({
           ) : null}
 
           {course.enrollmentMode === "BOTH" && showPay ? (
-            <p className="mt-3 text-xs text-stone-500">
-              Prefer to speak with us first? Use WhatsApp or email — we are happy to help before you pay.
+            <p className="mt-4 text-xs leading-5 text-[#65766c]">
+              Prefer to speak with us first? Use WhatsApp or email before you pay.
             </p>
           ) : null}
 
-          {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
+          {error ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
 
           {showPay ? (
-            <p className="mt-3 text-xs text-stone-500">
-              Sign in before checkout to see your course or event under Profile → Courses & events.
+            <p className="mt-4 text-xs leading-5 text-[#65766c]">
+              Sign in before checkout to see this course under Profile → Courses & events.
             </p>
           ) : null}
         </>
@@ -244,24 +211,15 @@ function EventEmailEnquiry({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className="mt-5 space-y-3 border-t border-[#eadfcf] pt-5">
       {sent ? (
-        <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
+        <p className="rounded-2xl border border-[#bfe8cd] bg-[#eefaf3] px-4 py-3 text-sm font-medium text-[#0e6a42]">
+          Enquiry sent. We will reply to {email}.
+        </p>
       ) : (
         <>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Your email"
-            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm"
-          />
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={3}
-            className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm"
-          />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email" className={softInput} />
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} className={`${softInput} resize-y`} />
           {error ? <p className="text-sm text-red-700">{error}</p> : null}
           <button
             type="button"
@@ -293,7 +251,7 @@ function EventEmailEnquiry({
                 }
               })();
             }}
-            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 hover:border-amber-400 hover:bg-amber-50 disabled:opacity-60"
+            className={outlineButton}
           >
             {sending ? "Sending…" : "Email enquiry"}
           </button>
