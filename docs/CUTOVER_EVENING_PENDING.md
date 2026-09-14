@@ -32,13 +32,12 @@
 
 ### Still daytime (before 19:00) if not done
 
-- [ ] **Stripe webhook (intl)** — add  
+- [ ] **Stripe webhook (REQUIRED — intl day‑1)** — add  
   `https://sarveda.com/api/payments/stripe/webhook`  
-  *(Skip only if India/Razorpay-only tonight — otherwise do this)*
-- [ ] **PayPal webhook (intl)** — add apex production webhook  
+  + Live keys on Lightsail/Vercel; webhook signing secret → `STRIPE_WEBHOOK_SECRET`
+- [ ] **PayPal webhook (REQUIRED — intl day‑1)** — add  
   `https://sarveda.com/api/payments/paypal/webhook`  
-  + confirm Lightsail `PAYPAL_WEBHOOK_ID` / `PAYPAL_MODE=live`  
-  *(Skip only if India-only tonight)*
+  + `PAYPAL_MODE=live` + `PAYPAL_WEBHOOK_ID` on Lightsail
 - [ ] **WP maintenance page** ready (plugin/banner) — **do not enable** yet
 - [ ] **Merchant / Ads** — agree switch time (suggest **21:45**, before midnight cycle)
 - [ ] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = secret used on **new apex** Razorpay webhook
