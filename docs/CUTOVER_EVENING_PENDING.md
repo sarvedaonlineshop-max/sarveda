@@ -39,8 +39,9 @@
   ⚠ Without this, intl **card** via Stripe is unsafe for day‑1; PayPal + Razorpay still OK.
 - [x] **PayPal webhook (REQUIRED — intl day‑1)** — apex added  
   `https://sarveda.com/api/payments/paypal/webhook` · ID `2W290169M4234034B` on Lightsail  
-  - [ ] **Edit webhook events** — also enable capture completed + denied (not only refunds)
-- [ ] **WP maintenance page** ready (plugin/banner) — **do not enable** yet
+  - [x] **Edit webhook events** — capture completed + denied + refunds (verified)
+- [x] **WP maintenance page** ready (LightStart / WP Maintenance Mode) — **do not enable** until ~19:00
+  - Status stays **Deactivated** until cutover; Bypass bots = No; Exclude keeps wp-login
 - [ ] **Merchant / Ads** — agree switch time (suggest **21:45**, before midnight cycle)
 - [ ] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = secret used on **new apex** Razorpay webhook
 - [ ] Confirm Vercel `NEXT_PUBLIC_RAZORPAY_KEY_ID` = same Live Key ID as Lightsail
