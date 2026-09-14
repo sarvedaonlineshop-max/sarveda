@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin-api";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
+import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 
 const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
   { value: "__unread__", label: "Unread" },
@@ -85,7 +86,7 @@ function previewText(thread: EnquiryThreadListItem) {
   const last = thread.messages[0];
   if (!last) return "—";
   const prefix = last.authorType === "ADMIN" ? "You: " : "";
-  return `${prefix}${last.body}`.slice(0, 80);
+  return `${prefix}${whatsAppPreviewLabel(last.body)}`.slice(0, 80);
 }
 
 export function AdminChatsInbox() {

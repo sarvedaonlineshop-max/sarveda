@@ -26,6 +26,7 @@ import {
   openAdminStartWhatsAppChat
 } from "@/components/admin/AdminChatsInbox";
 import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
+import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
 
 const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -45,19 +46,16 @@ function formatMsgTime(iso: string) {
   });
 }
 
-/** Strip accidental HTML / markup from template previews for display. */
-function displayMessageBody(raw: string): string {
-  return raw
-    .replace(/<\/?blockquote[^>]*>/gi, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+_+/g, " ")
-    .replace(/_+\s+/g, " ")
-    .replace(/[ \t]+\n/g, "\n")
-    .trim();
+function isImageMime(mime: string) {
+  return mime.toLowerCase().startsWith("image/");
+}
+
+function isVideoMime(mime: string) {
+  return mime.toLowerCase().startsWith("video/");
+}
+
+function isAudioMime(mime: string) {
+  return mime.toLowerCase().startsWith("audio/");
 }
 
 function notifyInboxRefresh() {
@@ -113,6 +111,28 @@ function MessageBubble({
   isWhatsApp?: boolean;
 }) {
   const isAdmin = message.authorType === "ADMIN";
+  const parsed = parseWhatsAppMessageBody(message.body || "");
+  const hasAttachments = message.attachments.length > 0;
+  // Prefer durable S3 attachments; fall back to Exotel pre-signed URL in body.
+  const inlineImageUrl =
+    !hasAttachments && (parsed.mediaType === "image" || parsed.mediaType === "sticker")
+      ? parsed.url
+      : null;
+  const inlineVideoUrl = !hasAttachments && parsed.mediaType === "video" ? parsed.url : null;
+  const inlineAudioUrl = !hasAttachments && parsed.mediaType === "audio" ? parsed.url : null;
+  const inlineDocUrl = !hasAttachments && parsed.mediaType === "document" ? parsed.url : null;
+  const showText = Boolean(
+    parsed.caption ||
+      (!parsed.mediaType && parsed.text) ||
+      (parsed.mediaType &&
+        !parsed.caption &&
+        !inlineImageUrl &&
+        !inlineVideoUrl &&
+        !inlineAudioUrl &&
+        !inlineDocUrl &&
+        !hasAttachments)
+  );
+
   return (
     <div className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
       <div
@@ -133,25 +153,70 @@ function MessageBubble({
               }
         }
       >
-        {message.body ? (
+        {inlineImageUrl ? (
+          <a href={inlineImageUrl} target="_blank" rel="noopener noreferrer" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={inlineImageUrl}
+              alt={parsed.caption || "WhatsApp image"}
+              className="mb-1 max-h-72 w-full rounded-lg object-contain bg-stone-50"
+            />
+          </a>
+        ) : null}
+        {inlineVideoUrl ? (
+          <video
+            src={inlineVideoUrl}
+            controls
+            className="mb-1 max-h-72 w-full rounded-lg bg-black"
+          />
+        ) : null}
+        {inlineAudioUrl ? (
+          <audio src={inlineAudioUrl} controls className="mb-1 w-full" />
+        ) : null}
+        {inlineDocUrl ? (
+          <a
+            href={inlineDocUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-1 inline-flex text-[13px] font-medium text-[#0b6b5f] underline"
+          >
+            📄 Open document
+          </a>
+        ) : null}
+        {showText ? (
           <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1a2e1a]">
-            {displayMessageBody(message.body)}
+            {parsed.text}
           </p>
         ) : null}
-        {message.attachments.length > 0 ? (
+        {hasAttachments ? (
           <ul
-            className={`space-y-1 text-xs ${message.body ? "mt-2 border-t pt-2" : ""} border-stone-200/80`}
+            className={`space-y-2 text-xs ${showText || inlineImageUrl || inlineVideoUrl ? "mt-2 border-t pt-2" : ""} border-stone-200/80`}
           >
             {message.attachments.map((a) => (
               <li key={a.id}>
-                <a
-                  href={a.s3Url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#0b6b5f] underline"
-                >
-                  📎 {a.fileName}
-                </a>
+                {isImageMime(a.mimeType) ? (
+                  <a href={a.s3Url} target="_blank" rel="noopener noreferrer" className="block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={a.s3Url}
+                      alt={a.fileName}
+                      className="max-h-72 w-full rounded-lg object-contain bg-stone-50"
+                    />
+                  </a>
+                ) : isVideoMime(a.mimeType) ? (
+                  <video src={a.s3Url} controls className="max-h-72 w-full rounded-lg bg-black" />
+                ) : isAudioMime(a.mimeType) ? (
+                  <audio src={a.s3Url} controls className="w-full" />
+                ) : (
+                  <a
+                    href={a.s3Url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#0b6b5f] underline"
+                  >
+                    📎 {a.fileName}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

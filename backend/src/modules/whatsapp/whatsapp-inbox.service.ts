@@ -9,8 +9,11 @@
  * Auto-replies are handled by the interactive button/list bot in
  * `whatsapp-bot.service`.
  */
+import { randomUUID } from "crypto";
+
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { uploadAsset } from "../../config/s3";
 import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
 import { toWhatsAppE164 } from "../notifications/whatsapp";
 import { enqueueBotTurn } from "./whatsapp-bot.service";
@@ -20,6 +23,8 @@ import { createSupportFlowToken } from "./whatsapp-flow.token";
 export const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export { WA_BOT_AUTHOR, isGreeting } from "./whatsapp-bot.service";
+
+const MAX_INBOUND_MEDIA_BYTES = 20 * 1024 * 1024;
 
 /** Synthetic, non-routable email for WA-only contacts (EnquiryThread.customerEmail is required). */
 function syntheticWaEmail(e164: string): string {
@@ -136,6 +141,27 @@ function asString(v: unknown): string | null {
 }
 
 /** Human-readable body from an Exotel/Meta-style content object. */
+function extractMedia(content: AnyRecord | null): {
+  mediaType: "image" | "video" | "audio" | "document" | "sticker";
+  caption: string | null;
+  fileName: string | null;
+  link: string | null;
+} | null {
+  if (!content) return null;
+  for (const mediaType of ["image", "video", "audio", "document", "sticker"] as const) {
+    const media = asRecord(content[mediaType]);
+    if (!media) continue;
+    return {
+      mediaType,
+      caption: asString(media.caption),
+      fileName: asString(media.filename),
+      link: asString(media.link) ?? asString(media.url)
+    };
+  }
+  return null;
+}
+
+/** Human-readable body from an Exotel/Meta-style content object. */
 function extractBody(content: AnyRecord | null, fallback: AnyRecord): string {
   if (!content) {
     return asString(fallback.body) ?? asString(fallback.text) ?? "";
@@ -162,18 +188,14 @@ function extractBody(content: AnyRecord | null, fallback: AnyRecord): string {
     if (t) return t;
   }
 
-  for (const mediaType of ["image", "video", "audio", "document", "sticker"]) {
-    const media = asRecord(content[mediaType]);
-    if (media) {
-      const caption = asString(media.caption);
-      const link = asString(media.link) ?? asString(media.url);
-      const name = asString(media.filename);
-      const parts = [`[${mediaType}]`];
-      if (name) parts.push(name);
-      if (caption) parts.push(caption);
-      if (link) parts.push(link);
-      return parts.join(" ");
-    }
+  const media = extractMedia(content);
+  if (media) {
+    // Keep the Exotel URL in body as a fallback for admin UI until/unless S3 mirror succeeds.
+    const parts = [`[${media.mediaType}]`];
+    if (media.fileName) parts.push(media.fileName);
+    if (media.caption) parts.push(media.caption);
+    if (media.link) parts.push(media.link);
+    return parts.join(" ");
   }
 
   const location = asRecord(content.location);
@@ -183,6 +205,140 @@ function extractBody(content: AnyRecord | null, fallback: AnyRecord): string {
 
   if (type) return `[${type} message]`;
   return "";
+}
+
+function mimeForWaMedia(
+  mediaType: string,
+  fileName: string | null,
+  contentTypeHeader: string | null
+): string {
+  const header = contentTypeHeader?.split(";")[0]?.trim().toLowerCase() ?? "";
+  if (header && header !== "application/octet-stream") return header;
+  const ext = (fileName?.split(".").pop() || "").toLowerCase();
+  const byExt: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    webm: "video/webm",
+    mp3: "audio/mpeg",
+    m4a: "audio/mp4",
+    ogg: "audio/ogg",
+    pdf: "application/pdf"
+  };
+  if (ext && byExt[ext]) return byExt[ext];
+  switch (mediaType) {
+    case "image":
+    case "sticker":
+      return "image/jpeg";
+    case "video":
+      return "video/mp4";
+    case "audio":
+      return "audio/ogg";
+    case "document":
+      return "application/pdf";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function extForMime(mime: string, mediaType: string): string {
+  const map: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "audio/mpeg": "mp3",
+    "audio/ogg": "ogg",
+    "audio/mp4": "m4a",
+    "application/pdf": "pdf"
+  };
+  if (map[mime]) return map[mime];
+  if (mediaType === "image" || mediaType === "sticker") return "jpg";
+  if (mediaType === "video") return "mp4";
+  if (mediaType === "audio") return "ogg";
+  return "bin";
+}
+
+/**
+ * Mirror Exotel/WhatsApp media to Sarveda S3 so admin chat does not depend on
+ * short-lived pre-signed Exotel URLs (~15 min).
+ */
+async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
+  messageId: string;
+  mediaType: string;
+  link: string;
+  fileName: string | null;
+  caption: string | null;
+}): Promise<boolean> {
+  let parsed: URL;
+  try {
+    parsed = new URL(input.link);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+
+  const res = await fetch(input.link, {
+    headers: { "User-Agent": "SarvedaWhatsAppInbox/1.0" },
+    signal: AbortSignal.timeout(45_000),
+    redirect: "follow"
+  });
+  if (!res.ok) {
+    logger.warn("whatsapp_inbound_media_fetch_failed", {
+      status: res.status,
+      mediaType: input.mediaType
+    });
+    return false;
+  }
+
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (!buf.length || buf.length > MAX_INBOUND_MEDIA_BYTES) {
+    logger.warn("whatsapp_inbound_media_size_rejected", { bytes: buf.length });
+    return false;
+  }
+
+  const mime = mimeForWaMedia(
+    input.mediaType,
+    input.fileName,
+    res.headers.get("content-type")
+  );
+  const ext = extForMime(mime, input.mediaType);
+  const safeName =
+    input.fileName?.replace(/[^\w.\-]+/g, "_").slice(0, 120) ||
+    `whatsapp-${input.mediaType}.${ext}`;
+  const s3Key = `enquiries/${new Date().getFullYear()}/wa-${randomUUID()}.${ext}`;
+  const s3Url = await uploadAsset(s3Key, buf, mime);
+  if (!s3Url) return false;
+
+  await prisma.enquiryAttachment.create({
+    data: {
+      messageId: input.messageId,
+      fileName: safeName,
+      mimeType: mime,
+      fileSizeBytes: buf.length,
+      s3Key,
+      s3Url
+    }
+  });
+
+  // Prefer durable caption / media label; keep Exotel URL out of body once mirrored.
+  const cleanBody =
+    input.caption?.trim() ||
+    (input.mediaType === "document" && input.fileName
+      ? `[document] ${input.fileName}`
+      : `[${input.mediaType}]`);
+  await prisma.enquiryMessage.update({
+    where: { id: input.messageId },
+    data: { body: cleanBody }
+  });
+
+  return true;
 }
 
 /**
@@ -217,6 +373,12 @@ type ParsedInbound = {
   profileName: string | null;
   body: string;
   replyId: string | null;
+  media: {
+    mediaType: "image" | "video" | "audio" | "document" | "sticker";
+    caption: string | null;
+    fileName: string | null;
+    link: string | null;
+  } | null;
 };
 
 type ParsedStatus = {
@@ -282,7 +444,15 @@ function parseCallbackItem(item: AnyRecord): ParsedInbound | ParsedStatus | null
   const body = extractBody(content, item);
   if (!body) return null;
 
-  return { kind: "message", sid, from, profileName, body, replyId: extractReplyId(content) };
+  return {
+    kind: "message",
+    sid,
+    from,
+    profileName,
+    body,
+    replyId: extractReplyId(content),
+    media: extractMedia(content)
+  };
 }
 
 /** Flatten known Exotel webhook shapes into individual callback items. */
@@ -339,7 +509,7 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
     });
   }
 
-  await prisma.enquiryMessage.create({
+  const created = await prisma.enquiryMessage.create({
     data: {
       threadId: thread.id,
       authorType: "CUSTOMER",
@@ -347,8 +517,32 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
       authorEmail: email,
       body: msg.body,
       waMessageSid: msg.sid
-    }
+    },
+    select: { id: true }
   });
+
+  if (msg.media?.link) {
+    try {
+      const mirrored = await mirrorWhatsAppMediaToEnquiryAttachment({
+        messageId: created.id,
+        mediaType: msg.media.mediaType,
+        link: msg.media.link,
+        fileName: msg.media.fileName,
+        caption: msg.media.caption
+      });
+      if (mirrored) {
+        logger.info("whatsapp_inbound_media_mirrored", {
+          messageId: created.id,
+          mediaType: msg.media.mediaType
+        });
+      }
+    } catch (err) {
+      logger.warn("whatsapp_inbound_media_mirror_failed", {
+        messageId: created.id,
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
 
   await prisma.enquiryThread.update({
     where: { id: thread.id },
