@@ -55,9 +55,14 @@
 
 - [ ] Keep DO until DNS + mail verified elsewhere (do **not** kill mid-cutover)
 - [ ] Move `sarveda.com` DNS off DigitalOcean → GoDaddy or Cloudflare (when ready)
-- [ ] Point `sarveda.store` at old Woo if archive needed; update WP Site URL
+- [x] **2026-09-15:** DO Woo prepared for archive on `sarveda.store`
+  - nginx vhost + archive map (storefront → `sarveda.com`; `/wp-admin`, `/subscriber-login`, `/my-account` stay)
+  - WP `siteurl`/`home` → `http://sarveda.store` (bump to `https://` after Certbot)
+  - **Still needed (GoDaddy):** A `@` + `www` → `134.209.146.175`, then Certbot on droplet
 - [ ] Snapshot / export anything still needed from Woo droplet
 - [ ] Destroy DO droplet + cancel ~$40 plan
+- [ ] **Rotate DO root password** (was shared in chat) + prefer SSH key-only login
+
 
 ---
 
