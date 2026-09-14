@@ -25,7 +25,7 @@ type Props = {
 export function CourseEnrollActions({
   item: course,
   pathPrefix,
-  payLabel = "Pay & enrol online",
+  payLabel,
   registrationClosed = false,
   embedded = false
 }: Props) {
@@ -38,6 +38,11 @@ export function CourseEnrollActions({
   const [emailSent, setEmailSent] = useState(false);
 
   const courseUrl = absoluteUrl(`/${pathPrefix}/${course.slug}`);
+  const resolvedPayLabel =
+    payLabel ??
+    (course.priceInPaise > 0
+      ? `Pay and Enroll ${formatINRFromPaise(course.priceInPaise)} only`
+      : "Pay and Enroll");
 
   useEffect(() => {
     setEnquiryMessage(buildCourseEnquiryMessage(course.title));
@@ -152,9 +157,9 @@ export function CourseEnrollActions({
                 type="button"
                 onClick={() => void pay()}
                 disabled={loading}
-                className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-50 transition hover:bg-stone-800 disabled:opacity-60"
+                className="inline-flex min-h-[48px] w-full flex-1 items-center justify-center whitespace-nowrap rounded-full bg-stone-900 px-4 text-sm font-semibold text-amber-50 transition hover:bg-stone-800 disabled:opacity-60 sm:px-5"
               >
-                {loading ? "Please wait…" : payLabel}
+                {loading ? "Please wait…" : resolvedPayLabel}
               </button>
             ) : null}
 

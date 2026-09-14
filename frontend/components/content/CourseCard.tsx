@@ -10,7 +10,6 @@ import {
   parseCourseTeachers
 } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
-import { descriptionParagraphs, htmlToPlainText } from "@/lib/sanitize-html";
 
 import { InstructorAvatars } from "./InstructorAvatars";
 
@@ -27,30 +26,6 @@ function prettyDate(s: string | null | undefined) {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function plainText(raw: string | null | undefined): string | null {
-  if (!raw?.trim()) return null;
-  const text = raw
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-  return text || null;
-}
-
-function courseExplanation(course: CourseListItem, aboutTheCourse?: string | null): string | null {
-  return plainText(course.shortDescription) || plainText(aboutTheCourse);
-}
-
-function courseExplanationParagraphs(course: CourseListItem, aboutTheCourse?: string | null): string[] {
-  const source = course.shortDescription?.trim() || aboutTheCourse?.trim();
-  if (!source) return [];
-  return descriptionParagraphs(htmlToPlainText(source)).slice(0, 2);
-}
-
 export function CourseCard({ course, compact = false }: Props) {
   const extra = parseCourseExtra(course.extra);
   const teachers = parseCourseTeachers(extra);
@@ -60,8 +35,7 @@ export function CourseCard({ course, compact = false }: Props) {
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
   const duration = formatCourseDuration(extra);
   const tagLabel = courseCardTypeLabel(extra);
-  const explanation = courseExplanation(course, extra.aboutTheCourse);
-  const explanationParagraphs = courseExplanationParagraphs(course, extra.aboutTheCourse);
+  const subtitle = course.shortDescription?.trim() || null;
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -94,59 +68,67 @@ export function CourseCard({ course, compact = false }: Props) {
       }}
     >
       <div className={`relative ${IMAGE_BAND} shrink-0 overflow-hidden bg-[#EDE4D3]`}>
-        <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-brand-gold/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
+        <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {tagLabel}
         </span>
         {course.imageUrl ? (
           <img
             src={course.imageUrl}
-            alt={course.title}
+            alt=""
             className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="h-full w-full bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(10,24,18,0.88) 0%, rgba(10,24,18,0.35) 45%, rgba(10,24,18,0.12) 100%)"
+          }}
+        />
+        <div className="absolute inset-x-0 bottom-0 z-[1] px-4 pb-5 pt-10">
+          <h3
+            className={`font-serif font-semibold leading-snug text-white drop-shadow-sm ${
+              compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.3rem]" : "line-clamp-3 text-[1.2rem] sm:text-[1.35rem]"
+            }`}
+          >
+            {course.title}
+          </h3>
+          {subtitle ? (
+            <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-[#E8C97A] sm:text-[13px]">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col bg-[#166D46] text-white">
         <InstructorAvatars
           seam
           people={teachers}
-          className="absolute -top-[25px] right-2.5 z-10"
+          className="absolute -top-[25px] left-3 z-10 sm:left-4"
         />
 
         {/* Never overflow-y:auto here — nested scroll traps page scroll on mobile. */}
-        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-4.5">
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-9 sm:px-5">
           <h3
             className={`font-serif font-semibold leading-snug text-white ${
-              compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.25rem]" : "text-[1.2rem] sm:text-[1.3rem]"
+              compact ? "line-clamp-2 text-[1.05rem] sm:text-[1.15rem]" : "line-clamp-2 text-[1.1rem] sm:text-[1.2rem]"
             }`}
           >
             {course.title}
           </h3>
 
-          {explanationParagraphs.length > 0 ? (
-            <div className="mt-2.5 space-y-2 text-white/85">
-              {explanationParagraphs.map((paragraph, index) => (
-                <p
-                  key={`${course.slug}-summary-${index}`}
-                  className={`leading-[1.55] ${
-                    compact ? "line-clamp-2 text-[13px] sm:text-[14px]" : "line-clamp-2 text-[13px] sm:text-[14px]"
-                  }`}
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          ) : explanation ? (
-            <p className="mt-2.5 line-clamp-2 text-[13px] leading-[1.55] text-white/85 sm:text-[14px]">
-              {explanation}
+          {subtitle ? (
+            <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-white/85 sm:text-[13px]">
+              {subtitle}
             </p>
           ) : null}
 
-          <div className="mt-3.5 min-w-0 space-y-1.5 border-l-4 border-white/85 pl-3">
+          <div className="mt-4 min-w-0 space-y-1.5 border-l-[3px] border-white pl-3">
             {teacherNames.length ? (
-              <p className="line-clamp-1 text-[13px] leading-snug text-white sm:text-[14px]">
+              <p className="line-clamp-2 text-[13px] leading-snug text-white sm:text-[14px]">
                 {teacherNames.join(", ")}
               </p>
             ) : null}
@@ -158,7 +140,7 @@ export function CourseCard({ course, compact = false }: Props) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-end justify-between gap-3 border-t border-white/15 px-4 pb-4 pt-3">
+        <div className="flex shrink-0 items-end justify-between gap-3 border-t border-white/15 px-4 pb-4 pt-3 sm:px-5">
           <p className="text-sm font-semibold tabular-nums text-white/95">
             {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}
           </p>

@@ -29,24 +29,28 @@
     ],
     "teachers": [
       {
+        "bio": "Driven by his endless curiosity for a better understanding of the Self, Arjun has been on journeys across India and the world, learning from philosophies, meditation, yoga, psychology, music and various holistic wellness modalities. Arjun founded Sarveda as an earnest attempt to align his passion for creativity and well-being with making a positive impact and changing the world for the better.\r\n\r\nHe is a percussionist, guitarist, sound producer and a sound therapist with a keen interest to use music as a force to help people connect with themselves and others. His other interests lie in integrating the broad vision of the philosophies of the East with the pragmatic psychology of the West. Arjun is an engineering graduate from IIT Madras.",
         "name": "Arjun Arora",
-        "designation": "Musician, Sound Therapist, Yoga Practioner & Founder of Sarveda",
-        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/Gemini_Generated_Image_m1b25jm1b25jm1b2-e1776924930134.png"
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/Gemini_Generated_Image_m1b25jm1b25jm1b2-e1776924930134.png",
+        "designation": "Musician, Sound Therapist, Yoga Practioner & Founder of Sarveda"
       },
       {
+        "bio": "Adnan Vahanvaty is a sound and vibration healing practitioner-trainer, mentor, and founder of Heal Farm, a Himalayan spiritual sanctuary dedicated to reconnecting people with nature and inner calm, where he hosts leadership and learning retreats. Born in Gujarat and schooled in Delhi, Adnan operates and travels from the Himalayas, guided by a mission to help individuals access their restful state and realize their unlimited potential. His journey rooted in letting go has evolved from overindulgence to minimalism and mindful living. Trained in sound healing, life coaching, movement, meditation, permaculture, and survival arts, he brings a fluid, non-dogmatic approach to his work.",
         "name": "Adnan Vahanvaty",
-        "designation": "Sound and Vibration Healing Practitioner, Mentor",
-        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/WhatsApp-Image-2026-04-21-at-10.45.47-AM-e1776761545473.jpeg"
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/WhatsApp-Image-2026-04-21-at-10.45.47-AM-e1776761545473.jpeg",
+        "designation": "Sound and Vibration Healing Practitioner, Mentor"
       },
       {
+        "bio": "Sunithi S. Ramesh is a sound healing practitioner, gong master, and the founder of Satvat Holistics, a holistic wellness platform established in 2019. A former technology professional, she transitioned into the field of energy healing following a profound personal health journey, dedicating herself to modalities such as sound therapy and pranic healing.",
         "name": "Sunithi S. Ramesh",
-        "designation": "Sound healing practitioner, gong master, and the founder of Satvat Holistics",
-        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/IMG-20220326-WA0013-e1776764889667.webp"
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/IMG-20220326-WA0013-e1776764889667.webp",
+        "designation": "Sound healing practitioner, gong master, and the founder of Satvat Holistics"
       },
       {
+        "bio": "Karthik is a Professional Sound Healer who weaves ancient vibrations and modern frequencies to unlock deep relaxation, balance your energy, and awaken your inner harmony. He was born in Chennai and now operating from Bangalore . He is triple master certified in Sound Healing , Space Healing &amp; Distance Healing.",
         "name": "Karthik CM",
-        "designation": "Sound Practitioner",
-        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/WhatsApp-Image-2026-04-21-at-1.45.52-PM-1-e1776761743157.jpeg"
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/WhatsApp-Image-2026-04-21-at-1.45.52-PM-1-e1776761743157.jpeg",
+        "designation": "Sound Practitioner"
       }
     ],
     "schedule": [

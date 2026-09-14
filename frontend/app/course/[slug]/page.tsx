@@ -131,7 +131,7 @@ export default async function CourseDetailPage({ params }: Props) {
   `;
 
   return (
-    <div className="overflow-x-hidden" style={{ background: "var(--brand-cream)" }}>
+    <div style={{ background: "var(--brand-cream)" }}>
       <JsonLd data={[courseJsonLd(course), breadcrumbJsonLd(breadcrumbItems)]} />
 
       {/* Hero image — full bleed with forest gradient overlay */}
@@ -147,6 +147,19 @@ export default async function CourseDetailPage({ params }: Props) {
             <h1 className="font-serif" style={{ color:"#fffbf5", fontSize:"clamp(1.7rem,4vw,2.8rem)", fontWeight:700, lineHeight:1.15, maxWidth:"700px", textShadow:"0 2px 12px rgba(0,0,0,0.4)" }}>
               {course.title}
             </h1>
+            {course.shortDescription ? (
+              <p
+                className="mt-3 max-w-2xl"
+                style={{
+                  color: "rgba(255,251,245,0.88)",
+                  fontSize: "clamp(0.95rem,2vw,1.1rem)",
+                  lineHeight: 1.55,
+                  textShadow: "0 1px 8px rgba(0,0,0,0.35)"
+                }}
+              >
+                {course.shortDescription}
+              </p>
+            ) : null}
           </div>
         </div>
       )}
@@ -174,17 +187,17 @@ export default async function CourseDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Main */}
-      <main className="page-shell overflow-x-hidden py-12">
-        <div className="grid min-w-0 gap-12 lg:grid-cols-[1fr_340px]">
+      {/* Main — avoid overflow-x:hidden here; it breaks sticky enroll on desktop */}
+      <main className="page-shell py-12">
+        <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_340px]">
 
           {/* Left */}
           <div className="min-w-0 max-w-full">
-            {course.shortDescription && (
+            {!course.imageUrl && course.shortDescription ? (
               <p className="break-words" style={{ color:"var(--brand-muted)", fontSize:"1.1rem", lineHeight:1.8, marginBottom:"32px", maxWidth:"620px" }}>
                 {course.shortDescription}
               </p>
-            )}
+            ) : null}
 
             {programmeRows.length > 0 && (
               <div className="min-w-0" style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"20px 16px", marginBottom:"40px" }}>
@@ -325,9 +338,9 @@ export default async function CourseDetailPage({ params }: Props) {
             {teachersSection}
           </div>
 
-          {/* Sidebar */}
-          <aside className="min-w-0">
-            <div style={{ position:"sticky", top:"100px", border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", boxShadow:"0 4px 18px rgba(44,36,32,0.08)" }}>
+          {/* Sidebar — sticky through sessions + teacher bios on desktop */}
+          <aside className="min-w-0 lg:sticky lg:top-24 lg:z-20">
+            <div style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", boxShadow:"0 4px 18px rgba(44,36,32,0.08)" }}>
               {(course.priceInPaise > 0 || course.isFree) && (
                 <div style={{ padding:"20px 24px", borderBottom:"1px solid var(--brand-cream-dark)", background:"linear-gradient(135deg,var(--brand-forest),var(--brand-night))" }}>
                   <p style={{ color:"var(--brand-gold-pale)", fontSize:"9px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:"6px" }}>Investment</p>
