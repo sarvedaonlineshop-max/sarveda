@@ -1,0 +1,122 @@
+{
+  "slug": "sound-therapy-practitioner-foundations",
+  "title": "Sound Therapy Practitioner Foundations",
+  "shortDescription": "Level 1 - Online 6-Session Certification Program in Sound Therapy",
+  "description": "<p>The Sarveda Sound Therapy Online Program is a thoughtfully curated, one-of-a-kind course designed to powerfully initiate your journey into sound healing. Built as a robust and comprehensive foundation, it bridges critical gaps often missed in conventional trainings, helping you stay ahead of evolving industry standards. Blending Western science with Eastern wisdom, the course explores the fundamentals of sound therapy through classical music principles, harmonics, and modern technologies, seamlessly integrated with yogic insights such as Nada Yoga. You will gain hands-on understanding of various sound healing instruments, their playing techniques, and their therapeutic applications for effective and intentional facilitation.</p>",
+  "priceInPaise": 888800,
+  "priceUsdCents": 11900,
+  "isFree": false,
+  "enrollmentMode": "CHECKOUT",
+  "status": "PUBLISHED",
+  "wpPostId": 51573,
+  "seoTitle": "Sound Therapy Practitioner Foundations",
+  "seoDescription": "The Sarveda Sound Therapy Online Program is a thoughtfully curated, one-of-a-kind course designed to powerfully initiate your journey into sound healing. Built as a robust and comprehensive foundation, it bridges critical gaps often missed in conventional trainings, helping you stay ahead of evolvin",
+  "sourceImageUrl": "https://sarveda.store/wp-content/uploads/2026/09/sarveda-course-September-_main-copy-1-scaled.png",
+  "extra": {
+    "startDate": "2026-09-30",
+    "endDate": "2026-10-16",
+    "duration": "12 hours",
+    "durationHours": 12,
+    "layoutTemplate": "SESSIONS",
+    "mode": "Zoom",
+    "venue": "Online",
+    "timings": "6PM-8PM Every Wednesday & Friday (Might change based on student preference)",
+    "mentorIds": [
+      "c2134183-1d7e-46fc-af2c-094492a6bfb1",
+      "4ddc48f4-76f5-4c5b-949e-8203242b8e57",
+      "912c48ed-ccde-4a97-911f-42a12aa1f041",
+      "a4eac823-d2b3-4a8b-93d8-01cfae9c2235"
+    ],
+    "teachers": [
+      {
+        "name": "Arjun Arora",
+        "designation": "Musician, Sound Therapist, Yoga Practioner & Founder of Sarveda",
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/Gemini_Generated_Image_m1b25jm1b25jm1b2-e1776924930134.png"
+      },
+      {
+        "name": "Adnan Vahanvaty",
+        "designation": "Sound and Vibration Healing Practitioner, Mentor",
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/WhatsApp-Image-2026-04-21-at-10.45.47-AM-e1776761545473.jpeg"
+      },
+      {
+        "name": "Sunithi S. Ramesh",
+        "designation": "Sound healing practitioner, gong master, and the founder of Satvat Holistics",
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/IMG-20220326-WA0013-e1776764889667.webp"
+      },
+      {
+        "name": "Karthik CM",
+        "designation": "Sound Practitioner",
+        "imageUrl": "https://sarveda-media.s3.amazonaws.com/media/mentors/wp/2026/04/WhatsApp-Image-2026-04-21-at-1.45.52-PM-1-e1776761743157.jpeg"
+      }
+    ],
+    "schedule": [
+      {
+        "startDate": "2026-09-30",
+        "endDate": "2026-10-16",
+        "mode": "Zoom",
+        "location": "Online",
+        "timings": "6PM-8PM Every Wednesday & Friday (Might change based on student preference)",
+        "duration": "12 hours"
+      }
+    ],
+    "sessions": [
+      {
+        "sessionId": "1",
+        "name": "Foundations of Sound Therapy: Science & Spirituality",
+        "teacherName": "Arjun Arora",
+        "content": "<p>An immersive exploration into the multidimensional nature of sound, bridging science, inner experience, and ancient wisdom traditions.</p>\n<ul>\n<li>Exploring Sound & Vibration: From the Big Bang to Nada Brahma, sound as the origin of creation</li>\n<li>Foundations of Sound: Frequency, pitch, scale, intensity, and modulation</li>\n<li>Sound as Vibration & Energy: Interaction with the body and mind</li>\n<li>Origins of Sound Healing: Historical and cultural roots of sound-based practices</li>\n<li>Cymatics: Visualizing sound as form through matter</li>\n<li>The Spectrum of Sound: Audible sound, infrasound, and ultrasound and measuring sound</li>\n<li>Yoga and Sound: How Yoga looks at sound healing and fundamentals of Nada Yoga</li>\n<li>Entrainment and How Sound works as a healing modality</li>\n<li>Understanding Brainwaves and the goal of sound healing.</li>\n</ul>",
+        "scheduledAt": "2026-09-30",
+        "scheduleNote": "Session 1 – Wednesday, 30 Sep 2026",
+        "mentorId": "c2134183-1d7e-46fc-af2c-094492a6bfb1"
+      },
+      {
+        "sessionId": "2",
+        "name": "Tibetan Singing Bowls & Their Applications",
+        "teacherName": "Karthik CM",
+        "content": "<p>A refined, hands-on journey through global sound healing instruments and their unique vibrational signatures.</p>\n<ul>\n<li>History – Origins and evolution of singing bowls.</li>\n<li>Types of Singing Bowls – Common shapes, styles, and tonal characteristics.</li>\n<li>Handmade & Machine-Made Bowls – Understanding key differences in craftsmanship and sound.</li>\n<li>Composition – Metals, construction, and their influence on resonance.</li>\n<li>Measuring Frequency – Notes, pitch, and harmonic overtones.</li>\n<li>Rimming & Striking Techniques – Core methods for producing and sustaining sound.</li>\n<li>Arrangement of Bowls – Creating balanced and harmonious combinations.</li>\n<li>One-on-One & Group Sessions – Practical applications in different settings.</li>\n<li>Care, Maintenance & Energetic Cleansing – Keeping instruments physically and energetically maintained.</li>\n</ul>",
+        "scheduledAt": "2026-10-02",
+        "scheduleNote": "Session 2 – Friday, 2 Oct 2026",
+        "mentorId": "a4eac823-d2b3-4a8b-93d8-01cfae9c2235"
+      },
+      {
+        "sessionId": "3",
+        "name": "Gong Fundamentals & Healing Techniques",
+        "teacherName": "Sunithi S. Ramesh",
+        "content": "<p>An introduction to the profound and immersive world of gong-based sound healing.</p>\n<ul>\n<li>Understanding different types of gongs and their vibrational characteristics</li>\n<li>Foundational playing techniques and preparation practices</li>\n<li>Designing and structuring a gong bath experience</li>\n<li>Integrating gongs with other sound healing instruments for depth and richness</li>\n<li>Safety guidelines and contraindications</li>\n</ul>",
+        "scheduledAt": "2026-10-07",
+        "scheduleNote": "Session 3 – Wednesday, 7 Oct 2026",
+        "mentorId": "912c48ed-ccde-4a97-911f-42a12aa1f041"
+      },
+      {
+        "sessionId": "4",
+        "name": "Exploring Handpan & Multi-Instrument Integration",
+        "teacherName": "Arjun & Karthik",
+        "content": "<p>An introduction to the expressive world of the Handpan and its integration with other instruments to create engaging and immersive sound experiences.</p>\n<ul>\n<li>Rhythm, Patterns & Presence – Exploring how repetitive rhythms and musical patterns can support focus, grounding, and mindful awareness.</li>\n<li>Introduction to the Handpan – Understanding the instrument, its layout, tonal structure, and playing techniques.</li>\n<li>Developing Simple Rhythms & Melodies – Learning foundational patterns to create flow, movement, and musical expression.</li>\n<li>Handpan & Instrument Integration – Combining the Handpan with singing bowls, chimes, drums, and other sound tools.</li>\n<li>Creating Musical Conversations – Exploring balance, space, and interplay between different instruments.</li>\n<li>Crafting a Sound Journey – Designing cohesive and engaging sound experiences using rhythm, melody, and texture.</li>\n</ul>",
+        "scheduledAt": "2026-10-09",
+        "scheduleNote": "Session 4 – Friday, 9 Oct 2026",
+        "mentorId": "2904cd54-fb33-4e70-8a7c-b280b3bfeda5"
+      },
+      {
+        "sessionId": "5",
+        "name": "Tuning Fork Basics and Technology Integration",
+        "teacherName": "Adnan Vahanvaty",
+        "content": "<p>Bridging traditional sound practices with modern tools and technological integration.</p>\n<ul>\n<li>History – Origins and Evolution of Tuning Forks.</li>\n<li>Types of Tuning Forks – Common Types, styles, and tonal characteristics.</li>\n<li>Understanding key differences in craftsmanship and sound.</li>\n<li>Composition – Metals, construction, and their influence on resonance.</li>\n<li>Measuring Frequency – Notes, pitch, and harmonic overtones.</li>\n<li>On Body and Combing Techniques.</li>\n<li>Creating balanced and Harmonious combinations- Resonance, Entrainment & Energetic Approaches.</li>\n<li>One-on-One & Group Sessions (Ankh, DNA Key, Sonic Swords, Solar Bell) – Practical applications in different settings.</li>\n<li>Care, Maintenance & Energetic Cleansing – Keeping instruments physically and energetically maintained.</li>\n<li>30-minute live online sound bath demonstration.</li>\n</ul>",
+        "scheduledAt": "2026-10-14",
+        "scheduleNote": "Session 5 – Wednesday, 14 Oct 2026",
+        "mentorId": "4ddc48f4-76f5-4c5b-949e-8203242b8e57"
+      },
+      {
+        "sessionId": "6",
+        "name": "Practitioner Development & Session Facilitation",
+        "teacherName": "Arjun & Karthik",
+        "content": "<p>A guided pathway to evolving into a confident and intuitive sound therapy practitioner.</p>\n<ul>\n<li>Structuring one-on-one and group sound therapy sessions.</li>\n<li>Curating your instrument setup and personal toolkit.</li>\n<li>Creating safe, intentional, and energetically aligned healing spaces.</li>\n<li>Grounding, centering, and energetic preparation for facilitators.</li>\n<li>Intention-led facilitation and holding space with awareness.</li>\n<li>Pre-session assessment and post-session integration practices.</li>\n<li>Cultivating sensitivity, intuition, and deep listening skills.</li>\n<li>Developing a refined presence as a sound facilitator.</li>\n<li>Ethics and professional practice.</li>\n</ul>",
+        "scheduledAt": "2026-10-16",
+        "scheduleNote": "Session 6 – Friday, 16 Oct 2026",
+        "mentorId": "2904cd54-fb33-4e70-8a7c-b280b3bfeda5"
+      }
+    ],
+    "aboutTheCourse": "The Sarveda Sound Therapy Online Program is a thoughtfully curated, one-of-a-kind course designed to powerfully initiate your journey into sound healing. Built as a robust and comprehensive foundation, it bridges critical gaps often missed in conventional trainings, helping you stay ahead of evolving industry standards. Blending Western science with Eastern wisdom, the course explores the fundamentals of sound therapy through classical music principles, harmonics, and modern technologies, seamlessly integrated with yogic insights such as Nada Yoga. You will gain hands-on understanding of various sound healing instruments, their playing techniques, and their therapeutic applications for effective and intentional facilitation.",
+    "courseIncludes": "Live Zoom sessions · Certificate on completion · Instrument techniques · Practitioner facilitation",
+    "seoKeyword": "sound therapy practitioner foundations, sound healing course online"
+  }
+}
