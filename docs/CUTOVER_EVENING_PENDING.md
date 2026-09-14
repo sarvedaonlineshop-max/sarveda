@@ -40,8 +40,7 @@
 - [x] **PayPal webhook (REQUIRED — intl day‑1)** — apex added  
   `https://sarveda.com/api/payments/paypal/webhook` · ID `2W290169M4234034B` on Lightsail  
   - [x] **Edit webhook events** — capture completed + denied + refunds (verified)
-- [x] **WP maintenance page** ready (LightStart / WP Maintenance Mode) — **do not enable** until ~19:00
-  - Status stays **Deactivated** until cutover; Bypass bots = No; Exclude keeps wp-login
+- [x] **WP maintenance ON** (LightStart Activated; shop/checkout blocked for public; admins bypass)
 - [x] Confirm Lightsail `RAZORPAY_WEBHOOK_SECRET` = apex Razorpay webhook secret
 - [ ] Confirm Vercel `NEXT_PUBLIC_RAZORPAY_KEY_ID` = same Live Key ID as Lightsail
 - [x] **PRODUCTS SOURCE 3** created — native feed URL  
