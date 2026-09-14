@@ -1,445 +1,352 @@
-# Sarveda cutover runbook — 15 hours (WordPress → Next.js)
+# Sarveda cutover runbook — REVISED (sales-safe evening window)
 
-**Date:** 2026-09-14 (cutover day)  
-**Window:** ~15 hours from start  
-**Target:** `https://sarveda.com` on Vercel + Lightsail API  
-**Keep up:** `https://sarveda-demo.xyz` (rollback / staging)  
-**Do NOT touch:** MX / SPF / DKIM / DMARC / mail TXT  
+**Date:** 2026-09-14  
+**Constraint:** Live WooCommerce on `sarveda.com` stays **selling all day**. No daytime DNS cutover.  
+**Sales channel risk:** Most sales via **Google Ads / Merchant** — feed/source changes typically land ~**00:00 IST**. Plan DNS + Merchant around that.
+
+**Keep up all day:**  
+- WordPress shop on `sarveda.com` (revenue)  
+- New stack on `https://sarveda-demo.xyz` (prep / UAT)
+
+**Do NOT touch:** MX / SPF / DKIM / DMARC  
 **Do NOT merge today:** CRM (`feature/crm-schema`)
-
-**Sources of truth:**  
-[`SARVEDA_FINAL_DOMAIN_CUTOVER_CONFIG_AUDIT.md`](./SARVEDA_FINAL_DOMAIN_CUTOVER_CONFIG_AUDIT.md) ·  
-[`PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md`](./PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md) ·  
-[`SARVEDA_FINAL_SEO_CUTOVER_CERTIFICATION.md`](./SARVEDA_FINAL_SEO_CUTOVER_CERTIFICATION.md)
 
 ---
 
-## Roles (fill names)
+## Strategy in one sentence
+
+**Prep the new stack all day on demo/Lightsail → from ~19:00 put Woo under maintenance → flip DNS to Vercel → smoke → align Merchant so Ads traffic hits the new site after the night feed cycle.**
+
+---
+
+## Roles
 
 | Role | Person | Owns |
 |------|--------|------|
-| Lead | | Go / no-go, DNS flip, rollback call |
+| Lead | | Go/no-go, maintenance start, DNS flip, rollback |
+| Woo ops | | Maintenance mode / banner on WordPress |
 | Frontend | | Vercel domains, SITE_URL, redeploy |
-| Backend | | Lightsail `.env`, `git pull`, PM2, health |
-| Payments | | Razorpay / Stripe / PayPal dashboards + live test order |
-| SEO / GSC | | robots, sitemap, Search Console submit |
-| Watcher | | Live smoke log, screenshot evidence |
-
-**Rule:** One person speaks DNS changes. Everyone else verifies.
+| Backend | | Lightsail deploy, env, PM2 |
+| Payments | | Live keys + apex webhooks + paid smoke |
+| Ads / Merchant | | Feed + source timing vs midnight cycle |
+| Watcher | | Smoke log + war-room |
 
 ---
 
 ## Absolute rules
 
-1. **Mail DNS frozen** — never edit MX/SPF/DKIM/DMARC today.
-2. **WordPress stays running** off-DNS until soak (rollback target).
-3. **Demo stays up** (`sarveda-demo.xyz`).
-4. **No CRM merge / no CRM migration** on production DB today.
-5. If apex is broken after DNS → **rollback DNS first**, debug on demo second.
-6. Do not paste secrets into chat.
+1. **No apex DNS change before 19:00 IST** (unless Lead declares emergency).
+2. **Daytime = backend + Vercel + OAuth + webhook staging only** — Woo keeps selling.
+3. **Mail DNS frozen.**
+4. **WordPress stays installed** after cutover (rollback target) until soak.
+5. **Demo stays up** forever today.
+6. Prefer **short maintenance** (target **60–120 min**, max **3 h**).
 
 ---
 
-## Timeline overview (IST)
+## Clock plan (IST) — revised
 
-| Phase | Hours from T0 | Clock (example start 09:30) | Goal |
-|-------|---------------|-----------------------------|------|
-| **0** Prep & gates | 0:00–1:30 | 09:30–11:00 | Access, deploy latest main, preflight |
-| **1** Before DNS | 1:30–4:00 | 11:00–13:30 | Domains, OAuth, webhooks staged, env ready |
-| **2** Quiet lunch / buffer | 4:00–5:00 | 13:30–14:30 | Final go/no-go |
-| **3** DNS cutover | 5:00–5:45 | 14:30–15:15 | Point apex/www → Vercel |
-| **4** Immediate config | 5:45–7:00 | 15:15–16:30 | SITE_URL, Lightsail, webhooks live |
-| **5** Smoke + paid UAT | 7:00–10:00 | 16:30–19:30 | Checkout, OAuth, admin ship |
-| **6** SEO + soak | 10:00–13:00 | 19:30–22:30 | Sitemap, GSC, monitor |
-| **7** Night watch | 13:00–15:00 | 22:30–00:30 | Watch errors; declare soak OK |
+| Block | Time | What happens to shoppers | What we do |
+|-------|------|--------------------------|------------|
+| **A — Day prep** | Now → **19:00** | Woo **open**, normal Ads/sales | Deploy API, UAT on **demo**, stage Vercel/OAuth/webhooks, **do not** flip DNS |
+| **B — Pre-window** | **18:30–19:00** | Woo still open | Final Gate GO; Wartime checklist; lower TTL if not done |
+| **C — Maintenance** | **~19:00–19:15** | Woo **closed** (maintenance page) | Enable WP maintenance; stop new Woo checkouts |
+| **D — DNS cutover** | **19:15–19:45** | Maintenance or brief DNS churn | Point apex/www → Vercel; wait SSL |
+| **E — Config + smoke** | **19:45–21:30** | New site live (or maintenance until ready) | SITE_URL, Lightsail env, webhooks, paid smoke |
+| **F — Soft open** | **~21:30** | New stack **open** | Remove any holding page; announce |
+| **G — Merchant night** | **21:30–00:30** | Ads may still use old crawl until ~midnight | Confirm feed URLs; switch Merchant source only if planned; watch 00:00 cycle |
+| **H — Night soak** | **00:30–02:00** | New site + new Ads landings | Watch 404s, checkout, Ads landing PDPs |
 
-Adjust clocks if you start later — keep **phase order**, not the exact clock.
+If you start maintenance later (e.g. 20:00 / 21:00), **keep the same order** — only shift the clock.
 
 ---
 
-# PHASE 0 — Prep & gates (0:00–1:30)
+# BLOCK A — Day prep (now → 19:00)  
+### Woo stays LIVE. Zero customer impact.
 
-### 0.1 Access checklist (15 min)
-
-- [ ] DigitalOcean DNS for `sarveda.com` (ns1/2/3.digitalocean.com)
-- [ ] Vercel project (production) open
-- [ ] Lightsail SSH (`sarveda-lightsail.pem` / key that works) → `13.204.112.165`
-- [ ] Google Cloud OAuth client
-- [ ] Razorpay / Stripe / PayPal dashboards
-- [ ] Admin login for demo + plan apex admin login after cutover
-- [ ] Slack/WhatsApp war-room channel for the team
-
-### 0.2 Deploy latest `main` to Lightsail (30–45 min)
-
-Shipping/auto-AWB/drop-ship fixes must be on API **before** public traffic.
+### A1. Lightsail: latest `main` (45–60 min) — **do first**
 
 ```bash
 ssh -i ~/.ssh/sarveda-lightsail.pem ubuntu@13.204.112.165
 cd ~/sarveda && git fetch origin && git checkout main && git pull origin main
-cd backend
-npm install
-npx prisma migrate deploy
-npm run build
+cd backend && npm install && npx prisma migrate deploy && npm run build
 pm2 restart sarveda-backend --update-env
-curl -sS http://127.0.0.1:5000/health | jq .
+curl -sS http://127.0.0.1:5000/health
 ```
 
-- [ ] `/health` → database + redis ok
-- [ ] `git rev-parse --short HEAD` matches expected `main`
+- [ ] Health OK  
+- [ ] Commit SHA recorded in war-room  
 
-### 0.3 Confirm demo still healthy (10 min)
+### A2. Full UAT on **demo only** (2–3 h, parallel OK)
 
-- [ ] https://sarveda-demo.xyz → 200
-- [ ] Admin login works
-- [ ] One PDP + cart loads
-- [ ] Ready-to-ship shows **both** warehouse + drop-ship lines on a known order (if available)
+All paid tests on `https://sarveda-demo.xyz` — **not** apex.
 
-### 0.4 Credential rotation — minimum if not done (30–45 min)
+| # | Check | Pass? |
+|---|--------|-------|
+| 1 | Homepage / PDP / cart / checkout | |
+| 2 | Razorpay test or live-mode on demo (as you use today) → PAID | |
+| 3 | Google login on demo | |
+| 4 | Admin: Processing → Ready to ship (no auto AWB) | |
+| 5 | Multi-item incl. drop-ship lines visible | |
+| 6 | Create Delhivery label (source + partner) | |
+| 7 | Order email + invoice PDF | |
+| 8 | COD path if day-1 COD | |
 
-If secrets were never rotated for go-live, do **minimum** now (quiet window):
+### A3. Vercel — attach domains **without** taking Woo down (30 min)
 
-1. DB password → update `DATABASE_URL` → restart  
-2. `JWT_SECRET` (backend + matching frontend JWT if used) → restart/redeploy  
-3. Razorpay live keys + webhook secret  
-4. AWS S3 keys  
-5. Google OAuth secret  
+- [ ] Add `sarveda.com` + `www.sarveda.com` in Vercel  
+- [ ] Copy Vercel DNS targets to scratch pad  
+- [ ] **Do not change DigitalOcean A record yet**  
+  (Domain may show “Invalid Configuration” until evening — expected)
 
-Full list: `PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md`.  
-If already rotated earlier → **skip**, only verify env present.
+### A4. Google OAuth (15 min)
 
-### 0.5 Preflight snapshot (5 min)
+- [ ] **Add** `https://sarveda.com/api/auth/google/callback`  
+- [ ] **Keep** demo callback  
 
-- [ ] Note current apex A record: should be `134.209.146.175` (Woo)  
-- [ ] Screenshot DO DNS page  
-- [ ] Write rollback command in war-room:  
-  `Restore A sarveda.com → 134.209.146.175`
+### A5. Stage payment webhooks (do not remove demo yet) (30 min)
 
-**Gate A:** Demo healthy + Lightsail on latest main + access OK → proceed Phase 1.
+- [ ] Know apex URLs:  
+  - Razorpay `https://sarveda.com/api/payments/razorpay/webhook`  
+  - Stripe / PayPal apex paths confirmed  
+- [ ] Prefer: **add** apex webhook now (inactive traffic until DNS) **or** switch at 19:45  
+- [ ] Confirm live keys ready on Lightsail for evening  
 
----
+### A6. Draft env (apply only after DNS in Block E)
 
-# PHASE 1 — Before DNS (1:30–4:00)
+**Vercel production**
+```env
+NEXT_PUBLIC_SITE_URL=https://sarveda.com
+```
 
-### 1.1 Vercel domains (20–30 min)
-
-- [ ] Add `sarveda.com`
-- [ ] Add `www.sarveda.com`
-- [ ] Prefer **apex primary**; configure **www → redirect to apex**
-- [ ] Copy the **exact** DNS records Vercel shows (A / ALIAS / CNAME) into a scratch pad  
-  **Do not change DigitalOcean yet**
-
-### 1.2 Google OAuth (15 min)
-
-- [ ] Authorized redirect URI **add**:  
-  `https://sarveda.com/api/auth/google/callback`
-- [ ] Keep demo callback:  
-  `https://sarveda-demo.xyz/api/auth/google/callback`
-- [ ] Save — do not remove demo today
-
-### 1.3 Payment webhooks — stage apex URLs (30 min)
-
-Prepare (add or note to switch at Phase 4):
-
-| Provider | Apex webhook |
-|----------|----------------|
-| Razorpay | `https://sarveda.com/api/payments/razorpay/webhook` |
-| Stripe | `https://sarveda.com/api/payments/stripe/webhook` (confirm path in dashboard/code) |
-| PayPal | production webhook URL for new stack (confirm path) |
-
-- [ ] Live keys on Lightsail (not test) if accepting real money today  
-- [ ] Vercel `NEXT_PUBLIC_RAZORPAY_KEY_ID` / Stripe / PayPal public keys match live mode
-
-### 1.4 Lightsail env — draft the edits (do not apply yet unless dual-host safe) (20 min)
-
-Prepare these values (apply in Phase 4 right after DNS verifies):
-
+**Lightsail backend**
 ```env
 FRONTEND_URL=https://sarveda.com,https://sarveda-demo.xyz
 GOOGLE_CALLBACK_URL=https://sarveda.com/api/auth/google/callback
-# If Lightsail also sends customer links:
+# customer email/WhatsApp links:
 NEXT_PUBLIC_SITE_URL=https://sarveda.com
+AUTO_START_FULFILLMENT_ON_PAID=0
 ```
 
-- [ ] Confirm `AWS_S3_REGION=us-east-1`, `AWS_S3_BUCKET_NAME=sarveda-media`
-- [ ] Confirm Redis URL set
-- [ ] Confirm `AUTO_START_FULFILLMENT_ON_PAID` is **off** (`0` / unset) — labels via Ready to ship only
+- [ ] Env text ready in a local notes file (not committed)
 
-### 1.5 Vercel env — draft (apply Phase 4)
+### A7. Credential rotation (if still pending) — daytime OK
 
-```env
-NEXT_PUBLIC_SITE_URL=https://sarveda.com
-```
+Quietly rotate on Lightsail (JWT/DB/Razorpay/S3/OAuth) **without** DNS change.  
+Expect admin re-login after JWT change.  
+Demo may briefly glitch — apex Woo unaffected.
 
-Keep demo project / preview separate if you use a second Vercel project for demo.
+### A8. Woo maintenance page — **prepare** content (30 min)
 
-### 1.6 Lower TTL if possible (5 min)
+Before evening, create the maintenance message on WordPress (plugin or `.maintenance` / theme page), e.g.:
 
-- [ ] If DO allows, set A/CNAME TTL low (e.g. 300s) **before** flip
+> We’re upgrading Sarveda’s store for a smoother checkout.  
+> Back shortly (about 1–2 hours). Thank you for your patience.  
+> Need help? WhatsApp / email …
 
-**Gate B:** Domains attached, OAuth URI added, webhook URLs known, env drafts ready → Phase 2.
+- [ ] Maintenance plugin installed **or** known WP procedure documented  
+- [ ] **Do not enable** until Block C  
+
+### A9. Merchant / Google Ads — daytime decisions (critical)
+
+**Fact you stated:** changing product sources now still typically affects traffic ~**00:00 tonight**.
+
+| Option | Daytime | Evening | Midnight (~00:00) | Risk |
+|--------|---------|---------|-------------------|------|
+| **Recommended** | Leave Merchant source on **current Woo feed** | Cut over site 19:00–21:30 | Feed/Ads may still hit old URLs briefly, then new | Short mismatch window; prefer 301s on new stack for legacy `/store` |
+| **Aggressive** | Point Merchant to **native feed** now | Site still Woo until 19:00 | Ads land on Woo until DNS, then new | Daytime Ads OK; midnight lands on new if DNS done |
+| **Safest Ads** | Native feed already has `sarveda.com` PDP URLs | DNS before midnight | After 00:00 Ads → new PDPs | Requires DNS done **before** midnight cycle |
+
+**Recommendation for Sarveda today:**
+
+1. **Daytime:** do **not** break the live Woo shop.  
+2. Confirm native Merchant feed URLs are already `https://sarveda.com/product/...` (they should be).  
+3. **Evening:** DNS cutover **before 23:00** so when Merchant/Ads refresh ~00:00, landings hit **new** stack.  
+4. Switch Merchant “primary source” to native feed **only when** Lead confirms — ideally **after** Gate soft-open (~21:30) and **before** midnight, **or** accept that midnight is when Ads feel it either way.  
+5. Keep strong **301s** on new stack for `/store/...` so any stale Ads URL still converts.
+
+- [ ] Ads owner: confirm current Merchant primary source  
+- [ ] Ads owner: confirm native feed endpoint + item count  
+- [ ] Ads owner: write the exact click time for source switch (suggest **21:45** or **23:00**)
+
+### A10. Lower DNS TTL (5 min) — daytime OK
+
+- [ ] Lower A/www TTL on DigitalOcean if possible (e.g. 300s)
+
+**Gate DAY-END (18:30):** Demo UAT green + domains attached + OAuth URI + maintenance page ready + Merchant plan written → proceed Block B.
 
 ---
 
-# PHASE 2 — Go / no-go (4:00–5:00)
+# BLOCK B — Pre-window (18:30–19:00)
 
-Lead asks out loud:
+Woo **still selling**.
 
-1. Lightsail health OK?  
-2. Vercel domain shows pending/verified instructions?  
-3. OAuth apex URI saved?  
-4. Payment live keys + webhook plan clear?  
-5. Rollback A → `134.209.146.175` written down?  
-6. Mail records **untouched**?
+Lead checklist out loud:
 
-- [ ] **GO** → Phase 3  
-- [ ] **NO-GO** → stay on Woo; fix blockers; do not touch DNS
+1. Demo paid path OK?  
+2. Lightsail on latest main?  
+3. Vercel DNS targets copied?  
+4. Maintenance page ready to flip in one click?  
+5. Rollback A → `134.209.146.175` written?  
+6. Merchant switch time agreed (e.g. 21:45)?  
+7. Support/WhatsApp staffed during maintenance?
 
----
-
-# PHASE 3 — DNS cutover (5:00–5:45)
-
-### 3.1 Change only web records on DigitalOcean
-
-- [ ] **A** `sarveda.com` → Vercel apex target(s) from Vercel UI (replace `134.209.146.175`)
-- [ ] **www** → Vercel www CNAME (usually `cname.vercel-dns.com`) **or** keep CNAME to apex only if Vercel redirect www→apex is configured
-- [ ] Save DNS
-
-### 3.2 Verify propagation (15–30 min)
-
-```bash
-dig +short sarveda.com A
-dig +short www.sarveda.com CNAME
-curl -sI https://sarveda.com | head -20
-curl -sI https://www.sarveda.com | head -20
-```
-
-Expect:
-
-- [ ] Not WordPress (`X-Redirect-By: WordPress` gone on apex)
-- [ ] Vercel / Next headers or your new stack
-- [ ] SSL valid (may take a few minutes after DNS)
-
-If still Woo after 20–30 min: wait for TTL; do not thrash. If wrong host forever → check Vercel domain config.
-
-**Gate C:** Apex serves new stack (or Vercel pending SSL completing) → Phase 4 immediately.
+- [ ] **GO for 19:00 maintenance**  
+- [ ] **SLIP** to 20:00 / 21:00 if not ready (still finish DNS **before midnight**)
 
 ---
 
-# PHASE 4 — Immediate config (5:45–7:00)
+# BLOCK C — Put Woo under maintenance (~19:00–19:15)
 
-### 4.1 Vercel production env + redeploy (15–25 min)
+### C1. Enable WordPress maintenance
 
-- [ ] Set `NEXT_PUBLIC_SITE_URL=https://sarveda.com`
-- [ ] Redeploy production
-- [ ] Wait until Ready
+- [ ] Enable maintenance plugin / drop maintenance file  
+- [ ] Verify `https://sarveda.com` shows maintenance (not checkout)  
+- [ ] Verify **new checkouts cannot complete** on Woo  
+
+### C2. Optional: pause Ads (recommended during maintenance)
+
+- [ ] Pause Google Ads campaigns **or** accept spend → maintenance page for ~1–2 h  
+  (Pausing is cleaner; resume after soft open)
+
+War-room message: “Maintenance ON — DNS starting.”
+
+---
+
+# BLOCK D — DNS cutover (19:15–19:45)
+
+DigitalOcean DNS only (web records):
+
+- [ ] **A** `sarveda.com` → Vercel apex targets (replace `134.209.146.175`)  
+- [ ] **www** → Vercel www CNAME (prefer www→apex redirect in Vercel)  
+- [ ] **Do not touch** MX/TXT mail  
 
 Verify:
 
 ```bash
-curl -sL https://sarveda.com/robots.txt | head -30
-curl -sL https://sarveda.com/sitemap.xml | head -40
-curl -sL https://sarveda.com | rg -i 'canonical|sarveda.com' | head
-```
-
-- [ ] robots **Allow** (production), not staging-closed
-- [ ] sitemap non-empty (products/categories)
-- [ ] canonical host `https://sarveda.com`
-
-### 4.2 Lightsail apply env + restart (15 min)
-
-```bash
-# edit ~/sarveda/backend/.env carefully
-pm2 restart sarveda-backend --update-env
-curl -sS http://127.0.0.1:5000/health | jq .
-```
-
-- [ ] `FRONTEND_URL` apex-first  
-- [ ] `GOOGLE_CALLBACK_URL` apex  
-- [ ] health OK
-
-### 4.3 Flip payment webhooks to apex (15 min)
-
-- [ ] Razorpay webhook → apex URL; secret matches `.env`
-- [ ] Stripe / PayPal same
-- [ ] Optional: keep demo webhook disabled or secondary during soak
-
-### 4.4 Shipping / WhatsApp callbacks (10 min)
-
-- [ ] Delhivery / Shiprocket / WATI webhook hosts → apex if they were demo-only
-
-**Gate D:** robots/sitemap/canonical OK + API restarted + webhooks pointed → Phase 5.
-
----
-
-# PHASE 5 — Smoke + paid UAT (7:00–10:00)
-
-Log pass/fail with screenshots in war-room.
-
-### 5.1 Storefront smoke (30 min)
-
-| # | Check | Pass? |
-|---|--------|-------|
-| 1 | Homepage loads | |
-| 2 | `/store` or legacy path 301 → product/category | |
-| 3 | PDP images (S3) | |
-| 4 | Add to cart | |
-| 5 | Checkout page loads | |
-| 6 | Mobile homepage + cart | |
-
-### 5.2 Auth (20 min)
-
-| # | Check | Pass? |
-|---|--------|-------|
-| 7 | Email/password login | |
-| 8 | Google login (apex redirect) | |
-| 9 | Admin login | |
-
-### 5.3 Payments (60–90 min) — mandatory
-
-| # | Check | Pass? |
-|---|--------|-------|
-| 10 | Razorpay India — real/small live or certified live-mode test → order **PAID** | |
-| 11 | Webhook delivery log shows 200 on apex | |
-| 12 | Order email received (or ZeptoMail/SES log success) | |
-| 13 | Invoice PDF download from admin/order | |
-| 14 | COD path (if selling COD today) → order created, Ready to ship | |
-| 15 | Optional: Stripe or PayPal one intl smoke if you sell intl day-1 | |
-
-### 5.4 Fulfillment (30 min)
-
-| # | Check | Pass? |
-|---|--------|-------|
-| 16 | Mark Processing → appears in **Ready to ship** (not auto Created) | |
-| 17 | Multi-item order shows **all** physical lines (incl. drop-ship) | |
-| 18 | Create Delhivery label with Source + Partner | |
-| 19 | Order moves to Created with AWB | |
-
-### 5.5 Admin ops (20 min)
-
-| # | Check | Pass? |
-|---|--------|-------|
-| 20 | Orders list | |
-| 21 | Inventory visible | |
-| 22 | Refund preview on a test order (do not mass-refund live) | |
-
-**Gate E:** Items 1–12 + 16–18 pass → declare **soft live**. Fix blockers before marketing push.
-
-If payment or OAuth hard-fail and no quick fix → **Phase R rollback**.
-
----
-
-# PHASE 6 — SEO + soak (10:00–13:00)
-
-### 6.1 SEO verify (20 min)
-
-- [ ] `/robots.txt` production allow list
-- [ ] `/sitemap.xml` has product URLs
-- [ ] Sample legacy `/store/...` → 301 → `/product/{slug}`
-- [ ] Nested category legacy URLs 301 (spot-check 3)
-
-### 6.2 Google Search Console (20–40 min)
-
-- [ ] Property `https://sarveda.com` (or domain property)
-- [ ] Submit sitemap `https://sarveda.com/sitemap.xml`
-- [ ] URL inspection on homepage + 1 PDP
-
-### 6.3 Analytics (15 min)
-
-- [ ] GA4 / Meta realtime hit on apex (if used)
-
-### 6.4 Merchant (optional same day)
-
-- [ ] Confirm feed still apex PDP URLs  
-- [ ] Do **not** panic-switch Merchant sources unless already planned
-
-### 6.5 Soak watch (remaining time)
-
-Watch for 60–120 min:
-
-- [ ] Checkout errors
-- [ ] PM2 logs / 5xx
-- [ ] Payment webhook failures
-- [ ] Customer complaints channel
-
----
-
-# PHASE 7 — Night close (13:00–15:00)
-
-### Declare status
-
-| Status | Meaning |
-|--------|---------|
-| **SOAK_OK** | Soft live stable; Woo stays off-DNS; demo stays up |
-| **SOAK_WATCH** | Minor issues; stay live; fix overnight |
-| **ROLLBACK** | Critical; restore Woo DNS |
-
-### End-of-day checklist
-
-- [ ] War-room summary: what passed / failed  
-- [ ] Lightsail commit SHA recorded  
-- [ ] Vercel deploy URL recorded  
-- [ ] Webhook endpoints recorded  
-- [ ] Woo **not** deleted  
-- [ ] CRM **not** merged  
-
-### Explicitly defer (tomorrow+)
-
-- Quarantine/disable WordPress on DO  
-- CRM merge  
-- Residual 6 Yoast MANUAL_REVIEW product leaves  
-- Full 22-sitemap parity  
-- WATI if deferred  
-- Credential rotation leftovers not done in Phase 0  
-
----
-
-# PHASE R — Rollback (anytime)
-
-**Trigger:** Apex down, SSL broken >30 min with no fix, checkout/payments broken, or SEO catastrophe.
-
-1. DigitalOcean: set **A** `sarveda.com` → `134.209.146.175`  
-2. Confirm `curl -sI https://sarveda.com` shows WordPress again  
-3. Leave `sarveda-demo.xyz` as new-stack testing  
-4. Optionally revert Lightsail `FRONTEND_URL` / `GOOGLE_CALLBACK_URL` to demo if you need API emails on demo  
-5. Keep Google OAuth **both** redirect URIs  
-6. War-room: incident note + next fix window  
-
-Do **not** delete Vercel domains or destroy Lightsail while rolling back.
-
----
-
-## Quick command card
-
-```bash
-# DNS
 dig +short sarveda.com A
-dig +short www.sarveda.com CNAME
-
-# Stack
 curl -sI https://sarveda.com | head -20
-curl -sL https://sarveda.com/robots.txt | head -20
-curl -sL https://sarveda.com/sitemap.xml | head -20
-
-# API (from Lightsail)
-curl -sS http://127.0.0.1:5000/health
-
-# Deploy API
-cd ~/sarveda && git pull origin main && cd backend && npm run build && pm2 restart sarveda-backend --update-env
 ```
+
+- [ ] Not WordPress  
+- [ ] Vercel/Next responding (SSL may lag a few minutes)
+
+If broken >20 min with no progress → **Rollback** (restore A to `134.209.146.175`, disable WP maintenance, reopen Woo).
 
 ---
 
-## Decision log (fill during cutover)
+# BLOCK E — Config + smoke (19:45–21:30)
+
+### E1. Vercel
+
+- [ ] `NEXT_PUBLIC_SITE_URL=https://sarveda.com`  
+- [ ] Redeploy production  
+- [ ] Check `/robots.txt` Allow + `/sitemap.xml` non-empty  
+
+### E2. Lightsail
+
+- [ ] Apply `FRONTEND_URL` + `GOOGLE_CALLBACK_URL` (+ SITE_URL for links)  
+- [ ] `pm2 restart sarveda-backend --update-env`  
+- [ ] `/health` OK  
+
+### E3. Webhooks → apex
+
+- [ ] Razorpay / Stripe / PayPal webhooks on `sarveda.com`  
+- [ ] Shipping/WhatsApp callbacks if demo-only  
+
+### E4. Critical smoke on **apex** (not demo)
+
+| # | Check | Pass? |
+|---|--------|-------|
+| 1 | Homepage | |
+| 2 | Legacy `/store/...` → product | |
+| 3 | Cart → checkout | |
+| 4 | Google login | |
+| 5 | Razorpay → PAID + webhook | |
+| 6 | Email / invoice | |
+| 7 | Admin Ready to ship + label | |
+
+**Soft-open Gate:** items 1–5 pass → Block F.
+
+---
+
+# BLOCK F — Soft open (~21:30)
+
+- [ ] Confirm no WP maintenance in path (DNS already off Woo)  
+- [ ] Resume Google Ads if paused  
+- [ ] War-room: “Sarveda.com is on the new stack”  
+- [ ] Support watches first live orders  
+
+Target: shoppers buying again by **~21:30**, well before Merchant midnight.
+
+---
+
+# BLOCK G — Merchant / Ads night cycle (21:30–00:30)
+
+### G1. Source switch (pick one — Lead decides)
+
+**Plan G-SAFE (recommended tonight):**  
+- [ ] ~21:45 — set Merchant primary / supplemental to **native Sarveda feed** (if not already)  
+- [ ] Confirm feed fetch success in Merchant UI  
+- [ ] Expect Ads landing behaviour to refresh around **~00:00**
+
+**Plan G-HOLD:**  
+- [ ] Leave source as-is until tomorrow if feed already apex URLs and DNS is live  
+- [ ] Still monitor 00:00 for crawling/disapprovals  
+
+### G2. Landing URL spot-check after midnight
+
+- [ ] 3–5 Ads / Merchant product links → 200 on new PDP (or clean 301)  
+- [ ] No soft-404 / Woo theme  
+
+---
+
+# BLOCK H — Night soak (00:30–02:00)
+
+- [ ] Checkout success rate  
+- [ ] PM2 / Vercel errors  
+- [ ] Payment webhooks  
+- [ ] Ads landing complaints  
+
+End status: **SOAK_OK** / **SOAK_WATCH** / **ROLLBACK**
+
+---
+
+# ROLLBACK (anytime after maintenance)
+
+1. DigitalOcean **A** `sarveda.com` → `134.209.146.175`  
+2. Disable WordPress maintenance  
+3. Confirm Woo checkout works  
+4. Resume Ads if paused  
+5. Keep demo for debugging new stack  
+6. Revert Lightsail FRONTEND/OAuth to demo only if needed for API testing  
+
+---
+
+## What we explicitly will NOT do in daytime
+
+| Action | Why |
+|--------|-----|
+| Change apex A away from Woo | Kills daytime sales |
+| Enable WP maintenance before 19:00 | Blocks daytime sales |
+| Delete WordPress | Need rollback |
+| Merge CRM | Out of scope |
+| Touch mail DNS | Breaks email |
+| Assume Merchant changes are instant | They land ~midnight |
+
+---
+
+## Decision log
 
 | Time | Decision | By | Notes |
 |------|----------|-----|-------|
-| | Gate A | | |
-| | Gate B | | |
-| | Gate C (DNS) | | |
-| | Gate D | | |
-| | Gate E (soft live) | | |
+| | Day Gate | | |
+| | Maintenance ON | | |
+| | DNS flipped | | |
+| | Soft open | | |
+| | Merchant switch | | |
 | | End status | | |
 
 ---
 
-**Start Phase 0 now.** Call Gate A when Lightsail is on latest `main` and demo is healthy.
+**Right now:** execute **Block A** only. Call me when Lightsail is pulled/restarted or when you want to walk through demo UAT / maintenance page prep.
