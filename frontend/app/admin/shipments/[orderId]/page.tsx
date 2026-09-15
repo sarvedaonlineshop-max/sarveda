@@ -593,11 +593,13 @@ export default function AdminShipmentCreateLabelPage() {
       .filter((n): n is number => typeof n === "number" && Number.isFinite(n));
     if (rates.length === 0) return DEFAULT_DISPLAY_GST_RATE;
     // Prefer the rate on the majority of lines; fall back to first.
-    const counts = new Map<number, number>();
-    for (const r of rates) counts.set(r, (counts.get(r) ?? 0) + 1);
+    const counts: Record<number, number> = {};
+    for (const r of rates) counts[r] = (counts[r] ?? 0) + 1;
     let best = rates[0]!;
     let bestCount = 0;
-    for (const [rate, count] of counts) {
+    for (const rateKey of Object.keys(counts)) {
+      const rate = Number(rateKey);
+      const count = counts[rate] ?? 0;
       if (count > bestCount) {
         best = rate;
         bestCount = count;
