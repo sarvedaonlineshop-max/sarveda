@@ -14,6 +14,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { uploadAsset } from "../../config/s3";
+import { ENQUIRY_MEDIA_S3_PREFIX } from "../enquiries/enquiries.constants";
 import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
 import { toWhatsAppE164 } from "../notifications/whatsapp";
 import { enqueueBotTurn } from "./whatsapp-bot.service";
@@ -312,7 +313,7 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
   const safeName =
     input.fileName?.replace(/[^\w.\-]+/g, "_").slice(0, 120) ||
     `whatsapp-${input.mediaType}.${ext}`;
-  const s3Key = `enquiries/${new Date().getFullYear()}/wa-${randomUUID()}.${ext}`;
+  const s3Key = `${ENQUIRY_MEDIA_S3_PREFIX}/${new Date().getFullYear()}/wa-${randomUUID()}.${ext}`;
   const s3Url = await uploadAsset(s3Key, buf, mime);
   if (!s3Url) return false;
 

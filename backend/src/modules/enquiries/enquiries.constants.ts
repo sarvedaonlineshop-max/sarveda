@@ -47,3 +47,12 @@ export const ALLOWED_UPLOAD_MIME = new Set([
 export const MAX_ATTACHMENTS = 10;
 export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 export const MAX_ATTACHMENT_MB = 25;
+
+/**
+ * S3 key prefix for enquiry / WhatsApp chat media.
+ * Must stay under `media/` — the sarveda-media bucket policy only allows
+ * anonymous GetObject for `media/*`. Keys under bare `enquiries/` upload fine
+ * but return 403 publicly, so admin UI previews break and WhatsApp/Exotel
+ * cannot fetch the link to deliver the media.
+ */
+export const ENQUIRY_MEDIA_S3_PREFIX = "media/enquiries";

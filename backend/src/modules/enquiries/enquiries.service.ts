@@ -23,6 +23,7 @@ import {
 } from "../whatsapp/whatsapp-agent-session.service";
 import {
   CARE_INBOX_EMAIL,
+  ENQUIRY_MEDIA_S3_PREFIX,
   MAX_ATTACHMENT_BYTES,
   MAX_ATTACHMENT_MB,
   MAX_ATTACHMENTS,
@@ -104,7 +105,7 @@ export async function presignEnquiryUploads(
   for (const file of files) {
     const mimeType = validateAttachmentMeta(file.fileName, file.mimeType, file.sizeBytes);
     const ext = file.fileName.split(".").pop()?.toLowerCase() || "bin";
-    const s3Key = `enquiries/${new Date().getFullYear()}/${randomUUID()}.${ext}`;
+    const s3Key = `${ENQUIRY_MEDIA_S3_PREFIX}/${new Date().getFullYear()}/${randomUUID()}.${ext}`;
     const uploadUrl = await presignPutUploadUrl(s3Key, mimeType);
     const s3Url = getPublicMediaUrl(s3Key);
     const row: PreUploadedEnquiryAttachment = {
@@ -128,7 +129,7 @@ async function uploadEnquiryFiles(
   for (const file of files.slice(0, MAX_ATTACHMENTS)) {
     const mimeType = validateAttachmentMeta(file.fileName, file.mimeType, file.sizeBytes);
     const ext = file.fileName.split(".").pop()?.toLowerCase() || "bin";
-    const s3Key = `enquiries/${new Date().getFullYear()}/${randomUUID()}.${ext}`;
+    const s3Key = `${ENQUIRY_MEDIA_S3_PREFIX}/${new Date().getFullYear()}/${randomUUID()}.${ext}`;
     const s3Url = await uploadAsset(s3Key, file.buffer, mimeType);
     if (!s3Url) {
       throw new Error("Could not upload attachment. Please try again without files.");
@@ -146,7 +147,11 @@ async function uploadEnquiryFiles(
 
 function assertPreUploadedKeys(attachments: PreUploadedEnquiryAttachment[]) {
   for (const a of attachments) {
-    if (!a.s3Key.startsWith("enquiries/")) {
+    const ok =
+      a.s3Key.startsWith(`${ENQUIRY_MEDIA_S3_PREFIX}/`) ||
+      // Legacy keys (private under bucket policy — still accept for in-flight clients)
+      a.s3Key.startsWith("enquiries/");
+    if (!ok) {
       throw new Error("Invalid attachment reference");
     }
   }
