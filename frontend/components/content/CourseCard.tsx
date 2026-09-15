@@ -11,13 +11,14 @@ import {
 } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
 
+import {
+  CONTENT_CARD_HEIGHT,
+  CONTENT_CARD_IMAGE_BAND,
+  CONTENT_CARD_PANEL_BG
+} from "./content-card-layout";
 import { InstructorAvatars } from "./InstructorAvatars";
 
 type Props = { course: CourseListItem; compact?: boolean };
-
-/** Fixed but leaner height so course grids stay even without oversized cards. */
-const CONTENT_CARD_HEIGHT = "h-[32rem] sm:h-[33.5rem]";
-const IMAGE_BAND = "h-[14rem] sm:h-[15.25rem]";
 
 function prettyDate(s: string | null | undefined) {
   if (!s) return null;
@@ -59,7 +60,7 @@ export function CourseCard({ course, compact = false }: Props) {
     <Link
       ref={ref}
       href={`/course/${course.slug}`}
-      className={`group flex ${CONTENT_CARD_HEIGHT} flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
+      className={`group flex ${CONTENT_CARD_HEIGHT} w-full flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
       style={{
         opacity: 0,
         transform: "translateY(24px)",
@@ -67,7 +68,7 @@ export function CourseCard({ course, compact = false }: Props) {
           "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
       }}
     >
-      <div className={`relative ${IMAGE_BAND} shrink-0 overflow-hidden bg-[#EDE4D3]`}>
+      <div className={`relative ${CONTENT_CARD_IMAGE_BAND} shrink-0 overflow-hidden bg-[#EDE4D3]`}>
         <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {tagLabel}
         </span>
@@ -82,7 +83,10 @@ export function CourseCard({ course, compact = false }: Props) {
         )}
       </div>
 
-      <div className="relative flex min-h-0 flex-1 flex-col bg-[#166D46] text-white">
+      <div
+        className="relative flex min-h-0 flex-1 flex-col text-white"
+        style={{ background: CONTENT_CARD_PANEL_BG }}
+      >
         <InstructorAvatars
           seam
           people={teachers}
@@ -93,7 +97,9 @@ export function CourseCard({ course, compact = false }: Props) {
         <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-9 sm:px-5">
           <h3
             className={`font-serif font-semibold leading-snug text-white ${
-              compact ? "line-clamp-2 text-[1.05rem] sm:text-[1.15rem]" : "line-clamp-2 text-[1.1rem] sm:text-[1.2rem]"
+              compact
+                ? "line-clamp-2 text-[1.05rem] sm:text-[1.15rem]"
+                : "line-clamp-2 text-[1.1rem] sm:text-[1.2rem]"
             }`}
           >
             {course.title}

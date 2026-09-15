@@ -8,7 +8,7 @@ import { CourseCard } from "@/components/content/CourseCard";
 import { EventCard } from "@/components/content/EventCard";
 import type { CourseListItem } from "@/lib/course-types";
 import type { EventListItem } from "@/lib/event-types";
-import { isCourseUpcoming, isEventUpcoming } from "@/lib/content-meta";
+import { splitCourses, splitEvents } from "@/lib/content-meta";
 
 const HOME_GREEN = "#166D46";
 /** Auto-advance speed (px per frame @ ~60fps). */
@@ -40,19 +40,36 @@ function slotKey(slot: Slot, suffix: string) {
 }
 
 /**
+ * Home rail order:
+ * 1) upcoming courses (soonest first)
+ * 2) upcoming events (soonest first)
+ * 3) ended events (most recent first)
+ * Past courses are omitted so the rail stays current-first.
+ */
+function buildHomeSlots(courses: CourseListItem[], events: EventListItem[]): Slot[] {
+  const { upcoming: upcomingCourses, past: pastCourses } = splitCourses(courses);
+  const { upcoming: upcomingEvents, past: pastEvents } = splitEvents(events);
+
+  const slots: Slot[] = [
+    ...upcomingCourses.map((item) => ({ kind: "course" as const, item })),
+    ...upcomingEvents.map((item) => ({ kind: "event" as const, item })),
+    ...pastEvents.map((item) => ({ kind: "event" as const, item }))
+  ];
+  if (slots.length > 0) return slots;
+
+  // Absolute fallback if the catalog has no dated items yet.
+  return [
+    ...pastCourses.map((item) => ({ kind: "course" as const, item })),
+    ...events.map((item) => ({ kind: "event" as const, item }))
+  ];
+}
+
+/**
  * Transform-based rail (not overflow-x) so vertical page scroll still works.
  * Auto-scrolls when idle; horizontal swipe snaps one full card at a time.
  */
 export function HomeCoursesEventsCarousel({ courses, events }: Props) {
-  const upcomingCourses = courses.filter((c) => isCourseUpcoming(c));
-  const upcomingEvents = events.filter((e) => isEventUpcoming(e));
-  const coursePool = upcomingCourses.length ? upcomingCourses : courses;
-  const eventPool = upcomingEvents.length ? upcomingEvents : events;
-
-  const slots: Slot[] = [
-    ...coursePool.map((item) => ({ kind: "course" as const, item })),
-    ...eventPool.map((item) => ({ kind: "event" as const, item }))
-  ];
+  const slots = buildHomeSlots(courses, events);
 
   const loop = slots.length > 1;
   const displaySlots = loop ? [...slots, ...slots] : slots;
@@ -356,9 +373,7 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
                   key={slotKey(slot, i < slots.length ? "a" : "b")}
                   className="flex w-[min(86vw,22rem)] shrink-0 self-stretch sm:w-[min(48%,20rem)] lg:w-[22rem]"
                 >
-                  <div className="w-full">
-                    <SlotCard slot={slot} />
-                  </div>
+                  <SlotCard slot={slot} />
                 </li>
               ))}
             </ul>

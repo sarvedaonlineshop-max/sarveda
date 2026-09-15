@@ -8,14 +8,16 @@ import { eventCardTypeLabel, formatEventCardWhen } from "@/lib/content-meta";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise } from "@/lib/money";
 
+import {
+  CONTENT_CARD_HEIGHT,
+  CONTENT_CARD_IMAGE_BAND,
+  CONTENT_CARD_PANEL_BG
+} from "./content-card-layout";
+
 type Props = {
   event: EventListItem;
   compact?: boolean;
 };
-
-/** Match CourseCard fixed height. */
-const CONTENT_CARD_HEIGHT = "h-[36rem] sm:h-[38rem]";
-const IMAGE_BAND = "h-[15.5rem] sm:h-[17rem]";
 
 function plainText(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null;
@@ -59,7 +61,7 @@ export function EventCard({ event, compact = false }: Props) {
     <Link
       ref={ref}
       href={`/event/${event.slug}`}
-      className={`group flex ${CONTENT_CARD_HEIGHT} flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
+      className={`group flex ${CONTENT_CARD_HEIGHT} w-full flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
       style={{
         opacity: 0,
         transform: "translateY(24px)",
@@ -67,67 +69,66 @@ export function EventCard({ event, compact = false }: Props) {
           "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
       }}
     >
-      <div className={`relative ${IMAGE_BAND} shrink-0 overflow-hidden bg-[#EDE4D3]`}>
-        <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-brand-gold/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
+      <div className={`relative ${CONTENT_CARD_IMAGE_BAND} shrink-0 overflow-hidden bg-[#EDE4D3]`}>
+        <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {typeLabel}
         </span>
         {imageSrc ? (
           <img
             src={imageSrc}
-            alt={event.title}
-            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+            alt=""
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="h-full w-full bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}
       </div>
 
-      <div className="relative flex min-h-0 flex-1 flex-col bg-[#23827c] text-white">
-        {/* Never overflow-y:auto here — nested scroll traps page scroll on mobile. */}
-        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5">
+      <div
+        className="relative flex min-h-0 flex-1 flex-col text-white"
+        style={{ background: CONTENT_CARD_PANEL_BG }}
+      >
+        {/* Match CourseCard top padding (avatar seam space) so panels align in the carousel. */}
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-9 sm:px-5">
           <h3
             className={`font-serif font-semibold leading-snug text-white ${
-              compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.25rem]" : "text-[1.2rem] sm:text-[1.3rem]"
+              compact
+                ? "line-clamp-2 text-[1.05rem] sm:text-[1.15rem]"
+                : "line-clamp-2 text-[1.1rem] sm:text-[1.2rem]"
             }`}
           >
             {event.title}
           </h3>
 
           {explanation ? (
-            <p
-              className={`mt-2 leading-relaxed text-white/85 ${
-                compact
-                  ? "line-clamp-2 text-[13px] sm:text-[14px]"
-                  : "line-clamp-3 text-[13px] sm:text-[14px]"
-              }`}
-            >
+            <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-white/85 sm:text-[13px]">
               {explanation}
             </p>
           ) : null}
 
-          <div className="mt-3 min-w-0 border-l-4 border-white/90 pl-3">
+          <div className="mt-4 min-w-0 space-y-1.5 border-l-[3px] border-white pl-3">
             {when ? (
               <p
-                className={`text-[14px] leading-snug text-white/90 sm:text-[15px] ${
-                  compact ? "line-clamp-3" : "whitespace-pre-line"
+                className={`text-[13px] leading-snug text-white/90 sm:text-[14px] ${
+                  compact ? "line-clamp-2" : "line-clamp-3 whitespace-pre-line"
                 }`}
               >
-                {when}
+                {compact ? when.replace(/\n/g, " · ") : when}
               </p>
             ) : null}
             {event.venue?.trim() ? (
-              <p className={`mt-1 text-[14px] text-white sm:text-[15px] ${compact ? "line-clamp-1" : ""}`}>
+              <p className="line-clamp-1 text-[13px] leading-snug text-white sm:text-[14px]">
                 {event.venue.trim()}
               </p>
             ) : null}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-end justify-between gap-3 border-t border-white/15 px-4 pb-4 pt-3">
+        <div className="flex shrink-0 items-end justify-between gap-3 border-t border-white/15 px-4 pb-4 pt-3 sm:px-5">
           <p className="text-sm font-semibold tabular-nums text-white/95">
             {event.priceInPaise <= 0 ? "Free" : formatINRFromPaise(event.priceInPaise)}
           </p>
-          <span className="ml-auto inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-sm bg-[#e87e04] px-5 text-sm font-medium uppercase tracking-wide text-white transition-colors group-hover:bg-[#d47103]">
+          <span className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-sm bg-[#e87e04] px-5 text-sm font-medium uppercase tracking-wide text-white transition-colors group-hover:bg-[#d47103]">
             Explore
           </span>
         </div>
