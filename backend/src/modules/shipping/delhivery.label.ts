@@ -1,4 +1,8 @@
-import { getSarvedaIconDataUri, getSarvedaLogoDataUri, getLabelAddressDefaults } from "./labelAssets";
+import {
+  getSarvedaHeaderLogoDataUri,
+  getSarvedaLogoDataUri,
+  getLabelAddressDefaults
+} from "./labelAssets";
 
 export type DelhiveryPackingSlipPackage = {
   wbn?: string;
@@ -141,7 +145,11 @@ function resolveSellerReturn(
   options?: LabelRenderOptions
 ): { sellerName: string; sellerAddress: string; gst: string; returnAddr: string } {
   const defaults = getLabelAddressDefaults();
-  const sellerName = String(pkg.snm ?? options?.sellerName ?? defaults.sellerName).trim() || defaults.sellerName;
+  // Prefer our legal seller name over Delhivery snm ("Sarveda").
+  const sellerName =
+    String(options?.sellerName ?? defaults.sellerName).trim() ||
+    String(pkg.snm ?? "").trim() ||
+    defaults.sellerName;
   const gst = String(pkg.seller_gst_tin ?? pkg.client_gst_tin ?? options?.sellerGst ?? defaults.sellerGst).trim();
   const returnAddr = String(pkg.radd ?? options?.returnAddress ?? defaults.returnAddress)
     .replace(/\s+/g, " ")
@@ -170,18 +178,42 @@ function resolveLineItems(pkg: DelhiveryPackingSlipPackage, options?: LabelRende
 }
 
 function renderBrandHeader(options?: LabelRenderOptions): string {
-  const icon = getSarvedaIconDataUri();
-  const lockup = options?.sarvedaLogoDataUri || getSarvedaLogoDataUri();
-  if (icon) {
-    return `<div class="brand-lockup">
-      <img src="${esc(icon)}" alt="" class="brand-icon" />
-      <span class="brand-name">Sarveda</span>
-    </div>`;
-  }
-  if (lockup) {
-    return `<img src="${esc(lockup)}" alt="Sarveda" class="logo-sarveda" />`;
+  const headerLogo =
+    options?.sarvedaLogoDataUri || getSarvedaHeaderLogoDataUri() || getSarvedaLogoDataUri();
+  if (headerLogo) {
+    return `<img src="${esc(headerLogo)}" alt="Sarveda" class="logo-sarveda" />`;
   }
   return `<span class="brand-name">Sarveda</span>`;
+}
+
+function renderSellerBlock(
+  sellerName: string,
+  sellerAddrDisplay: string,
+  gst: string,
+  oid: string,
+  oidBarcode: string,
+  logoDataUri: string
+): string {
+  const logo = logoDataUri
+    ? `<img src="${esc(logoDataUri)}" alt="Sarveda" class="seller-logo" />`
+    : "";
+  return `
+    <div class="section seller-block">
+      <div class="seller-left">
+        <div class="seller-with-logo">
+          ${logo}
+          <div class="seller-copy">
+            <div class="seller-name">${esc(sellerName)}</div>
+            <div class="seller-addr">${esc(sellerAddrDisplay)}</div>
+            <div class="gst">GST: ${esc(gst)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="seller-right">
+        <div class="oid">${esc(oid)}</div>
+        ${oidBarcode}
+      </div>
+    </div>`;
 }
 
 function renderProductRows(items: LabelLineItem[]): string {
@@ -205,7 +237,9 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
   const delLogo = pkg.delhivery_logo
     ? `<img src="${esc(pkg.delhivery_logo)}" alt="Delhivery" class="logo-del" />`
     : `<span class="logo-del-text">DELHI<span class="logo-del-accent">▪</span>VERY</span>`;
-  const sarvedaHeader = renderBrandHeader(options);
+  const headerLogo =
+    options?.sarvedaLogoDataUri || getSarvedaHeaderLogoDataUri() || getSarvedaLogoDataUri();
+  const sarvedaHeader = renderBrandHeader({ ...options, sarvedaLogoDataUri: headerLogo });
 
   const awb = String(pkg.wbn ?? "");
   const pin = String(pkg.pin ?? "");
@@ -215,7 +249,7 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
   const awbLabel = awbHeading(mps, awb);
   const amount = resolveLabelAmount(pkg, options);
   const { sellerName, sellerAddress, gst, returnAddr } = resolveSellerReturn(pkg, options);
-  const sellerAddrDisplay = truncateAddress(sellerAddress);
+  const sellerAddrDisplay = truncateAddress(sellerAddress, 160);
   const returnAddrDisplay = truncateAddress(returnAddr, 200);
   const hub = String(pkg.destination ?? "");
   const lineItems = resolveLineItems(pkg, options);
@@ -260,16 +294,7 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
       </div>
     </div>
 
-    <div class="section seller-block">
-      <div class="seller-left">
-        <div class="seller-line">Seller:<strong>${esc(sellerName)}</strong> ${esc(sellerAddrDisplay)}</div>
-        <div class="gst">GST: ${esc(gst)}</div>
-      </div>
-      <div class="seller-right">
-        <div class="oid">${esc(pkg.oid)}</div>
-        ${oidBarcode}
-      </div>
-    </div>
+    ${renderSellerBlock(sellerName, sellerAddrDisplay, gst, String(pkg.oid ?? ""), oidBarcode, headerLogo)}
 
     <table class="products">
       <colgroup>
@@ -300,7 +325,8 @@ export function renderDelhiveryPackingSlipHtml(
   packages: DelhiveryPackingSlipPackage[],
   options?: LabelRenderOptions
 ): string {
-  const logoUri = options?.sarvedaLogoDataUri || getSarvedaLogoDataUri();
+  const logoUri =
+    options?.sarvedaLogoDataUri || getSarvedaHeaderLogoDataUri() || getSarvedaLogoDataUri();
   const slips = packages.map((pkg) => renderSlip(pkg, { ...options, sarvedaLogoDataUri: logoUri })).join("");
 
   return `<!DOCTYPE html>
@@ -354,10 +380,8 @@ export function renderDelhiveryPackingSlipHtml(
       align-items: flex-start;
       margin-bottom: 2mm;
     }
-    .brand-lockup { display: flex; align-items: center; gap: 1.5mm; }
-    .brand-icon { height: 7mm; width: auto; }
     .brand-name { font-size: 15px; font-weight: 700; color: #8b6914; letter-spacing: 0.01em; }
-    .logo-sarveda { height: 11mm; max-width: 42mm; object-fit: contain; object-position: left; }
+    .logo-sarveda { height: 9mm; max-width: 48mm; object-fit: contain; object-position: left; }
     .logo-del { height: 7mm; max-width: 28mm; object-fit: contain; }
     .logo-del-text { font-size: 11px; font-weight: 900; letter-spacing: 0.06em; }
     .logo-del-accent { color: #e11; font-size: 8px; vertical-align: super; }
@@ -372,8 +396,23 @@ export function renderDelhiveryPackingSlipHtml(
     }
     .mps-box-count { font-weight: 400; }
     .mps-master-ref { font-weight: 400; text-align: right; }
-    .barcode-wrap { text-align: center; margin: 1mm 0 1.5mm; padding: 0 1mm; }
-    .barcode-main { width: 100%; max-height: 24mm; min-height: 20mm; object-fit: contain; image-rendering: crisp-edges; }
+    /* AWB barcode: 70% label width, 15% gap each side */
+    .barcode-wrap {
+      width: 70%;
+      margin: 1mm 15% 1.5mm;
+      text-align: center;
+      padding: 0;
+    }
+    .barcode-main {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      max-height: 26mm;
+      min-height: 20mm;
+      object-fit: fill;
+      image-rendering: crisp-edges;
+    }
     .barcode-oid { width: 48mm; max-height: 16mm; min-height: 12mm; object-fit: contain; display: block; margin-top: 1mm; margin-left: auto; image-rendering: crisp-edges; }
     .barcode-fallback { font-family: monospace; font-size: 14px; font-weight: 700; text-align: center; }
     .awb-meta {
@@ -397,11 +436,14 @@ export function renderDelhiveryPackingSlipHtml(
     .amount { font-size: 14px; margin-bottom: 2mm; }
     .date-row { font-size: 8px; }
     .date-label { display: block; color: #333; margin-bottom: 0.5mm; }
-    .seller-block { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2mm; align-items: start; }
-    .seller-line { word-break: break-word; font-size: 8px; line-height: 1.4; margin-bottom: 1mm; }
-    .seller-line strong { font-weight: 700; }
-    .gst { font-size: 8px; margin-top: 0.5mm; }
-    .seller-right { text-align: right; min-width: 50mm; }
+    .seller-block { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 2mm; align-items: start; }
+    .seller-with-logo { display: flex; align-items: flex-start; gap: 2mm; }
+    .seller-logo { height: 8mm; width: auto; max-width: 28mm; object-fit: contain; flex-shrink: 0; margin-top: 0.3mm; }
+    .seller-copy { min-width: 0; flex: 1; }
+    .seller-name { font-weight: 700; font-size: 8.5px; margin-bottom: 0.6mm; line-height: 1.3; }
+    .seller-addr { word-break: break-word; font-size: 7.5px; line-height: 1.35; margin-bottom: 0.8mm; }
+    .gst { font-size: 8px; margin-top: 0.3mm; }
+    .seller-right { text-align: right; min-width: 42mm; }
     .oid { font-size: 11px; font-weight: 700; margin-bottom: 1mm; }
     .products {
       width: 100%;

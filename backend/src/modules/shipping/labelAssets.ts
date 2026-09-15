@@ -3,11 +3,15 @@ import path from "node:path";
 
 let sarvedaLogoWithNameDataUri: string | null = null;
 let sarvedaIconDataUri: string | null = null;
+let sarvedaHeaderLogoDataUri: string | null = null;
 
 function logoCandidates(base: string): string[] {
   return [
     path.join(__dirname, "../../../assets/labels", base),
-    path.join(process.cwd(), "assets/labels", base)
+    path.join(process.cwd(), "assets/labels", base),
+    // Dev / monorepo: same mark as storefront header
+    path.join(process.cwd(), "../frontend/public/images/brand", base),
+    path.join(__dirname, "../../../../frontend/public/images/brand", base)
   ];
 }
 
@@ -17,6 +21,19 @@ function readLogoPng(filename: string): string {
       if (!fs.existsSync(file)) continue;
       const buf = fs.readFileSync(file);
       return `data:image/png;base64,${buf.toString("base64")}`;
+    } catch {
+      /* try next */
+    }
+  }
+  return "";
+}
+
+function readLogoSvg(filename: string): string {
+  for (const file of logoCandidates(filename)) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const svg = fs.readFileSync(file, "utf8");
+      return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
     } catch {
       /* try next */
     }
@@ -36,6 +53,15 @@ export function getSarvedaIconDataUri(): string {
   return sarvedaIconDataUri;
 }
 
+/** Same wordmark + mark as storefront header (`sarveda-logo.svg`). */
+export function getSarvedaHeaderLogoDataUri(): string {
+  if (sarvedaHeaderLogoDataUri == null) {
+    sarvedaHeaderLogoDataUri =
+      readLogoSvg("sarveda-logo.svg") || getSarvedaLogoDataUri() || getSarvedaIconDataUri();
+  }
+  return sarvedaHeaderLogoDataUri;
+}
+
 /** Seller + return defaults for label when Delhivery JSON omits them. */
 export function getLabelAddressDefaults(): {
   sellerName: string;
@@ -50,7 +76,7 @@ export function getLabelAddressDefaults(): {
     process.env.RETURN_WAREHOUSE_ADDRESS?.replace(/\n+/g, " ").replace(/\s+/g, " ").trim() ||
     "Plot No. B, Part 2, RASUDHI WAREHOUSE ,KIADB Industrial Housing Layout, Hebbal 2nd stage Mysore , Mysore, Karnataka";
   return {
-    sellerName: "Sarveda",
+    sellerName: process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life Pvt. Ltd.",
     sellerAddress,
     sellerGst: process.env.SELLER_GSTIN?.trim() || "29ABFCS0538N1ZV",
     returnAddress
