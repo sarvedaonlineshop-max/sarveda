@@ -356,7 +356,10 @@ export async function syncOrderShipments(req: Request, res: Response, next: Next
     }
     const order = await prisma.order.findFirst({
       where: { id: orderId, deletedAt: null },
-      include: { shipments: { orderBy: { createdAt: "desc" } } }
+      include: {
+        shipments: { orderBy: { createdAt: "desc" } },
+        payments: { select: { provider: true }, orderBy: { createdAt: "desc" }, take: 3 }
+      }
     });
     if (!order) {
       res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });

@@ -133,7 +133,11 @@ export async function applyCarrierWebhookTracking(
 
   const shipment = await prisma.shipment.findFirst({
     where: { awb: wb },
-    include: { order: true }
+    include: {
+      order: {
+        include: { payments: { select: { provider: true }, orderBy: { createdAt: "desc" }, take: 3 } }
+      }
+    }
   });
   if (!shipment) {
     return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
@@ -214,7 +218,11 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
 
   const shipment = await prisma.shipment.findFirst({
     where: { awb: wb },
-    include: { order: true }
+    include: {
+      order: {
+        include: { payments: { select: { provider: true }, orderBy: { createdAt: "desc" }, take: 3 } }
+      }
+    }
   });
   if (!shipment) {
     return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
