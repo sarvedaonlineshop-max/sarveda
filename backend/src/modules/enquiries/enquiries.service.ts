@@ -745,3 +745,43 @@ export async function deleteAdminEnquiryMessage(threadId: string, messageId: str
   });
   return { deleted: true as const, messageId };
 }
+
+/** Edit an admin text message in the inbox (local only — does not edit WhatsApp). */
+export async function updateAdminEnquiryMessage(
+  threadId: string,
+  messageId: string,
+  body: string
+) {
+  const trimmed = body.trim();
+  if (!trimmed) {
+    throw new Error("Message cannot be empty.");
+  }
+  if (trimmed.length > 8000) {
+    throw new Error("Message is too long.");
+  }
+
+  const message = await prisma.enquiryMessage.findFirst({
+    where: { id: messageId, threadId },
+    include: { attachments: true }
+  });
+  if (!message) return null;
+  if (message.authorType !== "ADMIN") {
+    throw new Error("Only messages sent by admin can be edited.");
+  }
+  if (message.attachments.length > 0) {
+    throw new Error("Media messages cannot be edited. Delete and resend instead.");
+  }
+
+  const updated = await prisma.enquiryMessage.update({
+    where: { id: messageId },
+    data: { body: trimmed, editedAt: new Date() },
+    include: {
+      attachments: true,
+      adminUser: { select: { id: true, name: true, email: true } }
+    }
+  });
+
+  publishEnquiryEvent({ type: "message_changed", threadId });
+  logger.info("enquiry_admin_message_edited", { threadId, messageId });
+  return updated;
+}

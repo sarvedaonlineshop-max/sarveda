@@ -8,6 +8,7 @@ import {
   FileText,
   MessageSquarePlus,
   Paperclip,
+  Pencil,
   Play,
   SendHorizontal,
   Trash2,
@@ -25,6 +26,7 @@ import {
 
 import {
   deleteAdminEnquiryMessage,
+  editAdminEnquiryMessage,
   fetchAdminEnquiryThread,
   getAdminEnquiryStreamUrl,
   patchAdminEnquiryStatus,
@@ -519,6 +521,7 @@ function MessageBubble({
   isWhatsApp,
   onOpenMedia,
   onDelete,
+  onEdited,
   deleting
 }: {
   message: EnquiryMessageRow;
@@ -526,11 +529,17 @@ function MessageBubble({
   isWhatsApp?: boolean;
   onOpenMedia: (viewer: MediaViewerState) => void;
   onDelete?: () => void;
+  onEdited?: (message: EnquiryMessageRow) => void;
   deleting?: boolean;
 }) {
   const isAdmin = message.authorType === "ADMIN";
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.body);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const parsed = parseWhatsAppMessageBody(message.body || "");
   const hasAttachments = message.attachments.length > 0;
+  const canEditText = isAdmin && !hasAttachments && !parsed.mediaType;
   const inlineImageUrl =
     !hasAttachments && (parsed.mediaType === "image" || parsed.mediaType === "sticker")
       ? parsed.url
@@ -541,11 +550,18 @@ function MessageBubble({
       (parsed.mediaType === "document" && /\.mp4(\?|$)/i.test(parsed.url || "")))
       ? parsed.url
       : null;
+  const missingDurableVideo =
+    !hasAttachments &&
+    !inlineVideoUrl &&
+    (parsed.mediaType === "video" || /\[video\]/i.test(message.body || ""));
   const inlineAudioUrl = !hasAttachments && parsed.mediaType === "audio" ? parsed.url : null;
   const inlineDocUrl =
-    !hasAttachments && parsed.mediaType === "document" && !inlineVideoUrl ? parsed.url : null;
+    !hasAttachments && parsed.mediaType === "document" && !inlineVideoUrl && !missingDurableVideo
+      ? parsed.url
+      : null;
   const showText = Boolean(
-    parsed.caption ||
+    editing ||
+      parsed.caption ||
       (!parsed.mediaType && parsed.text) ||
       (parsed.mediaType &&
         !parsed.caption &&
@@ -553,6 +569,7 @@ function MessageBubble({
         !inlineVideoUrl &&
         !inlineAudioUrl &&
         !inlineDocUrl &&
+        !missingDurableVideo &&
         !hasAttachments)
   );
 
@@ -570,12 +587,7 @@ function MessageBubble({
     });
   }
 
-  function openEphemeral(
-    kind: MediaKind,
-    url: string,
-    fileName: string,
-    mimeType: string
-  ) {
+  function openEphemeral(kind: MediaKind, url: string, fileName: string, mimeType: string) {
     onOpenMedia({
       kind,
       url,
@@ -584,8 +596,28 @@ function MessageBubble({
       messageId: message.id,
       threadId,
       canDelete: isAdmin,
-      ephemeral: isExotelMediaUrl(url)
+      ephemeral: !url || isExotelMediaUrl(url)
     });
+  }
+
+  async function saveEdit() {
+    const next = draft.trim();
+    if (!next || next === message.body.trim()) {
+      setEditing(false);
+      setDraft(message.body);
+      return;
+    }
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const updated = await editAdminEnquiryMessage(threadId, message.id, next);
+      onEdited?.(updated);
+      setEditing(false);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "Could not save edit");
+    } finally {
+      setSavingEdit(false);
+    }
   }
 
   return (
@@ -608,26 +640,44 @@ function MessageBubble({
               }
         }
       >
-        {isAdmin && onDelete ? (
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={onDelete}
-            className="absolute -right-1 -top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-600 opacity-100 shadow ring-1 ring-stone-200 transition md:opacity-0 md:group-hover/msg:opacity-100 focus:opacity-100 disabled:opacity-40"
-            title="Delete message"
-            aria-label="Delete message"
-          >
-            <Trash2 size={14} />
-          </button>
+        {isAdmin ? (
+          <div className="absolute -right-1 -top-2 z-10 flex gap-1 opacity-100 transition md:opacity-0 md:group-hover/msg:opacity-100 focus-within:opacity-100">
+            {canEditText ? (
+              <button
+                type="button"
+                disabled={deleting || editing}
+                onClick={() => {
+                  setDraft(message.body);
+                  setEditError(null);
+                  setEditing(true);
+                }}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#0b6b5f] shadow ring-1 ring-stone-200 disabled:opacity-40"
+                title="Edit message"
+                aria-label="Edit message"
+              >
+                <Pencil size={13} />
+              </button>
+            ) : null}
+            {onDelete ? (
+              <button
+                type="button"
+                disabled={deleting || editing}
+                onClick={onDelete}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-600 shadow ring-1 ring-stone-200 disabled:opacity-40"
+                title="Delete message"
+                aria-label="Delete message"
+              >
+                <Trash2 size={14} />
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {inlineImageUrl ? (
           <MediaImage
             src={inlineImageUrl}
             alt={parsed.caption || "WhatsApp image"}
-            onOpen={() =>
-              openEphemeral("image", inlineImageUrl, "whatsapp-image.jpg", "image/jpeg")
-            }
+            onOpen={() => openEphemeral("image", inlineImageUrl, "whatsapp-image.jpg", "image/jpeg")}
           />
         ) : null}
         {inlineVideoUrl ? (
@@ -636,18 +686,22 @@ function MessageBubble({
             fileName="whatsapp-video.mp4"
             mimeType="video/mp4"
             expired={isExotelMediaUrl(inlineVideoUrl)}
-            onOpen={() =>
-              openEphemeral("video", inlineVideoUrl, "whatsapp-video.mp4", "video/mp4")
-            }
+            onOpen={() => openEphemeral("video", inlineVideoUrl, "whatsapp-video.mp4", "video/mp4")}
+          />
+        ) : null}
+        {missingDurableVideo ? (
+          <VideoThumb
+            fileName="whatsapp-video.mp4"
+            mimeType="video/mp4"
+            expired
+            onOpen={() => openEphemeral("video", "", "whatsapp-video.mp4", "video/mp4")}
           />
         ) : null}
         {inlineAudioUrl ? (
           <button
             type="button"
             className="mb-1 w-full rounded-lg bg-stone-100 px-3 py-2 text-left text-[13px] font-medium text-[#0b6b5f]"
-            onClick={() =>
-              openEphemeral("audio", inlineAudioUrl, "whatsapp-audio.ogg", "audio/ogg")
-            }
+            onClick={() => openEphemeral("audio", inlineAudioUrl, "whatsapp-audio.ogg", "audio/ogg")}
           >
             🎵 Play audio
           </button>
@@ -666,23 +720,50 @@ function MessageBubble({
             }
           />
         ) : null}
-        {showText ? (
-          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1a2e1a]">
-            {parsed.text}
-          </p>
+        {editing ? (
+          <div className="space-y-2">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={3}
+              className="w-full min-w-[16rem] resize-y rounded-xl border border-[#25d366]/50 bg-white px-3 py-2 text-[14px] text-stone-800 outline-none focus:border-[#25d366]"
+              autoFocus
+            />
+            {editError ? <p className="text-[11px] font-medium text-red-600">{editError}</p> : null}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(message.body);
+                  setEditError(null);
+                }}
+                className="rounded-full px-3 py-1 text-[12px] font-semibold text-stone-600 hover:bg-black/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={savingEdit || !draft.trim()}
+                onClick={() => void saveEdit()}
+                className="rounded-full bg-[#25d366] px-3 py-1 text-[12px] font-semibold text-white disabled:opacity-50"
+              >
+                {savingEdit ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : showText ? (
+          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1a2e1a]">{parsed.text}</p>
         ) : null}
         {hasAttachments ? (
           <ul
-            className={`space-y-2 text-xs ${showText || inlineImageUrl || inlineVideoUrl ? "mt-2 border-t pt-2" : ""} border-stone-200/80`}
+            className={`space-y-2 text-xs ${showText || inlineImageUrl || inlineVideoUrl || missingDurableVideo ? "mt-2 border-t pt-2" : ""} border-stone-200/80`}
           >
             {message.attachments.map((a) => (
               <li key={a.id}>
                 {isImageMime(a.mimeType) ? (
-                  <button
-                    type="button"
-                    className="block w-full text-left"
-                    onClick={() => openAttachment(a)}
-                  >
+                  <button type="button" className="block w-full text-left" onClick={() => openAttachment(a)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={a.s3Url}
@@ -716,7 +797,8 @@ function MessageBubble({
             ))}
           </ul>
         ) : null}
-        <p className="mt-1 flex items-center justify-end gap-0.5 text-[10px] text-[#5a7a5a]">
+        <p className="mt-1 flex items-center justify-end gap-1 text-[10px] text-[#5a7a5a]">
+          {message.editedAt ? <span className="italic">Edited</span> : null}
           <span>{formatMsgTime(message.createdAt)}</span>
           {isAdmin && isWhatsApp ? <WaTicks status={message.waStatus} /> : null}
         </p>
@@ -922,13 +1004,17 @@ function AdminChatDetailInner() {
     if (!canSend || !id) return;
     setSending(true);
     setError(null);
-    setUploadPercent(files.length > 0 ? 0 : null);
+    const hasMedia = files.length > 0;
+    setUploadPercent(hasMedia ? 0 : null);
     if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
     void setAdminEnquiryTyping(id, false).catch(() => undefined);
     try {
-      await replyAdminEnquiryThread(id, reply.trim(), files, {
-        onUploadProgress: (pct) => setUploadPercent(pct)
-      });
+      await replyAdminEnquiryThread(
+        id,
+        reply.trim(),
+        files,
+        hasMedia ? { onUploadProgress: (pct) => setUploadPercent(pct) } : undefined
+      );
       setReply("");
       setFiles([]);
       setUploadPercent(null);

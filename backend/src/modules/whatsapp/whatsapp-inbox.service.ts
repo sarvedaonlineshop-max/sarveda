@@ -25,7 +25,7 @@ export const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export { WA_BOT_AUTHOR, isGreeting } from "./whatsapp-bot.service";
 
-const MAX_INBOUND_MEDIA_BYTES = 20 * 1024 * 1024;
+const MAX_INBOUND_MEDIA_BYTES = 50 * 1024 * 1024;
 
 /** Synthetic, non-routable email for WA-only contacts (EnquiryThread.customerEmail is required). */
 function syntheticWaEmail(e164: string): string {
@@ -312,45 +312,67 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
   try {
     parsed = new URL(input.link);
   } catch {
+    logger.warn("whatsapp_inbound_media_bad_url", { messageId: input.messageId });
     return false;
   }
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
 
+  const linkPath = decodeURIComponent(parsed.pathname);
+  const linkLooksVideo = /\.(mp4|mov|webm|avi|mpeg|mpg|m4v)(\?|$)/i.test(linkPath);
+  const linkLooksAudio = /\.(mp3|m4a|ogg|wav|aac)(\?|$)/i.test(linkPath);
+  const linkExt = (linkPath.split(".").pop() || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const inferredName =
+    input.fileName ||
+    (linkExt && linkExt !== "bin" ? `whatsapp-${input.mediaType}.${linkExt}` : null);
+
+  const timeoutMs = linkLooksVideo || input.mediaType === "video" ? 90_000 : 45_000;
   const res = await fetch(input.link, {
-    headers: { "User-Agent": "SarvedaWhatsAppInbox/1.0" },
-    signal: AbortSignal.timeout(45_000),
+    headers: {
+      "User-Agent": "SarvedaWhatsAppInbox/1.0",
+      Accept: "*/*"
+    },
+    signal: AbortSignal.timeout(timeoutMs),
     redirect: "follow"
   });
   if (!res.ok) {
     logger.warn("whatsapp_inbound_media_fetch_failed", {
       status: res.status,
-      mediaType: input.mediaType
+      mediaType: input.mediaType,
+      messageId: input.messageId,
+      host: parsed.host
     });
     return false;
   }
 
   const buf = Buffer.from(await res.arrayBuffer());
   if (!buf.length || buf.length > MAX_INBOUND_MEDIA_BYTES) {
-    logger.warn("whatsapp_inbound_media_size_rejected", { bytes: buf.length });
+    logger.warn("whatsapp_inbound_media_size_rejected", {
+      bytes: buf.length,
+      max: MAX_INBOUND_MEDIA_BYTES,
+      messageId: input.messageId
+    });
     return false;
   }
 
   const mime = mimeForWaMedia(
     input.mediaType,
-    input.fileName,
+    inferredName,
     res.headers.get("content-type")
   );
-  // WhatsApp often sends videos as type=document — promote to video when MIME/ext say so.
   const effectiveMediaType =
-    mime.startsWith("video/") || /\.(mp4|mov|webm|avi|mpeg|mpg)$/i.test(input.fileName || "")
+    mime.startsWith("video/") ||
+    linkLooksVideo ||
+    /\.(mp4|mov|webm|avi|mpeg|mpg|m4v)$/i.test(inferredName || "")
       ? "video"
-      : mime.startsWith("audio/") || /\.(mp3|m4a|ogg|wav)$/i.test(input.fileName || "")
+      : mime.startsWith("audio/") ||
+          linkLooksAudio ||
+          /\.(mp3|m4a|ogg|wav|aac)$/i.test(inferredName || "")
         ? "audio"
         : mime.startsWith("image/")
           ? "image"
           : input.mediaType;
-  const ext = extForMime(mime, effectiveMediaType, input.fileName);
-  const cleaned = input.fileName?.replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(0, 120);
+  const ext = extForMime(mime, effectiveMediaType, inferredName);
+  const cleaned = inferredName?.replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(0, 120);
   const hasExt = Boolean(cleaned && /\.[a-z0-9]{1,8}$/i.test(cleaned));
   const safeName =
     cleaned && hasExt
@@ -358,26 +380,32 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
       : cleaned
         ? `${cleaned}.${ext}`
         : `whatsapp-${effectiveMediaType}.${ext}`;
+  const storeMime =
+    mime.startsWith("application/octet-stream") && effectiveMediaType === "video"
+      ? "video/mp4"
+      : mime;
   const s3Key = `${ENQUIRY_MEDIA_S3_PREFIX}/${new Date().getFullYear()}/wa-${randomUUID()}.${ext}`;
-  const s3Url = await uploadAsset(s3Key, buf, mime);
-  if (!s3Url) return false;
+  const s3Url = await uploadAsset(s3Key, buf, storeMime);
+  if (!s3Url) {
+    logger.warn("whatsapp_inbound_media_s3_failed", { messageId: input.messageId, s3Key });
+    return false;
+  }
 
   await prisma.enquiryAttachment.create({
     data: {
       messageId: input.messageId,
       fileName: safeName,
-      mimeType: mime,
+      mimeType: storeMime,
       fileSizeBytes: buf.length,
       s3Key,
       s3Url
     }
   });
 
-  // Prefer durable caption / media label; keep Exotel URL out of body once mirrored.
   const cleanBody =
     input.caption?.trim() ||
-    (effectiveMediaType === "document" && input.fileName
-      ? `[document] ${input.fileName}`
+    (effectiveMediaType === "document" && inferredName
+      ? `[document] ${inferredName}`
       : `[${effectiveMediaType}]`);
   await prisma.enquiryMessage.update({
     where: { id: input.messageId },
@@ -582,6 +610,24 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
           mediaType: msg.media.mediaType
         });
       } else {
+        // Never leave short-lived Exotel URLs in the body — they expire in ~15 min.
+        const link = msg.media.link || "";
+        const looksVideo =
+          msg.media.mediaType === "video" || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(link);
+        const label = looksVideo
+          ? "[video]"
+          : msg.media.mediaType === "audio"
+            ? "[audio]"
+            : msg.media.mediaType === "image" || msg.media.mediaType === "sticker"
+              ? "[image]"
+              : msg.media.fileName
+                ? `[document] ${msg.media.fileName}`
+                : "[document]";
+        const caption = msg.media.caption?.trim();
+        await prisma.enquiryMessage.update({
+          where: { id: created.id },
+          data: { body: caption ? `${label} ${caption}` : label }
+        });
         logger.warn("whatsapp_inbound_media_mirror_skipped", {
           messageId: created.id,
           mediaType: msg.media.mediaType,

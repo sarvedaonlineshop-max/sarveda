@@ -20,6 +20,7 @@ import {
   patchEnquiryThreadStatus,
   replyToEnquiryThread,
   deleteAdminEnquiryMessage,
+  updateAdminEnquiryMessage,
   startWhatsAppChatByPhone,
   type EnquiryAttachmentInput
 } from "./enquiries.service";
@@ -281,6 +282,37 @@ router.delete("/:id/messages/:messageId", async (req, res, next) => {
     next(err);
   }
 });
+
+router.patch(
+  "/:id/messages/:messageId",
+  validateBody(z.object({ message: z.string().min(1).max(8000) })),
+  async (req, res, next) => {
+    try {
+      const updated = await updateAdminEnquiryMessage(
+        req.params.id,
+        req.params.messageId,
+        req.body.message
+      );
+      if (!updated) {
+        res.status(404).json({ success: false, error: "Message not found", code: "NOT_FOUND" });
+        return;
+      }
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (
+        message.includes("Only messages sent by admin") ||
+        message.includes("cannot be edited") ||
+        message.includes("cannot be empty") ||
+        message.includes("too long")
+      ) {
+        res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
+        return;
+      }
+      next(err);
+    }
+  }
+);
 
 /** Stream attachment through API so browser download works (S3 CORS blocks direct fetch). */
 router.get("/:id/attachments/:attachmentId/download", async (req, res, next) => {

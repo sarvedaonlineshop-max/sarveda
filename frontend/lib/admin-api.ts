@@ -2988,6 +2988,7 @@ export type EnquiryMessageRow = {
   authorEmail: string;
   body: string;
   createdAt: string;
+  editedAt?: string | null;
   attachments: EnquiryAttachmentRow[];
   adminUser?: { id: string; name: string | null; email: string } | null;
   /** WhatsApp delivery status for outbound messages: sent | delivered | read | failed. */
@@ -3061,7 +3062,7 @@ export async function replyAdminEnquiryThread(
   const hasFiles = (attachments?.length ?? 0) > 0;
 
   // XHR so we can surface upload progress for attachments (fetch has no upload progress).
-  if (hasFiles || options?.onUploadProgress) {
+  if (hasFiles) {
     return new Promise<EnquiryMessageRow>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url);
@@ -3114,6 +3115,16 @@ export function deleteAdminEnquiryMessage(threadId: string, messageId: string) {
   return adminFetch<{ deleted: true; messageId: string }>(
     `/api/admin/enquiries/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
     { method: "DELETE" }
+  );
+}
+
+export function editAdminEnquiryMessage(threadId: string, messageId: string, message: string) {
+  return adminFetch<EnquiryMessageRow>(
+    `/api/admin/enquiries/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ message })
+    }
   );
 }
 

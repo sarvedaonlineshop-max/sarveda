@@ -2487,6 +2487,8 @@ model EnquiryMessage {
   waMessageSid String?              @unique
   /// WhatsApp delivery status for outbound: sent | delivered | read | failed.
   waStatus     String?
+  /// Set when an admin edits their own text message in the inbox.
+  editedAt     DateTime?
   createdAt    DateTime             @default(now())
   thread       EnquiryThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
   adminUser    User?                @relation("EnquiryAdminMessages", fields: [adminUserId], references: [id], onDelete: SetNull)
