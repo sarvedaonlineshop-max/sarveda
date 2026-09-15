@@ -18,7 +18,7 @@ import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { DashboardData } from "@/lib/admin-api";
 import { fetchAdminDashboard } from "@/lib/admin-api";
 import { adminMotionSec, adminMotionEase } from "@/lib/admin-motion";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 import { adminTheme as t } from "@/lib/admin-theme";
 
 const cardStyle: React.CSSProperties = {
@@ -591,7 +591,9 @@ export default function AdminDashboardPage() {
                       </Link>
                     </td>
                     <td style={tdSt}>{o.email}</td>
-                    <td style={{ ...tdSt, fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>{formatINRFromPaise(o.grandTotalInPaise)}</td>
+                    <td style={{ ...tdSt, fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>
+                      {formatMinorFromPaise(o.grandTotalInPaise, o.currency)}
+                    </td>
                     <td style={tdSt}>
                       <StatusBadge status={o.status} />
                     </td>

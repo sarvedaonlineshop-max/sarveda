@@ -58,6 +58,7 @@ export type DashboardData = {
     orderNumber: string;
     email: string;
     status: string;
+    currency: string;
     grandTotalInPaise: number;
     createdAt: string;
   }>;
@@ -166,6 +167,7 @@ export type AdminWooProductAnalytics = {
       city: string;
       status: string;
       placedAt: string;
+      currency: string;
       totalInr: number;
       totalInPaise: number;
     }>;
@@ -305,6 +307,7 @@ export type AdminReportsAnalytics = {
     city: string;
     status: string;
     placedAt: string;
+    currency?: string;
     totalInPaise: number;
     totalInr: number;
   }>;

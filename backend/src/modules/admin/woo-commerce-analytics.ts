@@ -194,6 +194,7 @@ export function buildWooCommerceAnalytics(query: AnalyticsQuery) {
       city: o.city,
       status: o.status,
       placedAt: o.date,
+      currency: (o.currency || "INR").toUpperCase(),
       totalInr: o.total,
       totalInPaise: Math.round(o.total * 100)
     }));

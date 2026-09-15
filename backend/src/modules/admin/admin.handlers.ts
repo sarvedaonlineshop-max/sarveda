@@ -242,6 +242,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
           orderNumber: true,
           email: true,
           status: true,
+          currency: true,
           grandTotalInPaise: true,
           createdAt: true
         }

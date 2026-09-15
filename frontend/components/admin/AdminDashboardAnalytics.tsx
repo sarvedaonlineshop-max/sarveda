@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { AdminWooProductAnalytics, WooDumpProductRow } from "@/lib/admin-api";
 import { fetchAdminWooAnalytics } from "@/lib/admin-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 
 const REVENUE_VISIBLE_EMAIL = "arjun@sarveda.com";
@@ -37,8 +37,8 @@ const PRODUCT_SUBS: Array<{ id: ProductSub; label: string }> = [
   { id: "drop", label: "Drop" }
 ];
 
-function money(n: number) {
-  return formatINRFromPaise(Math.round(n * 100));
+function money(n: number, currency = "INR") {
+  return formatMinorFromPaise(Math.round(n * 100), currency);
 }
 
 function UnderlineTabs<T extends string>({
@@ -552,7 +552,7 @@ export function AdminDashboardAnalytics() {
                         <div style={{ fontSize: "14px", color: "#8a7060" }}>{o.email}</div>
                       </div>,
                       o.city || "—",
-                      money(o.totalInr)
+                      money(o.totalInr, o.currency || "INR")
                     ]),
                     "No orders."
                   )}
