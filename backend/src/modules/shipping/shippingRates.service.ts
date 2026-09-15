@@ -178,7 +178,8 @@ export async function computeVariantShippingBreakdown(
       standardFirstUnit: first,
       standardAdditional: additional,
       codSurcharge,
-      lineTotal: lineStandard + codSurcharge
+      // Catalog shipping for this line only — COD is separate (`codSurcharge` / `codExtra`).
+      lineTotal: lineStandard
     });
   }
 

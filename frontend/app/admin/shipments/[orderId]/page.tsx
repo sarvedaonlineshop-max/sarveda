@@ -36,6 +36,7 @@ import {
   validateBoxDimensions
 } from "@/lib/chargeable-weight";
 import { formatMinorFromPaise } from "@/lib/money";
+import { DEFAULT_DISPLAY_GST_RATE } from "@/lib/gst";
 import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
 import {
   allOrderAwbRows,
@@ -99,6 +100,8 @@ type OrderLoaded = {
     dropShipFulfillmentQty?: number;
     unitPriceInPaise: number;
     lineTotalInPaise: number;
+    taxClass?: string | null;
+    gstPercent?: number;
     pickupLocation?: { id: string; label: string } | null;
   }>;
   addresses: Array<{
@@ -155,6 +158,7 @@ export default function AdminShipmentCreateLabelPage() {
   const [breakdown, setBreakdown] = useState<{
     breakdown: {
       zone: string;
+      currency?: string;
       lines: Array<{ productName: string; quantity: number; lineTotal: number; codSurcharge: number }>;
       subtotalShipping: number;
       codExtra: number;
@@ -583,6 +587,28 @@ export default function AdminShipmentCreateLabelPage() {
   const fmtFreight = (n: number | null) =>
     n == null ? "—" : `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
+  const displayGstPercent = (() => {
+    const rates = order.items
+      .map((it) => it.gstPercent)
+      .filter((n): n is number => typeof n === "number" && Number.isFinite(n));
+    if (rates.length === 0) return DEFAULT_DISPLAY_GST_RATE;
+    // Prefer the rate on the majority of lines; fall back to first.
+    const counts = new Map<number, number>();
+    for (const r of rates) counts.set(r, (counts.get(r) ?? 0) + 1);
+    let best = rates[0]!;
+    let bestCount = 0;
+    for (const [rate, count] of counts) {
+      if (count > bestCount) {
+        best = rate;
+        bestCount = count;
+      }
+    }
+    return best;
+  })();
+
+  const shippingCurrency =
+    breakdown?.breakdown.currency?.trim() || order.currency || "INR";
+
   return (
     <div className="w-full space-y-5">
       {toast ? <AdminToast toast={toast} onDismiss={() => setToast(null)} /> : null}
@@ -601,12 +627,6 @@ export default function AdminShipmentCreateLabelPage() {
                 <h1 className="text-3xl font-extrabold tracking-tight text-stone-950">
                   {order.orderNumber}
                 </h1>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-800">
-                  {order.status.replace(/_/g, " ")}
-                </span>
-                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-700">
-                  {order.paymentStatus.replace(/_/g, " ")}
-                </span>
               </div>
               <p className="mt-2 text-sm text-stone-500">
                 {hasForwardAwb
@@ -733,7 +753,9 @@ export default function AdminShipmentCreateLabelPage() {
             ) : (
               <div className="flex justify-between text-stone-500">
                 <dt>Tax / GST</dt>
-                <dd className="text-xs">Included in line prices (GST-inclusive catalog)</dd>
+                <dd className="text-xs text-right">
+                  Item prices inclusive of {displayGstPercent}% GST
+                </dd>
               </div>
             )}
             <div className="flex justify-between text-base font-extrabold text-stone-950">
@@ -748,25 +770,36 @@ export default function AdminShipmentCreateLabelPage() {
                 Shipping breakdown · zone {breakdown.breakdown.zone}
               </p>
               <ul className="mt-2 space-y-1 text-amber-950">
-                {breakdown.breakdown.lines.map((line, i) => (
-                  <li key={i} className="flex justify-between gap-2">
-                    <span>
-                      {line.productName} × {line.quantity}
-                    </span>
-                    <span className="font-mono text-xs">
-                      ₹{(line.lineTotal / 100).toFixed(2)}
-                      {line.codSurcharge ? ` + COD ₹${(line.codSurcharge / 100).toFixed(2)}` : ""}
-                    </span>
-                  </li>
-                ))}
+                {breakdown.breakdown.lines.map((line, i) => {
+                  // Old API included COD inside lineTotal; new API keeps shipping-only.
+                  const itemShip =
+                    line.codSurcharge > 0 && line.lineTotal > line.codSurcharge
+                      ? line.lineTotal - line.codSurcharge
+                      : line.lineTotal;
+                  return (
+                    <li key={i} className="flex justify-between gap-2">
+                      <span>
+                        {line.productName} × {line.quantity}
+                      </span>
+                      <span className="font-mono text-xs">
+                        {formatMinorFromPaise(itemShip, shippingCurrency)}
+                        {line.codSurcharge
+                          ? ` + COD ${formatMinorFromPaise(line.codSurcharge, shippingCurrency)}`
+                          : ""}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
               <div className="mt-2 flex justify-between border-t border-amber-200/80 pt-2 font-extrabold">
-                <span>Catalog shipping (customer checkout)</span>
-                <span>₹{(breakdown.breakdown.totalWithCod / 100).toFixed(2)}</span>
+                <span>Total shipping cost</span>
+                <span>
+                  {formatMinorFromPaise(
+                    breakdown.breakdown.totalWithCod ?? breakdown.orderShippingCharged,
+                    shippingCurrency
+                  )}
+                </span>
               </div>
-              <p className="mt-1 text-xs font-normal text-amber-800/90">
-                From Sarveda product shipping rates at checkout — not Delhivery’s courier quote.
-              </p>
             </div>
           ) : null}
         </section>
