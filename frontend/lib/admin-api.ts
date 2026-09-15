@@ -3073,17 +3073,21 @@ export async function replyAdminEnquiryThread(
         options?.onUploadProgress?.(pct);
       };
       xhr.onload = () => {
-        const json = (xhr.response ?? {}) as {
-          success?: boolean;
-          data?: EnquiryMessageRow;
-          error?: string;
-        };
+        let json: { success?: boolean; data?: EnquiryMessageRow; error?: string } = {};
+        try {
+          json =
+            typeof xhr.response === "object" && xhr.response
+              ? (xhr.response as typeof json)
+              : (JSON.parse(xhr.responseText || "{}") as typeof json);
+        } catch {
+          /* non-JSON */
+        }
         if (xhr.status >= 200 && xhr.status < 300 && json.success && json.data) {
           options?.onUploadProgress?.(100);
           resolve(json.data);
           return;
         }
-        reject(new AdminApiError(json.error || `Reply failed (${xhr.status})`));
+        reject(new AdminApiError(json.error || `Reply failed (${xhr.status || "network"})`));
       };
       xhr.onerror = () => reject(new AdminApiError("Network error while uploading. Check your connection and retry."));
       xhr.onabort = () => reject(new AdminApiError("Upload cancelled."));
