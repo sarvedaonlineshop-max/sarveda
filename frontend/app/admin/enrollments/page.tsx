@@ -239,7 +239,7 @@ export default function AdminEnrollmentsPage() {
               <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>No enrollments found</p>
               <p style={{ color: "var(--admin-text-muted, #8a7060)", fontSize: "13px", marginTop: "8px" }}>
                 Enrollments are created when a signed-in customer completes payment for a course with
-                online checkout enabled. Guest checkouts without a matching account are not listed here.
+                online checkout enabled. Guest checkouts create a student account on payment so they appear here.
               </p>
             </div>
           ) : (
