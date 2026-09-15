@@ -9,7 +9,27 @@ function prettyDate(raw: string | null | undefined) {
   if (!raw?.trim()) return null;
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+/** scheduleNote often starts with "Session N – …" while we already render Session {id}. */
+function formatSessionWhen(session: CourseSession): string | null {
+  const note = session.scheduleNote?.trim();
+  if (note) {
+    const id = session.sessionId?.trim();
+    const stripped = (
+      id
+        ? note.replace(new RegExp(`^Session\\s+${id}\\s*[–\\-·,:]?\\s*`, "i"), "")
+        : note.replace(/^Session\s+\d+\s*[–\-·,:]?\s*/i, "")
+    ).trim();
+    return stripped || null;
+  }
+  return prettyDate(session.scheduledAt);
 }
 
 export function CourseSessionsList({ sessions }: Props) {
@@ -32,7 +52,7 @@ export function CourseSessionsList({ sessions }: Props) {
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {list.map((session) => {
           const teacher = session.teacherName?.trim();
-          const when = session.scheduleNote?.trim() || prettyDate(session.scheduledAt);
+          const when = formatSessionWhen(session);
           return (
             <article
               key={`${session.sessionId}-${session.name}`}
@@ -56,7 +76,9 @@ export function CourseSessionsList({ sessions }: Props) {
                   Session {session.sessionId || "—"}
                 </span>
                 {when ? (
-                  <span style={{ color: "var(--brand-muted)", fontSize: "12px" }}>{when}</span>
+                  <span style={{ color: "var(--brand-muted)", fontSize: "12px" }}>
+                    · {when}
+                  </span>
                 ) : null}
               </div>
               <h3
