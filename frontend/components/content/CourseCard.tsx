@@ -75,32 +75,11 @@ export function CourseCard({ course, compact = false }: Props) {
           <img
             src={course.imageUrl}
             alt=""
-            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="h-full w-full bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(10,24,18,0.88) 0%, rgba(10,24,18,0.35) 45%, rgba(10,24,18,0.12) 100%)"
-          }}
-        />
-        <div className="absolute inset-x-0 bottom-0 z-[1] px-4 pb-5 pt-10">
-          <h3
-            className={`font-serif font-semibold leading-snug text-white drop-shadow-sm ${
-              compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.3rem]" : "line-clamp-3 text-[1.2rem] sm:text-[1.35rem]"
-            }`}
-          >
-            {course.title}
-          </h3>
-          {subtitle ? (
-            <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-[#E8C97A] sm:text-[13px]">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col bg-[#166D46] text-white">
