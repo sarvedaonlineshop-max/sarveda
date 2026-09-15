@@ -134,6 +134,7 @@ type OrderItemRow = {
   dropShipFulfillmentQty?: number;
   unitPriceInPaise: number;
   lineTotalInPaise: number;
+  discountInPaise?: number;
   taxClass?: string | null;
   gstPercent?: number | null;
   pickupLocationId?: string | null;
@@ -266,6 +267,7 @@ type OrderLoaded = {
   shippingInPaise: number;
   taxInPaise: number;
   discountInPaise: number;
+  couponCode?: string | null;
   /** Grand total minus refunds — what the order is worth now. */
   netOrderTotalInPaise?: number;
   refundedInPaise?: number;
@@ -468,6 +470,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       row.dropShipFulfillmentQty != null ? Number(row.dropShipFulfillmentQty) : undefined,
     unitPriceInPaise: Number(row.unitPriceInPaise),
     lineTotalInPaise: Number(row.lineTotalInPaise),
+    discountInPaise: row.discountInPaise != null ? Number(row.discountInPaise) : 0,
     taxClass: row.taxClass != null ? String(row.taxClass) : null,
     gstPercent: row.gstPercent != null ? Number(row.gstPercent) : null,
     pickupLocationId: row.pickupLocationId != null ? String(row.pickupLocationId) : null,
@@ -593,6 +596,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     shippingInPaise: Number(raw.shippingInPaise),
     taxInPaise: Number(raw.taxInPaise),
     discountInPaise: Number(raw.discountInPaise ?? 0),
+    couponCode: raw.couponCode != null ? String(raw.couponCode) : null,
     netOrderTotalInPaise:
       raw.netOrderTotalInPaise != null ? Number(raw.netOrderTotalInPaise) : undefined,
     refundedInPaise: raw.refundedInPaise != null ? Number(raw.refundedInPaise) : undefined,
@@ -691,14 +695,14 @@ function liveItemQty(item: OrderItemRow): number {
   return Math.max(0, item.qtyOrdered - (item.returnedQty ?? 0));
 }
 
-/** Split order-level shipping across purchased lines by qty. */
-function allocateShippingByQty(
+/** Split an order-level amount across purchased lines by qty. */
+function allocateAmountByQty(
   items: OrderItemRow[],
-  shippingInPaise: number
+  amountInPaise: number
 ): Map<string, number> {
   const map = new Map<string, number>();
   const totalQty = items.reduce((s, i) => s + Math.max(0, i.qtyOrdered), 0);
-  if (totalQty <= 0 || shippingInPaise <= 0) {
+  if (totalQty <= 0 || amountInPaise <= 0) {
     items.forEach((item, idx) => map.set(item.id ?? `idx-${idx}`, 0));
     return map;
   }
@@ -706,14 +710,21 @@ function allocateShippingByQty(
   items.forEach((item, idx) => {
     const key = item.id ?? `idx-${idx}`;
     if (idx === items.length - 1) {
-      map.set(key, Math.max(0, shippingInPaise - allocated));
+      map.set(key, Math.max(0, amountInPaise - allocated));
       return;
     }
-    const share = Math.round((shippingInPaise * item.qtyOrdered) / totalQty);
+    const share = Math.round((amountInPaise * item.qtyOrdered) / totalQty);
     map.set(key, share);
     allocated += share;
   });
   return map;
+}
+
+function allocateShippingByQty(
+  items: OrderItemRow[],
+  shippingInPaise: number
+): Map<string, number> {
+  return allocateAmountByQty(items, shippingInPaise);
 }
 
 function sameAddress(a: AddressRow | undefined, b: AddressRow | undefined): boolean {
@@ -815,6 +826,23 @@ function AdminOrderProductionView({
   const seenShipmentIds = new Set<string>();
 
   const shippingByItemId = allocateShippingByQty(order.items, order.shippingInPaise);
+  // Prefer per-line discount when present; otherwise split order-level coupon discount.
+  const lineDiscountSum = order.items.reduce((s, i) => s + (i.discountInPaise ?? 0), 0);
+  const discountByItemId =
+    lineDiscountSum > 0
+      ? new Map(
+          order.items.map((item, idx) => [
+            item.id ?? `idx-${idx}`,
+            Math.max(0, item.discountInPaise ?? 0)
+          ] as const)
+        )
+      : allocateAmountByQty(order.items, order.discountInPaise);
+  const shipCountry = (
+    order.addresses.find((a) => a.type === "SHIPPING") ?? order.addresses[0]
+  )?.country
+    ?.trim()
+    .toUpperCase();
+  const isIndiaOrder = !shipCountry || shipCountry === "IN" || shipCountry === "INDIA";
   const refundAllocByItem = new Map<
     string,
     { qty: number; amount: number; shipping: number }
@@ -1059,8 +1087,10 @@ function AdminOrderProductionView({
   }
 
   const purchasedGrandTotalPaise = order.items.reduce((sum, item, idx) => {
-    const shipShare = shippingByItemId.get(item.id ?? `idx-${idx}`) ?? 0;
-    return sum + item.lineTotalInPaise + shipShare;
+    const key = item.id ?? `idx-${idx}`;
+    const shipShare = shippingByItemId.get(key) ?? 0;
+    const discShare = discountByItemId.get(key) ?? 0;
+    return sum + item.lineTotalInPaise - discShare + shipShare;
   }, 0);
 
   const paymentModeTitle = "Payment Mode";
@@ -1487,13 +1517,25 @@ function AdminOrderProductionView({
       <section id="section-items" className={`${card} p-6`}>
         <div className="pb-2">
           <h2 className={sectionTitle}>Purchased items</h2>
-          <p className="mt-1 text-sm text-stone-500">Line items charged on this order.</p>
+          <p className="mt-1 text-sm text-stone-500">
+            Line items charged on this order
+            {order.couponCode ? (
+              <>
+                {" "}
+                · Coupon <span className="font-semibold text-stone-700">{order.couponCode}</span>
+              </>
+            ) : null}
+            .
+          </p>
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b text-[11px] font-bold uppercase tracking-wide text-stone-400">
               <tr>
-                {["Product", "SKU", "Qty", "Unit Price", "Shipping", "GST %", "Total"].map((h) => (
+                {(isIndiaOrder
+                  ? ["Product", "SKU", "Qty", "Unit Price", "Shipping", "GST %", "Discount", "Total"]
+                  : ["Product", "SKU", "Qty", "Unit Price", "Shipping", "Discount", "Total"]
+                ).map((h) => (
                   <th key={h} className="px-3 py-2.5">
                     {h}
                   </th>
@@ -1503,20 +1545,21 @@ function AdminOrderProductionView({
             <tbody className="divide-y divide-stone-100">
               {order.items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-stone-500">
+                  <td colSpan={isIndiaOrder ? 8 : 7} className="px-3 py-6 text-stone-500">
                     No purchased items on this order.
                   </td>
                 </tr>
               ) : (
                 order.items.map((item, idx) => {
+                  const key = item.id ?? `idx-${idx}`;
                   const thumb = resolveMediaUrl(item.imageUrl);
                   const gst =
                     typeof item.gstPercent === "number" ? `${item.gstPercent}%` : "—";
-                  const shipShare =
-                    shippingByItemId.get(item.id ?? `idx-${idx}`) ?? 0;
-                  const lineTotal = item.lineTotalInPaise + shipShare;
+                  const shipShare = shippingByItemId.get(key) ?? 0;
+                  const discShare = discountByItemId.get(key) ?? 0;
+                  const lineTotal = item.lineTotalInPaise - discShare + shipShare;
                   return (
-                    <tr key={item.id ?? idx}>
+                    <tr key={key}>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white">
@@ -1536,7 +1579,12 @@ function AdminOrderProductionView({
                       <td className="px-3 py-3">
                         {formatMinorFromPaise(shipShare, order.currency)}
                       </td>
-                      <td className="px-3 py-3">{gst}</td>
+                      {isIndiaOrder ? <td className="px-3 py-3">{gst}</td> : null}
+                      <td className="px-3 py-3">
+                        {discShare > 0
+                          ? `−${formatMinorFromPaise(discShare, order.currency)}`
+                          : formatMinorFromPaise(0, order.currency)}
+                      </td>
                       <td className="px-3 py-3 font-extrabold">
                         {formatMinorFromPaise(lineTotal, order.currency)}
                       </td>
@@ -1548,7 +1596,10 @@ function AdminOrderProductionView({
             {order.items.length > 0 ? (
               <tfoot>
                 <tr className="border-t-2 border-stone-200 bg-stone-50/80">
-                  <td colSpan={6} className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-stone-400">
+                  <td
+                    colSpan={isIndiaOrder ? 7 : 6}
+                    className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-stone-400"
+                  >
                     Grand total
                   </td>
                   <td className="px-3 py-3 text-base font-extrabold text-stone-950">
