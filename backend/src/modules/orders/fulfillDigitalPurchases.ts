@@ -10,18 +10,73 @@ export async function fulfillDigitalPurchases(orderId: string): Promise<void> {
   });
   if (!order?.items.length) return;
 
+  const email = order.email.trim().toLowerCase();
   let userId = order.customerId;
   if (!userId) {
     const user = await prisma.user.findFirst({
-      where: { email: order.email.trim().toLowerCase(), deletedAt: null },
+      where: { email, deletedAt: null },
       select: { id: true }
     });
     userId = user?.id ?? null;
   }
 
+  // Guest course/event checkout: create a lightweight customer so Enrollments can list them.
   if (!userId) {
-    logger.info("digital_fulfillment_no_user", { orderId, email: order.email });
-    return;
+    const shipName =
+      (
+        await prisma.orderAddress.findFirst({
+          where: { orderId, type: "SHIPPING" },
+          select: { fullName: true }
+        })
+      )?.fullName?.trim() || null;
+    const phoneRaw = order.phone?.trim() || null;
+    let phone: string | null = phoneRaw;
+    if (phone) {
+      const phoneTaken = await prisma.user.findFirst({
+        where: { phone, deletedAt: null },
+        select: { id: true }
+      });
+      if (phoneTaken) phone = null;
+    }
+    try {
+      const created = await prisma.user.create({
+        data: {
+          email,
+          name: shipName,
+          phone,
+          role: "CUSTOMER",
+          isVerified: false
+        },
+        select: { id: true }
+      });
+      userId = created.id;
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { customerId: userId }
+      });
+      logger.info("digital_fulfillment_guest_user_created", { orderId, email, userId });
+    } catch (err) {
+      // Race: another request created the same email — re-fetch.
+      const again = await prisma.user.findFirst({
+        where: { email, deletedAt: null },
+        select: { id: true }
+      });
+      userId = again?.id ?? null;
+      if (!userId) {
+        logger.warn("digital_fulfillment_no_user", {
+          orderId,
+          email,
+          error: err instanceof Error ? err.message : String(err)
+        });
+        return;
+      }
+      if (!order.customerId) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { customerId: userId }
+        });
+      }
+    }
   }
 
   for (const item of order.items) {

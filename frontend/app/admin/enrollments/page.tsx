@@ -121,7 +121,7 @@ export default function AdminEnrollmentsPage() {
     () => ({
       title: "Course Enrollments",
       icon: "🎓",
-      subtitle: <>Students who paid online and have an active enrollment record.</>
+      subtitle: <>Students enrolled after course payment — linked to the order and searchable by order #.</>
     }),
     []
   );

@@ -46,6 +46,7 @@ import {
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 import { resolveMediaUrl } from "@/lib/media-cdn";
+import { isDigitalOnlyOrder } from "@/lib/digital-order";
 import {
   formatAdminOrderStatusLabel,
   isUnpaidCheckoutAttempt
@@ -124,6 +125,7 @@ type OrderItemRow = {
   id?: string;
   nameSnapshot: string;
   skuSnapshot: string;
+  digitalOfferId?: string | null;
   qtyOrdered: number;
   qtyShippable?: number;
   returnedQty?: number;
@@ -455,6 +457,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     id: row.id != null ? String(row.id) : undefined,
     nameSnapshot: String(row.nameSnapshot),
     skuSnapshot: String(row.skuSnapshot),
+    digitalOfferId: row.digitalOfferId != null ? String(row.digitalOfferId) : null,
     qtyOrdered: Number(row.qtyOrdered),
     qtyShippable: row.qtyShippable != null ? Number(row.qtyShippable) : undefined,
     returnedQty: row.returnedQty != null ? Number(row.returnedQty) : undefined,
@@ -766,6 +769,7 @@ function AdminOrderProductionView({
   shipmentSetup: ReactNode;
 }) {
   const [shipmentTimelineOpen, setShipmentTimelineOpen] = useState(false);
+  const digitalOnly = isDigitalOnlyOrder(order.items);
   const payment = order.payments?.[0];
   const isCod = payment?.provider === "COD";
   const isCancelled = order.status === "CANCELLED";
@@ -1083,9 +1087,10 @@ function AdminOrderProductionView({
 
   // Manual fulfilment steps stay available even after a label/AWB exists
   // (courier tracking may lag; ops still need Mark Packed / Shipped / Delivered).
-  const fulfillmentStatusActions = ["PROCESSING", "PACKED", "SHIPPED"].includes(order.status)
-    ? (nextStatuses[order.status] ?? [])
-    : [];
+  const fulfillmentStatusActions =
+    digitalOnly || !["PROCESSING", "PACKED", "SHIPPED"].includes(order.status)
+      ? []
+      : (nextStatuses[order.status] ?? []);
 
   const goTo = (sectionId: string, opts?: { openShipmentTimeline?: boolean }) => {
     if (opts?.openShipmentTimeline) setShipmentTimelineOpen(true);
@@ -1351,7 +1356,7 @@ function AdminOrderProductionView({
                 <h1 className="text-3xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100">
                   #{order.orderNumber}
                 </h1>
-                {order.status === "PAID" && !isCancelled ? (
+                {order.status === "PAID" && !isCancelled && !digitalOnly ? (
                   <button
                     type="button"
                     disabled={statusSaving}
@@ -1411,39 +1416,45 @@ function AdminOrderProductionView({
             </button>
           </div>
         </div>
-        <div className="grid gap-3 border-t border-emerald-100 bg-gradient-to-r from-emerald-50/60 via-white to-sky-50/50 px-6 py-4 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => goTo("section-shipments", { openShipmentTimeline: true })}
-            className="rounded-2xl bg-white/80 px-4 py-3 text-left shadow-sm transition hover:bg-white"
-          >
-            <p className="text-xs text-stone-500">Shipment</p>
-            <p className="mt-1 text-base font-extrabold text-stone-950">{shipmentHeadline}</p>
-            <p className="mt-0.5 text-xs text-stone-500">
-              {awbRows.length
-                ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}`
-                : "No label yet"}
-            </p>
-            <Link
-              href={`/admin/shipments/${order.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="mt-2 inline-flex rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
+        <div
+          className={`grid gap-3 border-t border-emerald-100 bg-gradient-to-r from-emerald-50/60 via-white to-sky-50/50 px-6 py-4 ${
+            digitalOnly ? "" : "sm:grid-cols-2"
+          }`}
+        >
+          {!digitalOnly ? (
+            <button
+              type="button"
+              onClick={() => goTo("section-shipments", { openShipmentTimeline: true })}
+              className="rounded-2xl bg-white/80 px-4 py-3 text-left shadow-sm transition hover:bg-white"
             >
-              Open shipments ↗
-            </Link>
-          </button>
+              <p className="text-xs text-stone-500">Shipment</p>
+              <p className="mt-1 text-base font-extrabold text-stone-950">{shipmentHeadline}</p>
+              <p className="mt-0.5 text-xs text-stone-500">
+                {awbRows.length
+                  ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}`
+                  : "No label yet"}
+              </p>
+              <Link
+                href={`/admin/shipments/${order.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="mt-2 inline-flex rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm font-bold text-stone-800 shadow-sm hover:bg-stone-50"
+              >
+                Open shipments ↗
+              </Link>
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => goTo("section-delivery")}
             className="rounded-2xl bg-white/80 px-4 py-3 text-left shadow-sm transition hover:bg-white"
           >
-            <p className="text-xs text-stone-500">Delivery</p>
+            <p className="text-xs text-stone-500">Address</p>
             <p className="mt-1 text-sm font-semibold leading-snug text-stone-800">{deliveryFullAddress}</p>
           </button>
         </div>
       </section>
 
-      {fulfillmentStatusActions.length > 0 ? (
+      {!digitalOnly && fulfillmentStatusActions.length > 0 ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -1639,6 +1650,7 @@ function AdminOrderProductionView({
         )}
       </section>
 
+      {!digitalOnly ? (
       <section id="section-shipments" className={`${card} p-6`}>
         <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
           <div>
@@ -1814,11 +1826,14 @@ function AdminOrderProductionView({
           {shipmentSetup}
         </div>
       </section>
+      ) : null}
 
       <section id="section-delivery" className={`${card} p-6`}>
         <div className="pb-2">
-          <h2 className={sectionTitle}>Customer &amp; Delivery</h2>
-          <p className="mt-1 text-sm text-stone-500">Buyer details and shipping address.</p>
+          <h2 className={sectionTitle}>Customer &amp; Address</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            {digitalOnly ? "Student details and billing address." : "Buyer details and shipping address."}
+          </p>
         </div>
         <div className="mt-4 grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl bg-stone-50 px-4 py-4">
@@ -1831,7 +1846,9 @@ function AdminOrderProductionView({
           </div>
           <div className="rounded-2xl bg-stone-50 px-4 py-4">
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Shipping address</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">
+                {digitalOnly ? "Address" : "Shipping address"}
+              </p>
               {shipping ? <button type="button" onClick={() => onEditAddress(shipping)} className="text-sm font-bold text-[#8a6428] hover:underline">Edit</button> : null}
             </div>
             {shipping ? (
@@ -1840,10 +1857,10 @@ function AdminOrderProductionView({
                 {shipping.line1}{shipping.line2 ? <><br />{shipping.line2}</> : null}<br />
                 {shipping.city}, {shipping.state} {shipping.postalCode}<br />{shipping.country}
               </address>
-            ) : <p className="mt-3 text-sm text-stone-500">No shipping address.</p>}
+            ) : <p className="mt-3 text-sm text-stone-500">No address.</p>}
             <div className="mt-4 border-t border-stone-200/80 pt-3 text-sm">
               <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400">Billing address</p>
-              <p className="mt-1 text-stone-600">{sameAddress(shipping, billing) ? "Same as shipping" : billing ? `${billing.line1}, ${billing.city}, ${billing.state} ${billing.postalCode}` : "Not provided"}</p>
+              <p className="mt-1 text-stone-600">{sameAddress(shipping, billing) ? (digitalOnly ? "Same as address" : "Same as shipping") : billing ? `${billing.line1}, ${billing.city}, ${billing.state} ${billing.postalCode}` : "Not provided"}</p>
             </div>
           </div>
         </div>
@@ -1890,11 +1907,15 @@ function AdminOrderProductionView({
       <section className={`${card} p-6`}>
         <div className="pb-2">
           <h2 className={sectionTitle}>Order Timeline</h2>
-          <p className="mt-1 text-sm text-stone-500">Payment, shipment, and exception journey.</p>
+          <p className="mt-1 text-sm text-stone-500">
+            {digitalOnly
+              ? "Payment and registration journey."
+              : "Payment, shipment, and exception journey."}
+          </p>
         </div>
         <div className="mt-4 space-y-8">
           <JourneyLayer title="Payment" steps={paymentJourney} />
-          <JourneyLayer title="Shipment" steps={fulfillmentJourney} />
+          {!digitalOnly ? <JourneyLayer title="Shipment" steps={fulfillmentJourney} /> : null}
           <JourneyLayer title="Exceptions & refunds" steps={exceptionJourney} />
         </div>
       </section>
@@ -1907,20 +1928,26 @@ function AdminOrderProductionView({
       <section className={`${card} p-6`}>
         <div className="pb-2">
           <h2 className={sectionTitle}>Documents</h2>
-          <p className="mt-1 text-sm text-stone-500">Invoice, challan, and e-way bill.</p>
+          <p className="mt-1 text-sm text-stone-500">
+            {digitalOnly ? "Tax invoice for this registration." : "Invoice, challan, and e-way bill."}
+          </p>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className={`mt-4 grid gap-3 ${digitalOnly ? "md:grid-cols-1 max-w-md" : "md:grid-cols-3"}`}>
           <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
             <p className="font-extrabold text-stone-950">Tax Invoice</p>
             <p className="mt-1 font-mono text-xs text-stone-500">{invoice?.invoiceNo ?? "Not generated"}</p>
             {invoice?.invoiceNo || invoice?.pdfUrl ? <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#8a6428] hover:underline">Download</a> : null}
           </div>
-          <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
-            <p className="font-extrabold text-stone-950">Delivery Challan</p>
-            <p className="mt-1 font-mono text-xs text-stone-500">{deliveryChallan?.challanNumber ?? "Not generated"}</p>
-            {deliveryChallan ? <a href={deliveryChallan.downloadUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#8a6428] hover:underline">Download</a> : canGenerateChallan ? <button type="button" disabled={challanBusy} onClick={() => onGenerateChallan(false)} className="mt-3 text-sm font-bold text-[#8a6428] hover:underline disabled:opacity-50">{challanBusy ? "Generating…" : "Generate"}</button> : null}
-          </div>
-          <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">{ewayBill}</div>
+          {!digitalOnly ? (
+            <>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
+                <p className="font-extrabold text-stone-950">Delivery Challan</p>
+                <p className="mt-1 font-mono text-xs text-stone-500">{deliveryChallan?.challanNumber ?? "Not generated"}</p>
+                {deliveryChallan ? <a href={deliveryChallan.downloadUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-bold text-[#8a6428] hover:underline">Download</a> : canGenerateChallan ? <button type="button" disabled={challanBusy} onClick={() => onGenerateChallan(false)} className="mt-3 text-sm font-bold text-[#8a6428] hover:underline disabled:opacity-50">{challanBusy ? "Generating…" : "Generate"}</button> : null}
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">{ewayBill}</div>
+            </>
+          ) : null}
         </div>
       </section>
 
