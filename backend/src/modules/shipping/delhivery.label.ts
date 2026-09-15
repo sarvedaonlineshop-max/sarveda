@@ -83,16 +83,18 @@ function renderMpsHeader(mps: LabelMpsContext | undefined): string {
 }
 
 function resolveLabelAmount(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptions): number {
-  const fromDelhivery = Number(pkg.cod ?? pkg.rs ?? 0) || 0;
-  if (fromDelhivery > 0) return fromDelhivery;
+  // MPS child boxes use a nominal collect amount.
+  if (options?.mps?.role === "child") return 0.1;
+  // Prefer Sarveda order total (products + shipping), not Delhivery's product-only COD/rs.
   if (options?.declaredAmountRupees != null && options.declaredAmountRupees > 0) {
     return options.declaredAmountRupees;
   }
-  if (options?.mps?.role === "child") return 0.1;
   if (options?.lineItems?.length) {
-    return options.lineItems.reduce((sum, it) => sum + it.lineTotal, 0);
+    const fromLines = options.lineItems.reduce((sum, it) => sum + it.lineTotal, 0);
+    if (fromLines > 0) return fromLines;
   }
-  return 0;
+  const fromDelhivery = Number(pkg.cod ?? pkg.rs ?? 0) || 0;
+  return fromDelhivery;
 }
 
 function esc(s: unknown): string {
