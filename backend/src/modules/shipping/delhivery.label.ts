@@ -191,23 +191,13 @@ function renderSellerBlock(
   sellerAddrDisplay: string,
   gst: string,
   oid: string,
-  oidBarcode: string,
-  logoDataUri: string
+  oidBarcode: string
 ): string {
-  const logo = logoDataUri
-    ? `<img src="${esc(logoDataUri)}" alt="Sarveda" class="seller-logo" />`
-    : "";
   return `
     <div class="section seller-block">
       <div class="seller-left">
-        <div class="seller-with-logo">
-          ${logo}
-          <div class="seller-copy">
-            <div class="seller-name">${esc(sellerName)}</div>
-            <div class="seller-addr">${esc(sellerAddrDisplay)}</div>
-            <div class="gst">GST: ${esc(gst)}</div>
-          </div>
-        </div>
+        <div class="seller-line">Seller:<strong>${esc(sellerName)}</strong> ${esc(sellerAddrDisplay)}</div>
+        <div class="gst">GST: ${esc(gst)}</div>
       </div>
       <div class="seller-right">
         <div class="oid">${esc(oid)}</div>
@@ -294,7 +284,7 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
       </div>
     </div>
 
-    ${renderSellerBlock(sellerName, sellerAddrDisplay, gst, String(pkg.oid ?? ""), oidBarcode, headerLogo)}
+    ${renderSellerBlock(sellerName, sellerAddrDisplay, gst, String(pkg.oid ?? ""), oidBarcode)}
 
     <table class="products">
       <colgroup>
@@ -436,14 +426,11 @@ export function renderDelhiveryPackingSlipHtml(
     .amount { font-size: 14px; margin-bottom: 2mm; }
     .date-row { font-size: 8px; }
     .date-label { display: block; color: #333; margin-bottom: 0.5mm; }
-    .seller-block { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 2mm; align-items: start; }
-    .seller-with-logo { display: flex; align-items: flex-start; gap: 2mm; }
-    .seller-logo { height: 8mm; width: auto; max-width: 28mm; object-fit: contain; flex-shrink: 0; margin-top: 0.3mm; }
-    .seller-copy { min-width: 0; flex: 1; }
-    .seller-name { font-weight: 700; font-size: 8.5px; margin-bottom: 0.6mm; line-height: 1.3; }
-    .seller-addr { word-break: break-word; font-size: 7.5px; line-height: 1.35; margin-bottom: 0.8mm; }
-    .gst { font-size: 8px; margin-top: 0.3mm; }
-    .seller-right { text-align: right; min-width: 42mm; }
+    .seller-block { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2mm; align-items: start; }
+    .seller-line { word-break: break-word; font-size: 8px; line-height: 1.4; margin-bottom: 1mm; }
+    .seller-line strong { font-weight: 700; }
+    .gst { font-size: 8px; margin-top: 0.5mm; }
+    .seller-right { text-align: right; min-width: 50mm; }
     .oid { font-size: 11px; font-weight: 700; margin-bottom: 1mm; }
     .products {
       width: 100%;

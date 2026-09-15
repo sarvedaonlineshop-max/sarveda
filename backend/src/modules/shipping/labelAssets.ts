@@ -76,7 +76,7 @@ export function getLabelAddressDefaults(): {
     process.env.RETURN_WAREHOUSE_ADDRESS?.replace(/\n+/g, " ").replace(/\s+/g, " ").trim() ||
     "Plot No. B, Part 2, RASUDHI WAREHOUSE ,KIADB Industrial Housing Layout, Hebbal 2nd stage Mysore , Mysore, Karnataka";
   return {
-    sellerName: process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life Pvt. Ltd.",
+    sellerName: process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life pvt Ltd.",
     sellerAddress,
     sellerGst: process.env.SELLER_GSTIN?.trim() || "29ABFCS0538N1ZV",
     returnAddress
