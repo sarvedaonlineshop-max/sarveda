@@ -3049,7 +3049,8 @@ export function setAdminEnquiryTyping(id: string, typing: boolean) {
 export async function replyAdminEnquiryThread(
   id: string,
   message: string,
-  attachments?: File[]
+  attachments?: File[],
+  options?: { onUploadProgress?: (percent: number) => void }
 ) {
   const form = new FormData();
   form.append("message", message);
@@ -3057,6 +3058,39 @@ export async function replyAdminEnquiryThread(
     form.append("attachments", file);
   }
   const url = `${getApiBase()}/api/admin/enquiries/${encodeURIComponent(id)}/reply`;
+  const hasFiles = (attachments?.length ?? 0) > 0;
+
+  // XHR so we can surface upload progress for attachments (fetch has no upload progress).
+  if (hasFiles || options?.onUploadProgress) {
+    return new Promise<EnquiryMessageRow>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.withCredentials = true;
+      xhr.responseType = "json";
+      xhr.upload.onprogress = (ev) => {
+        if (!ev.lengthComputable) return;
+        const pct = Math.min(100, Math.round((ev.loaded / ev.total) * 100));
+        options?.onUploadProgress?.(pct);
+      };
+      xhr.onload = () => {
+        const json = (xhr.response ?? {}) as {
+          success?: boolean;
+          data?: EnquiryMessageRow;
+          error?: string;
+        };
+        if (xhr.status >= 200 && xhr.status < 300 && json.success && json.data) {
+          options?.onUploadProgress?.(100);
+          resolve(json.data);
+          return;
+        }
+        reject(new AdminApiError(json.error || `Reply failed (${xhr.status})`));
+      };
+      xhr.onerror = () => reject(new AdminApiError("Network error while uploading. Check your connection and retry."));
+      xhr.onabort = () => reject(new AdminApiError("Upload cancelled."));
+      xhr.send(form);
+    });
+  }
+
   const res = await fetch(url, { method: "POST", credentials: "include", body: form });
   const json = (await res.json()) as { success?: boolean; data?: EnquiryMessageRow; error?: string };
   if (!res.ok || !json.success || !json.data) {

@@ -14,12 +14,13 @@ import {
   type EnquiryMessageRow,
   type EnquiryThreadDetail
 } from "@/lib/admin-api";
+import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import {
-  ACCEPTED_ENQUIRY_FILE_TYPES,
-  ENQUIRY_SOURCE_LABELS,
-  type EnquirySource
-} from "@/lib/enquiry-subjects";
-import { MAX_ENQUIRY_ATTACHMENTS } from "@/lib/enquiry-limits";
+  formatFileSize,
+  MAX_ENQUIRY_ATTACHMENT_BYTES,
+  MAX_ENQUIRY_ATTACHMENT_MB,
+  MAX_ENQUIRY_ATTACHMENTS
+} from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
@@ -27,6 +28,10 @@ import {
 } from "@/components/admin/AdminChatsInbox";
 import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
 import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
+
+/** Broad accept — strict MIME-only lists silently drop HEIC / odd desktop picks. */
+const CHAT_FILE_ACCEPT =
+  "image/*,video/*,audio/*,application/pdf,.pdf,.doc,.docx,.heic,.heif,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.webm";
 
 const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -256,7 +261,9 @@ function AdminChatDetailInner() {
   const [banner, setBanner] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [typingAdmins, setTypingAdmins] = useState<Record<string, string>>({});
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -264,6 +271,55 @@ function AdminChatDetailInner() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSignal = useRef(0);
+
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    const urls: string[] = [];
+    files.forEach((file, index) => {
+      if (!file.type.startsWith("image/") && !/\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name)) {
+        return;
+      }
+      const key = `${file.name}-${file.size}-${index}`;
+      const url = URL.createObjectURL(file);
+      next[key] = url;
+      urls.push(url);
+    });
+    setFilePreviews(next);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
+
+  function addSelectedFiles(list: FileList | null) {
+    if (!list || list.length === 0) {
+      setError("No file selected.");
+      return;
+    }
+    const incoming = Array.from(list);
+    const rejected: string[] = [];
+    const merged = [...files];
+    for (const file of incoming) {
+      if (merged.length >= MAX_ENQUIRY_ATTACHMENTS) {
+        rejected.push(`${file.name} (max ${MAX_ENQUIRY_ATTACHMENTS} files)`);
+        continue;
+      }
+      if (file.size <= 0) {
+        rejected.push(`${file.name} (empty file)`);
+        continue;
+      }
+      if (file.size > MAX_ENQUIRY_ATTACHMENT_BYTES) {
+        rejected.push(`${file.name} (over ${MAX_ENQUIRY_ATTACHMENT_MB} MB)`);
+        continue;
+      }
+      merged.push(file);
+    }
+    setFiles(merged);
+    if (rejected.length) {
+      setError(`Could not add: ${rejected.join("; ")}`);
+    } else {
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     const notice = searchParams.get("notice");
@@ -356,18 +412,23 @@ function AdminChatDetailInner() {
     if (!canSend || !id) return;
     setSending(true);
     setError(null);
+    setUploadPercent(files.length > 0 ? 0 : null);
     if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
     void setAdminEnquiryTyping(id, false).catch(() => undefined);
     try {
-      await replyAdminEnquiryThread(id, reply.trim(), files);
+      await replyAdminEnquiryThread(id, reply.trim(), files, {
+        onUploadProgress: (pct) => setUploadPercent(pct)
+      });
       setReply("");
       setFiles([]);
+      setUploadPercent(null);
       await load();
       notifyInboxRefresh();
       requestAnimationFrame(() => scrollToBottom());
       inputRef.current?.focus();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send reply");
+      setUploadPercent(null);
     } finally {
       setSending(false);
     }
@@ -573,23 +634,59 @@ function AdminChatDetailInner() {
         ) : null}
 
         {files.length > 0 ? (
-          <div className="mb-1.5 flex flex-wrap gap-1.5">
-            {files.map((f, i) => (
-              <span
-                key={`${f.name}-${i}`}
-                className="inline-flex max-w-[12rem] items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] text-stone-600 ring-1 ring-stone-200"
-              >
-                <span className="truncate">{f.name}</span>
-                <button
-                  type="button"
-                  className="text-red-600"
-                  aria-label={`Remove ${f.name}`}
-                  onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
+          <div className="mb-2 rounded-xl border border-[#25d366]/40 bg-white p-2 shadow-sm">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#128c7e]">
+              {files.length} file{files.length === 1 ? "" : "s"} ready — click send to upload
+            </p>
+            <ul className="max-h-36 space-y-1.5 overflow-y-auto">
+              {files.map((f, i) => {
+                const key = `${f.name}-${f.size}-${i}`;
+                const thumb = filePreviews[key];
+                return (
+                  <li
+                    key={key}
+                    className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5"
+                  >
+                    {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumb} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+                    ) : (
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-stone-200 text-sm">
+                        📎
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12px] font-medium text-stone-800">{f.name}</p>
+                      <p className="text-[10px] text-stone-500">{formatFileSize(f.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={sending}
+                      className="shrink-0 rounded p-1 text-red-600 hover:bg-red-50"
+                      aria-label={`Remove ${f.name}`}
+                      onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                    >
+                      <X size={14} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+
+        {uploadPercent != null ? (
+          <div className="mb-2">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-stone-600">
+              <span>Uploading…</span>
+              <span>{uploadPercent}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
+              <div
+                className="h-full rounded-full bg-[#25d366] transition-[width] duration-150"
+                style={{ width: `${uploadPercent}%` }}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -598,20 +695,18 @@ function AdminChatDetailInner() {
             ref={fileRef}
             type="file"
             multiple
-            accept={ACCEPTED_ENQUIRY_FILE_TYPES}
+            accept={CHAT_FILE_ACCEPT}
             className="hidden"
             onChange={(e) => {
-              const list = e.target.files;
-              if (list) {
-                setFiles((prev) => [...prev, ...Array.from(list)].slice(0, MAX_ENQUIRY_ATTACHMENTS));
-              }
+              addSelectedFiles(e.target.files);
               e.target.value = "";
             }}
           />
           <button
             type="button"
+            disabled={sending}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a]"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a] disabled:opacity-40"
             title="Attach files"
             aria-label="Attach files"
           >
@@ -625,8 +720,9 @@ function AdminChatDetailInner() {
             onKeyDown={onComposerKeyDown}
             onBlur={() => void setAdminEnquiryTyping(id, false).catch(() => undefined)}
             rows={1}
-            placeholder="Type a message"
-            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-full border border-[#2c2420]/35 bg-white px-4 py-2.5 text-sm leading-5 text-stone-800 outline-none focus:border-[#25d366]"
+            disabled={sending}
+            placeholder={files.length ? "Add a caption (optional)…" : "Type a message"}
+            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-full border border-[#2c2420]/35 bg-white px-4 py-2.5 text-sm leading-5 text-stone-800 outline-none focus:border-[#25d366] disabled:opacity-60"
           />
 
           <button
@@ -644,7 +740,11 @@ function AdminChatDetailInner() {
           </button>
         </div>
 
-        {error ? <p className="mt-1.5 text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="mt-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-700 ring-1 ring-red-200">
+            {error}
+          </p>
+        ) : null}
           </>
         )}
       </div>
