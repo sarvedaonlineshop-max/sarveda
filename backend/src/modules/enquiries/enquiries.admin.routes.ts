@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 
 import { prisma } from "../../config/db";
+import { downloadAssetFromS3 } from "../../config/s3";
 import { requireAdmin } from "../../middleware/admin";
 import { validateBody } from "../../middleware/validate";
 import { MAX_ATTACHMENTS, MAX_ATTACHMENT_BYTES } from "./enquiries.constants";
@@ -277,6 +278,44 @@ router.delete("/:id/messages/:messageId", async (req, res, next) => {
       res.status(403).json({ success: false, error: message, code: "FORBIDDEN" });
       return;
     }
+    next(err);
+  }
+});
+
+/** Stream attachment through API so browser download works (S3 CORS blocks direct fetch). */
+router.get("/:id/attachments/:attachmentId/download", async (req, res, next) => {
+  try {
+    const threadId = req.params.id;
+    const attachmentId = req.params.attachmentId;
+    const row = await prisma.enquiryAttachment.findFirst({
+      where: {
+        id: attachmentId,
+        message: { threadId }
+      }
+    });
+    if (!row) {
+      res.status(404).json({ success: false, error: "Attachment not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (!row.s3Key.startsWith("media/enquiries/") && !row.s3Key.startsWith("enquiries/")) {
+      res.status(400).json({ success: false, error: "Invalid attachment", code: "VALIDATION_ERROR" });
+      return;
+    }
+    const buf = await downloadAssetFromS3(row.s3Key);
+    if (!buf) {
+      res.status(404).json({ success: false, error: "File missing from storage", code: "NOT_FOUND" });
+      return;
+    }
+    const safeName = row.fileName.replace(/[\r\n"]/g, "_") || "download";
+    res.setHeader("Content-Type", row.mimeType || "application/octet-stream");
+    res.setHeader("Content-Length", String(buf.length));
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(safeName)}`
+    );
+    res.setHeader("Cache-Control", "private, max-age=60");
+    res.send(buf);
+  } catch (err) {
     next(err);
   }
 });

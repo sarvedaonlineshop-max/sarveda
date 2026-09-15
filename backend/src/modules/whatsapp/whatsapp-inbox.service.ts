@@ -340,7 +340,16 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
     input.fileName,
     res.headers.get("content-type")
   );
-  const ext = extForMime(mime, input.mediaType, input.fileName);
+  // WhatsApp often sends videos as type=document — promote to video when MIME/ext say so.
+  const effectiveMediaType =
+    mime.startsWith("video/") || /\.(mp4|mov|webm|avi|mpeg|mpg)$/i.test(input.fileName || "")
+      ? "video"
+      : mime.startsWith("audio/") || /\.(mp3|m4a|ogg|wav)$/i.test(input.fileName || "")
+        ? "audio"
+        : mime.startsWith("image/")
+          ? "image"
+          : input.mediaType;
+  const ext = extForMime(mime, effectiveMediaType, input.fileName);
   const cleaned = input.fileName?.replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(0, 120);
   const hasExt = Boolean(cleaned && /\.[a-z0-9]{1,8}$/i.test(cleaned));
   const safeName =
@@ -348,7 +357,7 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
       ? cleaned
       : cleaned
         ? `${cleaned}.${ext}`
-        : `whatsapp-${input.mediaType}.${ext}`;
+        : `whatsapp-${effectiveMediaType}.${ext}`;
   const s3Key = `${ENQUIRY_MEDIA_S3_PREFIX}/${new Date().getFullYear()}/wa-${randomUUID()}.${ext}`;
   const s3Url = await uploadAsset(s3Key, buf, mime);
   if (!s3Url) return false;
@@ -367,9 +376,9 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
   // Prefer durable caption / media label; keep Exotel URL out of body once mirrored.
   const cleanBody =
     input.caption?.trim() ||
-    (input.mediaType === "document" && input.fileName
+    (effectiveMediaType === "document" && input.fileName
       ? `[document] ${input.fileName}`
-      : `[${input.mediaType}]`);
+      : `[${effectiveMediaType}]`);
   await prisma.enquiryMessage.update({
     where: { id: input.messageId },
     data: { body: cleanBody }
@@ -571,6 +580,19 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
         logger.info("whatsapp_inbound_media_mirrored", {
           messageId: created.id,
           mediaType: msg.media.mediaType
+        });
+      } else {
+        logger.warn("whatsapp_inbound_media_mirror_skipped", {
+          messageId: created.id,
+          mediaType: msg.media.mediaType,
+          hasFileName: Boolean(msg.media.fileName),
+          linkHost: (() => {
+            try {
+              return new URL(msg.media.link!).host;
+            } catch {
+              return "invalid";
+            }
+          })()
         });
       }
     } catch (err) {

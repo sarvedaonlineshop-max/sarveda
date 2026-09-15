@@ -34,6 +34,7 @@ import {
   type EnquiryMessageRow,
   type EnquiryThreadDetail
 } from "@/lib/admin-api";
+import { getApiBase } from "@/lib/api";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import {
   formatFileSize,
@@ -75,18 +76,32 @@ function isImageMime(mime: string) {
   return mime.toLowerCase().startsWith("image/");
 }
 
-function isVideoMime(mime: string) {
-  return mime.toLowerCase().startsWith("video/");
+function isVideoMime(mime: string, fileName = "") {
+  return (
+    mime.toLowerCase().startsWith("video/") ||
+    /\.(mp4|mov|webm|avi|mpeg|mpg|m4v)$/i.test(fileName)
+  );
 }
 
-function isAudioMime(mime: string) {
-  return mime.toLowerCase().startsWith("audio/");
+function isAudioMime(mime: string, fileName = "") {
+  return (
+    mime.toLowerCase().startsWith("audio/") ||
+    /\.(mp3|m4a|ogg|wav|aac)$/i.test(fileName)
+  );
 }
 
 function isPdfMime(mime: string, fileName?: string) {
   return (
     mime.toLowerCase() === "application/pdf" || /\.pdf$/i.test(fileName || "")
   );
+}
+
+function isExotelMediaUrl(url: string) {
+  try {
+    return new URL(url).hostname.includes("exotel-media");
+  } catch {
+    return false;
+  }
 }
 
 function docExtLabel(fileName: string, mime: string): string {
@@ -97,9 +112,9 @@ function docExtLabel(fileName: string, mime: string): string {
   if (m.includes("spreadsheetml") || m.includes("ms-excel")) return "XLSX";
   if (m.includes("presentationml") || m.includes("ms-powerpoint")) return "PPTX";
   if (m === "application/pdf") return "PDF";
-  if (m.startsWith("image/")) return "IMG";
-  if (m.startsWith("video/")) return "VID";
-  if (m.startsWith("audio/")) return "AUD";
+  if (m.startsWith("image/") || isImageMime(m)) return "IMG";
+  if (isVideoMime(m, fileName)) return "MP4";
+  if (isAudioMime(m, fileName)) return "AUD";
   return "FILE";
 }
 
@@ -118,33 +133,34 @@ type MediaViewerState = {
   fileName: string;
   mimeType: string;
   messageId: string;
+  threadId: string;
+  attachmentId?: string;
   canDelete: boolean;
+  /** True when URL is a short-lived Exotel link (cannot play/download after expiry). */
+  ephemeral?: boolean;
 };
 
 function mediaKindFor(mime: string, fileName: string): MediaKind {
   if (isImageMime(mime)) return "image";
-  if (isVideoMime(mime)) return "video";
-  if (isAudioMime(mime)) return "audio";
-  void fileName;
+  if (isVideoMime(mime, fileName)) return "video";
+  if (isAudioMime(mime, fileName)) return "audio";
   return "document";
 }
 
-async function downloadMedia(url: string, fileName: string) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(objectUrl);
-  } catch {
-    window.open(url, "_blank", "noopener,noreferrer");
+async function downloadViaProxy(downloadUrl: string, fileName: string) {
+  const res = await fetch(downloadUrl, { credentials: "include" });
+  if (!res.ok) {
+    throw new Error(`Download failed (${res.status})`);
   }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function notifyInboxRefresh() {
@@ -253,51 +269,125 @@ function DocumentThumb({
   );
 }
 
-function VideoThumb({ src, onOpen }: { src: string; onOpen: () => void }) {
+function VideoThumb({
+  src,
+  fileName,
+  mimeType,
+  onOpen,
+  expired
+}: {
+  src?: string;
+  fileName: string;
+  mimeType: string;
+  onOpen: () => void;
+  expired?: boolean;
+}) {
+  const label = docExtLabel(fileName, mimeType);
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="relative mb-1 block w-full max-w-xs overflow-hidden rounded-lg bg-black"
+      className="relative mb-1 block w-full max-w-xs overflow-hidden rounded-lg bg-black text-left"
     >
-      <video
-        src={src}
-        muted
-        preload="metadata"
-        className="h-40 w-full object-cover"
-        onLoadedMetadata={(e) => {
-          try {
-            (e.currentTarget as HTMLVideoElement).currentTime = 0.1;
-          } catch {
-            /* ignore */
-          }
-        }}
-      />
-      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white shadow">
+      {src && !expired ? (
+        <video
+          src={src}
+          muted
+          preload="metadata"
+          className="h-44 w-full object-cover"
+          onLoadedMetadata={(e) => {
+            try {
+              (e.currentTarget as HTMLVideoElement).currentTime = 0.1;
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+      ) : (
+        <div className="flex h-44 w-full flex-col items-center justify-center gap-2 bg-stone-900 text-white">
+          <Play size={28} className="opacity-70" />
+          <span className="text-xs text-white/70">
+            {expired ? "Video link expired" : "Video"}
+          </span>
+        </div>
+      )}
+      <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white shadow">
           <Play size={22} fill="currentColor" className="ml-0.5" />
         </span>
       </span>
+      <span className="absolute bottom-2 left-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+        {label}
+      </span>
     </button>
+  );
+}
+
+function DeleteConfirmModal({
+  open,
+  busy,
+  onCancel,
+  onConfirm
+}: {
+  open: boolean;
+  busy?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[2px]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-msg-title"
+        className="w-full max-w-sm overflow-hidden rounded-2xl bg-[#f7f3eb] shadow-2xl ring-1 ring-black/10"
+      >
+        <div className="border-b border-[#2c2420]/10 px-5 py-4">
+          <h2 id="delete-msg-title" className="text-base font-semibold text-[#1c352a]">
+            Delete message?
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-stone-600">
+            This removes the message from the admin chat. It will not recall a WhatsApp message
+            already delivered to the customer.
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onCancel}
+            className="rounded-full px-4 py-2 text-sm font-semibold text-stone-600 hover:bg-stone-200/70 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onConfirm}
+            className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-red-700 disabled:opacity-50"
+          >
+            {busy ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function MediaViewerOverlay({
   viewer,
   onClose,
-  onDelete
+  onRequestDelete
 }: {
   viewer: MediaViewerState;
   onClose: () => void;
-  onDelete?: () => void;
+  onRequestDelete?: () => void;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [dlError, setDlError] = useState<string | null>(null);
   const name = displayFileName(viewer.fileName, viewer.mimeType);
-  const canPreview =
-    viewer.kind === "image" ||
-    viewer.kind === "video" ||
-    viewer.kind === "audio" ||
-    isPdfMime(viewer.mimeType, viewer.fileName);
+  const playable = !viewer.ephemeral;
 
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -307,21 +397,42 @@ function MediaViewerOverlay({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  async function handleDownload() {
+    setDlError(null);
+    if (viewer.ephemeral || !viewer.attachmentId) {
+      setDlError(
+        viewer.ephemeral
+          ? "This WhatsApp media link has expired. Ask the customer to resend the file."
+          : "Download unavailable for this item."
+      );
+      return;
+    }
+    setDownloading(true);
+    try {
+      const url = `${getApiBase()}/api/admin/enquiries/${encodeURIComponent(viewer.threadId)}/attachments/${encodeURIComponent(viewer.attachmentId)}/download`;
+      await downloadViaProxy(url, name);
+    } catch (e) {
+      setDlError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div
-      className="absolute inset-0 z-40 flex flex-col bg-black/92"
+      className="fixed inset-0 z-[200] flex flex-col bg-black"
       role="dialog"
       aria-modal="true"
       aria-label={name}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 text-white">
+      <div className="flex shrink-0 items-center justify-between gap-2 bg-black/90 px-3 py-3 text-white shadow-lg">
         <p className="min-w-0 truncate text-sm font-medium">{name}</p>
         <div className="flex shrink-0 items-center gap-1">
-          {viewer.canDelete && onDelete ? (
+          {viewer.canDelete && onRequestDelete ? (
             <button
               type="button"
-              onClick={onDelete}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-red-300 hover:bg-white/20"
+              onClick={onRequestDelete}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-red-300 hover:bg-white/20"
               title="Delete message"
               aria-label="Delete message"
             >
@@ -331,7 +442,7 @@ function MediaViewerOverlay({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
             aria-label="Close"
           >
             <X size={18} />
@@ -339,43 +450,64 @@ function MediaViewerOverlay({
         </div>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 pb-20">
-        {viewer.kind === "image" ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={viewer.url} alt={name} className="max-h-full max-w-full object-contain" />
-        ) : null}
-        {viewer.kind === "video" ? (
-          <video src={viewer.url} controls autoPlay className="max-h-full max-w-full rounded-lg" />
-        ) : null}
-        {viewer.kind === "audio" ? (
-          <audio src={viewer.url} controls autoPlay className="w-full max-w-lg" />
-        ) : null}
-        {viewer.kind === "document" && isPdfMime(viewer.mimeType, viewer.fileName) ? (
-          <iframe title={name} src={viewer.url} className="h-full w-full rounded-lg bg-white" />
-        ) : null}
-        {viewer.kind === "document" && !isPdfMime(viewer.mimeType, viewer.fileName) ? (
-          <div className="flex max-w-sm flex-col items-center gap-3 rounded-2xl bg-white/10 px-8 py-10 text-center text-white">
-            <FileText size={48} />
-            <p className="text-sm font-semibold">{name}</p>
-            <p className="text-xs text-white/70">
-              Preview not available for this file type. Use download.
+      <div className="relative flex min-h-0 flex-1 items-center justify-center bg-black px-3 pb-24 pt-2">
+        {!playable ? (
+          <div className="max-w-md rounded-2xl bg-white/10 px-6 py-8 text-center text-white">
+            <p className="text-sm font-semibold">Media unavailable</p>
+            <p className="mt-2 text-xs leading-relaxed text-white/75">
+              The original WhatsApp link expired (~15 minutes). Ask the customer to resend so we can
+              store a durable copy.
             </p>
           </div>
         ) : null}
+        {playable && viewer.kind === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={viewer.url}
+            alt={name}
+            className="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
+          />
+        ) : null}
+        {playable && viewer.kind === "video" ? (
+          <video
+            src={viewer.url}
+            controls
+            autoPlay
+            playsInline
+            className="max-h-full max-w-full rounded-lg shadow-2xl"
+          />
+        ) : null}
+        {playable && viewer.kind === "audio" ? (
+          <audio src={viewer.url} controls autoPlay className="w-full max-w-lg" />
+        ) : null}
+        {playable && viewer.kind === "document" && isPdfMime(viewer.mimeType, viewer.fileName) ? (
+          <iframe title={name} src={viewer.url} className="h-full w-full max-w-5xl rounded-lg bg-white" />
+        ) : null}
+        {playable && viewer.kind === "document" && !isPdfMime(viewer.mimeType, viewer.fileName) ? (
+          <div className="flex max-w-sm flex-col items-center gap-3 rounded-2xl bg-white/10 px-8 py-10 text-center text-white">
+            <FileText size={48} />
+            <p className="text-sm font-semibold">{name}</p>
+            <p className="text-xs text-white/70">Use the download button to save this file.</p>
+          </div>
+        ) : null}
 
-        <button
-          type="button"
-          disabled={downloading}
-          onClick={() => {
-            setDownloading(true);
-            void downloadMedia(viewer.url, name).finally(() => setDownloading(false));
-          }}
-          className="absolute bottom-6 left-1/2 inline-flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-[#25d366] text-white shadow-lg hover:brightness-110 disabled:opacity-60"
-          title="Download"
-          aria-label="Download"
-        >
-          <Download size={24} strokeWidth={2.25} />
-        </button>
+        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+          {dlError ? (
+            <p className="max-w-xs rounded-lg bg-red-600/90 px-3 py-1.5 text-center text-[11px] font-medium text-white">
+              {dlError}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            disabled={downloading || viewer.ephemeral || !viewer.attachmentId}
+            onClick={() => void handleDownload()}
+            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25d366] text-white shadow-xl ring-4 ring-black/40 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            title="Download"
+            aria-label="Download"
+          >
+            <Download size={24} strokeWidth={2.25} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -383,12 +515,14 @@ function MediaViewerOverlay({
 
 function MessageBubble({
   message,
+  threadId,
   isWhatsApp,
   onOpenMedia,
   onDelete,
   deleting
 }: {
   message: EnquiryMessageRow;
+  threadId: string;
   isWhatsApp?: boolean;
   onOpenMedia: (viewer: MediaViewerState) => void;
   onDelete?: () => void;
@@ -401,9 +535,15 @@ function MessageBubble({
     !hasAttachments && (parsed.mediaType === "image" || parsed.mediaType === "sticker")
       ? parsed.url
       : null;
-  const inlineVideoUrl = !hasAttachments && parsed.mediaType === "video" ? parsed.url : null;
+  const inlineVideoUrl =
+    !hasAttachments &&
+    (parsed.mediaType === "video" ||
+      (parsed.mediaType === "document" && /\.mp4(\?|$)/i.test(parsed.url || "")))
+      ? parsed.url
+      : null;
   const inlineAudioUrl = !hasAttachments && parsed.mediaType === "audio" ? parsed.url : null;
-  const inlineDocUrl = !hasAttachments && parsed.mediaType === "document" ? parsed.url : null;
+  const inlineDocUrl =
+    !hasAttachments && parsed.mediaType === "document" && !inlineVideoUrl ? parsed.url : null;
   const showText = Boolean(
     parsed.caption ||
       (!parsed.mediaType && parsed.text) ||
@@ -423,7 +563,28 @@ function MessageBubble({
       fileName: a.fileName,
       mimeType: a.mimeType,
       messageId: message.id,
-      canDelete: isAdmin
+      threadId,
+      attachmentId: a.id,
+      canDelete: isAdmin,
+      ephemeral: false
+    });
+  }
+
+  function openEphemeral(
+    kind: MediaKind,
+    url: string,
+    fileName: string,
+    mimeType: string
+  ) {
+    onOpenMedia({
+      kind,
+      url,
+      fileName,
+      mimeType,
+      messageId: message.id,
+      threadId,
+      canDelete: isAdmin,
+      ephemeral: isExotelMediaUrl(url)
     });
   }
 
@@ -452,7 +613,7 @@ function MessageBubble({
             type="button"
             disabled={deleting}
             onClick={onDelete}
-            className="absolute -right-1 -top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-600 opacity-0 shadow ring-1 ring-stone-200 transition group-hover/msg:opacity-100 focus:opacity-100 disabled:opacity-40"
+            className="absolute -right-1 -top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-600 opacity-100 shadow ring-1 ring-stone-200 transition md:opacity-0 md:group-hover/msg:opacity-100 focus:opacity-100 disabled:opacity-40"
             title="Delete message"
             aria-label="Delete message"
           >
@@ -465,40 +626,27 @@ function MessageBubble({
             src={inlineImageUrl}
             alt={parsed.caption || "WhatsApp image"}
             onOpen={() =>
-              onOpenMedia({
-                kind: "image",
-                url: inlineImageUrl,
-                fileName: "whatsapp-image.jpg",
-                mimeType: "image/jpeg",
-                messageId: message.id,
-                canDelete: isAdmin
-              })
+              openEphemeral("image", inlineImageUrl, "whatsapp-image.jpg", "image/jpeg")
             }
           />
         ) : null}
-        {inlineVideoUrl ? <VideoThumb src={inlineVideoUrl} onOpen={() =>
-          onOpenMedia({
-            kind: "video",
-            url: inlineVideoUrl,
-            fileName: "whatsapp-video.mp4",
-            mimeType: "video/mp4",
-            messageId: message.id,
-            canDelete: isAdmin
-          })
-        } /> : null}
+        {inlineVideoUrl ? (
+          <VideoThumb
+            src={isExotelMediaUrl(inlineVideoUrl) ? undefined : inlineVideoUrl}
+            fileName="whatsapp-video.mp4"
+            mimeType="video/mp4"
+            expired={isExotelMediaUrl(inlineVideoUrl)}
+            onOpen={() =>
+              openEphemeral("video", inlineVideoUrl, "whatsapp-video.mp4", "video/mp4")
+            }
+          />
+        ) : null}
         {inlineAudioUrl ? (
           <button
             type="button"
             className="mb-1 w-full rounded-lg bg-stone-100 px-3 py-2 text-left text-[13px] font-medium text-[#0b6b5f]"
             onClick={() =>
-              onOpenMedia({
-                kind: "audio",
-                url: inlineAudioUrl,
-                fileName: "whatsapp-audio.ogg",
-                mimeType: "audio/ogg",
-                messageId: message.id,
-                canDelete: isAdmin
-              })
+              openEphemeral("audio", inlineAudioUrl, "whatsapp-audio.ogg", "audio/ogg")
             }
           >
             🎵 Play audio
@@ -509,14 +657,12 @@ function MessageBubble({
             fileName={parsed.fileName || "document"}
             mimeType="application/octet-stream"
             onOpen={() =>
-              onOpenMedia({
-                kind: "document",
-                url: inlineDocUrl,
-                fileName: parsed.fileName || "document",
-                mimeType: "application/octet-stream",
-                messageId: message.id,
-                canDelete: isAdmin
-              })
+              openEphemeral(
+                "document",
+                inlineDocUrl,
+                parsed.fileName || "document",
+                "application/octet-stream"
+              )
             }
           />
         ) : null}
@@ -532,7 +678,11 @@ function MessageBubble({
             {message.attachments.map((a) => (
               <li key={a.id}>
                 {isImageMime(a.mimeType) ? (
-                  <button type="button" className="block w-full text-left" onClick={() => openAttachment(a)}>
+                  <button
+                    type="button"
+                    className="block w-full text-left"
+                    onClick={() => openAttachment(a)}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={a.s3Url}
@@ -540,9 +690,14 @@ function MessageBubble({
                       className="h-auto max-h-72 max-w-full cursor-pointer rounded-lg object-contain bg-stone-50"
                     />
                   </button>
-                ) : isVideoMime(a.mimeType) ? (
-                  <VideoThumb src={a.s3Url} onOpen={() => openAttachment(a)} />
-                ) : isAudioMime(a.mimeType) ? (
+                ) : isVideoMime(a.mimeType, a.fileName) ? (
+                  <VideoThumb
+                    src={a.s3Url}
+                    fileName={a.fileName}
+                    mimeType={a.mimeType}
+                    onOpen={() => openAttachment(a)}
+                  />
+                ) : isAudioMime(a.mimeType, a.fileName) ? (
                   <button
                     type="button"
                     className="w-full rounded-lg bg-stone-100 px-3 py-2 text-left text-[13px] font-medium text-[#0b6b5f]"
@@ -587,6 +742,7 @@ function AdminChatDetailInner() {
   const [typingAdmins, setTypingAdmins] = useState<Record<string, string>>({});
   const [viewer, setViewer] = useState<MediaViewerState | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -745,12 +901,12 @@ function AdminChatDetailInner() {
 
   async function handleDeleteMessage(messageId: string) {
     if (!id) return;
-    if (!window.confirm("Delete this message from the chat?")) return;
     setDeletingId(messageId);
     setError(null);
     try {
       await deleteAdminEnquiryMessage(id, messageId);
       setViewer((v) => (v?.messageId === messageId ? null : v));
+      setPendingDeleteId(null);
       await load();
       notifyInboxRefresh();
     } catch (e) {
@@ -851,15 +1007,25 @@ function AdminChatDetailInner() {
         <MediaViewerOverlay
           viewer={viewer}
           onClose={() => setViewer(null)}
-          onDelete={
+          onRequestDelete={
             viewer.canDelete
               ? () => {
-                  void handleDeleteMessage(viewer.messageId);
+                  setPendingDeleteId(viewer.messageId);
                 }
               : undefined
           }
         />
       ) : null}
+      <DeleteConfirmModal
+        open={Boolean(pendingDeleteId)}
+        busy={Boolean(deletingId)}
+        onCancel={() => {
+          if (!deletingId) setPendingDeleteId(null);
+        }}
+        onConfirm={() => {
+          if (pendingDeleteId) void handleDeleteMessage(pendingDeleteId);
+        }}
+      />
       {/* Fixed header */}
       <div
         className="flex shrink-0 items-center gap-3 border-b px-3 py-2.5"
@@ -964,12 +1130,13 @@ function AdminChatDetailInner() {
           <MessageBubble
             key={m.id}
             message={m}
+            threadId={thread.id}
             isWhatsApp={isWhatsApp}
             onOpenMedia={setViewer}
             onDelete={
               m.authorType === "ADMIN"
                 ? () => {
-                    void handleDeleteMessage(m.id);
+                    setPendingDeleteId(m.id);
                   }
                 : undefined
             }
