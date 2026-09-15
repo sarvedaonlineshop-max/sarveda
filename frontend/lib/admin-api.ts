@@ -1073,6 +1073,7 @@ export function fetchAdminOrderShippingBreakdown(orderId: string) {
   return adminFetch<{
     breakdown: {
       zone: string;
+      currency?: string;
       lines: Array<{
         productName: string;
         quantity: number;
