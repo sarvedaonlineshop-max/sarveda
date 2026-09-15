@@ -125,19 +125,35 @@ export async function buildLabelRenderOptions(
     shipment.order.items.map((it) => it.id)
   );
 
+  const meta =
+    shipment.carrierMeta &&
+    typeof shipment.carrierMeta === "object" &&
+    !Array.isArray(shipment.carrierMeta)
+      ? (shipment.carrierMeta as { orderItemIds?: unknown; orderValueRupees?: unknown })
+      : null;
+  const scopedIds = Array.isArray(meta?.orderItemIds)
+    ? new Set(meta!.orderItemIds!.map((id) => String(id)))
+    : null;
+
   const productLines: LabelLineItem[] = [];
   for (const it of shipment.order.items) {
+    if (scopedIds && !scopedIds.has(it.id)) continue;
     const qty = shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0);
-    if (qty <= 0) continue;
+    // Prefer ordered qty for label when this AWB already covers the line (post-ship).
+    const labelQty =
+      scopedIds && scopedIds.has(it.id)
+        ? Math.max(qty, it.qtyOrdered - (returnedByItem.get(it.id) ?? 0))
+        : qty;
+    if (labelQty <= 0) continue;
     const unitPrice = it.unitPriceInPaise / 100;
     const lineTotalRupees =
       it.qtyOrdered > 0
-        ? Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered) / 100
-        : unitPrice * qty;
+        ? Math.round((it.lineTotalInPaise * labelQty) / it.qtyOrdered) / 100
+        : unitPrice * labelQty;
     productLines.push({
       name: it.nameSnapshot,
       sku: it.skuSnapshot,
-      qty,
+      qty: labelQty,
       unitPrice,
       lineTotal: lineTotalRupees
     });
@@ -146,12 +162,23 @@ export async function buildLabelRenderOptions(
   const grandTotal = shipment.order.grandTotalInPaise / 100;
   const sumProducts = productLines.reduce((s, it) => s + it.lineTotal, 0);
   const shippingRupees = (shipment.order.shippingInPaise ?? 0) / 100;
+  const discountRupees = (shipment.order.discountInPaise ?? 0) / 100;
   const shippingLine =
     shippingRupees > 0
       ? shippingRupees
-      : Math.round(Math.max(0, grandTotal - sumProducts) * 100) / 100;
+      : Math.round(Math.max(0, grandTotal - sumProducts + discountRupees) * 100) / 100;
 
-  if (shippingLine > 0.009) {
+  // Full-order slip: show shipping + discount. Partial multi-AWB: only when this AWB
+  // carried the whole remaining order (declared ≈ grand total) or is the sole forward.
+  const metaDeclared = Number(meta?.orderValueRupees ?? 0);
+  const showOrderExtras =
+    !scopedIds ||
+    scopedIds.size >= shipment.order.items.length ||
+    (Number.isFinite(metaDeclared) &&
+      metaDeclared > 0 &&
+      Math.abs(metaDeclared - grandTotal) < 1);
+
+  if (showOrderExtras && shippingLine > 0.009) {
     productLines.push({
       name: "Shipping Charges",
       sku: "",
@@ -161,11 +188,35 @@ export async function buildLabelRenderOptions(
     });
   }
 
+  if (showOrderExtras && discountRupees > 0.009) {
+    const coupon = shipment.order.couponCode?.trim();
+    productLines.push({
+      name: coupon ? `Discount (${coupon})` : "Discount",
+      sku: "",
+      qty: 1,
+      unitPrice: -discountRupees,
+      lineTotal: -discountRupees
+    });
+  }
+
   renderOptions.lineItems = productLines;
-  // Collect / declared amount = full order total (products + shipping), not product-only.
+  const declaredFromMeta =
+    Number.isFinite(metaDeclared) && metaDeclared > 0 ? metaDeclared : 0;
+  // Full-order labels: always show order grand total (products − discount + shipping).
+  // Partial multi-AWB: prefer the amount declared on create (carrierMeta.orderValueRupees).
   const declaredFromLines =
-    Math.round((sumProducts + (shippingLine > 0.009 ? shippingLine : 0)) * 100) / 100;
-  const totalAmount = grandTotal > 0 ? grandTotal : declaredFromLines;
+    Math.round(
+      (sumProducts +
+        (showOrderExtras && shippingLine > 0.009 ? shippingLine : 0) -
+        (showOrderExtras && discountRupees > 0.009 ? discountRupees : 0)) *
+        100
+    ) / 100;
+  const totalAmount =
+    showOrderExtras && grandTotal > 0
+      ? grandTotal
+      : declaredFromMeta > 0
+        ? declaredFromMeta
+        : declaredFromLines;
   // Delhivery MPS: full declared value on master only; nominal on child boxes.
   renderOptions.declaredAmountRupees = mps?.role === "child" ? 0.1 : totalAmount;
 

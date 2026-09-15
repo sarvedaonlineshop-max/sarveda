@@ -296,9 +296,63 @@ function stubWaybill(prefix: string, orderNumber: string): { waybill: string; tr
   };
 }
 
-/** Rupees for Delhivery COD */
-function codAmountRupees(order: OrderWithShippingContext): number {
-  return order.grandTotalInPaise / 100;
+/** Sum of amounts already declared on prior forward AWBs (paise). */
+function priorDeclaredOrderValuePaise(
+  shipments: Array<{ awb: string | null; carrierMeta: unknown }> | undefined
+): number {
+  if (!shipments?.length) return 0;
+  let sum = 0;
+  for (const s of shipments) {
+    if (!s.awb?.trim()) continue;
+    const meta =
+      s.carrierMeta && typeof s.carrierMeta === "object" && !Array.isArray(s.carrierMeta)
+        ? (s.carrierMeta as { direction?: string; orderValueRupees?: unknown })
+        : null;
+    if (meta?.direction === "REVERSE") continue;
+    const rupees = Number(meta?.orderValueRupees ?? 0);
+    if (Number.isFinite(rupees) && rupees > 0) {
+      sum += Math.round(rupees * 100);
+    }
+  }
+  return sum;
+}
+
+/**
+ * Amount Delhivery should collect (COD) or show as invoice value (prepaid).
+ * Must include shipping and reflect order-level discount — not product lines alone.
+ */
+function shipmentDeclaredValuePaise(input: {
+  order: {
+    subtotalInPaise: number;
+    grandTotalInPaise: number;
+    items: Array<{ id: string; qtyOrdered: number; lineTotalInPaise: number }>;
+  };
+  shippableItems: Array<{ id: string; qtyOrdered: number; lineTotalInPaise: number }>;
+  returnedByItem: Map<string, number>;
+  selectedIds: Set<string> | null;
+  priorDeclaredPaise: number;
+}): number {
+  const goodsPaise = input.shippableItems.reduce((sum, it) => {
+    const qty = shippableQuantityForOrderItem(it, input.returnedByItem.get(it.id) ?? 0);
+    if (qty <= 0 || it.qtyOrdered <= 0) return sum;
+    return sum + Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered);
+  }, 0);
+
+  const remainingOpen = input.order.items.filter(
+    (it) => shippableQuantityForOrderItem(it, input.returnedByItem.get(it.id) ?? 0) > 0
+  );
+  const coversAllRemaining =
+    !input.selectedIds || remainingOpen.every((it) => input.selectedIds!.has(it.id));
+
+  if (coversAllRemaining) {
+    // Full remaining collectable / invoice due (products − discount + shipping − already declared).
+    return Math.max(100, input.order.grandTotalInPaise - input.priorDeclaredPaise);
+  }
+
+  // True multi-AWB split: pro-rate grand total by this box's share of merchandise subtotal.
+  const subtotal = Math.max(1, input.order.subtotalInPaise);
+  const share = Math.min(1, Math.max(0, goodsPaise / subtotal));
+  return Math.max(100, Math.round(input.order.grandTotalInPaise * share));
 }
 
 export type AutoShipmentCreateOptions = {
@@ -411,7 +465,11 @@ export async function autoSelectAndCreate(
         }
       },
       addresses: true,
-      payments: { orderBy: { createdAt: "desc" }, take: 1 }
+      payments: { orderBy: { createdAt: "desc" }, take: 1 },
+      shipments: {
+        where: { awb: { not: null } },
+        select: { awb: true, carrierMeta: true }
+      }
     }
   });
 
@@ -522,13 +580,15 @@ export async function autoSelectAndCreate(
         )
       ];
       const productsDesc = productsDescForShipment(shippableItems, returnedByItem);
-      const partialGoodsPaise = shippableItems.reduce((sum, it) => {
-        const qty = shippableQuantityForOrderItem(it, returnedByItem.get(it.id) ?? 0);
-        if (qty <= 0 || it.qtyOrdered <= 0) return sum;
-        return sum + Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered);
-      }, 0);
-      const orderValueRupees =
-        (selectedIds ? Math.max(partialGoodsPaise, 100) : order.grandTotalInPaise) / 100;
+      const priorDeclaredPaise = priorDeclaredOrderValuePaise(order.shipments);
+      const declaredPaise = shipmentDeclaredValuePaise({
+        order,
+        shippableItems,
+        returnedByItem,
+        selectedIds,
+        priorDeclaredPaise
+      });
+      const orderValueRupees = declaredPaise / 100;
       const boxes =
         options?.boxes?.length ?
           options.boxes.map((b) => ({
@@ -540,12 +600,8 @@ export async function autoSelectAndCreate(
       const created = await delhivery.createShipment({
         orderNumber: channelOrderId,
         paymentMode,
-        codAmountRupees:
-          paymentMode === "COD"
-            ? selectedIds
-              ? orderValueRupees
-              : codAmountRupees(order as OrderWithShippingContext)
-            : undefined,
+        // COD and prepaid both use the same declared invoice / collectable amount.
+        codAmountRupees: paymentMode === "COD" ? orderValueRupees : undefined,
         orderValueRupees,
         productsDesc,
         sellerGstTin: process.env.SELLER_GSTIN?.trim(),

@@ -72,6 +72,34 @@ export function coveredOrderItemIdsFromShipments(
   return covered;
 }
 
+/** Map order line id → courier display name from existing forward AWBs. */
+export function courierByOrderItemIdFromShipments(
+  shipments: Array<{ awb?: string | null; carrierMeta?: unknown; courier?: string }> | undefined
+): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!shipments?.length) return map;
+  for (const s of shipments) {
+    const meta = s.carrierMeta as
+      | { direction?: string; orderItemIds?: string[]; partnerCode?: string }
+      | null
+      | undefined;
+    if (meta?.direction === "REVERSE") continue;
+    if (!s.awb?.trim()) continue;
+    const label =
+      (s.courier || "").trim() ||
+      (meta?.partnerCode === "DELHIVERY" ? "Delhivery" : meta?.partnerCode?.trim()) ||
+      "Courier";
+    if (Array.isArray(meta?.orderItemIds) && meta!.orderItemIds!.length > 0) {
+      for (const id of meta!.orderItemIds!) {
+        if (id) map.set(id, label);
+      }
+    } else {
+      map.set("__LEGACY_FULL_ORDER__", label);
+    }
+  }
+  return map;
+}
+
 type Props = {
   items: ShipmentLineItem[];
   currency: string;
@@ -80,6 +108,8 @@ type Props = {
   selectedIds: Set<string>;
   coveredIds: Set<string>;
   legacyFullyCovered: boolean;
+  /** Courier name per covered line id (and optional __LEGACY_FULL_ORDER__). */
+  courierByItemId?: Map<string, string>;
   panelSourceId: string;
   panelPartner: DeliveryPartnerCode | "";
   panelCustomName: string;
@@ -99,6 +129,7 @@ export function ShipmentLineFulfillmentTable({
   selectedIds,
   coveredIds,
   legacyFullyCovered,
+  courierByItemId,
   panelSourceId,
   panelPartner,
   panelCustomName,
@@ -156,6 +187,9 @@ export function ShipmentLineFulfillmentTable({
                 it.pickupLocation?.label ||
                 "";
               const partnerLabel = partnerDisplayLabel(pref);
+              const shippedCourier =
+                courierByItemId?.get(id) ||
+                (legacyFullyCovered ? courierByItemId?.get("__LEGACY_FULL_ORDER__") : undefined);
               const linePaise =
                 it.qtyOrdered > 0
                   ? Math.round((it.lineTotalInPaise * qty) / it.qtyOrdered)
@@ -198,7 +232,9 @@ export function ShipmentLineFulfillmentTable({
                   <td className="py-2.5 pl-2 align-top text-stone-700">
                     {partnerLabel ||
                       (covered ? (
-                        <span className="text-xs font-semibold text-emerald-800">Shipped</span>
+                        <span className="text-xs font-semibold text-emerald-800">
+                          {shippedCourier || "Shipped"}
+                        </span>
                       ) : (
                         <span className="text-stone-400">—</span>
                       ))}

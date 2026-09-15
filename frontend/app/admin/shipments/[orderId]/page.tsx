@@ -25,6 +25,7 @@ import {
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   coveredOrderItemIdsFromShipments,
+  courierByOrderItemIdFromShipments,
   type DeliveryPartnerCode,
   type LineFulfillmentPref,
   partnerDisplayLabel,
@@ -86,6 +87,8 @@ type OrderLoaded = {
   shippingInPaise: number;
   taxInPaise?: number;
   subtotalInPaise?: number;
+  discountInPaise?: number;
+  couponCode?: string | null;
   grandTotalInPaise: number;
   customer?: { name?: string | null } | null;
   items: Array<{
@@ -267,6 +270,10 @@ export default function AdminShipmentCreateLabelPage() {
   const hasForwardAwb = Boolean(forward?.awb?.trim());
   const coveredIds = useMemo(
     () => coveredOrderItemIdsFromShipments(order?.shipments),
+    [order?.shipments]
+  );
+  const courierByItemId = useMemo(
+    () => courierByOrderItemIdFromShipments(order?.shipments),
     [order?.shipments]
   );
   const legacyFullyCovered = coveredIds.has("__LEGACY_FULL_ORDER__");
@@ -712,6 +719,7 @@ export default function AdminShipmentCreateLabelPage() {
             selectedIds={selectedItemIds}
             coveredIds={coveredIds}
             legacyFullyCovered={legacyFullyCovered}
+            courierByItemId={courierByItemId}
             panelSourceId={panelSourceId}
             panelPartner={panelPartner}
             panelCustomName={panelCustomName}
@@ -741,6 +749,19 @@ export default function AdminShipmentCreateLabelPage() {
               <div className="flex justify-between">
                 <dt className="text-stone-500">Subtotal</dt>
                 <dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd>
+              </div>
+            ) : null}
+            {typeof order.discountInPaise === "number" && order.discountInPaise > 0 ? (
+              <div className="flex justify-between text-emerald-800">
+                <dt>
+                  Discount
+                  {order.couponCode?.trim() ? (
+                    <span className="ml-1 font-mono text-xs text-emerald-700/80">
+                      ({order.couponCode.trim()})
+                    </span>
+                  ) : null}
+                </dt>
+                <dd>−{formatMinorFromPaise(order.discountInPaise, order.currency)}</dd>
               </div>
             ) : null}
             <div className="flex justify-between">
