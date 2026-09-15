@@ -56,12 +56,40 @@ export async function sendWhatsAppSessionMedia(
   const mime = input.mimeType.toLowerCase();
   const caption = input.caption?.trim().slice(0, 1024) || undefined;
   const link = input.link;
+  const nameLower = input.fileName.toLowerCase();
+
+  // WhatsApp/Exotel only deliver MP4/3GPP as video. WebM/MOV etc. are accepted by the
+  // API then fail delivery (we saw waStatus=failed for admin screencasts).
+  if (
+    mime.startsWith("video/") &&
+    mime !== "video/mp4" &&
+    mime !== "video/3gpp" &&
+    !nameLower.endsWith(".mp4") &&
+    !nameLower.endsWith(".3gp")
+  ) {
+    throw new Error(
+      `WhatsApp cannot deliver ${input.fileName || "this video"}. Please send an MP4 (H.264) file under 16 MB.`
+    );
+  }
 
   let content: Record<string, unknown>;
   if (mime.startsWith("image/")) {
     content = { type: "image", image: { link, ...(caption ? { caption } : {}) } };
+  } else if (
+    mime === "video/mp4" ||
+    mime === "video/3gpp" ||
+    nameLower.endsWith(".mp4") ||
+    nameLower.endsWith(".3gp")
+  ) {
+    content = {
+      type: "video",
+      video: { link, ...(caption ? { caption } : {}) }
+    };
   } else if (mime.startsWith("video/")) {
-    content = { type: "video", video: { link, ...(caption ? { caption } : {}) } };
+    // Unreachable due to throw above — kept for safety.
+    throw new Error(
+      `WhatsApp cannot deliver ${input.fileName || "this video"}. Please send an MP4 (H.264) file under 16 MB.`
+    );
   } else if (mime.startsWith("audio/")) {
     content = { type: "audio", audio: { link } };
   } else {

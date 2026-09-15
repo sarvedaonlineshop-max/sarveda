@@ -56,6 +56,23 @@ import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
 const CHAT_FILE_ACCEPT =
   "image/*,video/*,audio/*,application/pdf,.pdf,.doc,.docx,.heic,.heif,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.webm";
 
+/** WhatsApp video must be MP4/3GPP (H.264). WebM/MOV are accepted by Exotel then fail delivery. */
+const WA_CHAT_FILE_ACCEPT =
+  "image/*,video/mp4,.mp4,audio/*,application/pdf,.pdf,.doc,.docx,.heic,.heif,.jpg,.jpeg,.png,.webp,.gif";
+
+const WA_VIDEO_MAX_BYTES = 16 * 1024 * 1024;
+
+function isWhatsAppDeliverableVideo(file: File): boolean {
+  const mime = (file.type || "").toLowerCase();
+  const name = file.name.toLowerCase();
+  return mime === "video/mp4" || mime === "video/3gpp" || name.endsWith(".mp4") || name.endsWith(".3gp");
+}
+
+function isVideoFile(file: File): boolean {
+  const mime = (file.type || "").toLowerCase();
+  return mime.startsWith("video/") || /\.(mp4|webm|mov|avi|mpeg|mpg|m4v|3gp)$/i.test(file.name);
+}
+
 const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function isWhatsAppSessionOpen(lastCustomerMessageAt: string | null | undefined): boolean {
@@ -173,13 +190,17 @@ function notifyInboxRefresh() {
 
 /** WhatsApp-style double tick (blue when read/delivered, gray when sent). */
 function WaTicks({ status }: { status?: string | null }) {
-  if (!status || status === "failed") {
-    return status === "failed" ? (
-      <span className="ml-1 text-[11px] font-semibold text-red-500" title="Failed">
-        !
+  if (status === "failed") {
+    return (
+      <span
+        className="ml-1 text-[10px] font-bold uppercase tracking-wide text-red-600"
+        title="WhatsApp could not deliver this message (unsupported media or provider error)"
+      >
+        Not delivered
       </span>
-    ) : null;
+    );
   }
+  if (!status) return null;
   const readOrDelivered = status === "read" || status === "delivered";
   const color = readOrDelivered ? "#53bdeb" : "#9aa5a0";
   return (
@@ -328,11 +349,13 @@ function VideoThumb({
 function DeleteConfirmModal({
   open,
   busy,
+  isWhatsApp,
   onCancel,
   onConfirm
 }: {
   open: boolean;
   busy?: boolean;
+  isWhatsApp?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -350,8 +373,9 @@ function DeleteConfirmModal({
             Delete message?
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-stone-600">
-            This removes the message from the admin chat. It will not recall a WhatsApp message
-            already delivered to the customer.
+            {isWhatsApp
+              ? "This only removes the message from the admin inbox. WhatsApp does not support recalling or editing messages via our provider — the customer will still see the original."
+              : "This removes the message from the admin chat."}
           </p>
         </div>
         <div className="flex items-center justify-end gap-2 px-5 py-4">
@@ -457,8 +481,9 @@ function MediaViewerOverlay({
           <div className="max-w-md rounded-2xl bg-white/10 px-6 py-8 text-center text-white">
             <p className="text-sm font-semibold">Media unavailable</p>
             <p className="mt-2 text-xs leading-relaxed text-white/75">
-              The original WhatsApp link expired (~15 minutes). Ask the customer to resend so we can
-              store a durable copy.
+              This file was not saved to Sarveda storage in time (WhatsApp links expire in ~15
+              minutes). Ask the customer to resend — new videos are stored permanently and will
+              play here.
             </p>
           </div>
         ) : null}
@@ -652,7 +677,7 @@ function MessageBubble({
                   setEditing(true);
                 }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#0b6b5f] shadow ring-1 ring-stone-200 disabled:opacity-40"
-                title="Edit message"
+                title={isWhatsApp ? "Edit in admin only (not on customer WhatsApp)" : "Edit message"}
                 aria-label="Edit message"
               >
                 <Pencil size={13} />
@@ -729,6 +754,11 @@ function MessageBubble({
               className="w-full min-w-[16rem] resize-y rounded-xl border border-[#25d366]/50 bg-white px-3 py-2 text-[14px] text-stone-800 outline-none focus:border-[#25d366]"
               autoFocus
             />
+            {isWhatsApp ? (
+              <p className="text-[11px] leading-snug text-amber-800">
+                Saves in admin only — the customer&apos;s WhatsApp chat will not update.
+              </p>
+            ) : null}
             {editError ? <p className="text-[11px] font-medium text-red-600">{editError}</p> : null}
             <div className="flex justify-end gap-2">
               <button
@@ -749,7 +779,7 @@ function MessageBubble({
                 onClick={() => void saveEdit()}
                 className="rounded-full bg-[#25d366] px-3 py-1 text-[12px] font-semibold text-white disabled:opacity-50"
               >
-                {savingEdit ? "Saving…" : "Save"}
+                {savingEdit ? "Saving…" : "Save in admin"}
               </button>
             </div>
           </div>
@@ -856,6 +886,7 @@ function AdminChatDetailInner() {
       setError("No file selected.");
       return;
     }
+    const waThread = thread?.source === "WHATSAPP";
     const incoming = Array.from(list);
     const rejected: string[] = [];
     const merged = [...files];
@@ -871,6 +902,16 @@ function AdminChatDetailInner() {
       if (file.size > MAX_ENQUIRY_ATTACHMENT_BYTES) {
         rejected.push(`${file.name} (over ${MAX_ENQUIRY_ATTACHMENT_MB} MB)`);
         continue;
+      }
+      if (waThread && isVideoFile(file)) {
+        if (!isWhatsAppDeliverableVideo(file)) {
+          rejected.push(`${file.name} (WhatsApp needs MP4, not WebM/MOV)`);
+          continue;
+        }
+        if (file.size > WA_VIDEO_MAX_BYTES) {
+          rejected.push(`${file.name} (WhatsApp video max 16 MB)`);
+          continue;
+        }
       }
       merged.push(file);
     }
@@ -1105,6 +1146,7 @@ function AdminChatDetailInner() {
       <DeleteConfirmModal
         open={Boolean(pendingDeleteId)}
         busy={Boolean(deletingId)}
+        isWhatsApp={isWhatsApp}
         onCancel={() => {
           if (!deletingId) setPendingDeleteId(null);
         }}
@@ -1219,6 +1261,18 @@ function AdminChatDetailInner() {
             threadId={thread.id}
             isWhatsApp={isWhatsApp}
             onOpenMedia={setViewer}
+            onEdited={(updated) => {
+              setThread((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      messages: prev.messages.map((row) =>
+                        row.id === updated.id ? { ...row, ...updated } : row
+                      )
+                    }
+                  : prev
+              );
+            }}
             onDelete={
               m.authorType === "ADMIN"
                 ? () => {
@@ -1328,7 +1382,7 @@ function AdminChatDetailInner() {
             ref={fileRef}
             type="file"
             multiple
-            accept={CHAT_FILE_ACCEPT}
+            accept={isWhatsApp ? WA_CHAT_FILE_ACCEPT : CHAT_FILE_ACCEPT}
             className="hidden"
             onChange={(e) => {
               addSelectedFiles(e.target.files);
@@ -1340,7 +1394,11 @@ function AdminChatDetailInner() {
             disabled={sending}
             onClick={() => fileRef.current?.click()}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a] disabled:opacity-40"
-            title="Attach files"
+            title={
+              isWhatsApp
+                ? "Attach files (videos must be MP4, max 16 MB)"
+                : "Attach files"
+            }
             aria-label="Attach files"
           >
             <Paperclip size={20} strokeWidth={2} />

@@ -554,6 +554,32 @@ export async function replyToEnquiryThread(
     }
 
     const uploaded = await uploadEnquiryFiles(attachments);
+
+    // Validate WhatsApp media constraints before calling Exotel (avoid false "sent" then failed).
+    for (const file of uploaded) {
+      const mime = file.mimeType.toLowerCase();
+      const name = file.fileName.toLowerCase();
+      const isVideo =
+        mime.startsWith("video/") || /\.(mp4|webm|mov|avi|mpeg|mpg|m4v|3gp)$/i.test(name);
+      if (isVideo) {
+        const okMp4 =
+          mime === "video/mp4" ||
+          mime === "video/3gpp" ||
+          name.endsWith(".mp4") ||
+          name.endsWith(".3gp");
+        if (!okMp4) {
+          throw new Error(
+            `WhatsApp only accepts MP4 video (not ${file.fileName}). Export/convert to MP4 (H.264) under 16 MB and try again.`
+          );
+        }
+        if (file.fileSizeBytes > 16 * 1024 * 1024) {
+          throw new Error(
+            `${file.fileName} is too large for WhatsApp video (max 16 MB). Compress it and try again.`
+          );
+        }
+      }
+    }
+
     let sid: string | null = null;
 
     if (uploaded.length === 0) {

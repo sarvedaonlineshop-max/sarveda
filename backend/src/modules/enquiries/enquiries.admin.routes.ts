@@ -260,6 +260,15 @@ router.post(
       }
       res.json({ success: true, data: message });
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (
+        message.includes("WhatsApp only accepts") ||
+        message.includes("WhatsApp cannot deliver") ||
+        message.includes("too large for WhatsApp")
+      ) {
+        res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
+        return;
+      }
       next(err);
     }
   }
