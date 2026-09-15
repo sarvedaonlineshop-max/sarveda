@@ -469,7 +469,7 @@ export async function adminNotifications(_req: Request, res: Response, next: Nex
 /** Matches payment-timeout job (15 min). Older unpaid → Abandoned (Pending is not a desk pill). */
 const PAYMENT_PENDING_MS = 15 * 60 * 1000;
 
-type OrderChannel = "online" | "cod";
+type OrderChannel = "online" | "cod" | "all";
 
 type OrderBucket =
   | "all"
@@ -500,16 +500,17 @@ const ORDER_BUCKETS: OrderBucket[] = [
   "delivered"
 ];
 
-/** Online desk pills — exclusive; sum equals All for that channel. */
-const ONLINE_COUNT_BUCKETS = ["all", "new", "processed", "abandoned", "cancelled", "refunded"] as const;
-/** COD desk pills — no abandoned/pending (COD confirms at place). */
-const COD_COUNT_BUCKETS = ["all", "new", "processed", "cancelled", "refunded"] as const;
+/** Desk pills (no separate All pill — All is a top-level channel tab). */
+const DESK_COUNT_BUCKETS = ["new", "processed", "abandoned", "cancelled", "refunded"] as const;
 
 function channelWhere(channel: OrderChannel): Prisma.OrderWhereInput {
   if (channel === "cod") {
     return { payments: { some: { provider: "COD" } } };
   }
-  return { NOT: { payments: { some: { provider: "COD" } } } };
+  if (channel === "online") {
+    return { NOT: { payments: { some: { provider: "COD" } } } };
+  }
+  return {};
 }
 
 function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.OrderWhereInput {
@@ -580,22 +581,22 @@ function parseYmdToKolkataStart(raw: string): Date | null {
 
 function parseOrdersListFilters(req: Request): OrdersListFilters {
   const now = new Date();
-  const rawChannel = String(req.query.channel ?? "online").toLowerCase();
-  const channel: OrderChannel = rawChannel === "cod" ? "cod" : "online";
+  const rawChannel = String(req.query.channel ?? "all").toLowerCase();
+  const channel: OrderChannel =
+    rawChannel === "cod" ? "cod" : rawChannel === "online" ? "online" : "all";
 
-  const rawBucket = String(req.query.bucket ?? "all");
+  const rawBucket = String(req.query.bucket ?? "new");
   let bucket: OrderBucket = ORDER_BUCKETS.includes(rawBucket as OrderBucket)
     ? (rawBucket as OrderBucket)
-    : "all";
-  // COD has no abandoned/pending desk pills — coerce to all.
-  if (channel === "cod" && (bucket === "abandoned" || bucket === "attempted" || bucket === "pending")) {
-    bucket = "all";
-  }
+    : "new";
   if (bucket === "paid") {
     bucket = "confirmed";
   }
   if (bucket === "shipped" || bucket === "delivered") {
     bucket = "processed";
+  }
+  if (bucket === "pending" || bucket === "attempted") {
+    bucket = "abandoned";
   }
   const orderNumber = String(req.query.orderNumber ?? req.query.orderId ?? "").trim();
   const customerName = String(req.query.customerName ?? "").trim();
@@ -1054,13 +1055,13 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const f = parseOrdersListFilters(req);
     const where = ordersListWhere(f);
     const searchBase = ordersSearchWhere(f);
-    const countBuckets =
-      f.channel === "cod" ? COD_COUNT_BUCKETS : ONLINE_COUNT_BUCKETS;
+    const countBuckets = DESK_COUNT_BUCKETS;
 
+    const allSearch = ordersSearchWhere({ ...f, channel: "all" });
     const onlineSearch = ordersSearchWhere({ ...f, channel: "online" });
     const codSearch = ordersSearchWhere({ ...f, channel: "cod" });
 
-    const [total, rows, onlineAll, codAll, ...bucketCounts] = await prisma.$transaction([
+    const [total, rows, allChannel, onlineAll, codAll, ...bucketCounts] = await prisma.$transaction([
       prisma.order.count({ where }),
       prisma.order.findMany({
         where,
@@ -1085,14 +1086,12 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           }
         }
       }),
+      prisma.order.count({ where: allSearch }),
       prisma.order.count({ where: onlineSearch }),
       prisma.order.count({ where: codSearch }),
       ...countBuckets.map((b) =>
         prisma.order.count({
-          where:
-            b === "all"
-              ? searchBase
-              : { AND: [searchBase, bucketWhere(b, f.now)] }
+          where: { AND: [searchBase, bucketWhere(b, f.now)] }
         })
       )
     ]);
@@ -1105,7 +1104,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
       success: true,
       data: {
         channel: f.channel,
-        channelCounts: { online: onlineAll, cod: codAll },
+        channelCounts: { all: allChannel, online: onlineAll, cod: codAll },
         items: rows.map((o) => ({
           id: o.id,
           orderNumber: o.orderNumber,

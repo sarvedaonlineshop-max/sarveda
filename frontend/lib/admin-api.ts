@@ -422,8 +422,8 @@ export function fetchAdminActivityList(params: {
 }
 
 export type OrdersListData = {
-  channel?: "online" | "cod";
-  channelCounts?: { online: number; cod: number };
+  channel?: "online" | "cod" | "all";
+  channelCounts?: { all?: number; online: number; cod: number };
   items: Array<{
     id: string;
     orderNumber: string;
@@ -494,7 +494,7 @@ export type AdminShipmentsQuery = {
 };
 
 export type AdminOrdersQuery = {
-  channel?: "online" | "cod";
+  channel?: "online" | "cod" | "all";
   bucket?: string;
   page?: number;
   limit?: number;

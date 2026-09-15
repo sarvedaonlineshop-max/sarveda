@@ -25,6 +25,16 @@ export function isUnpaidCheckoutAttempt(
   return isAbandonedCheckoutAttempt(status, paymentStatus, paymentProvider);
 }
 
+/** COD cash collected after delivery — only then "PAID" is accurate. */
+export function isCodPaymentCollected(
+  status: string,
+  paymentStatus: string,
+  paymentProvider?: string | null
+): boolean {
+  if (paymentProvider !== "COD") return false;
+  return status === "DELIVERED" && paymentStatus === "CAPTURED";
+}
+
 /** Label for admin badges — Abandoned when payment never completed. */
 export function adminOrderStatusLabel(
   status: string,
@@ -33,6 +43,14 @@ export function adminOrderStatusLabel(
 ): string {
   if (isUnpaidCheckoutAttempt(status, paymentStatus, paymentProvider)) {
     return "ABANDONED";
+  }
+  // COD: never show PAID until delivered + cash collected — desk uses Confirmed.
+  if (
+    paymentProvider === "COD" &&
+    status === "PAID" &&
+    !isCodPaymentCollected(status, paymentStatus, paymentProvider)
+  ) {
+    return "CONFIRMED";
   }
   return status;
 }
@@ -43,4 +61,15 @@ export function formatAdminOrderStatusLabel(
   paymentProvider?: string | null
 ): string {
   return adminOrderStatusLabel(status, paymentStatus, paymentProvider).replace(/_/g, " ");
+}
+
+/** Table column: razorpay / stripe / paypal / COD */
+export function formatAdminPaymentMethod(provider?: string | null): string {
+  if (!provider) return "—";
+  const p = provider.toUpperCase();
+  if (p === "COD") return "COD";
+  if (p === "RAZORPAY") return "razorpay";
+  if (p === "STRIPE") return "stripe";
+  if (p === "PAYPAL") return "paypal";
+  return provider.toLowerCase();
 }

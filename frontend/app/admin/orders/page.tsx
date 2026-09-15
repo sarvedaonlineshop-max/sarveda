@@ -12,23 +12,17 @@ import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import type { AdminOrdersQuery, OrdersListData } from "@/lib/admin-api";
 import { downloadAdminOrdersExport, fetchAdminOrders } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
-import { formatAdminOrderStatusLabel } from "@/lib/order-status-display";
+import {
+  formatAdminOrderStatusLabel,
+  formatAdminPaymentMethod
+} from "@/lib/order-status-display";
 
-const onlineBuckets = [
+const deskBuckets = [
   { value: "new", label: "New" },
   { value: "processed", label: "Processed" },
   { value: "abandoned", label: "Abandoned" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" },
-  { value: "all", label: "All" }
-] as const;
-
-const codBuckets = [
-  { value: "new", label: "New" },
-  { value: "processed", label: "Processed" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "refunded", label: "Refunded" },
-  { value: "all", label: "All" }
+  { value: "refunded", label: "Refunded" }
 ] as const;
 
 function StatusBadge({
@@ -44,7 +38,7 @@ function StatusBadge({
   const s = label.toUpperCase().replace(/\s/g, "");
   let bg = "#f3f4f6",
     color = "#374151";
-  if (s.includes("PAID") || s.includes("PROCESSING")) {
+  if (s.includes("CONFIRMED") || s.includes("PAID") || s.includes("PROCESSING")) {
     bg = "#dcfce7";
     color = "#166534";
   } else if (s.includes("SHIPPED")) {
@@ -149,7 +143,7 @@ function todayYmd(): string {
 export default function AdminOrdersPage() {
   const router = useRouter();
   const nav = useAdminNavOptional();
-  const [channel, setChannel] = useState<"online" | "cod">("online");
+  const [channel, setChannel] = useState<"all" | "online" | "cod">("all");
   const [bucket, setBucket] = useState<string>("new");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<OrdersListData | null>(null);
@@ -177,12 +171,10 @@ export default function AdminOrdersPage() {
     todayOnly: false
   });
 
-  const buckets = channel === "cod" ? codBuckets : onlineBuckets;
-
   const queryParams = useMemo((): AdminOrdersQuery => {
     return {
       channel,
-      bucket: bucket === "all" ? undefined : bucket,
+      bucket,
       page,
       limit: 20,
       orderNumber: applied.orderNumber || undefined,
@@ -222,9 +214,11 @@ export default function AdminOrdersPage() {
   }, [exportMenuOpen]);
 
   const ordersLegend =
-    channel === "online"
-      ? "Online paid · New = just paid (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
-      : "COD · New = just placed · Processed = processing through delivered · Cancelled = stopped · Refunded = cash/manual return if collected";
+    channel === "cod"
+      ? "COD · New = confirmed (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = N/A for COD · Cancelled = stopped · Refunded = cash/manual return if collected · Status Confirmed until delivered + cash collected"
+      : channel === "online"
+        ? "Online paid · New = just paid (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
+        : "All channels · New = just paid / COD confirmed · Processed = processing through delivered · Abandoned = never paid (online) · Cancelled = stopped · Refunded = returned";
 
   useRegisterAdminHeaderSlot(
     () => ({
@@ -303,7 +297,7 @@ export default function AdminOrdersPage() {
   const exportParams = useMemo(
     (): Omit<AdminOrdersQuery, "page" | "limit"> => ({
       channel,
-      bucket: bucket === "all" ? undefined : bucket,
+      bucket,
       orderNumber: applied.orderNumber || undefined,
       customerName: applied.customerName || undefined,
       place: applied.place || undefined,
@@ -344,6 +338,7 @@ export default function AdminOrdersPage() {
       >
         {(
           [
+            { value: "all" as const, label: "All", icon: "📋" },
             { value: "online" as const, label: "Online Paid", icon: "💳" },
             { value: "cod" as const, label: "Cash On Delivery", icon: "💵" }
           ] as const
@@ -397,7 +392,7 @@ export default function AdminOrdersPage() {
 
       {/* Line 2 — status pills */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        {buckets.map((b) => {
+        {deskBuckets.map((b) => {
           const count = counts?.[b.value as keyof NonNullable<typeof counts>];
           const active = bucket === b.value;
           return (
@@ -708,18 +703,20 @@ export default function AdminOrdersPage() {
       )}
 
       {!data ? (
-        <AdminTableSkeleton rows={8} cols={7} />
+        <AdminTableSkeleton rows={8} cols={8} />
       ) : (
         <>
           <div style={{ ...card, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #f0ece6" }}>
-                  {["Order", "Customer", "Place", "Items", "Amount", "Status", "Date"].map((h) => (
-                    <th key={h} style={thSt}>
-                      {h}
-                    </th>
-                  ))}
+                  {["Order", "Customer", "Place", "Items", "Amount", "Payment Method", "Status", "Date"].map(
+                    (h) => (
+                      <th key={h} style={thSt}>
+                        {h}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -789,6 +786,9 @@ export default function AdminOrdersPage() {
                     </td>
                     <td style={{ ...tdSt, fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>
                       {formatMinorFromPaise(o.grandTotalInPaise, o.currency)}
+                    </td>
+                    <td style={{ ...tdSt, fontSize: "15px", textTransform: "none", fontWeight: 600 }}>
+                      {formatAdminPaymentMethod(o.paymentProvider)}
                     </td>
                     <td style={tdSt}>
                       <StatusBadge
