@@ -276,7 +276,24 @@ router.post(
 
 router.delete("/:id/messages/:messageId", async (req, res, next) => {
   try {
-    const result = await deleteAdminEnquiryMessage(req.params.id, req.params.messageId);
+    const adminUser = await prisma.user.findUnique({
+      where: { id: req.authUser!.id },
+      select: { id: true, email: true, name: true }
+    });
+    if (!adminUser) {
+      res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+      return;
+    }
+    const notifyRaw = req.query.notify;
+    const notifyCustomer =
+      notifyRaw === undefined || notifyRaw === "1" || notifyRaw === "true"
+        ? true
+        : notifyRaw === "0" || notifyRaw === "false"
+          ? false
+          : true;
+    const result = await deleteAdminEnquiryMessage(req.params.id, req.params.messageId, adminUser, {
+      notifyCustomer
+    });
     if (!result) {
       res.status(404).json({ success: false, error: "Message not found", code: "NOT_FOUND" });
       return;
@@ -294,13 +311,28 @@ router.delete("/:id/messages/:messageId", async (req, res, next) => {
 
 router.patch(
   "/:id/messages/:messageId",
-  validateBody(z.object({ message: z.string().min(1).max(8000) })),
+  validateBody(
+    z.object({
+      message: z.string().min(1).max(8000),
+      notifyCustomer: z.boolean().optional()
+    })
+  ),
   async (req, res, next) => {
     try {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: req.authUser!.id },
+        select: { id: true, email: true, name: true }
+      });
+      if (!adminUser) {
+        res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+        return;
+      }
       const updated = await updateAdminEnquiryMessage(
         req.params.id,
         req.params.messageId,
-        req.body.message
+        req.body.message,
+        adminUser,
+        { notifyCustomer: req.body.notifyCustomer }
       );
       if (!updated) {
         res.status(404).json({ success: false, error: "Message not found", code: "NOT_FOUND" });

@@ -3111,19 +3111,44 @@ export function patchAdminEnquiryStatus(id: string, status: "OPEN" | "CLOSED") {
   });
 }
 
-export function deleteAdminEnquiryMessage(threadId: string, messageId: string) {
-  return adminFetch<{ deleted: true; messageId: string }>(
-    `/api/admin/enquiries/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+export function deleteAdminEnquiryMessage(
+  threadId: string,
+  messageId: string,
+  options?: { notifyCustomer?: boolean }
+) {
+  const q =
+    options?.notifyCustomer === false
+      ? "?notify=0"
+      : options?.notifyCustomer === true
+        ? "?notify=1"
+        : "";
+  return adminFetch<{
+    deleted: true;
+    messageId: string;
+    whatsAppNotified?: boolean;
+    notice?: string | null;
+  }>(
+    `/api/admin/enquiries/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}${q}`,
     { method: "DELETE" }
   );
 }
 
-export function editAdminEnquiryMessage(threadId: string, messageId: string, message: string) {
-  return adminFetch<EnquiryMessageRow>(
+export function editAdminEnquiryMessage(
+  threadId: string,
+  messageId: string,
+  message: string,
+  options?: { notifyCustomer?: boolean }
+) {
+  return adminFetch<EnquiryMessageRow & { whatsAppNotified?: boolean; notice?: string | null }>(
     `/api/admin/enquiries/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
     {
       method: "PATCH",
-      body: JSON.stringify({ message })
+      body: JSON.stringify({
+        message,
+        ...(options?.notifyCustomer !== undefined
+          ? { notifyCustomer: options.notifyCustomer }
+          : {})
+      })
     }
   );
 }

@@ -739,44 +739,109 @@ export async function patchEnquiryThreadStatus(
   return thread;
 }
 
-/** Soft-remove an admin-authored message from the thread (local inbox only — does not recall WhatsApp). */
-export async function deleteAdminEnquiryMessage(threadId: string, messageId: string) {
+/** Soft-remove an admin-authored message from the thread.
+ * WhatsApp cannot recall messages via Exotel — when the 24h window is open we send a
+ * "please disregard" notice so the customer is told, and store that notice in the thread.
+ */
+export async function deleteAdminEnquiryMessage(
+  threadId: string,
+  messageId: string,
+  admin?: { id: string; email: string; name: string | null },
+  options?: { notifyCustomer?: boolean }
+) {
   const message = await prisma.enquiryMessage.findFirst({
     where: { id: messageId, threadId },
-    include: { attachments: true }
+    include: { attachments: true, thread: true }
   });
   if (!message) return null;
   if (message.authorType !== "ADMIN") {
     throw new Error("Only messages sent by admin can be deleted.");
   }
 
+  const notify =
+    options?.notifyCustomer !== false &&
+    message.thread.source === "WHATSAPP" &&
+    Boolean(admin);
+
+  let whatsAppNotified = false;
+  let noticeMessage: Awaited<ReturnType<typeof prisma.enquiryMessage.create>> | null = null;
+
+  if (notify && admin) {
+    const sessionOpen = isWhatsAppSessionOpen(message.thread.lastCustomerMessageAt);
+    const to = message.thread.waPhone || toWhatsAppE164(message.thread.customerPhone);
+    if (sessionOpen && to) {
+      const hasMedia = message.attachments.length > 0;
+      const noticeBody = hasMedia
+        ? "Please disregard the previous file I sent."
+        : "Please disregard my previous message.";
+      const sid = await sendWhatsAppSessionText(to, noticeBody);
+      const adminName = admin.name?.trim() || admin.email.split("@")[0] || "Sarveda Team";
+      const waNow = new Date();
+      noticeMessage = await prisma.enquiryMessage.create({
+        data: {
+          threadId,
+          authorType: "ADMIN" as EnquiryMessageAuthor,
+          adminUserId: admin.id,
+          authorName: adminName,
+          authorEmail: admin.email,
+          body: noticeBody,
+          waMessageSid: sid,
+          waStatus: "sent"
+        }
+      });
+      await prisma.enquiryThread.update({
+        where: { id: threadId },
+        data: { lastMessageAt: waNow, status: "OPEN", unreadByAdmin: false }
+      });
+      whatsAppNotified = true;
+    }
+  }
+
   await prisma.enquiryMessage.delete({ where: { id: messageId } });
 
-  const last = await prisma.enquiryMessage.findFirst({
-    where: { threadId },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true }
-  });
-  await prisma.enquiryThread.update({
-    where: { id: threadId },
-    data: { lastMessageAt: last?.createdAt ?? new Date() }
-  });
+  if (!noticeMessage) {
+    const last = await prisma.enquiryMessage.findFirst({
+      where: { threadId },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true }
+    });
+    await prisma.enquiryThread.update({
+      where: { id: threadId },
+      data: { lastMessageAt: last?.createdAt ?? new Date() }
+    });
+  }
 
   publishEnquiryEvent({ type: "message_changed", threadId });
   publishEnquiryEvent({ type: "thread_changed", threadId });
   logger.info("enquiry_admin_message_deleted", {
     threadId,
     messageId,
-    attachmentCount: message.attachments.length
+    attachmentCount: message.attachments.length,
+    whatsAppNotified
   });
-  return { deleted: true as const, messageId };
+  return {
+    deleted: true as const,
+    messageId,
+    whatsAppNotified,
+    notice:
+      whatsAppNotified === false && message.thread.source === "WHATSAPP"
+        ? "Removed from admin only. WhatsApp window is closed (or no number), so the customer was not notified."
+        : whatsAppNotified
+          ? "Removed from admin. Customer was asked to disregard the previous message."
+          : null
+  };
 }
 
-/** Edit an admin text message in the inbox (local only — does not edit WhatsApp). */
+/**
+ * Edit an admin text message. WhatsApp cannot rewrite an already-delivered bubble —
+ * when the session is open we send a Correction follow-up so the customer gets the fix.
+ */
 export async function updateAdminEnquiryMessage(
   threadId: string,
   messageId: string,
-  body: string
+  body: string,
+  admin?: { id: string; email: string; name: string | null },
+  options?: { notifyCustomer?: boolean }
 ) {
   const trimmed = body.trim();
   if (!trimmed) {
@@ -788,7 +853,7 @@ export async function updateAdminEnquiryMessage(
 
   const message = await prisma.enquiryMessage.findFirst({
     where: { id: messageId, threadId },
-    include: { attachments: true }
+    include: { attachments: true, thread: true }
   });
   if (!message) return null;
   if (message.authorType !== "ADMIN") {
@@ -798,9 +863,49 @@ export async function updateAdminEnquiryMessage(
     throw new Error("Media messages cannot be edited. Delete and resend instead.");
   }
 
+  const notify =
+    options?.notifyCustomer !== false &&
+    message.thread.source === "WHATSAPP" &&
+    Boolean(admin);
+
+  let whatsAppNotified = false;
+  let correctionSid: string | null = null;
+
+  if (notify && admin) {
+    const sessionOpen = isWhatsAppSessionOpen(message.thread.lastCustomerMessageAt);
+    const to = message.thread.waPhone || toWhatsAppE164(message.thread.customerPhone);
+    if (sessionOpen && to) {
+      // Keep under WhatsApp text limits; prefix is short.
+      const outbound = `*Correction:*\n\n${trimmed}`.slice(0, 4096);
+      correctionSid = await sendWhatsAppSessionText(to, outbound);
+      whatsAppNotified = true;
+      const adminName = admin.name?.trim() || admin.email.split("@")[0] || "Sarveda Team";
+      const waNow = new Date();
+      await prisma.enquiryMessage.create({
+        data: {
+          threadId,
+          authorType: "ADMIN" as EnquiryMessageAuthor,
+          adminUserId: admin.id,
+          authorName: adminName,
+          authorEmail: admin.email,
+          body: outbound,
+          waMessageSid: correctionSid,
+          waStatus: "sent"
+        }
+      });
+      await prisma.enquiryThread.update({
+        where: { id: threadId },
+        data: { lastMessageAt: waNow, status: "OPEN", unreadByAdmin: false }
+      });
+    }
+  }
+
   const updated = await prisma.enquiryMessage.update({
     where: { id: messageId },
-    data: { body: trimmed, editedAt: new Date() },
+    data: {
+      body: trimmed,
+      editedAt: new Date()
+    },
     include: {
       attachments: true,
       adminUser: { select: { id: true, name: true, email: true } }
@@ -808,6 +913,24 @@ export async function updateAdminEnquiryMessage(
   });
 
   publishEnquiryEvent({ type: "message_changed", threadId });
-  logger.info("enquiry_admin_message_edited", { threadId, messageId });
-  return updated;
+  if (whatsAppNotified) {
+    publishEnquiryEvent({ type: "thread_changed", threadId });
+  }
+  logger.info("enquiry_admin_message_edited", {
+    threadId,
+    messageId,
+    whatsAppNotified,
+    correctionSid
+  });
+
+  return {
+    ...updated,
+    whatsAppNotified,
+    notice:
+      message.thread.source === "WHATSAPP"
+        ? whatsAppNotified
+          ? "Saved in admin and a Correction message was sent to the customer on WhatsApp."
+          : "Saved in admin only. WhatsApp window is closed (or no number), so the customer still sees the old text."
+        : null
+  };
 }

@@ -350,12 +350,16 @@ function DeleteConfirmModal({
   open,
   busy,
   isWhatsApp,
+  notifyCustomer,
+  onNotifyChange,
   onCancel,
   onConfirm
 }: {
   open: boolean;
   busy?: boolean;
   isWhatsApp?: boolean;
+  notifyCustomer: boolean;
+  onNotifyChange: (v: boolean) => void;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -374,9 +378,24 @@ function DeleteConfirmModal({
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-stone-600">
             {isWhatsApp
-              ? "This only removes the message from the admin inbox. WhatsApp does not support recalling or editing messages via our provider — the customer will still see the original."
+              ? "WhatsApp cannot erase a message already on the customer’s phone. We can send them a short “please disregard” note instead."
               : "This removes the message from the admin chat."}
           </p>
+          {isWhatsApp ? (
+            <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={notifyCustomer}
+                disabled={busy}
+                onChange={(e) => onNotifyChange(e.target.checked)}
+              />
+              <span>
+                Tell the customer to disregard (sends a WhatsApp message if the 24-hour window is
+                open)
+              </span>
+            </label>
+          ) : null}
         </div>
         <div className="flex items-center justify-end gap-2 px-5 py-4">
           <button
@@ -547,6 +566,7 @@ function MessageBubble({
   onOpenMedia,
   onDelete,
   onEdited,
+  onNotice,
   deleting
 }: {
   message: EnquiryMessageRow;
@@ -555,6 +575,7 @@ function MessageBubble({
   onOpenMedia: (viewer: MediaViewerState) => void;
   onDelete?: () => void;
   onEdited?: (message: EnquiryMessageRow) => void;
+  onNotice?: (text: string) => void;
   deleting?: boolean;
 }) {
   const isAdmin = message.authorType === "ADMIN";
@@ -562,6 +583,7 @@ function MessageBubble({
   const [draft, setDraft] = useState(message.body);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [notifyCustomer, setNotifyCustomer] = useState(true);
   const parsed = parseWhatsAppMessageBody(message.body || "");
   const hasAttachments = message.attachments.length > 0;
   const canEditText = isAdmin && !hasAttachments && !parsed.mediaType;
@@ -635,8 +657,12 @@ function MessageBubble({
     setSavingEdit(true);
     setEditError(null);
     try {
-      const updated = await editAdminEnquiryMessage(threadId, message.id, next);
-      onEdited?.(updated);
+      const updated = await editAdminEnquiryMessage(threadId, message.id, next, {
+        notifyCustomer: isWhatsApp ? notifyCustomer : false
+      });
+      const { whatsAppNotified: _w, notice, ...row } = updated;
+      onEdited?.(row);
+      if (notice) onNotice?.(notice);
       setEditing(false);
     } catch (e) {
       setEditError(e instanceof Error ? e.message : "Could not save edit");
@@ -674,10 +700,15 @@ function MessageBubble({
                 onClick={() => {
                   setDraft(message.body);
                   setEditError(null);
+                  setNotifyCustomer(true);
                   setEditing(true);
                 }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#0b6b5f] shadow ring-1 ring-stone-200 disabled:opacity-40"
-                title={isWhatsApp ? "Edit in admin only (not on customer WhatsApp)" : "Edit message"}
+                title={
+                  isWhatsApp
+                    ? "Edit and send a Correction to the customer"
+                    : "Edit message"
+                }
                 aria-label="Edit message"
               >
                 <Pencil size={13} />
@@ -755,9 +786,19 @@ function MessageBubble({
               autoFocus
             />
             {isWhatsApp ? (
-              <p className="text-[11px] leading-snug text-amber-800">
-                Saves in admin only — the customer&apos;s WhatsApp chat will not update.
-              </p>
+              <label className="flex cursor-pointer items-start gap-2 text-[11px] leading-snug text-amber-900">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={notifyCustomer}
+                  disabled={savingEdit}
+                  onChange={(e) => setNotifyCustomer(e.target.checked)}
+                />
+                <span>
+                  Send a <strong>Correction</strong> message to the customer (WhatsApp cannot rewrite
+                  the old bubble)
+                </span>
+              </label>
             ) : null}
             {editError ? <p className="text-[11px] font-medium text-red-600">{editError}</p> : null}
             <div className="flex justify-end gap-2">
@@ -779,7 +820,11 @@ function MessageBubble({
                 onClick={() => void saveEdit()}
                 className="rounded-full bg-[#25d366] px-3 py-1 text-[12px] font-semibold text-white disabled:opacity-50"
               >
-                {savingEdit ? "Saving…" : "Save in admin"}
+                {savingEdit
+                  ? "Saving…"
+                  : isWhatsApp && notifyCustomer
+                    ? "Save & notify"
+                    : "Save"}
               </button>
             </div>
           </div>
@@ -855,6 +900,7 @@ function AdminChatDetailInner() {
   const [viewer, setViewer] = useState<MediaViewerState | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteNotifyCustomer, setDeleteNotifyCustomer] = useState(true);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1027,9 +1073,12 @@ function AdminChatDetailInner() {
     setDeletingId(messageId);
     setError(null);
     try {
-      await deleteAdminEnquiryMessage(id, messageId);
+      const result = await deleteAdminEnquiryMessage(id, messageId, {
+        notifyCustomer: thread?.source === "WHATSAPP" ? deleteNotifyCustomer : false
+      });
       setViewer((v) => (v?.messageId === messageId ? null : v));
       setPendingDeleteId(null);
+      if (result.notice) setBanner(result.notice);
       await load();
       notifyInboxRefresh();
     } catch (e) {
@@ -1147,6 +1196,8 @@ function AdminChatDetailInner() {
         open={Boolean(pendingDeleteId)}
         busy={Boolean(deletingId)}
         isWhatsApp={isWhatsApp}
+        notifyCustomer={deleteNotifyCustomer}
+        onNotifyChange={setDeleteNotifyCustomer}
         onCancel={() => {
           if (!deletingId) setPendingDeleteId(null);
         }}
@@ -1272,10 +1323,13 @@ function AdminChatDetailInner() {
                     }
                   : prev
               );
+              void load();
             }}
+            onNotice={(text) => setBanner(text)}
             onDelete={
               m.authorType === "ADMIN"
                 ? () => {
+                    setDeleteNotifyCustomer(true);
                     setPendingDeleteId(m.id);
                   }
                 : undefined
