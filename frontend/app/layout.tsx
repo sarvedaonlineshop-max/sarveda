@@ -13,6 +13,10 @@ import "./globals.css";
 const isProd = process.env.NODE_ENV === "production";
 const ga4Id = process.env.NEXT_PUBLIC_GA4_ID?.trim();
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim();
+/** Ads team GTM container — override with NEXT_PUBLIC_GTM_ID if needed. */
+const gtmId =
+  process.env.NEXT_PUBLIC_GTM_ID?.trim() ||
+  (isProductionSite() ? "GTM-N92L9537" : "");
 
 /** Body / UI — designer: Manrope (was Inter; revert by swapping imports). */
 const manrope = Manrope({
@@ -97,6 +101,26 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.variable} ${cormorant.variable}`}>
       <body className={`${manrope.className} min-h-screen bg-brand-cream font-sans tracking-wide text-brand-ink antialiased`}>
+        {gtmId ? (
+          <>
+            <Script id="google-tag-manager" strategy="beforeInteractive">
+              {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');`}
+            </Script>
+            <noscript>
+              <iframe
+                src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+                height={0}
+                width={0}
+                style={{ display: "none", visibility: "hidden" }}
+                title="Google Tag Manager"
+              />
+            </noscript>
+          </>
+        ) : null}
         {isProd && ga4Id ? (
           <>
             <Script
