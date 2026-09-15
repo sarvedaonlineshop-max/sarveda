@@ -41,17 +41,31 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // Close staging host — everything on demo goes to production apex.
+      // Close staging host for pages — but keep /api on demo working.
+      // Old Flutter APKs still call https://sarveda-demo.xyz/api; a 308 on POST
+      // breaks whitelist/login and also blocks the in-app update check.
       {
-        source: "/:path*",
+        source: "/",
         has: [{ type: "host", value: "sarveda-demo.xyz" }],
-        destination: "https://sarveda.com/:path*",
+        destination: "https://sarveda.com/",
         permanent: true
       },
       {
-        source: "/:path*",
+        source: "/((?!api/).*)",
+        has: [{ type: "host", value: "sarveda-demo.xyz" }],
+        destination: "https://sarveda.com/$1",
+        permanent: true
+      },
+      {
+        source: "/",
         has: [{ type: "host", value: "www.sarveda-demo.xyz" }],
-        destination: "https://sarveda.com/:path*",
+        destination: "https://sarveda.com/",
+        permanent: true
+      },
+      {
+        source: "/((?!api/).*)",
+        has: [{ type: "host", value: "www.sarveda-demo.xyz" }],
+        destination: "https://sarveda.com/$1",
         permanent: true
       },
       // Trailing slash removal (WooCommerce uses trailing slashes)
