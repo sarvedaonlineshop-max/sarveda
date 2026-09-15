@@ -712,3 +712,36 @@ export async function patchEnquiryThreadStatus(
   publishEnquiryEvent({ type: "thread_changed", threadId });
   return thread;
 }
+
+/** Soft-remove an admin-authored message from the thread (local inbox only — does not recall WhatsApp). */
+export async function deleteAdminEnquiryMessage(threadId: string, messageId: string) {
+  const message = await prisma.enquiryMessage.findFirst({
+    where: { id: messageId, threadId },
+    include: { attachments: true }
+  });
+  if (!message) return null;
+  if (message.authorType !== "ADMIN") {
+    throw new Error("Only messages sent by admin can be deleted.");
+  }
+
+  await prisma.enquiryMessage.delete({ where: { id: messageId } });
+
+  const last = await prisma.enquiryMessage.findFirst({
+    where: { threadId },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true }
+  });
+  await prisma.enquiryThread.update({
+    where: { id: threadId },
+    data: { lastMessageAt: last?.createdAt ?? new Date() }
+  });
+
+  publishEnquiryEvent({ type: "message_changed", threadId });
+  publishEnquiryEvent({ type: "thread_changed", threadId });
+  logger.info("enquiry_admin_message_deleted", {
+    threadId,
+    messageId,
+    attachmentCount: message.attachments.length
+  });
+  return { deleted: true as const, messageId };
+}

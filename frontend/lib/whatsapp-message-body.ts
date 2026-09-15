@@ -8,6 +8,8 @@ export type ParsedWhatsAppBody = {
   mediaType: "image" | "video" | "audio" | "document" | "sticker" | null;
   caption: string;
   url: string | null;
+  /** Best-effort original document name when present in the body. */
+  fileName: string | null;
   /** Remaining plain text when not media (or caption-only fallback). */
   text: string;
 };
@@ -33,7 +35,7 @@ export function parseWhatsAppMessageBody(raw: string): ParsedWhatsAppBody {
   const cleaned = stripMarkup(raw);
   const match = cleaned.match(MEDIA_RE);
   if (!match) {
-    return { mediaType: null, caption: "", url: null, text: cleaned };
+    return { mediaType: null, caption: "", url: null, fileName: null, text: cleaned };
   }
 
   const mediaType = match[1].toLowerCase() as NonNullable<ParsedWhatsAppBody["mediaType"]>;
@@ -43,11 +45,16 @@ export function parseWhatsAppMessageBody(raw: string): ParsedWhatsAppBody {
   const caption = url && urlMatch?.index != null
     ? rest.slice(0, urlMatch.index).trim()
     : rest;
+  const fileNameGuess =
+    mediaType === "document" && caption && !/^https?:/i.test(caption)
+      ? caption.split(/\s+/).find((p) => /\.[a-z0-9]{1,8}$/i.test(p)) || caption
+      : null;
 
   return {
     mediaType,
     caption,
     url,
+    fileName: fileNameGuess,
     text: caption || `[${mediaType}]`,
   };
 }

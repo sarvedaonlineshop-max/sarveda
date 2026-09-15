@@ -3110,6 +3110,13 @@ export function patchAdminEnquiryStatus(id: string, status: "OPEN" | "CLOSED") {
   });
 }
 
+export function deleteAdminEnquiryMessage(threadId: string, messageId: string) {
+  return adminFetch<{ deleted: true; messageId: string }>(
+    `/api/admin/enquiries/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+    { method: "DELETE" }
+  );
+}
+
 export type StartWhatsAppChatResult = {
   threadId: string;
   created: boolean;

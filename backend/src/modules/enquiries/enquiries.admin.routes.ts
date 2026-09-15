@@ -18,6 +18,7 @@ import {
   listEnquiryThreads,
   patchEnquiryThreadStatus,
   replyToEnquiryThread,
+  deleteAdminEnquiryMessage,
   startWhatsAppChatByPhone,
   type EnquiryAttachmentInput
 } from "./enquiries.service";
@@ -261,6 +262,24 @@ router.post(
     }
   }
 );
+
+router.delete("/:id/messages/:messageId", async (req, res, next) => {
+  try {
+    const result = await deleteAdminEnquiryMessage(req.params.id, req.params.messageId);
+    if (!result) {
+      res.status(404).json({ success: false, error: "Message not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("Only messages sent by admin")) {
+      res.status(403).json({ success: false, error: message, code: "FORBIDDEN" });
+      return;
+    }
+    next(err);
+  }
+});
 
 router.patch(
   "/:id/status",

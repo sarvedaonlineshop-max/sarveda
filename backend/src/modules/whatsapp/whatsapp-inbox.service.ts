@@ -155,7 +155,11 @@ function extractMedia(content: AnyRecord | null): {
     return {
       mediaType,
       caption: asString(media.caption),
-      fileName: asString(media.filename),
+      fileName:
+        asString(media.filename) ??
+        asString(media.file_name) ??
+        asString(media.name) ??
+        asString(media.title),
       link: asString(media.link) ?? asString(media.url)
     };
   }
@@ -225,10 +229,21 @@ function mimeForWaMedia(
     mp4: "video/mp4",
     mov: "video/quicktime",
     webm: "video/webm",
+    avi: "video/x-msvideo",
     mp3: "audio/mpeg",
     m4a: "audio/mp4",
     ogg: "audio/ogg",
-    pdf: "application/pdf"
+    wav: "audio/wav",
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ppt: "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    csv: "text/csv",
+    txt: "text/plain",
+    zip: "application/zip"
   };
   if (ext && byExt[ext]) return byExt[ext];
   switch (mediaType) {
@@ -240,13 +255,17 @@ function mimeForWaMedia(
     case "audio":
       return "audio/ogg";
     case "document":
-      return "application/pdf";
+      return "application/octet-stream";
     default:
       return "application/octet-stream";
   }
 }
 
-function extForMime(mime: string, mediaType: string): string {
+function extForMime(mime: string, mediaType: string, fileName?: string | null): string {
+  const fromName = (fileName?.split(".").pop() || "").toLowerCase();
+  if (fromName && /^[a-z0-9]{1,8}$/.test(fromName) && fromName !== "bin") {
+    return fromName;
+  }
   const map: Record<string, string> = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -254,15 +273,27 @@ function extForMime(mime: string, mediaType: string): string {
     "image/gif": "gif",
     "video/mp4": "mp4",
     "video/quicktime": "mov",
+    "video/webm": "webm",
     "audio/mpeg": "mp3",
     "audio/ogg": "ogg",
     "audio/mp4": "m4a",
-    "application/pdf": "pdf"
+    "audio/wav": "wav",
+    "application/pdf": "pdf",
+    "application/msword": "doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/vnd.ms-excel": "xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+    "application/vnd.ms-powerpoint": "ppt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+    "text/csv": "csv",
+    "text/plain": "txt",
+    "application/zip": "zip"
   };
   if (map[mime]) return map[mime];
   if (mediaType === "image" || mediaType === "sticker") return "jpg";
   if (mediaType === "video") return "mp4";
   if (mediaType === "audio") return "ogg";
+  if (mediaType === "document") return "pdf";
   return "bin";
 }
 
@@ -309,10 +340,15 @@ async function mirrorWhatsAppMediaToEnquiryAttachment(input: {
     input.fileName,
     res.headers.get("content-type")
   );
-  const ext = extForMime(mime, input.mediaType);
+  const ext = extForMime(mime, input.mediaType, input.fileName);
+  const cleaned = input.fileName?.replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(0, 120);
+  const hasExt = Boolean(cleaned && /\.[a-z0-9]{1,8}$/i.test(cleaned));
   const safeName =
-    input.fileName?.replace(/[^\w.\-]+/g, "_").slice(0, 120) ||
-    `whatsapp-${input.mediaType}.${ext}`;
+    cleaned && hasExt
+      ? cleaned
+      : cleaned
+        ? `${cleaned}.${ext}`
+        : `whatsapp-${input.mediaType}.${ext}`;
   const s3Key = `${ENQUIRY_MEDIA_S3_PREFIX}/${new Date().getFullYear()}/wa-${randomUUID()}.${ext}`;
   const s3Url = await uploadAsset(s3Key, buf, mime);
   if (!s3Url) return false;
