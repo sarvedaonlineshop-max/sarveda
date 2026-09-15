@@ -215,7 +215,7 @@ function MessageBubble({
                     <img
                       src={a.s3Url}
                       alt={a.fileName}
-                      className="max-h-72 w-full rounded-lg object-contain bg-stone-50"
+                      className="h-auto max-h-72 max-w-full rounded-lg object-contain bg-stone-50"
                     />
                   </a>
                 ) : isVideoMime(a.mimeType) ? (
