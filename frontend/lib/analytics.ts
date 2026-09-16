@@ -13,6 +13,16 @@ type PurchaseItem = {
   price: number;
 };
 
+/** Tracking is best-effort: it must never break checkout or the order page. */
+function safe(run: () => void): void {
+  if (typeof window === "undefined") return;
+  try {
+    run();
+  } catch {
+    /* ignore analytics failures */
+  }
+}
+
 function toMajor(minorUnits: number): number {
   return Math.round(minorUnits) / 100;
 }
@@ -47,36 +57,37 @@ export function trackPurchase(params: {
   currency: string;
   items: PurchaseItem[];
 }): void {
-  if (typeof window === "undefined") return;
+  safe(() => {
+    const value = toMajor(params.value);
+    const items = params.items ?? [];
 
-  const value = toMajor(params.value);
-
-  pushDataLayer("purchase", {
-    transaction_id: params.orderId,
-    currency: params.currency,
-    value,
-    items: ga4Items(params.items)
-  });
-
-  if (window.gtag) {
-    window.gtag("event", "purchase", {
+    pushDataLayer("purchase", {
       transaction_id: params.orderId,
-      value,
       currency: params.currency,
-      items: ga4Items(params.items)
+      value,
+      items: ga4Items(items)
     });
-  }
 
-  if (window.fbq) {
-    window.fbq("track", "Purchase", {
-      value,
-      currency: params.currency,
-      content_ids: params.items.map((i) => i.id),
-      contents: metaContents(params.items),
-      content_type: "product",
-      num_items: params.items.reduce((s, i) => s + i.quantity, 0)
-    });
-  }
+    if (window.gtag) {
+      window.gtag("event", "purchase", {
+        transaction_id: params.orderId,
+        value,
+        currency: params.currency,
+        items: ga4Items(items)
+      });
+    }
+
+    if (window.fbq) {
+      window.fbq("track", "Purchase", {
+        value,
+        currency: params.currency,
+        content_ids: items.map((i) => i.id),
+        contents: metaContents(items),
+        content_type: "product",
+        num_items: items.reduce((s, i) => s + i.quantity, 0)
+      });
+    }
+  });
 }
 
 export function trackAddToCart(params: {
@@ -86,41 +97,41 @@ export function trackAddToCart(params: {
   currency: string;
   quantity?: number;
 }): void {
-  if (typeof window === "undefined") return;
+  safe(() => {
+    const value = toMajor(params.value);
+    const quantity = params.quantity && params.quantity > 0 ? params.quantity : 1;
+    const item: PurchaseItem = {
+      id: params.itemId,
+      name: params.name,
+      quantity,
+      price: params.value / quantity
+    };
 
-  const value = toMajor(params.value);
-  const quantity = params.quantity ?? 1;
-  const item: PurchaseItem = {
-    id: params.itemId,
-    name: params.name,
-    quantity,
-    price: params.value / quantity
-  };
-
-  pushDataLayer("add_to_cart", {
-    currency: params.currency,
-    value,
-    items: ga4Items([item])
-  });
-
-  if (window.gtag) {
-    window.gtag("event", "add_to_cart", {
+    pushDataLayer("add_to_cart", {
       currency: params.currency,
       value,
       items: ga4Items([item])
     });
-  }
 
-  if (window.fbq) {
-    window.fbq("track", "AddToCart", {
-      content_ids: [params.itemId],
-      content_name: params.name,
-      contents: metaContents([item]),
-      content_type: "product",
-      value,
-      currency: params.currency
-    });
-  }
+    if (window.gtag) {
+      window.gtag("event", "add_to_cart", {
+        currency: params.currency,
+        value,
+        items: ga4Items([item])
+      });
+    }
+
+    if (window.fbq) {
+      window.fbq("track", "AddToCart", {
+        content_ids: [params.itemId],
+        content_name: params.name,
+        contents: metaContents([item]),
+        content_type: "product",
+        value,
+        currency: params.currency
+      });
+    }
+  });
 }
 
 export function trackInitiateCheckout(params: {
@@ -128,33 +139,33 @@ export function trackInitiateCheckout(params: {
   currency: string;
   items?: PurchaseItem[];
 }): void {
-  if (typeof window === "undefined") return;
+  safe(() => {
+    const value = toMajor(params.value);
+    const items = params.items ?? [];
 
-  const value = toMajor(params.value);
-  const items = params.items ?? [];
-
-  pushDataLayer("begin_checkout", {
-    currency: params.currency,
-    value,
-    items: ga4Items(items)
-  });
-
-  if (window.gtag) {
-    window.gtag("event", "begin_checkout", {
+    pushDataLayer("begin_checkout", {
       currency: params.currency,
       value,
       items: ga4Items(items)
     });
-  }
 
-  if (window.fbq) {
-    window.fbq("track", "InitiateCheckout", {
-      value,
-      currency: params.currency,
-      content_ids: items.map((i) => i.id),
-      contents: metaContents(items),
-      content_type: "product",
-      num_items: items.reduce((s, i) => s + i.quantity, 0)
-    });
-  }
+    if (window.gtag) {
+      window.gtag("event", "begin_checkout", {
+        currency: params.currency,
+        value,
+        items: ga4Items(items)
+      });
+    }
+
+    if (window.fbq) {
+      window.fbq("track", "InitiateCheckout", {
+        value,
+        currency: params.currency,
+        content_ids: items.map((i) => i.id),
+        contents: metaContents(items),
+        content_type: "product",
+        num_items: items.reduce((s, i) => s + i.quantity, 0)
+      });
+    }
+  });
 }

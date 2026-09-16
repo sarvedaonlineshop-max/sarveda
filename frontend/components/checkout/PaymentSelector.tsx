@@ -471,16 +471,20 @@ export function PaymentSelector({
     payStarted.current = true;
     if (!checkoutTracked.current) {
       checkoutTracked.current = true;
-      trackInitiateCheckout({
-        value: shippingInPaise != null ? estimatedTotal : merchandiseAfterDiscount,
-        currency: displayCurrency,
-        items: cartItems.map((i) => ({
-          id: cartLineKey(i),
-          name: i.productName,
-          quantity: i.quantity,
-          price: i.unitPriceInPaise
-        }))
-      });
+      try {
+        trackInitiateCheckout({
+          value: shippingInPaise != null ? estimatedTotal : merchandiseAfterDiscount,
+          currency: displayCurrency,
+          items: (cartItems ?? []).map((i) => ({
+            id: cartLineKey(i),
+            name: i.productName,
+            quantity: i.quantity,
+            price: i.unitPriceInPaise
+          }))
+        });
+      } catch {
+        /* tracking must never block payment */
+      }
     }
 
     try {
