@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 
 import { AdminAuthBoundary } from "@/components/admin/AdminAuthBoundary";
 import { AdminShell } from "@/components/admin/AdminShell";
+import "./admin-mobile.css";
 
 const adminSans = Inter({
   subsets: ["latin"],
