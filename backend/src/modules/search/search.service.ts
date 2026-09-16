@@ -1,6 +1,13 @@
 import { prisma } from "../../config/db";
 import { isCourseUpcomingExtra } from "../../utils/courseSchedule";
-import { productSearchOrClause, tokenizeProductQuery } from "../products/productSearch";
+import {
+  productSearchOrClause,
+  scoreProductSearch,
+  tokenizeProductQuery
+} from "../products/productSearch";
+
+/** Rank the whole match set before trimming, so exact name hits are never cut off. */
+const PRODUCT_CANDIDATE_POOL = 200;
 
 export type SiteSearchType = "product" | "course" | "event" | "insight";
 
@@ -58,7 +65,7 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
   const tokens = tokenizeProductQuery(term);
   const productWhere = tokens.length ? productSearchOrClause(tokens) : undefined;
 
-  const [products, courses, events, posts] = await Promise.all([
+  const [productCandidates, courses, events, posts] = await Promise.all([
     prisma.product.findMany({
       where: {
         deletedAt: null,
@@ -67,11 +74,22 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
         id: excludeProductIds.size ? { notIn: [...excludeProductIds] } : undefined,
         ...(productWhere ?? {})
       },
-      take: productLimit,
+      take: tokens.length ? PRODUCT_CANDIDATE_POOL : productLimit,
       orderBy: { sortOrder: "asc" },
       include: {
         images: { where: { isPrimary: true }, take: 1 },
-        variants: { where: { status: "ACTIVE", isDefault: true }, take: 1 }
+        categories: { select: { category: { select: { name: true, slug: true } } } },
+        variants: {
+          where: { status: "ACTIVE" },
+          select: {
+            sku: true,
+            isDefault: true,
+            saleInPaise: true,
+            attributeValues: {
+              select: { attributeValue: { select: { value: true, slug: true } } }
+            }
+          }
+        }
       }
     }),
     prisma.course.findMany({
@@ -130,15 +148,24 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
     })
   ]);
 
+  const products = tokens.length
+    ? productCandidates
+        .map((p, index) => ({ p, index, score: scoreProductSearch(p, tokens) }))
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .slice(0, productLimit)
+        .map((r) => r.p)
+    : productCandidates.slice(0, productLimit);
+
   const out: SiteSearchSuggestion[] = [];
 
   for (const p of products) {
+    const priced = p.variants.find((v) => v.isDefault) ?? p.variants[0];
     out.push({
       type: "product",
       slug: p.slug,
       title: p.name,
       imageUrl: p.images[0]?.url ?? null,
-      priceInPaise: p.variants[0]?.saleInPaise ?? null,
+      priceInPaise: priced?.saleInPaise ?? null,
       label: "Product"
     });
   }
