@@ -2,7 +2,7 @@
 
 @media (max-width: 767px) {
   [data-admin-mobile="true"] {
-    overflow-x: hidden;
+    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     --admin-mobile-gap: 12px;
   }
@@ -15,35 +15,47 @@
 
   [data-admin-mobile="true"] .admin-motion-root > div > aside { width: min(86vw, 300px) !important; }
 
+  [data-admin-mobile="true"] .admin-motion-root > div > aside img[alt="Sarveda"] {
+    width: 68% !important;
+    max-width: 170px !important;
+  }
+
   [data-admin-mobile="true"] header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 35 !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 60px !important;
-    height: auto !important;
-    padding: 9px 12px !important;
+    min-height: 56px !important;
+    height: 56px !important;
+    padding: 7px 12px !important;
     gap: 8px !important;
-    overflow: visible !important;
+    overflow: hidden !important;
   }
 
   [data-admin-mobile="true"] header > button[aria-label="Open navigation"] {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    flex: 0 0 42px;
-    min-width: 42px;
-    min-height: 42px;
+    flex: 0 0 40px;
+    min-width: 40px;
+    min-height: 40px;
   }
 
   [data-admin-mobile="true"] header h1 {
     font-size: 18px !important;
-    line-height: 1.2 !important;
+    line-height: 1.15 !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 48vw;
+    max-width: 58vw;
   }
 
-  [data-admin-mobile="true"] header button { min-width: 42px; min-height: 42px; border-radius: 11px !important; }
+  /* Mobile header stays intentionally compact: title only, no explanatory subtitle. */
+  [data-admin-mobile="true"] header p,
+  [data-admin-mobile="true"] header h1 + div { display: none !important; }
+
+  [data-admin-mobile="true"] header button { min-width: 40px; min-height: 40px; border-radius: 10px !important; }
   [data-admin-mobile="true"] header > div:last-child { min-width: 0; margin-left: 0 !important; }
   [data-admin-mobile="true"] header > div:last-child > div { gap: 6px !important; }
 
@@ -53,7 +65,7 @@
     max-width: 100vw !important;
     min-width: 0 !important;
     padding: 14px 12px 88px !important;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   [data-admin-mobile="true"] main > *,
@@ -78,7 +90,10 @@
     padding: 14px !important;
   }
 
-  /* Orders, Shipments and Chats pill navigation: one swipeable line. */
+  /* Explicit operational tab rows. Inline flex-wrap used by desktop must never win on phones. */
+  [data-admin-path="/admin/orders"] main > div > div:nth-child(1),
+  [data-admin-path="/admin/orders"] main > div > div:nth-child(2),
+  [data-admin-path="/admin/shipments"] main > div > div:nth-child(1),
   [data-admin-mobile="true"] .admin-mobile-pill-row {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -96,6 +111,9 @@
     scrollbar-width: thin;
   }
 
+  [data-admin-path="/admin/orders"] main > div > div:nth-child(1) > button,
+  [data-admin-path="/admin/orders"] main > div > div:nth-child(2) > button,
+  [data-admin-path="/admin/shipments"] main > div > div:nth-child(1) > button,
   [data-admin-mobile="true"] .admin-mobile-pill-row > button {
     flex: 0 0 auto !important;
     white-space: nowrap !important;
