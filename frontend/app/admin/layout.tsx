@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import { AdminAuthBoundary } from "@/components/admin/AdminAuthBoundary";
+import { AdminMobileScope } from "@/components/admin/AdminMobileScope";
 import { AdminShell } from "@/components/admin/AdminShell";
 import "./admin-mobile.css";
 
@@ -24,7 +25,9 @@ export default function AdminLayout({
   return (
     <div className={`${adminSans.variable} ${adminSans.className}`}>
       <AdminAuthBoundary>
-        <AdminShell>{children}</AdminShell>
+        <AdminMobileScope>
+          <AdminShell>{children}</AdminShell>
+        </AdminMobileScope>
       </AdminAuthBoundary>
     </div>
   );
