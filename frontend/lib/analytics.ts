@@ -2,6 +2,7 @@ declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
   }
 }
 
@@ -12,6 +13,34 @@ type PurchaseItem = {
   price: number;
 };
 
+function toMajor(minorUnits: number): number {
+  return Math.round(minorUnits) / 100;
+}
+
+function ga4Items(items: PurchaseItem[]) {
+  return items.map((i) => ({
+    item_id: i.id,
+    item_name: i.name,
+    quantity: i.quantity,
+    price: toMajor(i.price)
+  }));
+}
+
+function metaContents(items: PurchaseItem[]) {
+  return items.map((i) => ({
+    id: i.id,
+    quantity: i.quantity,
+    item_price: toMajor(i.price)
+  }));
+}
+
+/** Meta / Ads tags configured in GTM read value + currency from this event. */
+function pushDataLayer(event: string, ecommerce: Record<string, unknown>): void {
+  if (!Array.isArray(window.dataLayer)) window.dataLayer = [];
+  window.dataLayer.push({ ecommerce: null });
+  window.dataLayer.push({ event, ecommerce });
+}
+
 export function trackPurchase(params: {
   orderId: string;
   value: number;
@@ -20,26 +49,32 @@ export function trackPurchase(params: {
 }): void {
   if (typeof window === "undefined") return;
 
+  const value = toMajor(params.value);
+
+  pushDataLayer("purchase", {
+    transaction_id: params.orderId,
+    currency: params.currency,
+    value,
+    items: ga4Items(params.items)
+  });
+
   if (window.gtag) {
     window.gtag("event", "purchase", {
       transaction_id: params.orderId,
-      value: params.value / 100,
+      value,
       currency: params.currency,
-      items: params.items.map((i) => ({
-        item_id: i.id,
-        item_name: i.name,
-        quantity: i.quantity,
-        price: i.price / 100
-      }))
+      items: ga4Items(params.items)
     });
   }
 
   if (window.fbq) {
     window.fbq("track", "Purchase", {
-      value: params.value / 100,
+      value,
       currency: params.currency,
       content_ids: params.items.map((i) => i.id),
-      content_type: "product"
+      contents: metaContents(params.items),
+      content_type: "product",
+      num_items: params.items.reduce((s, i) => s + i.quantity, 0)
     });
   }
 }
@@ -49,14 +84,30 @@ export function trackAddToCart(params: {
   name: string;
   value: number;
   currency: string;
+  quantity?: number;
 }): void {
   if (typeof window === "undefined") return;
+
+  const value = toMajor(params.value);
+  const quantity = params.quantity ?? 1;
+  const item: PurchaseItem = {
+    id: params.itemId,
+    name: params.name,
+    quantity,
+    price: params.value / quantity
+  };
+
+  pushDataLayer("add_to_cart", {
+    currency: params.currency,
+    value,
+    items: ga4Items([item])
+  });
 
   if (window.gtag) {
     window.gtag("event", "add_to_cart", {
       currency: params.currency,
-      value: params.value / 100,
-      items: [{ item_id: params.itemId, item_name: params.name }]
+      value,
+      items: ga4Items([item])
     });
   }
 
@@ -64,23 +115,46 @@ export function trackAddToCart(params: {
     window.fbq("track", "AddToCart", {
       content_ids: [params.itemId],
       content_name: params.name,
-      value: params.value / 100,
+      contents: metaContents([item]),
+      content_type: "product",
+      value,
       currency: params.currency
     });
   }
 }
 
-export function trackInitiateCheckout(value: number, currency: string): void {
+export function trackInitiateCheckout(params: {
+  value: number;
+  currency: string;
+  items?: PurchaseItem[];
+}): void {
   if (typeof window === "undefined") return;
+
+  const value = toMajor(params.value);
+  const items = params.items ?? [];
+
+  pushDataLayer("begin_checkout", {
+    currency: params.currency,
+    value,
+    items: ga4Items(items)
+  });
 
   if (window.gtag) {
     window.gtag("event", "begin_checkout", {
-      currency,
-      value: value / 100
+      currency: params.currency,
+      value,
+      items: ga4Items(items)
     });
   }
 
   if (window.fbq) {
-    window.fbq("track", "InitiateCheckout");
+    window.fbq("track", "InitiateCheckout", {
+      value,
+      currency: params.currency,
+      content_ids: items.map((i) => i.id),
+      contents: metaContents(items),
+      content_type: "product",
+      num_items: items.reduce((s, i) => s + i.quantity, 0)
+    });
   }
 }

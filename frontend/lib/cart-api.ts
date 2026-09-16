@@ -269,7 +269,8 @@ async function cartAddLine(input: {
       itemId: cartLineKey(addedLine),
       name: addedLine.productName,
       value: addedLine.unitPriceInPaise * (Number(input.quantity) || 1),
-      currency: json.data!.currency
+      currency: json.data!.currency,
+      quantity: Number(input.quantity) || 1
     });
   }
   invalidatePendingCheckoutOnCartChange();

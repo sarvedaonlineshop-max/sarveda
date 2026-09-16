@@ -12,7 +12,7 @@ import {
   type CreateOrderBody,
   type CreateOrderResponse
 } from "@/lib/checkout-api";
-import { clearSession } from "@/lib/cart-api";
+import { cartLineKey, clearSession } from "@/lib/cart-api";
 import type { CartApiItem } from "@/lib/cart-api";
 import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
 import { validateCheckoutFormDetailed } from "@/lib/checkout-validation";
@@ -471,10 +471,16 @@ export function PaymentSelector({
     payStarted.current = true;
     if (!checkoutTracked.current) {
       checkoutTracked.current = true;
-      trackInitiateCheckout(
-        shippingInPaise != null ? estimatedTotal : merchandiseAfterDiscount,
-        displayCurrency
-      );
+      trackInitiateCheckout({
+        value: shippingInPaise != null ? estimatedTotal : merchandiseAfterDiscount,
+        currency: displayCurrency,
+        items: cartItems.map((i) => ({
+          id: cartLineKey(i),
+          name: i.productName,
+          quantity: i.quantity,
+          price: i.unitPriceInPaise
+        }))
+      });
     }
 
     try {
@@ -555,6 +561,7 @@ export function PaymentSelector({
     resolvePayableOrder,
     persistPending,
     rzpReady,
+    cartItems,
     estimatedTotal,
     merchandiseAfterDiscount,
     shippingInPaise,
