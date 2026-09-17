@@ -396,10 +396,30 @@ authRouter.post(
       return;
     }
     const isWeb = platform === "web";
-    await prisma.user.update({
-      where: { id: req.authUser!.id },
-      data: isWeb ? { fcmWebToken: token } : { fcmToken: token }
-    });
+    if (isWeb) {
+      // Avoid treating a Flutter/Android token as "web" (same device often reuses
+      // the mobile value if registration raced). Only store when it differs.
+      const existing = await prisma.user.findUnique({
+        where: { id: req.authUser!.id },
+        select: { fcmToken: true }
+      });
+      if (existing?.fcmToken && existing.fcmToken === token) {
+        console.log(
+          `[FCM] Ignoring web token for ${req.authUser!.email} — matches mobile Task Manager token`
+        );
+        res.json({ success: true, data: { ignoredDuplicateMobile: true } });
+        return;
+      }
+      await prisma.user.update({
+        where: { id: req.authUser!.id },
+        data: { fcmWebToken: token }
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: req.authUser!.id },
+        data: { fcmToken: token }
+      });
+    }
     console.log(
       `[FCM] ${isWeb ? "Web" : "Mobile"} token saved for ${req.authUser!.email} (${token.slice(0, 12)}...)`
     );

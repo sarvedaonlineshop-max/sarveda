@@ -131,20 +131,18 @@ export async function sendPushNotification(
       token: fcmToken,
       notification: { title, body },
       data: stringData,
-      android: {
-        priority: "high",
-        notification: {
-          // Keep Flutter on its channel; admin web/commerce uses a separate one.
-          channelId:
-            platform === "web" || data.audience === "admin"
-              ? "sarveda_admin_channel"
-              : "sarveda_tasks_channel",
-          color: "#075E54",
-          sound: "default",
-          // Helps some Android handlers prefer opening the URL when supported.
-          clickAction: link
-        }
-      },
+      android:
+        platform === "web"
+          ? undefined
+          : {
+              priority: "high",
+              notification: {
+                // Flutter Task Manager only creates this channel.
+                channelId: "sarveda_tasks_channel",
+                color: "#075E54",
+                sound: "default"
+              }
+            },
       webpush: {
         headers: { Urgency: "high" },
         notification: {
@@ -220,8 +218,8 @@ export async function sendPushToEmails(
 
 /**
  * Push to all ADMIN / SUPER_ADMIN users for order/chat alerts.
- * Prefers browser/PWA `fcmWebToken` so the tap opens /admin (not Flutter Task Manager).
- * Falls back to mobile `fcmToken` only when no web token is registered.
+ * Sends to browser `fcmWebToken` (opens /admin on tap) and, when different,
+ * also to Flutter `fcmToken` (opens Task Manager until Flutter handles admin links).
  */
 export async function sendPushToAdmins(
   title: string,
@@ -249,25 +247,22 @@ export async function sendPushToAdmins(
     let sent = 0;
     for (const user of users) {
       const payload = { ...data, audience: "admin" };
-      if (user.fcmWebToken) {
-        const ok = await sendPushNotification(
-          user.fcmWebToken,
-          title,
-          body,
-          payload,
-          { platform: "web" }
-        );
+      const mobile = user.fcmToken?.trim() || null;
+      const web = user.fcmWebToken?.trim() || null;
+      // Same string saved in both columns is almost always the Flutter token
+      // mis-copied as "web" — treat it as mobile only.
+      const webDistinct = web && web !== mobile ? web : null;
+
+      if (webDistinct) {
+        const ok = await sendPushNotification(webDistinct, title, body, payload, {
+          platform: "web"
+        });
         if (ok) sent += 1;
-        continue;
       }
-      if (user.fcmToken) {
-        const ok = await sendPushNotification(
-          user.fcmToken,
-          title,
-          body,
-          payload,
-          { platform: "android" }
-        );
+      if (mobile) {
+        const ok = await sendPushNotification(mobile, title, body, payload, {
+          platform: "android"
+        });
         if (ok) sent += 1;
       }
     }
