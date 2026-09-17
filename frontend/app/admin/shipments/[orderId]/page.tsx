@@ -26,6 +26,7 @@ import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   coveredOrderItemIdsFromShipments,
   courierByOrderItemIdFromShipments,
+  DELIVERY_PARTNER_OPTIONS,
   type DeliveryPartnerCode,
   type LineFulfillmentPref,
   partnerDisplayLabel,
@@ -158,6 +159,12 @@ export default function AdminShipmentCreateLabelPage() {
   const [panelCustomName, setPanelCustomName] = useState("");
   const [manualAwb, setManualAwb] = useState("");
   const [manualTrackingUrl, setManualTrackingUrl] = useState("");
+  const [addLabelOpen, setAddLabelOpen] = useState(false);
+  const [addLabelPartner, setAddLabelPartner] = useState<DeliveryPartnerCode | "">("");
+  const [addLabelCustomName, setAddLabelCustomName] = useState("");
+  const [addLabelAwb, setAddLabelAwb] = useState("");
+  const [addLabelTrackingUrl, setAddLabelTrackingUrl] = useState("");
+  const [addLabelBusy, setAddLabelBusy] = useState(false);
   const [breakdown, setBreakdown] = useState<{
     breakdown: {
       zone: string;
@@ -268,6 +275,8 @@ export default function AdminShipmentCreateLabelPage() {
   const forward = order ? primaryForwardShipment(order.shipments ?? []) : null;
   const awbRows = order ? allOrderAwbRows(order.shipments ?? []) : [];
   const hasForwardAwb = Boolean(forward?.awb?.trim());
+  /** Includes manually recorded AWBs, which `forward` deliberately skips. */
+  const hasAnyForwardAwb = awbRows.some((r) => r.role !== "return");
   const coveredIds = useMemo(
     () => coveredOrderItemIdsFromShipments(order?.shipments),
     [order?.shipments]
@@ -559,6 +568,53 @@ export default function AdminShipmentCreateLabelPage() {
     }
   }
 
+  /** Extra parcel on an order that already has a label — saves the AWB and tells the customer. */
+  async function handleAddLabel() {
+    if (!orderId) return;
+    if (!addLabelPartner) {
+      pushToast("Choose the delivery partner for this label.", true);
+      return;
+    }
+    const customName = addLabelCustomName.trim();
+    if (addLabelPartner === "OTHER" && !customName) {
+      pushToast("Enter the delivery partner name.", true);
+      return;
+    }
+    const awb = addLabelAwb.trim();
+    if (awb.length < 4) {
+      pushToast("Enter the AWB / tracking number (min 4 characters).", true);
+      return;
+    }
+    const trackingUrl = addLabelTrackingUrl.trim();
+    if (trackingUrl && !/^https?:\/\//i.test(trackingUrl)) {
+      pushToast("Tracking link must start with http:// or https://", true);
+      return;
+    }
+    setAddLabelBusy(true);
+    try {
+      const created = await adminSaveManualAwb(orderId, {
+        awb,
+        courier: addLabelPartner,
+        trackingUrl: trackingUrl || undefined,
+        customCourierName: addLabelPartner === "OTHER" ? customName : undefined,
+        additionalLabel: true
+      });
+      pushToast(
+        `Label added — ${created.courier} · ${created.waybill}. Email and WhatsApp sent to the customer.`
+      );
+      setAddLabelAwb("");
+      setAddLabelTrackingUrl("");
+      setAddLabelCustomName("");
+      setAddLabelPartner("");
+      setAddLabelOpen(false);
+      await load();
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Could not add label", true);
+    } finally {
+      setAddLabelBusy(false);
+    }
+  }
+
   async function handleSync() {
     if (!orderId) return;
     setSyncBusy(true);
@@ -828,7 +884,7 @@ export default function AdminShipmentCreateLabelPage() {
         </section>
 
         <section className="rounded-[26px] border border-stone-200 bg-white p-6 shadow-[0_8px_28px_rgba(15,23,42,.05)]">
-          {hasForwardAwb ? (
+          {hasAnyForwardAwb ? (
             <div className="space-y-4">
               <div className="pb-1">
                 <h2 className="text-2xl font-extrabold text-stone-950">Existing labels</h2>
@@ -877,7 +933,95 @@ export default function AdminShipmentCreateLabelPage() {
                 </div>
               ))}
 
+              {addLabelOpen ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+                    Add another label
+                  </p>
+                  <p className="mt-1 text-xs text-stone-600">
+                    For parcels booked outside Sarveda. Saving notifies the customer by email and
+                    WhatsApp with this tracking ID.
+                  </p>
+
+                  <label className="mt-3 block text-xs font-semibold text-stone-600">
+                    Delivery partner
+                    <select
+                      value={addLabelPartner}
+                      onChange={(e) => setAddLabelPartner(e.target.value as DeliveryPartnerCode | "")}
+                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-normal text-stone-900"
+                    >
+                      <option value="">Select partner…</option>
+                      {DELIVERY_PARTNER_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {addLabelPartner === "OTHER" ? (
+                    <label className="mt-3 block text-xs font-semibold text-stone-600">
+                      Partner name
+                      <input
+                        value={addLabelCustomName}
+                        onChange={(e) => setAddLabelCustomName(e.target.value)}
+                        placeholder="e.g. Professional Couriers"
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-normal text-stone-900"
+                      />
+                    </label>
+                  ) : null}
+
+                  <label className="mt-3 block text-xs font-semibold text-stone-600">
+                    AWB number
+                    <input
+                      value={addLabelAwb}
+                      onChange={(e) => setAddLabelAwb(e.target.value)}
+                      placeholder="e.g. 25437510882364"
+                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 font-mono text-sm font-normal text-stone-900"
+                    />
+                  </label>
+
+                  <label className="mt-3 block text-xs font-semibold text-stone-600">
+                    Tracking link <span className="font-normal text-stone-400">(optional)</span>
+                    <input
+                      value={addLabelTrackingUrl}
+                      onChange={(e) => setAddLabelTrackingUrl(e.target.value)}
+                      placeholder="https://…"
+                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-normal text-stone-900"
+                    />
+                  </label>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={addLabelBusy}
+                      onClick={() => void handleAddLabel()}
+                      className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                    >
+                      {addLabelBusy ? "Saving…" : "Save & notify customer"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={addLabelBusy}
+                      onClick={() => setAddLabelOpen(false)}
+                      className="rounded-xl border border-stone-300 px-5 py-2.5 text-sm font-bold text-stone-600 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="flex flex-wrap gap-2">
+                {!addLabelOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setAddLabelOpen(true)}
+                    className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-900"
+                  >
+                    + Add label
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   disabled={syncBusy || cancelBusy}
@@ -901,7 +1045,7 @@ export default function AdminShipmentCreateLabelPage() {
           ) : null}
 
           {canCreateMore ? (
-            <div className={`space-y-4 ${hasForwardAwb ? "mt-8 border-t border-stone-100 pt-6" : ""}`}>
+            <div className={`space-y-4 ${hasAnyForwardAwb ? "mt-8 border-t border-stone-100 pt-6" : ""}`}>
               <div className="pb-1">
                 <h2 className="text-2xl font-extrabold text-stone-950">
                   {isManualCreate ? "Manual shipment" : "Create shipment"}
@@ -1177,7 +1321,7 @@ export default function AdminShipmentCreateLabelPage() {
             </div>
               ) : null}
             </div>
-          ) : !hasForwardAwb ? (
+          ) : !hasAnyForwardAwb ? (
             <p className="text-sm text-stone-500">No open line items left to ship.</p>
           ) : null}
         </section>

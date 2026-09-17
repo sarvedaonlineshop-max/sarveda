@@ -1189,6 +1189,7 @@ export function adminSaveManualAwb(
     orderItemIds?: string[];
     customCourierName?: string;
     forceNew?: boolean;
+    additionalLabel?: boolean;
   }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(

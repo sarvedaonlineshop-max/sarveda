@@ -553,7 +553,8 @@ const manualAwbBody = z.object({
   pickupLocationId: z.string().uuid().optional().nullable(),
   orderItemIds: z.array(z.string().uuid()).min(1).max(100).optional(),
   customCourierName: z.string().min(1).max(80).optional(),
-  forceNew: z.boolean().optional()
+  forceNew: z.boolean().optional(),
+  additionalLabel: z.boolean().optional()
 });
 
 export async function postManualAwb(req: Request, res: Response, next: NextFunction) {
@@ -581,7 +582,8 @@ export async function postManualAwb(req: Request, res: Response, next: NextFunct
         pickupLocationId: parsed.data.pickupLocationId,
         orderItemIds: parsed.data.orderItemIds,
         customCourierName: parsed.data.customCourierName,
-        forceNew: parsed.data.forceNew
+        forceNew: parsed.data.forceNew,
+        additionalLabel: parsed.data.additionalLabel
       }
     );
     if (!result.success) {

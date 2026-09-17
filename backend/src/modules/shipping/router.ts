@@ -77,6 +77,17 @@ const CREATE_SHIPMENT_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING
 /** Pulling tracking updates from carrier APIs (includes shipped/delivered while still reconcilable). */
 const TRACK_SYNC_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"]);
 
+/**
+ * Recording an AWB that was booked outside Sarveda. Includes SHIPPED, because an order split
+ * across parcels keeps gaining labels after the first one has already moved the order on.
+ */
+const RECORD_LABEL_ORDER_STATUSES = new Set<OrderStatus>([
+  "PAID",
+  "PROCESSING",
+  "PACKED",
+  "SHIPPED"
+]);
+
 type OrderPaymentCheck = {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
@@ -151,6 +162,34 @@ export function assertOrderEligibleForCreatingShipment(order: OrderPaymentCheck)
     return {
       ok: false,
       error: `New labels can only be created for Paid, Processing, or Packed orders (current: ${order.status}). For shipped or delivered orders, use tracking sync only.`,
+      code: "ORDER_STATE"
+    };
+  }
+  return assertPaymentEligibleForShipping(order);
+}
+
+/** Recording an externally booked AWB — same money rules, but allowed once already shipped. */
+export function assertOrderEligibleForRecordingLabel(order: OrderPaymentCheck): {
+  ok: true;
+} | { ok: false; error: string; code: string } {
+  if (order.status === "CANCELLED" || order.status === "REFUNDED") {
+    return {
+      ok: false,
+      error: "Cancelled or refunded orders cannot take new labels.",
+      code: "ORDER_STATE"
+    };
+  }
+  if (order.status === "PENDING_PAYMENT") {
+    return {
+      ok: false,
+      error: "Unpaid orders cannot be shipped. Reconcile Razorpay payment or wait for capture.",
+      code: "ORDER_UNPAID"
+    };
+  }
+  if (!RECORD_LABEL_ORDER_STATUSES.has(order.status)) {
+    return {
+      ok: false,
+      error: `Labels can only be added to Paid, Processing, Packed, or Shipped orders (current: ${order.status}).`,
       code: "ORDER_STATE"
     };
   }
@@ -789,6 +828,8 @@ export async function persistManualAwb(
     orderItemIds?: string[];
     customCourierName?: string | null;
     forceNew?: boolean;
+    /** Extra parcel on an order that may already be shipped; always lands on its own row. */
+    additionalLabel?: boolean;
   }
 ): Promise<
   | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
@@ -806,9 +847,23 @@ export async function persistManualAwb(
     return { success: false, error: "Order not found", code: "NOT_FOUND" };
   }
 
-  const eligible = assertOrderEligibleForCreatingShipment(order);
+  const eligible = options?.additionalLabel
+    ? assertOrderEligibleForRecordingLabel(order)
+    : assertOrderEligibleForCreatingShipment(order);
   if (!eligible.ok) {
     return { success: false, error: eligible.error, code: eligible.code };
+  }
+
+  const duplicate = await prisma.shipment.findFirst({
+    where: { orderId, awb: trimmed },
+    select: { id: true }
+  });
+  if (duplicate) {
+    return {
+      success: false,
+      error: `AWB ${trimmed} is already saved on this order.`,
+      code: "DUPLICATE_AWB"
+    };
   }
 
   const partnerCode = courierCode.trim().toUpperCase();
@@ -838,10 +893,15 @@ export async function persistManualAwb(
         ? { customPartnerName: options.customCourierName.trim() }
         : {}),
       ...(trackingUrlOverride?.trim() ? { trackingUrlManual: trackingUrlOverride.trim() } : {}),
-      ...(options?.orderItemIds?.length ? { orderItemIds: options.orderItemIds } : {})
+      ...(options?.orderItemIds?.length ? { orderItemIds: options.orderItemIds } : {}),
+      ...(options?.additionalLabel ? { additionalLabel: true } : {})
     },
     undefined,
-    { forceNew: Boolean(options?.forceNew || options?.orderItemIds?.length) }
+    {
+      forceNew: Boolean(
+        options?.forceNew || options?.additionalLabel || options?.orderItemIds?.length
+      )
+    }
   );
 
   return {
@@ -913,7 +973,8 @@ async function persistShipment(
   });
 
   // Customer email + WhatsApp when a real outbound AWB is assigned.
-  // Deduped via BullMQ job id `order-email:{orderId}:order_shipped` (also covers later SHIPPED status).
+  // Deduped per AWB, so multi-label orders notify once per parcel while the later carrier
+  // SHIPPED status for that same AWB stays collapsed into the one notice.
   const wb = waybill.trim();
   const meta =
     carrierMeta && typeof carrierMeta === "object" && !Array.isArray(carrierMeta)
@@ -924,7 +985,7 @@ async function persistShipment(
   const isStub = wb.toUpperCase().startsWith("STUB-");
   if (wb && !isReverse && !isStub) {
     const { notifyOrderEmail } = await import("../notifications/email");
-    notifyOrderEmail(orderId, "order_shipped");
+    notifyOrderEmail(orderId, "order_shipped", { awb: wb });
     logger.info("awb_customer_notify_queued", { orderId, courier, waybill: wb });
   }
 }

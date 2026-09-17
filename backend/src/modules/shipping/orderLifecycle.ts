@@ -16,10 +16,12 @@ import {
 function notifyShipmentMilestones(
   orderId: string,
   prevOrderStatus: OrderStatus,
-  nextOrderStatus: OrderStatus
+  nextOrderStatus: OrderStatus,
+  awb?: string
 ): void {
   if (nextOrderStatus === "SHIPPED" && prevOrderStatus !== "SHIPPED" && prevOrderStatus !== "DELIVERED") {
-    notifyOrderEmail(orderId, "order_shipped");
+    // Same AWB as the label-create notice, so the customer gets one ship message per parcel.
+    notifyOrderEmail(orderId, "order_shipped", awb?.trim() ? { awb: awb.trim() } : undefined);
   }
   if (nextOrderStatus === "DELIVERED" && prevOrderStatus !== "DELIVERED") {
     notifyOrderEmail(orderId, "order_delivered");
@@ -178,7 +180,7 @@ export async function applyCarrierWebhookTracking(
 
   const prevOrderStatus = shipment.order.status;
   const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
-  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus);
+  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus, wb);
 
   logger.info("shiprocket_webhook_tracking_applied", {
     waybill: wb,
@@ -270,7 +272,7 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
 
   const prevOrderStatus = shipment.order.status;
   const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
-  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus);
+  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus, wb);
 
   return {
     success: true,

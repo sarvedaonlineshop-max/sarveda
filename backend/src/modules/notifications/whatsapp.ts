@@ -6,7 +6,7 @@ import { resolveAuthoritativeRefundAmountInPaise } from "./email";
 
 type TemplateParams = string[];
 
-/** Events that must fire at most once per order (AWB create + Mark Shipped both call order_shipped). */
+/** Events that fire at most once per order — except order_shipped, which is once per AWB. */
 const DEDUPE_EVENTS = new Set<OrderEmailEvent>([
   "order_confirmed",
   "order_processing",
@@ -326,7 +326,10 @@ export async function sendOrderWhatsApp(
     event === "refund_initiated"
       ? opts?.refundId ||
         (opts?.refundAmountInPaise != null ? `amt:${opts.refundAmountInPaise}` : undefined)
-      : undefined;
+      : // One ship notice per parcel when an order travels on several AWBs.
+        event === "order_shipped"
+        ? opts?.awb?.trim() || undefined
+        : undefined;
 
   if (!(await claimWhatsAppSend(orderId, event, dedupeSuffix))) {
     return;
@@ -336,7 +339,7 @@ export async function sendOrderWhatsApp(
     where: { id: orderId, deletedAt: null },
     include: {
       items: { orderBy: { nameSnapshot: "asc" } },
-      shipments: { orderBy: { createdAt: "desc" }, take: 1 },
+      shipments: { orderBy: { createdAt: "desc" }, take: 20 },
       addresses: { where: { type: "SHIPPING" }, take: 1 }
     }
   });
@@ -360,7 +363,10 @@ export async function sendOrderWhatsApp(
     amountForTemplate = formatOrderTotal(refundPaise, order.currency);
   }
   const view = orderViewUrl(order.orderNumber, order.email);
-  const awb = order.shipments[0]?.awb?.trim() || "";
+  const notifiedShipment =
+    (opts?.awb ? order.shipments.find((s) => s.awb?.trim() === opts.awb!.trim()) : null) ??
+    order.shipments[0];
+  const awb = notifiedShipment?.awb?.trim() || "";
   const tracking = awb ? trackUrl(awb) : view;
   const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
   const name = firstNameFromOrder(order.addresses[0]?.fullName, order.email);

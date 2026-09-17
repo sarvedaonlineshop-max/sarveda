@@ -133,6 +133,8 @@ export type OrderEmailNotifyOpts = {
   refundId?: string;
   caseNumber?: string | null;
   paymentProvider?: string | null;
+  /** Ship notices are per parcel: an order split across labels notifies once per AWB. */
+  awb?: string;
 };
 
 /**
@@ -514,7 +516,7 @@ async function loadOrderEmailContext(orderId: string) {
         }
       },
       addresses: true,
-      shipments: { orderBy: { createdAt: "desc" }, take: 1 }
+      shipments: { orderBy: { createdAt: "desc" }, take: 20 }
     }
   });
 }
@@ -552,7 +554,16 @@ export async function sendOrderEmail(
     : orderTotal;
   const view = orderViewUrl(order.orderNumber, order.email);
   const inv = invoiceUrl(order.orderNumber, order.email);
-  const awb = order.shipments[0]?.awb;
+  const notifiedShipment =
+    (opts?.awb ? order.shipments.find((s) => s.awb?.trim() === opts.awb!.trim()) : null) ??
+    order.shipments[0];
+  const awb = notifiedShipment?.awb;
+  const courierName = notifiedShipment?.courier?.trim() || "";
+  const forwardParcelCount = order.shipments.filter(
+    (s) =>
+      s.awb?.trim() &&
+      !(s.carrierMeta as { direction?: string } | null)?.direction?.includes("REVERSE")
+  ).length;
   const tracking = awb ? trackUrl(awb) : view;
   const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
   const firstName = escapeHtml(customerFirstName(order));
@@ -666,18 +677,25 @@ export async function sendOrderEmail(
       );
       text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} is being prepared.`;
       break;
-    case "order_shipped":
+    case "order_shipped": {
+      // Orders shipped as several parcels send one notice per AWB, so say which parcel this is.
+      const isExtraParcel = forwardParcelCount > 1;
       html = buildHtml(
         "",
         [
-          `Good news — your order <strong>${escapeHtml(order.orderNumber)}</strong> is on its way.`,
+          isExtraParcel
+            ? `Another parcel from your order <strong>${escapeHtml(order.orderNumber)}</strong> is on its way.`
+            : `Good news — your order <strong>${escapeHtml(order.orderNumber)}</strong> is on its way.`,
           awb
             ? `📦 Tracking ID (AWB): <strong style="font-size:16px;letter-spacing:0.5px">${escapeHtml(awb)}</strong>`
             : "Your shipment has been handed over to the courier.",
-          "You can follow your package using the button below."
+          courierName ? `🚚 Courier: <strong>${escapeHtml(courierName)}</strong>` : "",
+          isExtraParcel
+            ? "This order is travelling in more than one parcel, so you may receive them on different days. Each parcel has its own tracking ID."
+            : "You can follow your package using the button below."
         ].filter(Boolean),
         {
-          banner: "📦 Your order has shipped",
+          banner: isExtraParcel ? "📦 Another parcel is on its way" : "📦 Your order has shipped",
           showTick: false,
           greeting,
           intro: warmIntro,
@@ -688,8 +706,9 @@ export async function sendOrderEmail(
           ]
         }
       );
-      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} shipped.${awb ? ` AWB: ${awb}.` : ""} Track: ${tracking}`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} shipped.${awb ? ` AWB: ${awb}.` : ""}${courierName ? ` Courier: ${courierName}.` : ""} Track: ${tracking}`;
       break;
+    }
     case "order_delivered":
       html = buildHtml(
         "",
@@ -880,7 +899,11 @@ export function notifyOrderEmail(
       ? `order-email:${orderId}:${event}:${opts.refundId}`
       : event === "refund_initiated" && opts?.refundAmountInPaise != null
         ? `order-email:${orderId}:${event}:amt:${opts.refundAmountInPaise}`
-        : `order-email:${orderId}:${event}`;
+        : // Per parcel: a multi-label order ships one notice per AWB, but label create and the
+          // later carrier SHIPPED status for that same AWB still collapse into one email.
+          event === "order_shipped" && opts?.awb?.trim()
+          ? `order-email:${orderId}:${event}:${opts.awb.trim()}`
+          : `order-email:${orderId}:${event}`;
 
   void enqueueEmail(
     { type: "order_email", orderId, event, opts },

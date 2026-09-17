@@ -1,5 +1,7 @@
 export type ShipmentCarrierMeta = {
   manual?: boolean;
+  /** Extra parcel recorded from the Existing labels panel after a first label already existed. */
+  additionalLabel?: boolean;
   direction?: string;
   mpsWaybills?: string[];
   carrier?: string;
@@ -102,9 +104,11 @@ export function expandShipmentAwbs(shipment: ShipmentLike): AwbLabelRow[] {
       role: isReturn ? "return" : meta.manual ? "external" : "parent",
       boxLabel: isReturn
         ? "Return AWB"
-        : meta.manual
-          ? "External reference"
-          : "Delhivery AWB",
+        : meta.additionalLabel
+          ? "Added label"
+          : meta.manual
+            ? "External reference"
+            : "Delhivery AWB",
       courier: shipment.courier,
       trackingUrl: shipment.trackingUrl || (isDel ? delhiveryTrackUrl(awb) : null),
       status: shipment.status,
