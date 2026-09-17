@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 
-import { fetchPendingServiceRequestCount } from "@/lib/order-service-request";
+import { fetchAdminOrders } from "@/lib/admin-api";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import {
   applySidebarHover,
@@ -19,14 +19,13 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
   const nav = useAdminNavOptional();
   const activePath = nav?.activePath ?? pathname;
   const active = activePath === "/admin/orders" || activePath.startsWith("/admin/orders/");
-  // Cancellation and return requests are the only thing that needs a human to act,
-  // so they keep the badge. Nothing else in admin surfaces them.
-  const [pending, setPending] = useState(0);
+  const [newCount, setNewCount] = useState(0);
 
   useEffect(() => {
     const loadCount = async () => {
       try {
-        setPending(await fetchPendingServiceRequestCount());
+        const data = await fetchAdminOrders({ channel: "all", bucket: "new", page: 1, limit: 1 });
+        setNewCount(data.counts?.new ?? 0);
       } catch {
         // Keep the last known value during a transient refresh failure.
       }
@@ -39,9 +38,9 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
 
   return (
     <Link
-      href="/admin/orders"
+      href="/admin/orders?bucket=new"
       onClick={() => {
-        nav?.beginNavigation("/admin/orders");
+        nav?.beginNavigation("/admin/orders?bucket=new");
         onNavigate?.();
       }}
       style={sidebarLinkStyle(active)}
@@ -59,10 +58,10 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
         <ShoppingCart size={18} strokeWidth={2} />
       </span>
       <span style={{ flex: 1 }}>Orders</span>
-      {pending > 0 ? (
+      {newCount > 0 ? (
         <span
-          title="Cancellation / return requests awaiting action"
-          aria-label={`${pending} cancellation or return requests awaiting action`}
+          title="New orders"
+          aria-label={`${newCount} new orders`}
           style={{
             minWidth: "20px",
             height: "20px",
@@ -78,7 +77,7 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
             boxShadow: "0 6px 12px rgba(220,38,38,0.26)"
           }}
         >
-          {pending > 99 ? "99+" : pending}
+          {newCount > 99 ? "99+" : newCount}
         </span>
       ) : null}
     </Link>
