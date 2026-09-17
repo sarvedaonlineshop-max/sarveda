@@ -19,17 +19,21 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
   const nav = useAdminNavOptional();
   const activePath = nav?.activePath ?? pathname;
   const active = activePath === "/admin/orders" || activePath.startsWith("/admin/orders/");
+  // Cancellation and return requests are the only thing that needs a human to act,
+  // so they keep the badge. Nothing else in admin surfaces them.
   const [pending, setPending] = useState(0);
 
   useEffect(() => {
-    void fetchPendingServiceRequestCount()
-      .then(setPending)
-      .catch(() => setPending(0));
-    const timer = setInterval(() => {
-      void fetchPendingServiceRequestCount()
-        .then(setPending)
-        .catch(() => undefined);
-    }, 60_000);
+    const loadCount = async () => {
+      try {
+        setPending(await fetchPendingServiceRequestCount());
+      } catch {
+        // Keep the last known value during a transient refresh failure.
+      }
+    };
+
+    void loadCount();
+    const timer = setInterval(() => void loadCount(), 60_000);
     return () => clearInterval(timer);
   }, [pathname]);
 
@@ -57,6 +61,8 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
       <span style={{ flex: 1 }}>Orders</span>
       {pending > 0 ? (
         <span
+          title="Cancellation / return requests awaiting action"
+          aria-label={`${pending} cancellation or return requests awaiting action`}
           style={{
             minWidth: "20px",
             height: "20px",
