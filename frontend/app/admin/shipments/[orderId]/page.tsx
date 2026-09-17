@@ -13,7 +13,7 @@ import {
   adminCreateShipmentForOrder,
   adminEstimateDelhiveryCharge,
   adminSaveManualAwb,
-  adminSyncOrderShipments,
+  adminTrackShipmentByWaybill,
   delhiveryLabelUrl,
   fetchAdminOrderDetail,
   fetchAdminOrderShippingBreakdown,
@@ -149,9 +149,13 @@ export default function AdminShipmentCreateLabelPage() {
   });
   const [freightBusy, setFreightBusy] = useState(false);
   const [shipBusy, setShipBusy] = useState(false);
-  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncingAwb, setSyncingAwb] = useState<string | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
-  const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
+  const [cancelAwbConfirm, setCancelAwbConfirm] = useState<{
+    awb: string;
+    /** Recorded by hand, so there is no carrier booking to void — remove it from Sarveda only. */
+    manual: boolean;
+  } | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [linePrefs, setLinePrefs] = useState<Record<string, LineFulfillmentPref>>({});
   const [panelSourceId, setPanelSourceId] = useState("");
@@ -313,21 +317,30 @@ export default function AdminShipmentCreateLabelPage() {
   const isDelhiveryCreate = createPartner === "DELHIVERY";
   const isManualCreate =
     createPartner != null && createPartner !== "DELHIVERY" && selectedOpenIds.length > 0;
-  const canCancelLabel =
-    hasForwardAwb &&
-    Boolean(forward?.awb) &&
-    ["CREATED", "PICKED"].includes(forward?.status ?? "") &&
-    !["SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"].includes(order?.status ?? "");
+  const orderClosed = ["DELIVERED", "CANCELLED", "REFUNDED"].includes(order?.status ?? "");
+  const orderLocksCarrierCancel = orderClosed || order?.status === "SHIPPED";
+  /** Child boxes of a multi-piece booking are not separate shipments, so they have no own actions. */
+  const canCancelRow = (row: {
+    role: string;
+    status: string;
+    isDelhiveryIntegrated: boolean;
+  }) => {
+    if (row.role === "child" || !["CREATED", "PICKED"].includes(row.status)) return false;
+    // A hand-recorded AWB is only a Sarveda record, so a typo stays fixable after dispatch.
+    return row.isDelhiveryIntegrated ? !orderLocksCarrierCancel : !orderClosed;
+  };
 
   async function confirmCancelWaybill(localOnly = false) {
-    const awb = cancelAwbConfirm;
-    if (!awb) return;
+    const target = cancelAwbConfirm;
+    if (!target) return;
     setCancelBusy(true);
     try {
-      const r = await adminCancelWaybill(awb, { localOnly });
+      const r = await adminCancelWaybill(target.awb, { localOnly: localOnly || target.manual });
       setCancelAwbConfirm(null);
       await load();
-      if (r.carrierAlreadyCancelled || r.localOnly) {
+      if (target.manual) {
+        pushToast(`Label ${target.awb} removed from this order.`);
+      } else if (r.carrierAlreadyCancelled || r.localOnly) {
         pushToast("Label removed in Sarveda. You can create a new Delhivery label.");
       } else {
         pushToast("Delhivery label cancelled. Create a new label when ready.");
@@ -615,17 +628,17 @@ export default function AdminShipmentCreateLabelPage() {
     }
   }
 
-  async function handleSync() {
-    if (!orderId) return;
-    setSyncBusy(true);
+  async function handleSyncAwb(awb: string) {
+    if (!orderId || !awb) return;
+    setSyncingAwb(awb);
     try {
-      await adminSyncOrderShipments(orderId);
-      pushToast("Tracking synced from Delhivery.");
+      const r = await adminTrackShipmentByWaybill(awb);
+      pushToast(`AWB ${awb} is now ${r.shipmentStatus}.`);
       await load();
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Sync failed", true);
     } finally {
-      setSyncBusy(false);
+      setSyncingAwb(null);
     }
   }
 
@@ -929,6 +942,31 @@ export default function AdminShipmentCreateLabelPage() {
                         Track
                       </a>
                     ) : null}
+                    {row.role !== "child" ? (
+                      <button
+                        type="button"
+                        disabled={syncingAwb !== null || cancelBusy}
+                        onClick={() => void handleSyncAwb(row.awb)}
+                        className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                      >
+                        {syncingAwb === row.awb ? "Syncing…" : "Sync status"}
+                      </button>
+                    ) : null}
+                    {canCancelRow(row) ? (
+                      <button
+                        type="button"
+                        disabled={syncingAwb !== null || cancelBusy}
+                        onClick={() =>
+                          setCancelAwbConfirm({
+                            awb: row.cancelWaybill,
+                            manual: !row.isDelhiveryIntegrated
+                          })
+                        }
+                        className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-900 disabled:opacity-50"
+                      >
+                        {row.isDelhiveryIntegrated ? "Cancel label & recreate" : "Remove label"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -1012,8 +1050,8 @@ export default function AdminShipmentCreateLabelPage() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap gap-2">
-                {!addLabelOpen ? (
+              {!addLabelOpen ? (
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => setAddLabelOpen(true)}
@@ -1021,26 +1059,8 @@ export default function AdminShipmentCreateLabelPage() {
                   >
                     + Add label
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={syncBusy || cancelBusy}
-                  onClick={() => void handleSync()}
-                  className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  {syncBusy ? "Syncing…" : "Sync tracking from Delhivery"}
-                </button>
-                {canCancelLabel && forward?.awb ? (
-                  <button
-                    type="button"
-                    disabled={syncBusy || cancelBusy}
-                    onClick={() => setCancelAwbConfirm(forward.awb!)}
-                    className="rounded-xl border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-bold text-red-900 disabled:opacity-50"
-                  >
-                    Cancel label &amp; recreate
-                  </button>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -1329,15 +1349,21 @@ export default function AdminShipmentCreateLabelPage() {
 
       <AdminConfirmModal
         open={cancelAwbConfirm !== null}
-        title="Cancel Delhivery label?"
+        title={cancelAwbConfirm?.manual ? "Remove this label?" : "Cancel Delhivery label?"}
         message={
-          cancelAwbConfirm
-            ? `Cancel AWB ${cancelAwbConfirm} on Delhivery (voids master + child boxes for multi-piece) and remove it from Sarveda so you can create a new label. If you already cancelled in Delhivery One, use “Remove label only”. This does not cancel the Sarveda order.`
-            : ""
+          !cancelAwbConfirm
+            ? ""
+            : cancelAwbConfirm.manual
+              ? `Remove AWB ${cancelAwbConfirm.awb} from this order in Sarveda. It was booked outside Sarveda, so nothing is cancelled with the courier — cancel it with them separately if needed. This does not cancel the Sarveda order.`
+              : `Cancel AWB ${cancelAwbConfirm.awb} on Delhivery (voids master + child boxes for multi-piece) and remove it from Sarveda so you can create a new label. If you already cancelled in Delhivery One, use “Remove label only”. This does not cancel the Sarveda order.`
         }
-        confirmLabel="Cancel on Delhivery"
-        secondaryConfirmLabel="Remove label only (Sarveda)"
-        onSecondaryConfirm={() => void confirmCancelWaybill(true)}
+        confirmLabel={cancelAwbConfirm?.manual ? "Remove label" : "Cancel on Delhivery"}
+        secondaryConfirmLabel={
+          cancelAwbConfirm?.manual ? undefined : "Remove label only (Sarveda)"
+        }
+        onSecondaryConfirm={
+          cancelAwbConfirm?.manual ? undefined : () => void confirmCancelWaybill(true)
+        }
         danger
         busy={cancelBusy}
         onClose={() => setCancelAwbConfirm(null)}
