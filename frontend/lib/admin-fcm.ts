@@ -300,7 +300,7 @@ export async function enableAdminPush(
                 : "/admin");
           const n = new Notification(title, {
             body,
-            icon: "/icons/icon-192.png",
+            icon: "/icons/icon-192.png?v=sarveda-app-icon-3",
             tag: payload.data?.chatId || payload.data?.orderId || "sarveda-admin"
           });
           n.onclick = () => {
