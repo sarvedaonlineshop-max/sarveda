@@ -573,6 +573,7 @@ export async function updateNotificationPreferences(
     emailNotificationsEnabled?: boolean;
     pushNotificationsEnabled?: boolean;
     fcmToken?: null;
+    fcmWebToken?: null;
   } = {};
 
   if (body.emailNotificationsEnabled !== undefined) {
@@ -582,6 +583,7 @@ export async function updateNotificationPreferences(
     data.pushNotificationsEnabled = body.pushNotificationsEnabled;
     if (!body.pushNotificationsEnabled) {
       data.fcmToken = null;
+      data.fcmWebToken = null;
     }
   }
 

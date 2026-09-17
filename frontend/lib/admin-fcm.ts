@@ -160,7 +160,7 @@ async function saveTokenToServer(token: string): Promise<boolean> {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token, platform: "web" })
     }),
     12000,
     "Saving push token"

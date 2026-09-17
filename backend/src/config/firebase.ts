@@ -94,11 +94,28 @@ function adminDeepLink(data: Record<string, string>): string {
   return `${base}/admin`;
 }
 
+type PushPlatform = "web" | "android";
+
+async function clearStaleToken(token: string): Promise<void> {
+  await prisma.user.updateMany({
+    where: { fcmToken: token },
+    data: { fcmToken: null }
+  });
+  await prisma.user.updateMany({
+    where: { fcmWebToken: token },
+    data: { fcmWebToken: null }
+  });
+  logger.warn("fcm_token_cleared_stale", {
+    tokenPrefix: token.slice(0, 12)
+  });
+}
+
 export async function sendPushNotification(
   fcmToken: string,
   title: string,
   body: string,
-  data: Record<string, string> = {}
+  data: Record<string, string> = {},
+  opts: { platform?: PushPlatform } = {}
 ): Promise<boolean> {
   try {
     const app = getFirebaseAdmin();
@@ -109,6 +126,7 @@ export async function sendPushNotification(
       body,
       link
     };
+    const platform = opts.platform ?? "android";
     const messageId = await app.messaging().send({
       token: fcmToken,
       notification: { title, body },
@@ -116,9 +134,15 @@ export async function sendPushNotification(
       android: {
         priority: "high",
         notification: {
-          channelId: "sarveda_tasks_channel",
+          // Keep Flutter on its channel; admin web/commerce uses a separate one.
+          channelId:
+            platform === "web" || data.audience === "admin"
+              ? "sarveda_admin_channel"
+              : "sarveda_tasks_channel",
           color: "#075E54",
-          sound: "default"
+          sound: "default",
+          // Helps some Android handlers prefer opening the URL when supported.
+          clickAction: link
         }
       },
       webpush: {
@@ -134,7 +158,8 @@ export async function sendPushNotification(
     });
     logger.info("fcm_push_sent", {
       messageId,
-      tokenPrefix: fcmToken.slice(0, 12)
+      tokenPrefix: fcmToken.slice(0, 12),
+      platform
     });
     return true;
   } catch (err: unknown) {
@@ -148,13 +173,7 @@ export async function sendPushNotification(
       message.includes("InvalidRegistration") ||
       message.includes("NotRegistered")
     ) {
-      await prisma.user.updateMany({
-        where: { fcmToken },
-        data: { fcmToken: null }
-      });
-      logger.warn("fcm_token_cleared_stale", {
-        tokenPrefix: fcmToken.slice(0, 12)
-      });
+      await clearStaleToken(fcmToken);
     }
     return false;
   }
@@ -190,7 +209,8 @@ export async function sendPushToEmails(
         user.fcmToken,
         title,
         body,
-        data
+        data,
+        { platform: "android" }
       );
       if (ok) sent += 1;
     }
@@ -199,8 +219,9 @@ export async function sendPushToEmails(
 }
 
 /**
- * Push to all ADMIN / SUPER_ADMIN users with an FCM token (Sarveda Admin app).
- * `data` should include `type` (`order` | `chat`) and optional `orderId` / `chatId`.
+ * Push to all ADMIN / SUPER_ADMIN users for order/chat alerts.
+ * Prefers browser/PWA `fcmWebToken` so the tap opens /admin (not Flutter Task Manager).
+ * Falls back to mobile `fcmToken` only when no web token is registered.
  */
 export async function sendPushToAdmins(
   title: string,
@@ -216,10 +237,10 @@ export async function sendPushToAdmins(
       where: {
         role: { in: ["ADMIN", "SUPER_ADMIN"] },
         deletedAt: null,
-        fcmToken: { not: null },
-        pushNotificationsEnabled: true
+        pushNotificationsEnabled: true,
+        OR: [{ fcmWebToken: { not: null } }, { fcmToken: { not: null } }]
       },
-      select: { email: true, fcmToken: true }
+      select: { email: true, fcmToken: true, fcmWebToken: true }
     });
     if (users.length === 0) {
       logger.warn("fcm_no_admin_tokens", { title });
@@ -227,12 +248,28 @@ export async function sendPushToAdmins(
     }
     let sent = 0;
     for (const user of users) {
-      if (!user.fcmToken) continue;
-      const ok = await sendPushNotification(user.fcmToken, title, body, {
-        ...data,
-        audience: "admin"
-      });
-      if (ok) sent += 1;
+      const payload = { ...data, audience: "admin" };
+      if (user.fcmWebToken) {
+        const ok = await sendPushNotification(
+          user.fcmWebToken,
+          title,
+          body,
+          payload,
+          { platform: "web" }
+        );
+        if (ok) sent += 1;
+        continue;
+      }
+      if (user.fcmToken) {
+        const ok = await sendPushNotification(
+          user.fcmToken,
+          title,
+          body,
+          payload,
+          { platform: "android" }
+        );
+        if (ok) sent += 1;
+      }
     }
     logger.info("fcm_admin_push_done", { title, sent, candidates: users.length });
     return sent;

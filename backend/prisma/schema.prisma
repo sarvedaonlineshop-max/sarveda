@@ -38,6 +38,8 @@ model User {
   adminSessions             AdminSession[]
   adminActivities           AdminActivityLog[]       @relation("AdminActivityActor")
   fcmToken                  String?
+  /// Browser / PWA FCM token (admin order & chat alerts). Kept separate from Flutter Task Manager `fcmToken`.
+  fcmWebToken               String?
   emailNotificationsEnabled Boolean                  @default(true)
   pushNotificationsEnabled  Boolean                  @default(true)
   blogComments              BlogComment[]

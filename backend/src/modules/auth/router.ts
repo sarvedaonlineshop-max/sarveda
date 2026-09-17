@@ -387,17 +387,21 @@ authRouter.post(
   "/fcm-token",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { token } = req.body as { token?: string };
+    const { token, platform } = req.body as {
+      token?: string;
+      platform?: string;
+    };
     if (!token || typeof token !== "string" || token.length < 20 || token.length > 4096) {
       res.status(400).json({ success: false, error: "Token required", code: "INVALID_TOKEN" });
       return;
     }
+    const isWeb = platform === "web";
     await prisma.user.update({
       where: { id: req.authUser!.id },
-      data: { fcmToken: token }
+      data: isWeb ? { fcmWebToken: token } : { fcmToken: token }
     });
     console.log(
-      `[FCM] Token saved for ${req.authUser!.email} (${token.slice(0, 12)}...)`
+      `[FCM] ${isWeb ? "Web" : "Mobile"} token saved for ${req.authUser!.email} (${token.slice(0, 12)}...)`
     );
     res.json({ success: true });
   })
