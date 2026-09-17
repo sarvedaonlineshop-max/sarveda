@@ -71,12 +71,12 @@ export const metadata: Metadata = {
   robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
   icons: {
     icon: [
-      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/favicon-48.png", sizes: "48x48", type: "image/png" },
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }
+      { url: "/icons/favicon-32.png?v=sarveda-app-icon-3", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-48.png?v=sarveda-app-icon-3", sizes: "48x48", type: "image/png" },
+      { url: "/icons/icon-192.png?v=sarveda-app-icon-3", sizes: "192x192", type: "image/png" }
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    shortcut: "/favicon.ico"
+    apple: [{ url: "/icons/apple-touch-icon.png?v=sarveda-app-icon-3", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.ico?v=sarveda-app-icon-3"
   },
   manifest: "/manifest.json",
   appleWebApp: {

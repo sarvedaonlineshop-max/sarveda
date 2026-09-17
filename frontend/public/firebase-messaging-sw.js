@@ -49,8 +49,8 @@ if (firebaseConfig) {
     // Always paint from the SW so tap routing to /admin is under our control.
     return self.registration.showNotification(title, {
       body,
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      icon: "/icons/icon-192.png?v=sarveda-app-icon-3",
+      badge: "/icons/icon-192.png?v=sarveda-app-icon-3",
       data: { link, ...(payload.data || {}) },
       tag: payload.data?.chatId || payload.data?.orderId || "sarveda-admin",
       renotify: true
