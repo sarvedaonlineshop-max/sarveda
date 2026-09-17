@@ -7,8 +7,17 @@ import {
   dismissPushPrompt,
   enableAdminPush,
   isPushDismissed,
-  refreshAdminPushIfGranted
+  refreshAdminPushIfGranted,
+  type EnablePushProgress
 } from "@/lib/admin-fcm";
+
+const STEP_LABEL: Record<EnablePushProgress, string> = {
+  config: "Loading push settings…",
+  permission: "Waiting for Allow at the top of the screen…",
+  service_worker: "Setting up notification worker…",
+  token: "Connecting to Firebase…",
+  save: "Saving on server…"
+};
 
 /**
  * Registers FCM for logged-in admins and prompts once to enable order/chat push.
@@ -16,6 +25,7 @@ import {
 export function AdminPushRegistrar() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<EnablePushProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [doneHint, setDoneHint] = useState(false);
 
@@ -41,8 +51,10 @@ export function AdminPushRegistrar() {
   const onEnable = useCallback(async () => {
     setBusy(true);
     setError(null);
-    const result = await enableAdminPush();
+    setStep("config");
+    const result = await enableAdminPush((next) => setStep(next));
     setBusy(false);
+    setStep(null);
     if (result.ok) {
       setShowPrompt(false);
       setDoneHint(true);
@@ -50,13 +62,15 @@ export function AdminPushRegistrar() {
       return;
     }
     if (result.reason === "denied") {
-      setError("Notifications blocked. Enable them in the browser site settings, then try again.");
+      setError(
+        "Notifications blocked. In Chrome site settings for sarveda.com, set Notifications to Allow, then try again."
+      );
       return;
     }
     if (result.reason === "not_configured") {
       setError(
         result.message ||
-          "Push keys missing on server. Deploy latest API (git pull + build) and set FIREBASE_WEB_* in backend/.env."
+          "Push keys missing on server. Deploy latest API and set FIREBASE_WEB_* in backend/.env."
       );
       return;
     }
@@ -98,8 +112,12 @@ export function AdminPushRegistrar() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-[#1c352a]">Enable order &amp; chat alerts</p>
           <p className="mt-0.5 text-[12px] leading-snug text-stone-600">
-            Get a phone notification when a new order is paid or a customer chats — even if admin is closed.
+            Get a phone notification when a new order is paid or a customer chats — even if admin is
+            closed.
           </p>
+          {busy && step ? (
+            <p className="mt-1.5 text-[11px] font-medium text-[#1c352a]">{STEP_LABEL[step]}</p>
+          ) : null}
           {error ? <p className="mt-1.5 text-[11px] text-red-600">{error}</p> : null}
           <div className="mt-2.5 flex items-center gap-2">
             <button

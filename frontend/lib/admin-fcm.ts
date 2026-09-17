@@ -27,6 +27,24 @@ let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 let foregroundBound = false;
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`));
+    }, ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 function envFallbackConfig(): FcmWebConfig | null {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() || "";
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() || "";
@@ -46,12 +64,15 @@ function envFallbackConfig(): FcmWebConfig | null {
 export async function fetchFcmWebConfig(): Promise<FcmWebConfig | null> {
   const fromEnv = envFallbackConfig();
   try {
-    const res = await fetch(`${getApiBase()}/api/auth/fcm-web-config`, {
-      credentials: "include",
-      headers: { Accept: "application/json" }
-    });
+    const res = await withTimeout(
+      fetch(`${getApiBase()}/api/auth/fcm-web-config`, {
+        credentials: "include",
+        headers: { Accept: "application/json" }
+      }),
+      12000,
+      "Loading push config"
+    );
     if (res.status === 404) {
-      // Old API build without this route — fall back to public Vercel env if set.
       return fromEnv;
     }
     if (!res.ok) return fromEnv;
@@ -99,23 +120,51 @@ async function registerMessagingWorker(
     projectId: config.projectId,
     messagingSenderId: config.messagingSenderId,
     appId: config.appId,
-    v: "2"
+    v: "3"
   });
-  const registration = await navigator.serviceWorker.register(
-    `/firebase-messaging-sw.js?${params.toString()}`,
-    { scope: "/firebase-cloud-messaging-push-scope" }
+  const registration = await withTimeout(
+    navigator.serviceWorker.register(`/firebase-messaging-sw.js?${params.toString()}`, {
+      scope: "/firebase-cloud-messaging-push-scope"
+    }),
+    15000,
+    "Registering notification service worker"
   );
-  await navigator.serviceWorker.ready;
+  // Prefer this worker becoming active rather than waiting on another site SW.
+  if (registration.installing) {
+    await withTimeout(
+      new Promise<void>((resolve, reject) => {
+        const worker = registration.installing;
+        if (!worker) {
+          resolve();
+          return;
+        }
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "activated") resolve();
+          if (worker.state === "redundant") {
+            reject(new Error("Notification service worker failed to activate"));
+          }
+        });
+      }),
+      15000,
+      "Activating notification service worker"
+    );
+  } else if (registration.waiting) {
+    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+  }
   return registration;
 }
 
 async function saveTokenToServer(token: string): Promise<boolean> {
-  const res = await fetch(`${getApiBase()}/api/auth/fcm-token`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ token })
-  });
+  const res = await withTimeout(
+    fetch(`${getApiBase()}/api/auth/fcm-token`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ token })
+    }),
+    12000,
+    "Saving push token"
+  );
   if (!res.ok) return false;
   try {
     window.localStorage.setItem(LAST_TOKEN_KEY, token);
@@ -153,10 +202,19 @@ export type EnablePushResult =
   | { ok: true; token: string }
   | { ok: false; reason: "unsupported" | "not_configured" | "denied" | "error"; message?: string };
 
+export type EnablePushProgress =
+  | "config"
+  | "permission"
+  | "service_worker"
+  | "token"
+  | "save";
+
 /**
  * Request permission (if needed), obtain FCM token, save to backend.
  */
-export async function enableAdminPush(): Promise<EnablePushResult> {
+export async function enableAdminPush(
+  onProgress?: (step: EnablePushProgress) => void
+): Promise<EnablePushResult> {
   if (typeof window === "undefined" || !("Notification" in window)) {
     return { ok: false, reason: "unsupported" };
   }
@@ -164,6 +222,7 @@ export async function enableAdminPush(): Promise<EnablePushResult> {
     return { ok: false, reason: "unsupported" };
   }
 
+  onProgress?.("config");
   const config = await fetchFcmWebConfig();
   if (!config) {
     return {
@@ -173,9 +232,15 @@ export async function enableAdminPush(): Promise<EnablePushResult> {
     };
   }
 
+  onProgress?.("permission");
   let permission = Notification.permission;
   if (permission === "default") {
-    permission = await Notification.requestPermission();
+    // Chrome may show the system Allow/Block sheet at the TOP of the screen.
+    permission = await withTimeout(
+      Notification.requestPermission(),
+      45000,
+      "Waiting for notification permission (check the Allow prompt at the top of the screen)"
+    );
   }
   if (permission !== "granted") {
     return { ok: false, reason: "denied" };
@@ -185,20 +250,28 @@ export async function enableAdminPush(): Promise<EnablePushResult> {
     const msg = await ensureMessaging(config);
     if (!msg) return { ok: false, reason: "unsupported" };
 
+    onProgress?.("service_worker");
     const registration = await registerMessagingWorker(config);
-    const token = await getToken(msg, {
-      vapidKey: config.vapidKey,
-      serviceWorkerRegistration: registration ?? undefined
-    });
+
+    onProgress?.("token");
+    const token = await withTimeout(
+      getToken(msg, {
+        vapidKey: config.vapidKey,
+        serviceWorkerRegistration: registration ?? undefined
+      }),
+      20000,
+      "Getting FCM token (check VAPID key / Firebase web config)"
+    );
     if (!token) {
       return { ok: false, reason: "error", message: "No FCM token returned." };
     }
+
+    onProgress?.("save");
     const saved = await saveTokenToServer(token);
     if (!saved) {
       return { ok: false, reason: "error", message: "Could not save push token." };
     }
 
-    // Foreground messages while admin tab is open
     if (!foregroundBound) {
       foregroundBound = true;
       onMessage(msg, (payload) => {
