@@ -15,12 +15,16 @@ import { adminTheme as t } from "@/lib/admin-theme";
 
 const THEME_KEY = "sarveda-admin-theme";
 
+/** Admin UI is light-only (ignore system preference and any prior dark setting). */
 function readStoredTheme(): boolean {
-  if (typeof window === "undefined") return false;
-  const s = window.localStorage.getItem(THEME_KEY);
-  if (s === "dark") return true;
-  if (s === "light") return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(THEME_KEY, "light");
+    } catch {
+      /* ignore */
+    }
+  }
+  return false;
 }
 
 const PAGE_TITLES: Record<string, string> = {
@@ -476,18 +480,14 @@ function AdminShellInner({
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [preferDarkMain, setPreferDarkMain] = useState(false);
+  const preferDarkMain = false;
 
   useEffect(() => {
-    setPreferDarkMain(readStoredTheme());
+    readStoredTheme();
   }, []);
 
   function toggleMainTheme() {
-    setPreferDarkMain((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") window.localStorage.setItem(THEME_KEY, next ? "dark" : "light");
-      return next;
-    });
+    // Light theme only — toggle kept as no-op for sidebar prop compatibility.
   }
 
   return (

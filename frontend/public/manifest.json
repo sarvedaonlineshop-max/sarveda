@@ -1,8 +1,9 @@
 {
-  "name": "Sarveda",
-  "short_name": "Sarveda",
-  "description": "Music, sound healing, yoga and meditation products.",
-  "start_url": "/",
+  "name": "Sarveda Admin",
+  "short_name": "Sarveda Admin",
+  "description": "Sarveda admin — orders, chats, and store operations.",
+  "start_url": "/admin",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f7f3eb",
   "theme_color": "#1c352a",

@@ -81,8 +81,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Sarveda"
+    statusBarStyle: "default",
+    title: "Sarveda Admin"
   }
 };
 

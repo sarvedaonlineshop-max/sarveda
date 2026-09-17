@@ -331,8 +331,8 @@ function NavGroup({
 
 export function AdminSidebar({
   onNavigate,
-  preferDarkMain,
-  onToggleMainTheme
+  preferDarkMain: _preferDarkMain,
+  onToggleMainTheme: _onToggleMainTheme
 }: {
   onNavigate?: () => void;
   preferDarkMain: boolean;
@@ -376,34 +376,8 @@ export function AdminSidebar({
       </nav>
 
       <div style={{ padding: "12px 10px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-        <button
-          type="button"
-          onClick={onToggleMainTheme}
-          style={{
-            width: "100%",
-            padding: "8px 12px",
-            borderRadius: "8px",
-            textAlign: "left",
-            color: "rgba(255,255,255,0.4)",
-            fontSize: "15px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            cursor: "pointer",
-            marginBottom: "4px",
-            transition: "background 0.15s ease, color 0.15s ease"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = sidebarNavStyles.hoverBg;
-            e.currentTarget.style.color = sidebarNavStyles.hoverColor;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.4)";
-          }}
-        >
-          {preferDarkMain ? "☀ Light green workspace" : "☾ Dark green workspace"}
-        </button>
-        <Link
+          {/* Theme locked to light */}
+          <Link
           href="/store"
           onClick={onNavigate}
           style={{
