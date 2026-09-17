@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AdminPushRegistrar } from "@/components/admin/AdminPushRegistrar";
 import { AdminUserProvider } from "@/components/admin/AdminUserContext";
 import { fetchMe, isAdminRole, type PublicUser } from "@/lib/auth-client";
 
@@ -63,5 +64,10 @@ export function AdminAuthBoundary({ children }: Props) {
     );
   }
 
-  return <AdminUserProvider user={user}>{children}</AdminUserProvider>;
+  return (
+    <AdminUserProvider user={user}>
+      <AdminPushRegistrar />
+      {children}
+    </AdminUserProvider>
+  );
 }

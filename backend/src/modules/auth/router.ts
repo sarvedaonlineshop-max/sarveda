@@ -340,13 +340,56 @@ authRouter.post(
   })
 );
 
+authRouter.get(
+  "/fcm-web-config",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const role = req.authUser?.role;
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      res.status(403).json({ success: false, error: "Admin only", code: "FORBIDDEN" });
+      return;
+    }
+
+    const projectId = process.env.FIREBASE_PROJECT_ID?.trim() || "";
+    const apiKey = process.env.FIREBASE_WEB_API_KEY?.trim() || "";
+    const appId = process.env.FIREBASE_WEB_APP_ID?.trim() || "";
+    const messagingSenderId =
+      process.env.FIREBASE_WEB_MESSAGING_SENDER_ID?.trim() || "";
+    const vapidKey = process.env.FIREBASE_WEB_VAPID_KEY?.trim() || "";
+    const authDomain =
+      process.env.FIREBASE_WEB_AUTH_DOMAIN?.trim() ||
+      (projectId ? `${projectId}.firebaseapp.com` : "");
+
+    const configured = Boolean(
+      projectId && apiKey && appId && messagingSenderId && vapidKey
+    );
+
+    res.json({
+      success: true,
+      data: {
+        configured,
+        config: configured
+          ? {
+              apiKey,
+              authDomain,
+              projectId,
+              messagingSenderId,
+              appId,
+              vapidKey
+            }
+          : null
+      }
+    });
+  })
+);
+
 authRouter.post(
   "/fcm-token",
   requireAuth,
   asyncHandler(async (req, res) => {
     const { token } = req.body as { token?: string };
-    if (!token) {
-      res.status(400).json({ error: "Token required" });
+    if (!token || typeof token !== "string" || token.length < 20 || token.length > 4096) {
+      res.status(400).json({ success: false, error: "Token required", code: "INVALID_TOKEN" });
       return;
     }
     await prisma.user.update({

@@ -78,6 +78,22 @@ export function getFirebaseAdmin(): admin.app.App {
   return admin.app();
 }
 
+function publicSiteBase(): string {
+  const raw =
+    process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    "https://sarveda.com";
+  return raw.replace(/\/$/, "") || "https://sarveda.com";
+}
+
+function adminDeepLink(data: Record<string, string>): string {
+  const base = publicSiteBase();
+  if (data.chatId) return `${base}/admin/chats/${data.chatId}`;
+  if (data.orderId) return `${base}/admin/orders/${data.orderId}`;
+  if (data.orderNumber) return `${base}/admin/orders`;
+  return `${base}/admin`;
+}
+
 export async function sendPushNotification(
   fcmToken: string,
   title: string,
@@ -86,10 +102,17 @@ export async function sendPushNotification(
 ): Promise<boolean> {
   try {
     const app = getFirebaseAdmin();
+    const link = data.link || adminDeepLink(data);
+    const stringData: Record<string, string> = {
+      ...data,
+      title,
+      body,
+      link
+    };
     const messageId = await app.messaging().send({
       token: fcmToken,
       notification: { title, body },
-      data,
+      data: stringData,
       android: {
         priority: "high",
         notification: {
@@ -97,6 +120,16 @@ export async function sendPushNotification(
           color: "#075E54",
           sound: "default"
         }
+      },
+      webpush: {
+        headers: { Urgency: "high" },
+        notification: {
+          title,
+          body,
+          icon: `${publicSiteBase()}/icons/icon-192.png`,
+          badge: `${publicSiteBase()}/icons/icon-192.png`
+        },
+        fcmOptions: { link }
       }
     });
     logger.info("fcm_push_sent", {
