@@ -34,9 +34,9 @@ const cormorant = Cormorant_Garamond({
   display: "swap"
 });
 
-const defaultOgTitle = "Sarveda — Yoga, Ayurveda & Sound Healing";
+const defaultOgTitle = "Sarveda — Music, Sound Healing, Yoga & Meditation";
 const defaultOgDescription =
-  "Authentic yoga, meditation, Ayurveda and sound healing products rooted in Indian wellness. Ships worldwide.";
+  "Authentic music, sound healing, yoga and meditation products rooted in Indian wellness. Ships worldwide.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     template: "%s | Sarveda"
   },
   description:
-    "Yoga, meditation, Ayurveda, and sound healing — authentic, sustainable products rooted in Indian wellness.",
+    "Music, sound healing, yoga and meditation — authentic, sustainable products rooted in Indian wellness.",
   openGraph: {
     type: "website",
     siteName: "Sarveda",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
         url: "/og-default.jpg",
         width: 1200,
         height: 630,
-        alt: "Sarveda — Yoga, Ayurveda & Sound Healing"
+        alt: "Sarveda — Music, Sound Healing, Yoga & Meditation"
       }
     ]
   },
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     site: "@sarveda",
     title: defaultOgTitle,
     description:
-      "Authentic yoga, meditation, Ayurveda and sound healing products rooted in Indian wellness.",
+      "Authentic music, sound healing, yoga and meditation products rooted in Indian wellness.",
     images: ["/og-default.jpg"]
   },
   robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },

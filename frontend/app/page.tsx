@@ -15,9 +15,9 @@ import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 export const revalidate = 120;
 
 export const metadata: Metadata = {
-  title: "Sarveda — Yoga, Meditation, Ayurveda & Sound Healing",
+  title: "Sarveda — Music, Sound Healing, Yoga & Meditation",
   description:
-    "Authentic yoga, meditation, Ayurveda, and sound healing products — curated by practitioners. Shop instruments, herbs, and mindful living goods.",
+    "Authentic music, sound healing, yoga and meditation products — curated by practitioners. Shop instruments and mindful living goods.",
   robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
   alternates: { canonical: canonical("/") }
 };
