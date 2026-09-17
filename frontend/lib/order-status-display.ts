@@ -63,6 +63,47 @@ export function formatAdminOrderStatusLabel(
   return adminOrderStatusLabel(status, paymentStatus, paymentProvider).replace(/_/g, " ");
 }
 
+/** Least-progressed first: a multi-parcel order is only as far along as its slowest box. */
+const SHIPMENT_FLOW: string[] = ["CREATED", "PICKED", "INTRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
+
+const SHIPMENT_STAGE_LABEL: Record<string, string> = {
+  CREATED: "LABEL CREATED",
+  PICKED: "PICKED",
+  INTRANSIT: "IN TRANSIT",
+  OUT_FOR_DELIVERY: "OUT FOR DELIVERY",
+  DELIVERED: "DELIVERED",
+  RTO: "RTO"
+};
+
+/**
+ * Desk badge for the orders list. `PROCESSING` covers everything from "payment in,
+ * nothing packed" to "handed to the courier", so read the labels instead: no label
+ * means the order is still waiting in Shipments → Ready to ship, and once labels
+ * exist the carrier's own status is the truth.
+ */
+export function adminOrderStageLabel(
+  status: string,
+  paymentStatus: string,
+  paymentProvider?: string | null,
+  shipmentStatuses?: string[] | null
+): string {
+  const base = formatAdminOrderStatusLabel(status, paymentStatus, paymentProvider);
+  if (!["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(status)) return base;
+
+  const labels = shipmentStatuses ?? [];
+  if (labels.length === 0) {
+    // No label to back the claim — show where the order actually sits on the desk.
+    return status === "PROCESSING" || status === "SHIPPED" ? "READY TO SHIP" : base;
+  }
+  if (status === "DELIVERED") return "DELIVERED";
+  if (labels.includes("RTO")) return "RTO";
+
+  const lagging = labels
+    .slice()
+    .sort((a, b) => SHIPMENT_FLOW.indexOf(a) - SHIPMENT_FLOW.indexOf(b))[0];
+  return SHIPMENT_STAGE_LABEL[lagging] ?? base;
+}
+
 /** Table column: razorpay / stripe / paypal / COD */
 export function formatAdminPaymentMethod(provider?: string | null): string {
   if (!provider) return "—";

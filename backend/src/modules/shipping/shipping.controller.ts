@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import type { OrderStatus } from "@prisma/client";
 import { z } from "zod";
 
 import { shippingEnv } from "../../config/env";
@@ -324,23 +325,58 @@ const cancelWaybillBody = z.object({
   localOnly: z.boolean().optional().default(false)
 });
 
+/** Order statuses a label cancellation may walk back. Delivered / closed orders stay put. */
+const LABEL_REMOVAL_DEMOTABLE: OrderStatus[] = ["PACKED", "SHIPPED"];
+
+/**
+ * Cancelling a label is a hard delete, so the order can be left claiming progress no
+ * parcel supports — a SHIPPED order with no AWB can never be corrected by tracking
+ * sync either, because sync needs a shipment row to run against. Walk the order back
+ * to Processing (Shipments → Ready to ship) unless a remaining label still justifies
+ * the current status.
+ */
 async function removeShipmentLabelLocally(orderId: string, shipmentId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.shipment.delete({ where: { id: shipmentId } });
-    const remaining = await tx.shipment.count({ where: { orderId } });
-    if (remaining === 0) {
-      const orderRow = await tx.order.findUnique({
-        where: { id: orderId },
-        select: { shippingLabelSeq: true }
-      });
-      const seqFloor = Math.max(orderRow?.shippingLabelSeq ?? 0, 1);
+
+    const remaining = await tx.shipment.findMany({
+      where: { orderId },
+      select: { status: true, carrierMeta: true }
+    });
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: { status: true, shippingLabelSeq: true }
+    });
+    if (!order) return;
+
+    const forwardInTransit = remaining.some((s) => {
+      const meta = s.carrierMeta as { direction?: string } | null;
+      return meta?.direction !== "REVERSE" && s.status !== "CREATED";
+    });
+    const demote = LABEL_REMOVAL_DEMOTABLE.includes(order.status) && !forwardInTransit;
+
+    if (remaining.length === 0) {
       await tx.order.update({
         where: { id: orderId },
         data: {
           fulfillmentStatus: "UNFULFILLED",
           shippingLastError: null,
           shippingLastErrorAt: null,
-          shippingLabelSeq: seqFloor
+          shippingLabelSeq: Math.max(order.shippingLabelSeq ?? 0, 1),
+          ...(demote ? { status: "PROCESSING" as const } : {})
+        }
+      });
+    } else if (demote) {
+      await tx.order.update({ where: { id: orderId }, data: { status: "PROCESSING" } });
+    }
+
+    if (demote) {
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          fromStatus: order.status,
+          toStatus: "PROCESSING",
+          reason: "Shipping label cancelled — order back to Ready to ship"
         }
       });
     }

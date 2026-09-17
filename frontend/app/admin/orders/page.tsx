@@ -13,7 +13,7 @@ import type { AdminOrdersQuery, OrdersListData } from "@/lib/admin-api";
 import { downloadAdminOrdersExport, fetchAdminOrders } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 import {
-  formatAdminOrderStatusLabel,
+  adminOrderStageLabel,
   formatAdminPaymentMethod
 } from "@/lib/order-status-display";
 
@@ -28,25 +28,34 @@ const deskBuckets = [
 function StatusBadge({
   status,
   paymentStatus,
-  paymentProvider
+  paymentProvider,
+  shipmentStatuses
 }: {
   status: string;
   paymentStatus: string;
   paymentProvider?: string | null;
+  shipmentStatuses?: string[] | null;
 }) {
-  const label = formatAdminOrderStatusLabel(status, paymentStatus, paymentProvider);
+  const label = adminOrderStageLabel(status, paymentStatus, paymentProvider, shipmentStatuses);
   const s = label.toUpperCase().replace(/\s/g, "");
   let bg = "#f3f4f6",
     color = "#374151";
-  if (s.includes("CONFIRMED") || s.includes("PAID") || s.includes("PROCESSING")) {
+  if (s === "READYTOSHIP" || s === "LABELCREATED" || s === "PACKED") {
+    // Still on the desk — amber matches the Shipments queue.
+    bg = "#fef3c7";
+    color = "#92400e";
+  } else if (s.includes("CONFIRMED") || s.includes("PAID") || s.includes("PROCESSING")) {
     bg = "#dcfce7";
     color = "#166534";
-  } else if (s.includes("SHIPPED")) {
+  } else if (s.includes("SHIPPED") || s === "PICKED" || s === "INTRANSIT" || s === "OUTFORDELIVERY") {
     bg = "#dbeafe";
     color = "#1e40af";
   } else if (s.includes("DELIVERED")) {
     bg = "#f0fdf4";
     color = "#15803d";
+  } else if (s === "RTO") {
+    bg = "#fee2e2";
+    color = "#991b1b";
   } else if (s === "ABANDONED" || s === "ATTEMPTED") {
     bg = "#fef3c7";
     color = "#92400e";
@@ -795,6 +804,7 @@ export default function AdminOrdersPage() {
                         status={o.status}
                         paymentStatus={o.paymentStatus}
                         paymentProvider={o.paymentProvider}
+                        shipmentStatuses={o.shipmentStatuses}
                       />
                     </td>
                     <td

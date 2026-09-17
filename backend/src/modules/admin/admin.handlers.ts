@@ -1084,6 +1084,12 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
             where: { type: "SHIPPING" },
             take: 1,
             select: { city: true, state: true, country: true }
+          },
+          // Drives the desk status badge: "Ready to ship" vs "Label created" vs carrier progress.
+          shipments: {
+            orderBy: { createdAt: "asc" },
+            take: 20,
+            select: { status: true, carrierMeta: true }
           }
         }
       }),
@@ -1117,6 +1123,10 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           status: o.status,
           paymentStatus: o.paymentStatus,
           paymentProvider: o.payments[0]?.provider ?? null,
+          // Forward labels only — a return leg must not drag the desk badge backwards.
+          shipmentStatuses: o.shipments
+            .filter((s) => (s.carrierMeta as { direction?: string } | null)?.direction !== "REVERSE")
+            .map((s) => s.status),
           grandTotalInPaise: o.grandTotalInPaise,
           currency: o.currency,
           itemCount: o.items.reduce((s, i) => s + i.qtyOrdered, 0),

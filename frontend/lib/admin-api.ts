@@ -438,6 +438,8 @@ export type OrdersListData = {
     status: string;
     paymentStatus: string;
     paymentProvider?: string | null;
+    /** Forward label statuses, oldest first — drives the desk status badge. */
+    shipmentStatuses?: string[] | null;
     grandTotalInPaise: number;
     currency: string;
     itemCount: number;
