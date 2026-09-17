@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 
-import { fetchAdminOrders } from "@/lib/admin-api";
+import { fetchPendingServiceRequestCount } from "@/lib/order-service-request";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import {
   applySidebarHover,
@@ -19,20 +19,17 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
   const nav = useAdminNavOptional();
   const activePath = nav?.activePath ?? pathname;
   const active = activePath === "/admin/orders" || activePath.startsWith("/admin/orders/");
-  const [newCount, setNewCount] = useState(0);
+  const [pending, setPending] = useState(0);
 
   useEffect(() => {
-    const loadCount = async () => {
-      try {
-        const data = await fetchAdminOrders({ channel: "all", bucket: "new", page: 1, limit: 1 });
-        setNewCount(data.counts?.new ?? 0);
-      } catch {
-        // Keep the last known value during a transient refresh failure.
-      }
-    };
-
-    void loadCount();
-    const timer = setInterval(() => void loadCount(), 60_000);
+    void fetchPendingServiceRequestCount()
+      .then(setPending)
+      .catch(() => setPending(0));
+    const timer = setInterval(() => {
+      void fetchPendingServiceRequestCount()
+        .then(setPending)
+        .catch(() => undefined);
+    }, 60_000);
     return () => clearInterval(timer);
   }, [pathname]);
 
@@ -58,10 +55,8 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
         <ShoppingCart size={18} strokeWidth={2} />
       </span>
       <span style={{ flex: 1 }}>Orders</span>
-      {newCount > 0 ? (
+      {pending > 0 ? (
         <span
-          title="New orders"
-          aria-label={`${newCount} new orders`}
           style={{
             minWidth: "20px",
             height: "20px",
@@ -77,7 +72,7 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
             boxShadow: "0 6px 12px rgba(220,38,38,0.26)"
           }}
         >
-          {newCount > 99 ? "99+" : newCount}
+          {pending > 99 ? "99+" : pending}
         </span>
       ) : null}
     </Link>
