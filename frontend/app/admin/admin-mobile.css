@@ -1,0 +1,181 @@
+/* Sarveda Admin — responsive layer for non-accounting admin routes only. */
+
+@media (max-width: 767px) {
+  [data-admin-mobile="true"] {
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    --admin-mobile-gap: 12px;
+  }
+
+  [data-admin-mobile="true"] .admin-motion-root > div > div.flex.flex-col.min-h-screen {
+    padding-left: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  [data-admin-mobile="true"] .admin-motion-root > div > aside { width: min(86vw, 300px) !important; }
+
+  [data-admin-mobile="true"] .admin-motion-root > div > aside img[alt="Sarveda"] {
+    width: 68% !important;
+    max-width: 170px !important;
+  }
+
+  [data-admin-mobile="true"] header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 35 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 56px !important;
+    height: 56px !important;
+    padding: 7px 12px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+
+  [data-admin-mobile="true"] header > button[aria-label="Open navigation"] {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  [data-admin-mobile="true"] header h1 {
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 58vw;
+  }
+
+  [data-admin-mobile="true"] header p,
+  [data-admin-mobile="true"] header h1 + div { display: none !important; }
+
+  [data-admin-mobile="true"] header button { min-width: 40px; min-height: 40px; border-radius: 10px !important; }
+  [data-admin-mobile="true"] header > div:last-child { min-width: 0; margin-left: 0 !important; }
+  [data-admin-mobile="true"] header > div:last-child > div { gap: 6px !important; }
+
+  [data-admin-mobile="true"] main {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    padding: 14px 12px 88px !important;
+    overflow-x: clip;
+  }
+
+  [data-admin-mobile="true"] main > *,
+  [data-admin-mobile="true"] .admin-content-enter,
+  [data-admin-mobile="true"] section { min-width: 0; max-width: 100%; }
+
+  [data-admin-mobile="true"] .grid { min-width: 0; gap: var(--admin-mobile-gap) !important; }
+  [data-admin-mobile="true"] .grid-cols-2,
+  [data-admin-mobile="true"] .grid-cols-3,
+  [data-admin-mobile="true"] .grid-cols-4,
+  [data-admin-mobile="true"] .grid-cols-5,
+  [data-admin-mobile="true"] .grid-cols-6 { grid-template-columns: minmax(0, 1fr) !important; }
+
+  [data-admin-mobile="true"] main > div > div:first-child[style*="display: grid"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  [data-admin-mobile="true"] main > div > div:first-child[style*="display: grid"] > div {
+    min-width: 0 !important;
+    padding: 14px !important;
+  }
+
+  /* Operational tabs live inside .admin-content-enter, then the page root. Keep each row on one swipeable line. */
+  [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(1),
+  [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(2),
+  [data-admin-path="/admin/shipments"] .admin-content-enter > div > div:nth-child(1),
+  [data-admin-mobile="true"] .admin-mobile-pill-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 8px !important;
+    padding-bottom: 7px !important;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(1) > button,
+  [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(2) > button,
+  [data-admin-path="/admin/shipments"] .admin-content-enter > div > div:nth-child(1) > button,
+  [data-admin-mobile="true"] .admin-mobile-pill-row > button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
+    scroll-snap-align: start;
+  }
+
+  [data-admin-mobile="true"] form { min-width: 0; }
+  [data-admin-mobile="true"] input,
+  [data-admin-mobile="true"] select,
+  [data-admin-mobile="true"] textarea {
+    max-width: 100%;
+    min-height: 44px;
+    font-size: 16px !important;
+    border-radius: 10px;
+  }
+  [data-admin-mobile="true"] textarea { min-height: 96px; }
+  [data-admin-mobile="true"] button,
+  [data-admin-mobile="true"] a[role="button"] { touch-action: manipulation; }
+
+  [data-admin-mobile="true"] table { font-size: 13px; min-width: max-content; }
+  [data-admin-mobile="true"] th,
+  [data-admin-mobile="true"] td { padding: 10px 9px !important; white-space: nowrap; }
+  [data-admin-mobile="true"] th:first-child,
+  [data-admin-mobile="true"] td:first-child { padding-left: 12px !important; }
+  [data-admin-mobile="true"] table button,
+  [data-admin-mobile="true"] table a { min-height: 36px; }
+
+  [data-admin-mobile="true"] :where(.overflow-x-auto, [class*="overflow-x-auto"]) {
+    max-width: calc(100vw - 24px);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  [data-admin-mobile="true"] :where(.flex.flex-wrap, [class*="flex-wrap"]) { row-gap: 8px; }
+
+  [data-admin-mobile="true"] [role="dialog"] {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    overflow-y: auto;
+    border-radius: 16px !important;
+  }
+
+  [data-admin-mobile="true"] .sticky { max-width: 100vw; }
+  [data-admin-mobile="true"] main :where(.rounded-xl, .rounded-2xl) { border-radius: 14px !important; }
+  [data-admin-mobile="true"] main :where(.p-6, .p-8) { padding: 16px !important; }
+  [data-admin-mobile="true"] main :where(.px-6, .px-8) { padding-left: 16px !important; padding-right: 16px !important; }
+  [data-admin-mobile="true"] main :where(.gap-6, .gap-8) { gap: 14px !important; }
+}
+
+@media (max-width: 359px) {
+  [data-admin-mobile="true"] main > div > div:first-child[style*="display: grid"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  [data-admin-mobile="true"] main { padding-left: 18px !important; padding-right: 18px !important; }
+  [data-admin-mobile="true"] .grid-cols-4,
+  [data-admin-mobile="true"] .grid-cols-5,
+  [data-admin-mobile="true"] .grid-cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-admin-mobile="true"] :where(.overflow-x-auto, [class*="overflow-x-auto"]) { -webkit-overflow-scrolling: touch; }
+}

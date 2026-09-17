@@ -15,9 +15,11 @@ import {
 } from "@/components/admin/sidebarNavStyles";
 
 export function AdminChatsSidebarLink({
-  onNavigate
+  onNavigate,
+  placedNextToShipments = false
 }: {
   onNavigate?: () => void;
+  placedNextToShipments?: boolean;
 }) {
   const pathname = usePathname();
   const nav = useAdminNavOptional();
@@ -36,6 +38,11 @@ export function AdminChatsSidebarLink({
     }, 60_000);
     return () => clearInterval(timer);
   }, [pathname]);
+
+  // The legacy sidebar call is intentionally suppressed. Shipments renders the
+  // visible Chats link immediately after itself so desktop and mobile share
+  // exactly the same ordering without duplicating the nav item.
+  if (!placedNextToShipments) return null;
 
   return (
     <Link
@@ -61,6 +68,8 @@ export function AdminChatsSidebarLink({
       <span style={{ flex: 1 }}>Chats</span>
       {unread > 0 ? (
         <span
+          title="Unread chats"
+          aria-label={`${unread} unread chats`}
           style={{
             minWidth: "20px",
             height: "20px",
