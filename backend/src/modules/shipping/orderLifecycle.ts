@@ -10,7 +10,8 @@ import { notifyOrderEmail } from "../notifications/email";
 
 import {
   mapCourierStatusToShipment,
-  persistShipmentTrackingFromCarrier
+  persistShipmentTrackingFromCarrier,
+  rollUpOrderFromShipments
 } from "./shipmentTracking.persist";
 
 function notifyShipmentMilestones(
@@ -56,7 +57,7 @@ export async function handleRtoShipment(
   orderId: string,
   awb: string,
   status: string
-): Promise<void> {
+): Promise<{ orderStatus: OrderStatus; fulfillmentStatus: string } | null> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -67,17 +68,15 @@ export async function handleRtoShipment(
       notes: true
     }
   });
-  if (!order) return;
+  if (!order) return null;
 
   await prisma.shipment.updateMany({
     where: { orderId, awb },
     data: { status: "RTO", rtoAt: new Date() }
   });
 
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { fulfillmentStatus: "RETURNED" }
-  });
+  // One parcel coming back does not return the whole order — roll up across every parcel.
+  const rolled = await rollUpOrderFromShipments(orderId);
 
   const rtoNote = `RTO reported by carrier: ${status} — AWB ${awb} (awaiting physical receipt at Sarveda)`;
   await prisma.order.update({
@@ -99,6 +98,7 @@ export async function handleRtoShipment(
   });
 
   logger.info("rto_recorded_no_auto_restock", { orderId, awb, status });
+  return rolled;
 }
 
 /**
@@ -165,15 +165,15 @@ export async function applyCarrierWebhookTracking(
 
   const shipmentStatus = mapCourierStatusToShipment(statusLabel);
   if (shipmentStatus === "RTO") {
-    await handleRtoShipment(shipment.orderId, wb, statusLabel);
+    const rolled = await handleRtoShipment(shipment.orderId, wb, statusLabel);
     return {
       success: true,
       data: {
         waybill: wb,
         courier: shipment.courier,
         shipmentStatus: "RTO" as ShipmentStatus,
-        orderStatus: shipment.order.status,
-        fulfillmentStatus: "RETURNED"
+        orderStatus: rolled?.orderStatus ?? shipment.order.status,
+        fulfillmentStatus: rolled?.fulfillmentStatus ?? shipment.order.fulfillmentStatus
       }
     };
   }
@@ -257,15 +257,15 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
 
   const shipmentStatus = mapCourierStatusToShipment(tracked.data.status);
   if (shipmentStatus === "RTO") {
-    await handleRtoShipment(shipment.orderId, wb, tracked.data.status);
+    const rolled = await handleRtoShipment(shipment.orderId, wb, tracked.data.status);
     return {
       success: true,
       data: {
         waybill: wb,
         courier: shipment.courier,
         shipmentStatus: "RTO",
-        orderStatus: shipment.order.status,
-        fulfillmentStatus: "RETURNED"
+        orderStatus: rolled?.orderStatus ?? shipment.order.status,
+        fulfillmentStatus: rolled?.fulfillmentStatus ?? shipment.order.fulfillmentStatus
       }
     };
   }
