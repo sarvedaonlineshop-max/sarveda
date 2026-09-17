@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db";
 import { getCategoryTree } from "../categories/categories.service";
 import { suggestProducts } from "../products/products.service";
+import { customerParcels } from "../shipping/customerParcels";
 
 export type ChatProductSuggestion = {
   slug: string;
@@ -116,7 +117,7 @@ async function loadOrderForChat(orderNumber: string, email: string): Promise<str
       items: true,
       addresses: true,
       payments: { take: 1 },
-      shipments: { orderBy: { createdAt: "desc" }, take: 3 }
+      shipments: { orderBy: { createdAt: "desc" }, take: 20 }
     }
   });
 
@@ -141,14 +142,17 @@ async function loadOrderForChat(orderNumber: string, email: string): Promise<str
     lines.push(`Ship to: ${ship.city}, ${ship.state} ${ship.postalCode}, ${ship.country}`);
   }
 
-  if (latestShipment) {
-    lines.push(
-      `Courier: ${latestShipment.courier}`,
-      `Shipment status: ${humanShipmentStatus(latestShipment.status)}`
-    );
-    if (latestShipment.awb) lines.push(`AWB: ${latestShipment.awb}`);
-    if (latestShipment.trackingUrl) lines.push(`Tracking: ${latestShipment.trackingUrl}`);
-    if (latestShipment.deliveredAt) {
+  const parcels = customerParcels(order.shipments);
+  if (parcels.length) {
+    if (parcels.length > 1) lines.push(`This order ships in ${parcels.length} parcels — list all of them:`);
+    for (const parcel of parcels) {
+      lines.push(
+        `${parcel.label} — courier ${parcel.courier}, AWB ${parcel.awb}, status ${humanShipmentStatus(
+          parcel.status
+        )}, tracking ${parcel.trackingUrl}`
+      );
+    }
+    if (latestShipment?.deliveredAt) {
       lines.push(`Delivered on: ${latestShipment.deliveredAt.toISOString().slice(0, 10)}`);
     }
   } else {
@@ -167,16 +171,16 @@ async function loadRecentOrdersForEmail(email: string, limit = 5): Promise<strin
     take: limit,
     include: {
       items: { take: 2 },
-      shipments: { orderBy: { createdAt: "desc" }, take: 1 }
+      shipments: { orderBy: { createdAt: "desc" }, take: 20 }
     }
   });
 
   if (orders.length === 0) return null;
 
   const lines = orders.map((o) => {
-    const ship = o.shipments[0];
+    const parcels = customerParcels(o.shipments);
     const itemHint = o.items[0]?.nameSnapshot ?? "items";
-    const track = ship?.awb ? ` | AWB ${ship.awb}` : "";
+    const track = parcels.length ? ` | AWB ${parcels.map((p) => p.awb).join(", ")}` : "";
     return `- ${o.orderNumber}: ${humanStatus(o.status)} | ${itemHint}${track}`;
   });
 

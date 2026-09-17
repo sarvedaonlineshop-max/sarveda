@@ -27,6 +27,7 @@ import {
 } from "./order-service-request.service";
 import { unpaidCheckoutAttemptWhere } from "./abandoned-checkout";
 import { buildCancellationInfo } from "./order-cancellation-info";
+import { customerParcels, type CustomerParcel } from "../shipping/customerParcels";
 import { deriveCustomerRtoStatus } from "./rto-workflow.service";
 import {
   deriveCustomerReturnStatus,
@@ -89,6 +90,7 @@ function serializePublicOrderView(order: {
     deliveredAt: Date | null;
     rtoAt: Date | null;
     updatedAt: Date;
+    carrierMeta?: unknown;
   }>;
   payments?: Array<{ provider: string }>;
 }) {
@@ -128,6 +130,7 @@ function serializePublicOrderView(order: {
       rtoAt: s.rtoAt,
       updatedAt: s.updatedAt
     })),
+    parcels: customerParcels(order.shipments),
     shippingLastError: order.shippingLastError,
     shippingLastErrorAt: order.shippingLastErrorAt
   };
@@ -202,6 +205,7 @@ function serializeOrderSummary(order: {
   awb: string | null;
   trackingUrl: string | null;
   shipmentStatus: string | null;
+  parcels: CustomerParcel[];
   lineItems?: OrderLineItemDto[];
   costBreakdown: OrderCostBreakdownDto;
   shippingAddress?: OrderShippingAddressDto;
@@ -287,6 +291,7 @@ function serializeOrderSummary(order: {
     awb: trackShipment?.awb ?? null,
     trackingUrl: trackShipment?.trackingUrl ?? null,
     shipmentStatus: trackShipment?.status ?? null,
+    parcels: customerParcels(order.shipments),
     serviceRequest: latestRequest
       ? {
           id: latestRequest.id,
@@ -400,7 +405,7 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
         statusHistory: { orderBy: { createdAt: "desc" }, take: 12 },
         shipments: {
           orderBy: { createdAt: "desc" },
-          take: 3,
+          take: 20,
           select: SHIPMENT_CUSTOMER_SELECT
         },
         serviceRequests: {

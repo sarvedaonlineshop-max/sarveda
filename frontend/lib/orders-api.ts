@@ -13,6 +13,15 @@ export type OrderShipmentPublic = {
   updatedAt: string;
 };
 
+/** One trackable parcel. An order shipped in several boxes has one row per label. */
+export type OrderParcel = {
+  label: string;
+  courier: string;
+  awb: string;
+  trackingUrl: string;
+  status: string;
+};
+
 export type OrderLineItem = {
   id: string;
   title: string;
@@ -85,6 +94,7 @@ export type OrderPublic = {
     country: string;
   } | undefined;
   shipments: OrderShipmentPublic[];
+  parcels?: OrderParcel[] | null;
   shippingLastError: string | null;
   shippingLastErrorAt: string | null;
 };
@@ -108,6 +118,7 @@ export type OrderSummary = {
   awb?: string | null;
   trackingUrl?: string | null;
   shipmentStatus?: string | null;
+  parcels?: OrderParcel[] | null;
   lineItems?: OrderLineItem[] | null;
   costBreakdown?: OrderCostBreakdown | null;
   shippingAddress?: OrderShippingAddress | null;

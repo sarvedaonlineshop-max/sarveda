@@ -104,9 +104,10 @@ export async function findOwnedOrder(phone: string, orderId: string) {
         take: 1
       },
       shipments: {
-        select: { courier: true, awb: true, trackingUrl: true, status: true },
+        // All labels, not just the newest — a multi-parcel order ships under several AWBs.
+        select: { courier: true, awb: true, trackingUrl: true, status: true, carrierMeta: true },
         orderBy: { createdAt: "desc" },
-        take: 1
+        take: 20
       }
     }
   });

@@ -8,6 +8,7 @@ import { clearCartAfterPayment } from "@/lib/clear-cart-after-payment";
 import { trackPurchase } from "@/lib/analytics";
 import { DEFAULT_DISPLAY_GST_RATE, extractGst } from "@/lib/gst";
 import { formatMinorFromPaise } from "@/lib/money";
+import { publicOrderParcels } from "@/lib/order-display";
 import type { OrderPublic } from "@/lib/orders-api";
 import { fetchOrderPublic, orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
 import { PaymentSuccessMark } from "@/components/orders/PaymentSuccessMark";
@@ -153,6 +154,7 @@ function ConfirmedInner() {
   }
 
   const isCod = order.isCod || codFromUrl || order.paymentProvider === "COD";
+  const parcels = publicOrderParcels(order);
   const addr = order.shippingAddress;
   const fmt = (n: number) => formatMinorFromPaise(n, order.currency);
   const paid = order.paymentStatus === "CAPTURED" || order.status === "PAID";
@@ -291,22 +293,17 @@ function ConfirmedInner() {
         </div>
       </div>
 
-      {(order.shipments ?? []).length > 0 ? (
+      {parcels.length > 0 ? (
         <section className="mt-6 rounded-2xl border border-brand-cream-dark bg-white p-5 text-sm shadow-card">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">Tracking</p>
           <ul className="mt-2 space-y-2 text-brand-muted">
-            {order.shipments.map((s) => (
-              <li key={s.id}>
-                {s.courier}
-                {s.awb ? (
-                  <>
-                    {" "}
-                    · AWB {s.awb}{" "}
-                    <Link href={`/track/${encodeURIComponent(s.awb)}`} className="font-medium text-brand-forest hover:underline">
-                      Track package
-                    </Link>
-                  </>
-                ) : null}
+            {parcels.map((parcel) => (
+              <li key={parcel.awb}>
+                {parcels.length > 1 ? `${parcel.label} · ` : ""}
+                {parcel.courier} · AWB {parcel.awb}{" "}
+                <Link href={`/track/${encodeURIComponent(parcel.awb)}`} className="font-medium text-brand-forest hover:underline">
+                  Track package
+                </Link>
               </li>
             ))}
           </ul>

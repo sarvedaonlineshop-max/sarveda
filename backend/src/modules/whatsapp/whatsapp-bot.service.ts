@@ -11,6 +11,7 @@
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
+import { customerParcels } from "../shipping/customerParcels";
 import {
   sendWhatsAppButtons,
   sendWhatsAppList,
@@ -299,17 +300,23 @@ async function sendOrderTracking(
   phone: string,
   order: OwnedOrder
 ): Promise<void> {
-  const shipment = order.shipments[0];
+  const parcels = customerParcels(order.shipments);
   const lines: string[] = [];
 
-  if (shipment?.awb) {
-    lines.push(
-      `*Tracking ${order.orderNumber}*`,
-      `Courier: ${shipment.courier}`,
-      `AWB: ${shipment.awb}`,
-      ...(shipment.trackingUrl ? [`Track: ${shipment.trackingUrl}`] : []),
-      ""
-    );
+  if (parcels.length) {
+    lines.push(`*Tracking ${order.orderNumber}*`);
+    if (parcels.length > 1) {
+      lines.push(`This order is travelling in ${parcels.length} parcels.`);
+    }
+    for (const parcel of parcels) {
+      lines.push(
+        "",
+        `${parcel.label} · ${parcel.courier}`,
+        `AWB: ${parcel.awb}`,
+        `Track: ${parcel.trackingUrl}`
+      );
+    }
+    lines.push("");
   } else {
     lines.push(
       `*Tracking ${order.orderNumber}*`,

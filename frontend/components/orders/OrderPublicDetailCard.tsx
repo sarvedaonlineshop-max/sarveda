@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 
 import { DEFAULT_DISPLAY_GST_RATE, extractGst } from "@/lib/gst";
 import { formatMinorFromPaise } from "@/lib/money";
-import { copyToClipboard, paymentProviderLabel } from "@/lib/order-display";
+import { OrderParcelList } from "@/components/orders/OrderParcelList";
+import { paymentProviderLabel, publicOrderParcels } from "@/lib/order-display";
 import type { OrderPublic } from "@/lib/orders-api";
 import { orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
-import { delhiveryTrackUrl } from "@/lib/shipment-labels";
 
 type Props = {
   order: OrderPublic;
@@ -152,7 +151,6 @@ function CostLine({
 }
 
 export function OrderPublicDetailCard({ order, accessEmail }: Props) {
-  const [awbCopied, setAwbCopied] = useState(false);
   const email = (accessEmail || order.email || "").trim().toLowerCase();
   const paid = orderIsPaid(order);
   const pendingPayment = order.status === "PENDING_PAYMENT" && !paid;
@@ -168,15 +166,9 @@ export function OrderPublicDetailCard({ order, accessEmail }: Props) {
         ? order.items[0]!.nameSnapshot
         : `${order.items[0]!.nameSnapshot} +${order.items.length - 1} more`;
 
-  const shipment = order.shipments[0];
-  const awb = shipment?.awb?.trim() || null;
-  const courierTrackUrl =
-    shipment?.trackingUrl?.trim() || (awb ? delhiveryTrackUrl(awb) : null) || (awb ? `/track/${encodeURIComponent(awb)}` : null);
+  const parcels = publicOrderParcels(order);
   const canTrackCourier =
-    paid &&
-    !!courierTrackUrl &&
-    ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
-  const deliveryPartner = shipment?.courier?.trim() || null;
+    paid && parcels.length > 0 && ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
   const progress = paid && !canTrackCourier ? deliveryProgress(order) : null;
 
   const addr = order.shippingAddress;
@@ -255,60 +247,8 @@ export function OrderPublicDetailCard({ order, accessEmail }: Props) {
 
         {paid ? (
           <InfoRow emoji="🚚" label="Delivery">
-            {canTrackCourier && courierTrackUrl ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <a
-                  href={courierTrackUrl}
-                  target={courierTrackUrl.startsWith("http") ? "_blank" : undefined}
-                  rel={courierTrackUrl.startsWith("http") ? "noopener noreferrer" : undefined}
-                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream no-underline transition-colors hover:bg-brand-night"
-                >
-                  <span aria-hidden="true">🚚</span>
-                  Track package
-                </a>
-                {deliveryPartner ? (
-                  <span className="text-xs text-brand-muted">
-                    via <span className="font-semibold text-brand-ink">{deliveryPartner}</span>
-                    {awb ? (
-                      <span className="mt-0.5 flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px]">AWB {awb}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void copyToClipboard(awb).then((ok) => {
-                              if (ok) {
-                                setAwbCopied(true);
-                                setTimeout(() => setAwbCopied(false), 2000);
-                              }
-                            });
-                          }}
-                          className="rounded-full border border-brand-cream-dark bg-white px-2 py-0.5 text-[10px] font-semibold text-brand-forest hover:bg-brand-cream"
-                        >
-                          {awbCopied ? "Copied" : "Copy"}
-                        </button>
-                      </span>
-                    ) : null}
-                  </span>
-                ) : awb ? (
-                  <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-brand-muted">
-                    <span className="font-mono text-[11px]">AWB {awb}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void copyToClipboard(awb).then((ok) => {
-                          if (ok) {
-                            setAwbCopied(true);
-                            setTimeout(() => setAwbCopied(false), 2000);
-                          }
-                        });
-                      }}
-                      className="rounded-full border border-brand-cream-dark bg-white px-2 py-0.5 text-[10px] font-semibold text-brand-forest hover:bg-brand-cream"
-                    >
-                      {awbCopied ? "Copied" : "Copy"}
-                    </button>
-                  </span>
-                ) : null}
-              </div>
+            {canTrackCourier ? (
+              <OrderParcelList parcels={parcels} />
             ) : progress ? (
               <span>
                 <span aria-hidden="true">{progress.emoji} </span>
