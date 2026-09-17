@@ -18,14 +18,13 @@ import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subject
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 
 const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
-  { value: "__unread__", label: "Unread" },
+  { value: "", label: "All" },
   { value: "WHATSAPP", label: "WhatsApp" },
   { value: "CONTACT", label: "Contact" },
   { value: "CORPORATE", label: "Corporate" },
   { value: "COURSE", label: "Course" },
   { value: "EVENT", label: "Event" },
-  { value: "INSIGHTS", label: "Insights" },
-  { value: "", label: "All" }
+  { value: "INSIGHTS", label: "Insights" }
 ];
 
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
@@ -104,7 +103,6 @@ export function AdminChatsInbox() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState("");
-  const [unreadOnly, setUnreadOnly] = useState(false);
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
 
@@ -134,7 +132,6 @@ export function AdminChatsInbox() {
       const data = await fetchAdminEnquiries({
         page: 1,
         limit: 100,
-        unreadOnly,
         source: source || undefined,
         q: debouncedQ || undefined
       });
@@ -145,7 +142,7 @@ export function AdminChatsInbox() {
     } finally {
       setLoading(false);
     }
-  }, [source, unreadOnly, debouncedQ]);
+  }, [source, debouncedQ]);
 
   useEffect(() => {
     void load();
@@ -427,8 +424,8 @@ export function AdminChatsInbox() {
       : null;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[#f0ebe3]">
-      <div className="shrink-0 border-b border-[#d9d1c4] bg-[#efe8dc] px-3 py-3 md:py-3">
+    <div className="admin-chat-list-root relative flex h-full min-h-0 flex-col overflow-hidden bg-[#f0ebe3]">
+      <div className="admin-chat-list-chrome shrink-0 bg-[#efe8dc] px-3 pt-3 md:border-b md:border-[#d9d1c4] md:py-3">
         {/* Desktop keeps the in-card title + actions; mobile moves them to the top nav. */}
         <div className="mb-3 hidden items-center justify-between gap-2 md:flex">
           <div>
@@ -487,23 +484,14 @@ export function AdminChatsInbox() {
           ) : null}
         </div>
 
-        <div className="admin-mobile-pill-row mt-4 flex flex-wrap gap-1.5 md:mt-2.5">
+        <div className="admin-mobile-pill-row flex flex-wrap gap-1.5 py-3.5 md:mt-2.5 md:py-0">
           {SOURCE_FILTERS.map((f) => {
-            const isUnread = f.value === "__unread__";
-            const active = isUnread ? unreadOnly && !source : !unreadOnly && source === f.value;
+            const active = source === f.value;
             return (
               <button
                 key={f.value || "all"}
                 type="button"
-                onClick={() => {
-                  if (isUnread) {
-                    setUnreadOnly(true);
-                    setSource("");
-                  } else {
-                    setUnreadOnly(false);
-                    setSource(f.value);
-                  }
-                }}
+                onClick={() => setSource(f.value)}
                 className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
                   active
                     ? "bg-[#3d8b4f] text-white shadow-[0_1px_2px_rgba(28,53,42,0.18)]"
@@ -511,16 +499,15 @@ export function AdminChatsInbox() {
                 }`}
               >
                 {f.label}
-                {isUnread && unreadCount > 0 ? ` ${unreadCount}` : ""}
               </button>
             );
           })}
         </div>
       </div>
 
-      {error ? <p className="px-3 py-2 text-xs text-red-600">{error}</p> : null}
+      {error ? <p className="shrink-0 px-3 py-2 text-xs text-red-600">{error}</p> : null}
 
-      <div className="relative min-h-0 flex-1 overflow-y-auto">
+      <div className="admin-chat-list-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24 md:pb-0">
         {refreshing ? (
           <div
             className="absolute inset-0 z-20 flex items-center justify-center bg-[#f0ebe3]/75 backdrop-blur-[1px] md:hidden"
@@ -605,7 +592,7 @@ export function AdminChatsInbox() {
         )}
       </div>
 
-      {/* Mobile FAB — WhatsApp-style new chat, bottom-right */}
+      {/* Mobile FAB — fixed to the list viewport, not the scroll content */}
       {onListView ? (
         <button
           type="button"
@@ -613,7 +600,7 @@ export function AdminChatsInbox() {
             resetStartForm();
             setStartOpen(true);
           }}
-          className="absolute bottom-5 right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-[0_4px_14px_rgba(18,140,126,0.45)] md:hidden"
+          className="admin-chat-fab absolute bottom-5 right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-[0_4px_14px_rgba(18,140,126,0.45)] md:hidden"
           style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
           title="Start new chat"
           aria-label="Start new chat"

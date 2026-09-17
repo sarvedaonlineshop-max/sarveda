@@ -693,7 +693,7 @@ function MessageBubble({
               }
         }
       >
-        {isAdmin ? (
+        {false && isAdmin ? (
           <div className="absolute -right-1 -top-2 z-10 flex gap-1 opacity-100 transition md:opacity-0 md:group-hover/msg:opacity-100 focus-within:opacity-100">
             {canEditText ? (
               <button
@@ -1313,8 +1313,7 @@ function AdminChatDetailInner() {
       <div
         className="admin-chat-thread-header relative flex h-14 shrink-0 items-center gap-1 px-1 md:hidden"
         style={{
-          background: isWhatsApp ? "#075e54" : "#1c352a",
-          boxShadow: "0 1px 0 rgba(0,0,0,0.12)"
+          background: isWhatsApp ? "#075e54" : "#1c352a"
         }}
       >
         <Link
@@ -1520,8 +1519,8 @@ function AdminChatDetailInner() {
 
       {/* Fixed composer — same surface as messages so it feels emerged */}
       <div
-        className="admin-chat-thread-composer relative shrink-0 border-t px-2 py-2 md:px-3"
-        style={{ borderColor: "rgba(44,36,32,0.08)", background: "#efe8dc" }}
+        className="admin-chat-thread-composer relative shrink-0 px-2 py-2 md:border-t md:border-[#2c2420]/20 md:px-3"
+        style={{ background: "#efe8dc" }}
       >
         {composerLocked ? (
           <div className="flex flex-col items-center gap-2 py-3">
