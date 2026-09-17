@@ -50,6 +50,10 @@ export async function fetchFcmWebConfig(): Promise<FcmWebConfig | null> {
       credentials: "include",
       headers: { Accept: "application/json" }
     });
+    if (res.status === 404) {
+      // Old API build without this route — fall back to public Vercel env if set.
+      return fromEnv;
+    }
     if (!res.ok) return fromEnv;
     const json = (await res.json()) as {
       success?: boolean;

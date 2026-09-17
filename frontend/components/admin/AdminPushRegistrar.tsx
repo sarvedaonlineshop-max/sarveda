@@ -54,7 +54,10 @@ export function AdminPushRegistrar() {
       return;
     }
     if (result.reason === "not_configured") {
-      setError(result.message || "Push is not configured yet.");
+      setError(
+        result.message ||
+          "Push keys missing on server. Deploy latest API (git pull + build) and set FIREBASE_WEB_* in backend/.env."
+      );
       return;
     }
     if (result.reason === "unsupported") {
