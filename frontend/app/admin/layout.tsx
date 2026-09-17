@@ -14,7 +14,13 @@ const adminSans = Inter({
 
 export const metadata: Metadata = {
   title: "Admin",
-  robots: { index: false, follow: false }
+  robots: { index: false, follow: false },
+  manifest: "/admin-manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Sarveda Admin"
+  }
 };
 
 export default function AdminLayout({

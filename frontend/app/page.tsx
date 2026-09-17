@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AdminStandaloneRedirect } from "@/components/auth/AdminStandaloneRedirect";
 import { HomeExperienceSections } from "@/components/home/HomeExperienceSections";
 import { HomeHero } from "@/components/home/HomeHero";
 import { HomeInstagram } from "@/components/home/HomeInstagram";
@@ -48,6 +49,7 @@ export default async function HomePage() {
 
   return (
     <div className="overflow-x-hidden bg-brand-cream md:bg-brand-cream">
+      <AdminStandaloneRedirect />
       <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
 
       <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
