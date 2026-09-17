@@ -10,7 +10,7 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "Store",
   description:
-    "Browse yoga, meditation, Ayurveda, and sound healing products — instruments, botanicals, and mindful goods at Sarveda.",
+    "Browse music, sound healing, yoga and meditation products — instruments and mindful goods at Sarveda.",
   robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
   alternates: { canonical: canonical("/store") }
 };
