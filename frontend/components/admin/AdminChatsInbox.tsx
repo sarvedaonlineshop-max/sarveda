@@ -12,6 +12,7 @@ import {
   type EnquiryThreadListItem
 } from "@/lib/admin-api";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 
@@ -203,6 +204,44 @@ export function AdminChatsInbox() {
     });
   }, [items, q]);
 
+  const onListView = pathname === "/admin/chats" || pathname === "/admin/chats/";
+
+  useAdminPageHeader(
+    () => ({
+      title: "Chats",
+      subtitle:
+        onListView && unreadCount > 0 ? (
+          <span className="md:hidden">{unreadCount} unread</span>
+        ) : undefined,
+      actions: onListView ? (
+        <div className="flex items-center gap-1 md:hidden">
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#faf5ec]/90 hover:bg-white/10"
+            title="Refresh"
+            aria-label="Refresh chats"
+          >
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetStartForm();
+              setStartOpen(true);
+            }}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#faf5ec] hover:bg-white/10"
+            title="Start new chat"
+            aria-label="Start new chat"
+          >
+            <MessageSquarePlus size={20} />
+          </button>
+        </div>
+      ) : undefined
+    }),
+    [onListView, unreadCount, loading, load]
+  );
+
   function resetStartForm() {
     setDialCode("91");
     setPhone("");
@@ -385,8 +424,9 @@ export function AdminChatsInbox() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#f0ebe3]">
-      <div className="shrink-0 border-b border-[#d9d1c4] bg-[#efe8dc] px-3 py-3">
-        <div className="flex items-center justify-between gap-2">
+      <div className="shrink-0 border-b border-[#d9d1c4] bg-[#efe8dc] px-3 py-3 md:py-3">
+        {/* Desktop keeps the in-card title + actions; mobile moves them to the top nav. */}
+        <div className="mb-3 hidden items-center justify-between gap-2 md:flex">
           <div>
             <h1 className="text-[17px] font-semibold text-[#1c352a]">Chats</h1>
             {unreadCount > 0 ? (
@@ -420,7 +460,7 @@ export function AdminChatsInbox() {
           </div>
         </div>
 
-        <div className="relative mt-3">
+        <div className="relative">
           <Search
             size={14}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
@@ -428,12 +468,12 @@ export function AdminChatsInbox() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search or start a new chat"
-            className="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-stone-800 outline-none ring-1 ring-[#d9d1c4] focus:ring-[#25d366]"
+            placeholder="Search chats or contacts"
+            className="w-full rounded-lg border-0 bg-white py-2.5 pl-9 pr-3 text-[15px] text-stone-800 outline-none ring-1 ring-[#d9d1c4] focus:ring-[#25d366] md:py-2 md:text-sm"
           />
         </div>
 
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <div className="admin-mobile-pill-row mt-2.5 flex flex-wrap gap-1.5">
           {SOURCE_FILTERS.map((f) => {
             const isUnread = f.value === "__unread__";
             const active = isUnread ? unreadOnly && !source : !unreadOnly && source === f.value;
@@ -504,21 +544,21 @@ export function AdminChatsInbox() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <span
-                          className={`truncate text-[15px] ${
+                          className={`truncate text-[16px] leading-tight md:text-[15px] ${
                             thread.unreadByAdmin
-                              ? "font-bold text-[#1c352a]"
-                              : "font-semibold text-stone-800"
+                              ? "font-semibold text-[#1c352a]"
+                              : "font-normal text-stone-800"
                           }`}
                         >
                           {thread.customerName}
                         </span>
-                        <time className="shrink-0 text-[11px] text-stone-400">
+                        <time className="shrink-0 text-[12px] text-stone-400 md:text-[11px]">
                           {formatWhen(thread.lastMessageAt)}
                         </time>
                       </div>
                       <div className="mt-0.5 flex items-center gap-1.5">
                         <span
-                          className={`truncate text-[13px] ${
+                          className={`truncate text-[14px] leading-snug md:text-[13px] ${
                             thread.unreadByAdmin
                               ? "font-medium text-stone-700"
                               : "text-stone-500"

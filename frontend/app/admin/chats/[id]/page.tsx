@@ -7,6 +7,7 @@ import {
   Download,
   FileText,
   MessageSquarePlus,
+  MoreVertical,
   Paperclip,
   Pencil,
   Play,
@@ -23,6 +24,7 @@ import {
   useCallback,
   Suspense
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   deleteAdminEnquiryMessage,
@@ -829,7 +831,9 @@ function MessageBubble({
             </div>
           </div>
         ) : showText ? (
-          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1a2e1a]">{parsed.text}</p>
+          <p className="whitespace-pre-wrap text-[15px] leading-[1.35] text-[#1a2e1a] md:text-[14px] md:leading-relaxed">
+            {parsed.text}
+          </p>
         ) : null}
         {hasAttachments ? (
           <ul
@@ -901,6 +905,9 @@ function AdminChatDetailInner() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleteNotifyCustomer, setDeleteNotifyCustomer] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1145,12 +1152,30 @@ function AdminChatDetailInner() {
     const next = thread.status === "CLOSED" ? "OPEN" : "CLOSED";
     try {
       await patchAdminEnquiryStatus(thread.id, next);
+      setMenuOpen(false);
       await load();
       notifyInboxRefresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update status");
     }
   }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDocPointer(ev: MouseEvent | TouchEvent) {
+      const el = menuRef.current;
+      if (!el) return;
+      if (ev.target instanceof Node && !el.contains(ev.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocPointer);
+    document.addEventListener("touchstart", onDocPointer);
+    return () => {
+      document.removeEventListener("mousedown", onDocPointer);
+      document.removeEventListener("touchstart", onDocPointer);
+    };
+  }, [menuOpen]);
 
   if (!thread && !error) {
     return (
@@ -1173,12 +1198,90 @@ function AdminChatDetailInner() {
 
   const isWhatsApp = thread.source === "WHATSAPP";
   const isOpen = thread.status === "OPEN";
-  const initial = (thread.customerName?.trim()?.[0] || "?").toUpperCase();
+  const displayName =
+    thread.customerName?.trim() || thread.customerEmail?.trim() || "Customer";
+  const initial = (displayName[0] || "?").toUpperCase();
   const sessionOpen = !isWhatsApp || isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
   const composerLocked = isWhatsApp && !sessionOpen;
+  const sourceLabel = ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source;
+
+  const detailsModal =
+    detailsOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[230] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4 md:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="chat-details-title"
+            onClick={(ev) => {
+              if (ev.target === ev.currentTarget) setDetailsOpen(false);
+            }}
+          >
+            <div className="max-h-[85dvh] w-full overflow-y-auto rounded-t-2xl bg-[#f7f3eb] shadow-xl sm:max-w-md sm:rounded-2xl">
+              <div className="sticky top-0 flex items-center justify-between border-b border-[#e8e2d9] bg-[#f7f3eb] px-4 py-3">
+                <h2 id="chat-details-title" className="text-[17px] font-semibold text-[#1c352a]">
+                  Contact details
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-black/5"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex flex-col items-center gap-2 px-4 pb-2 pt-5">
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white"
+                  style={{
+                    background: isWhatsApp
+                      ? "linear-gradient(135deg, #25d366, #128c7e)"
+                      : "linear-gradient(135deg, #1c352a, #2d5040)"
+                  }}
+                  aria-hidden
+                >
+                  {initial}
+                </div>
+                <p className="text-center text-[18px] font-semibold text-[#1c352a]">{displayName}</p>
+                <p className="text-[13px] font-medium uppercase tracking-wide text-stone-500">
+                  {sourceLabel}
+                  {thread.status === "CLOSED" ? " · Closed" : ""}
+                </p>
+              </div>
+              <dl className="divide-y divide-[#e8e2d9] px-2 pb-6">
+                {[
+                  { label: "Name", value: thread.customerName?.trim() || "—" },
+                  { label: "Email", value: thread.customerEmail?.trim() || "—" },
+                  {
+                    label: "Mobile",
+                    value: (thread.customerPhone || thread.waPhone || "").trim() || "—"
+                  },
+                  { label: "Channel", value: sourceLabel },
+                  ...(thread.orderNumber
+                    ? [{ label: "Order", value: thread.orderNumber }]
+                    : []),
+                  ...(thread.contextTitle
+                    ? [{ label: "Context", value: thread.contextTitle }]
+                    : [])
+                ].map((row) => (
+                  <div key={row.label} className="flex flex-col gap-0.5 px-3 py-3">
+                    <dt className="text-[12px] font-medium uppercase tracking-wide text-stone-400">
+                      {row.label}
+                    </dt>
+                    <dd className="break-words text-[15px] text-stone-800">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-[#efe8dc]">
+      {detailsModal}
       {viewer ? (
         <MediaViewerOverlay
           viewer={viewer}
@@ -1205,9 +1308,86 @@ function AdminChatDetailInner() {
           if (pendingDeleteId) void handleDeleteMessage(pendingDeleteId);
         }}
       />
-      {/* Fixed header */}
+
+      {/* Mobile: WhatsApp-height header (back · avatar · name · ⋮) */}
       <div
-        className="flex shrink-0 items-center gap-3 border-b px-3 py-2.5"
+        className="relative flex h-14 shrink-0 items-center gap-1 border-b px-1 md:hidden"
+        style={{
+          borderColor: "rgba(44,36,32,0.12)",
+          background: isWhatsApp ? "#075e54" : "#1c352a"
+        }}
+      >
+        <Link
+          href="/admin/chats"
+          className="inline-flex h-11 w-10 items-center justify-center text-[#faf5ec] hover:bg-white/10"
+          aria-label="Back to chats"
+        >
+          <ChevronLeft size={26} strokeWidth={2} />
+        </Link>
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white"
+          style={{
+            background: isWhatsApp
+              ? "linear-gradient(135deg, #25d366, #128c7e)"
+              : "rgba(255,255,255,0.15)"
+          }}
+          aria-hidden
+        >
+          {initial}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setMenuOpen(false);
+            setDetailsOpen(true);
+          }}
+          className="min-w-0 flex-1 truncate px-2 text-left text-[17px] font-medium leading-tight text-[#faf5ec]"
+        >
+          {displayName}
+        </button>
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="inline-flex h-11 w-11 items-center justify-center text-[#faf5ec] hover:bg-white/10"
+            aria-label="Chat options"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+          >
+            <MoreVertical size={22} />
+          </button>
+          {menuOpen ? (
+            <div
+              role="menu"
+              className="absolute right-1 top-12 z-30 min-w-[11.5rem] overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setDetailsOpen(true);
+                }}
+                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
+              >
+                View details
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => void toggleStatus()}
+                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
+              >
+                Mark {thread.status === "CLOSED" ? "open" : "closed"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Desktop: existing rich header */}
+      <div
+        className="hidden shrink-0 items-center gap-3 border-b px-3 py-2.5 md:flex"
         style={{
           borderColor: "rgba(44,36,32,0.12)",
           background: isWhatsApp ? "#075e54" : "#1c352a"
@@ -1232,9 +1412,7 @@ function AdminChatDetailInner() {
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[16px] font-semibold text-[#faf5ec]">
-            {thread.customerName}
-          </h1>
+          <h1 className="truncate text-[16px] font-semibold text-[#faf5ec]">{displayName}</h1>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[16px] font-semibold text-[#faf5ec]/90">
             {isWhatsApp ? (
               <MaskedPhoneReveal
@@ -1255,7 +1433,7 @@ function AdminChatDetailInner() {
             )}
             <span className="font-normal text-[#a8c4b0]">·</span>
             <span className="text-[14px] font-normal text-[#a8c4b0]">
-              {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
+              {sourceLabel}
               {thread.orderNumber ? ` · ${thread.orderNumber}` : ""}
             </span>
           </p>

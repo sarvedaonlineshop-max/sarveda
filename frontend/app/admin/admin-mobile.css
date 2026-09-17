@@ -89,7 +89,16 @@
     padding: 14px !important;
   }
 
-  /* Operational tabs live inside .admin-content-enter, then the page root. Keep each row on one swipeable line. */
+  /* Chats inbox: search-first layout already; keep filter chips on one swipe row. */
+  [data-admin-path^="/admin/chats"] .admin-mobile-pill-row {
+    margin-top: 10px;
+  }
+
+  /* Conversation bubbles — WhatsApp-like body size on phone. */
+  [data-admin-path^="/admin/chats/"] .admin-content-enter p.whitespace-pre-wrap {
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+  }
   [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(1),
   [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(2),
   [data-admin-path="/admin/shipments"] .admin-content-enter > div > div:nth-child(1),
