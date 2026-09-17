@@ -94,6 +94,20 @@
     margin-top: 10px;
   }
 
+  /* Full-bleed chats card on phone — no framed border/shadow. */
+  [data-admin-path^="/admin/chats"] main {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+  }
+  [data-admin-path^="/admin/chats"] .admin-content-enter > div {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    height: calc(100dvh - 56px) !important;
+    min-height: 0 !important;
+  }
+
   /* Conversation bubbles — WhatsApp-like body size on phone. */
   [data-admin-path^="/admin/chats/"] .admin-content-enter p.whitespace-pre-wrap {
     font-size: 15px !important;

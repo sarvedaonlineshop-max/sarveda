@@ -10,11 +10,11 @@ export default function AdminChatsLayout({ children }: { children: React.ReactNo
 
   return (
     <div
-      className="flex w-full overflow-hidden rounded-xl border border-[#2c2420]/70 bg-[#f7f3eb] shadow-[0_4px_24px_rgba(28,53,42,0.1)]"
+      className="flex w-full overflow-hidden bg-[#f7f3eb] md:rounded-xl md:border md:border-[#2c2420]/70 md:shadow-[0_4px_24px_rgba(28,53,42,0.1)]"
       style={{ height: "calc(100vh - 8.5rem)", minHeight: "480px" }}
     >
       <aside
-        className={`min-h-0 w-full shrink-0 flex-col border-r border-[#2c2420]/25 md:flex md:w-[360px] lg:w-[400px] ${
+        className={`min-h-0 w-full shrink-0 flex-col md:flex md:w-[360px] md:border-r md:border-[#2c2420]/25 lg:w-[400px] ${
           onThread ? "hidden" : "flex"
         }`}
       >

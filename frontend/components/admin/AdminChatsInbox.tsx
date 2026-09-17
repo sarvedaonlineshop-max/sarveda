@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin-api";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
+import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoader";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 
@@ -115,6 +116,7 @@ export function AdminChatsInbox() {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [portalReady, setPortalReady] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     setPortalReady(true);
@@ -206,6 +208,19 @@ export function AdminChatsInbox() {
 
   const onListView = pathname === "/admin/chats" || pathname === "/admin/chats/";
 
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    const started = Date.now();
+    try {
+      await load();
+    } finally {
+      // Keep the Sarveda mark visible briefly so a fast refresh still feels intentional.
+      const wait = Math.max(0, 700 - (Date.now() - started));
+      window.setTimeout(() => setRefreshing(false), wait);
+    }
+  }
+
   useAdminPageHeader(
     () => ({
       title: "Chats",
@@ -217,29 +232,18 @@ export function AdminChatsInbox() {
         <div className="flex items-center gap-1 md:hidden">
           <button
             type="button"
-            onClick={() => void load()}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#faf5ec]/90 hover:bg-white/10"
+            onClick={() => void handleRefresh()}
+            disabled={refreshing}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#faf5ec]/90 hover:bg-white/10 disabled:opacity-60"
             title="Refresh"
             aria-label="Refresh chats"
           >
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              resetStartForm();
-              setStartOpen(true);
-            }}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#faf5ec] hover:bg-white/10"
-            title="Start new chat"
-            aria-label="Start new chat"
-          >
-            <MessageSquarePlus size={20} />
+            <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
           </button>
         </div>
       ) : undefined
     }),
-    [onListView, unreadCount, loading, load]
+    [onListView, unreadCount, refreshing, load]
   );
 
   function resetStartForm() {
@@ -423,7 +427,7 @@ export function AdminChatsInbox() {
       : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#f0ebe3]">
+    <div className="relative flex h-full min-h-0 flex-col bg-[#f0ebe3]">
       <div className="shrink-0 border-b border-[#d9d1c4] bg-[#efe8dc] px-3 py-3 md:py-3">
         {/* Desktop keeps the in-card title + actions; mobile moves them to the top nav. */}
         <div className="mb-3 hidden items-center justify-between gap-2 md:flex">
@@ -490,12 +494,10 @@ export function AdminChatsInbox() {
                     setSource(f.value);
                   }
                 }}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
                   active
-                    ? isUnread
-                      ? "bg-[#b98a3e] text-white"
-                      : "bg-[#1c352a] text-[#faf5ec]"
-                    : "bg-white text-stone-600 ring-1 ring-[#d9d1c4] hover:bg-[#faf5ec]"
+                    ? "bg-[#d9fdd3] text-[#008069] ring-1 ring-[#25d366]/35"
+                    : "bg-[#f0ebe3] text-stone-600 hover:bg-[#e9e3d8] md:bg-white md:ring-1 md:ring-[#d9d1c4] md:hover:bg-[#faf5ec]"
                 }`}
               >
                 {f.label}
@@ -508,7 +510,17 @@ export function AdminChatsInbox() {
 
       {error ? <p className="px-3 py-2 text-xs text-red-600">{error}</p> : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="relative min-h-0 flex-1 overflow-y-auto">
+        {refreshing ? (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center bg-[#f0ebe3]/75 backdrop-blur-[1px] md:hidden"
+            role="status"
+            aria-live="polite"
+            aria-label="Refreshing chats"
+          >
+            <SarvedaSignatureLoader label="Refreshing…" />
+          </div>
+        ) : null}
         {loading && items.length === 0 ? (
           <p className="p-6 text-center text-sm text-stone-400">Loading…</p>
         ) : filtered.length === 0 ? (
@@ -582,6 +594,23 @@ export function AdminChatsInbox() {
           </ul>
         )}
       </div>
+
+      {/* Mobile FAB — WhatsApp-style new chat, bottom-right */}
+      {onListView ? (
+        <button
+          type="button"
+          onClick={() => {
+            resetStartForm();
+            setStartOpen(true);
+          }}
+          className="absolute bottom-5 right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-[0_4px_14px_rgba(18,140,126,0.45)] md:hidden"
+          style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
+          title="Start new chat"
+          aria-label="Start new chat"
+        >
+          <MessageSquarePlus size={26} strokeWidth={2} />
+        </button>
+      ) : null}
 
       {startModal}
     </div>
