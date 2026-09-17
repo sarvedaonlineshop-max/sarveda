@@ -466,18 +466,28 @@ export function AdminChatsInbox() {
 
         <div className="relative">
           <Search
-            size={14}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+            size={16}
+            className="pointer-events-none absolute left-3.5 top-1/2 z-[1] -translate-y-1/2 text-stone-400"
           />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search chats or contacts"
-            className="w-full rounded-lg border-0 bg-white py-2.5 pl-9 pr-3 text-[15px] text-stone-800 outline-none ring-1 ring-[#d9d1c4] focus:ring-[#25d366] md:py-2 md:text-sm"
+            className="w-full rounded-full border-0 bg-[#ebe6de] py-2.5 pl-10 pr-10 text-[15px] text-stone-800 outline-none shadow-[inset_0_1px_2px_rgba(44,36,32,0.12),0_1px_0_rgba(255,255,255,0.55)] placeholder:text-stone-400 focus:bg-white focus:shadow-[inset_0_1px_2px_rgba(44,36,32,0.08),0_0_0_2px_rgba(61,139,79,0.28)] md:rounded-lg md:bg-white md:py-2 md:text-sm md:shadow-none md:ring-1 md:ring-[#d9d1c4] md:focus:ring-[#25d366]"
           />
+          {q.trim() ? (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-stone-800"
+              aria-label="Clear search"
+            >
+              <X size={16} strokeWidth={2.25} />
+            </button>
+          ) : null}
         </div>
 
-        <div className="admin-mobile-pill-row mt-2.5 flex flex-wrap gap-1.5">
+        <div className="admin-mobile-pill-row mt-4 flex flex-wrap gap-1.5 md:mt-2.5">
           {SOURCE_FILTERS.map((f) => {
             const isUnread = f.value === "__unread__";
             const active = isUnread ? unreadOnly && !source : !unreadOnly && source === f.value;
@@ -496,7 +506,7 @@ export function AdminChatsInbox() {
                 }}
                 className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
                   active
-                    ? "bg-[#d9fdd3] text-[#008069] ring-1 ring-[#25d366]/35"
+                    ? "bg-[#3d8b4f] text-white shadow-[0_1px_2px_rgba(28,53,42,0.18)]"
                     : "bg-[#f0ebe3] text-stone-600 hover:bg-[#e9e3d8] md:bg-white md:ring-1 md:ring-[#d9d1c4] md:hover:bg-[#faf5ec]"
                 }`}
               >

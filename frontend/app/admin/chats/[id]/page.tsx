@@ -1280,7 +1280,7 @@ function AdminChatDetailInner() {
       : null;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[#efe8dc]">
+    <div className="admin-chat-thread-root relative flex h-full min-h-0 flex-col bg-[#efe8dc]">
       {detailsModal}
       {viewer ? (
         <MediaViewerOverlay
@@ -1309,12 +1309,12 @@ function AdminChatDetailInner() {
         }}
       />
 
-      {/* Mobile: WhatsApp-height header (back · avatar · name · ⋮) */}
+      {/* Mobile: WhatsApp-height header (back · avatar · name · ⋮) — replaces shell "Chats" bar */}
       <div
-        className="relative flex h-14 shrink-0 items-center gap-1 border-b px-1 md:hidden"
+        className="admin-chat-thread-header relative flex h-14 shrink-0 items-center gap-1 px-1 md:hidden"
         style={{
-          borderColor: "rgba(44,36,32,0.12)",
-          background: isWhatsApp ? "#075e54" : "#1c352a"
+          background: isWhatsApp ? "#075e54" : "#1c352a",
+          boxShadow: "0 1px 0 rgba(0,0,0,0.12)"
         }}
       >
         <Link
@@ -1477,7 +1477,7 @@ function AdminChatDetailInner() {
       {/* Scrollable messages */}
       <div
         ref={messagesRef}
-        className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3"
+        className="admin-chat-thread-messages min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2 md:px-4 md:py-3"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c4b8a4' fill-opacity='0.12'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\"), linear-gradient(180deg, #ebe4d6, #efe8dc)"
@@ -1518,10 +1518,10 @@ function AdminChatDetailInner() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Fixed composer */}
+      {/* Fixed composer — same surface as messages so it feels emerged */}
       <div
-        className="relative shrink-0 border-t px-3 py-2"
-        style={{ borderColor: "rgba(44,36,32,0.12)", background: "#f0ebe3" }}
+        className="admin-chat-thread-composer relative shrink-0 border-t px-2 py-2 md:px-3"
+        style={{ borderColor: "rgba(44,36,32,0.08)", background: "#efe8dc" }}
       >
         {composerLocked ? (
           <div className="flex flex-col items-center gap-2 py-3">

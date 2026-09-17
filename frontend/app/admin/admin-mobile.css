@@ -89,29 +89,80 @@
     padding: 14px !important;
   }
 
-  /* Chats inbox: search-first layout already; keep filter chips on one swipe row. */
+  /* Chats — list + thread mobile layout */
   [data-admin-path^="/admin/chats"] .admin-mobile-pill-row {
-    margin-top: 10px;
+    margin-top: 0;
   }
 
-  /* Full-bleed chats card on phone — no framed border/shadow. */
-  [data-admin-path^="/admin/chats"] main {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-top: 0 !important;
+  /* Kill the default main padding that left a dead beige gap under the list. */
+  [data-admin-path^="/admin/chats"] main.admin-workspace {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
-  [data-admin-path^="/admin/chats"] .admin-content-enter > div {
+  [data-admin-path^="/admin/chats"] .admin-content-enter {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  [data-admin-path^="/admin/chats"] .admin-content-enter > .admin-chats-shell {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    height: calc(100dvh - 56px) !important;
-    min-height: 0 !important;
+  }
+
+  /* Thread: hide the admin "Chats" chrome so the conversation header is the only top bar. */
+  [data-admin-path^="/admin/chats/"] header {
+    display: none !important;
+  }
+  [data-admin-path^="/admin/chats/"] .admin-motion-root > div > div.flex.flex-col.min-h-screen {
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+  }
+  [data-admin-path^="/admin/chats/"] main.admin-workspace {
+    flex: 1 1 auto !important;
   }
 
   /* Conversation bubbles — WhatsApp-like body size on phone. */
   [data-admin-path^="/admin/chats/"] .admin-content-enter p.whitespace-pre-wrap {
     font-size: 15px !important;
     line-height: 1.35 !important;
+  }
+
+  /* Thread header + composer stick as part of the message surface. */
+  [data-admin-path^="/admin/chats/"] .admin-chat-thread-root {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    background: #efe8dc !important;
+  }
+  [data-admin-path^="/admin/chats/"] .admin-chat-thread-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    flex-shrink: 0 !important;
+  }
+  [data-admin-path^="/admin/chats/"] .admin-chat-thread-composer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+    flex-shrink: 0 !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    background: #efe8dc !important;
+    border-top-color: rgba(44, 36, 32, 0.08) !important;
+  }
+  [data-admin-path^="/admin/chats/"] .admin-chat-thread-messages {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
   }
   [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(1),
   [data-admin-path="/admin/orders"] .admin-content-enter > div > div:nth-child(2),
