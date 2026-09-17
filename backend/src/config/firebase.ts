@@ -127,33 +127,32 @@ export async function sendPushNotification(
       link
     };
     const platform = opts.platform ?? "android";
-    const messageId = await app.messaging().send({
-      token: fcmToken,
-      notification: { title, body },
-      data: stringData,
-      android:
-        platform === "web"
-          ? undefined
-          : {
+
+    // Web/PWA: data + webpush link only. Service worker paints the notification
+    // so tap always opens /admin (not Flutter).
+    const messageId =
+      platform === "web"
+        ? await app.messaging().send({
+            token: fcmToken,
+            data: stringData,
+            webpush: {
+              headers: { Urgency: "high" },
+              fcmOptions: { link }
+            }
+          })
+        : await app.messaging().send({
+            token: fcmToken,
+            notification: { title, body },
+            data: stringData,
+            android: {
               priority: "high",
               notification: {
-                // Flutter Task Manager only creates this channel.
                 channelId: "sarveda_tasks_channel",
                 color: "#075E54",
                 sound: "default"
               }
-            },
-      webpush: {
-        headers: { Urgency: "high" },
-        notification: {
-          title,
-          body,
-          icon: `${publicSiteBase()}/icons/icon-192.png`,
-          badge: `${publicSiteBase()}/icons/icon-192.png`
-        },
-        fcmOptions: { link }
-      }
-    });
+            }
+          });
     logger.info("fcm_push_sent", {
       messageId,
       tokenPrefix: fcmToken.slice(0, 12),
@@ -217,9 +216,8 @@ export async function sendPushToEmails(
 }
 
 /**
- * Push to all ADMIN / SUPER_ADMIN users for order/chat alerts.
- * Sends to browser `fcmWebToken` (opens /admin on tap) and, when different,
- * also to Flutter `fcmToken` (opens Task Manager until Flutter handles admin links).
+ * Push order/chat alerts to ADMIN / SUPER_ADMIN **web/PWA tokens only**.
+ * Flutter Task Manager tokens (`fcmToken`) are ignored for commerce alerts.
  */
 export async function sendPushToAdmins(
   title: string,
@@ -236,37 +234,36 @@ export async function sendPushToAdmins(
         role: { in: ["ADMIN", "SUPER_ADMIN"] },
         deletedAt: null,
         pushNotificationsEnabled: true,
-        OR: [{ fcmWebToken: { not: null } }, { fcmToken: { not: null } }]
+        fcmWebToken: { not: null }
       },
-      select: { email: true, fcmToken: true, fcmWebToken: true }
+      select: { email: true, fcmWebToken: true }
     });
     if (users.length === 0) {
-      logger.warn("fcm_no_admin_tokens", { title });
+      logger.warn("fcm_no_admin_web_tokens", {
+        title,
+        hint: "Admin must open /admin in Chrome and allow notifications"
+      });
       return 0;
     }
     let sent = 0;
     for (const user of users) {
-      const payload = { ...data, audience: "admin" };
-      const mobile = user.fcmToken?.trim() || null;
-      const web = user.fcmWebToken?.trim() || null;
-      // Same string saved in both columns is almost always the Flutter token
-      // mis-copied as "web" — treat it as mobile only.
-      const webDistinct = web && web !== mobile ? web : null;
-
-      if (webDistinct) {
-        const ok = await sendPushNotification(webDistinct, title, body, payload, {
-          platform: "web"
-        });
-        if (ok) sent += 1;
-      }
-      if (mobile) {
-        const ok = await sendPushNotification(mobile, title, body, payload, {
-          platform: "android"
-        });
-        if (ok) sent += 1;
-      }
+      const web = user.fcmWebToken?.trim();
+      if (!web) continue;
+      const ok = await sendPushNotification(
+        web,
+        title,
+        body,
+        { ...data, audience: "admin" },
+        { platform: "web" }
+      );
+      if (ok) sent += 1;
     }
-    logger.info("fcm_admin_push_done", { title, sent, candidates: users.length });
+    logger.info("fcm_admin_push_done", {
+      title,
+      sent,
+      candidates: users.length,
+      channel: "web_only"
+    });
     return sent;
   } catch (err) {
     logger.error("fcm_admin_push_failed", {

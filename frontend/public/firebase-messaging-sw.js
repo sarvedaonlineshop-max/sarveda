@@ -32,17 +32,21 @@ if (firebaseConfig) {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
-    // Notification payloads are shown by FCM automatically — only paint data-only pushes.
-    if (payload.notification?.title) return;
-
-    const title = payload.data?.title || "Sarveda Admin";
-    const body = payload.data?.body || "";
+    const title =
+      payload.notification?.title ||
+      payload.data?.title ||
+      "Sarveda Admin";
+    const body =
+      payload.notification?.body ||
+      payload.data?.body ||
+      "";
     const link =
       payload.fcmOptions?.link ||
       payload.data?.link ||
       payload.data?.click_action ||
       "/admin";
 
+    // Always paint from the SW so tap routing to /admin is under our control.
     return self.registration.showNotification(title, {
       body,
       icon: "/icons/icon-192.png",

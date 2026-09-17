@@ -20,8 +20,9 @@ export type FcmWebConfig = {
   vapidKey: string;
 };
 
-const DISMISS_KEY = "sarveda-admin-push-dismissed-v1";
-const LAST_TOKEN_KEY = "sarveda-admin-fcm-token";
+const DISMISS_KEY = "sarveda-admin-push-dismissed-v2";
+const LAST_TOKEN_KEY = "sarveda-admin-fcm-web-token-v2";
+const REGISTERED_FLAG = "sarveda-admin-web-push-ok-v2";
 
 let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
@@ -120,11 +121,12 @@ async function registerMessagingWorker(
     projectId: config.projectId,
     messagingSenderId: config.messagingSenderId,
     appId: config.appId,
-    v: "3"
+    v: "4"
   });
   const registration = await withTimeout(
     navigator.serviceWorker.register(`/firebase-messaging-sw.js?${params.toString()}`, {
-      scope: "/firebase-cloud-messaging-push-scope"
+      scope: "/firebase-cloud-messaging-push-scope",
+      updateViaCache: "none"
     }),
     15000,
     "Registering notification service worker"
@@ -168,10 +170,19 @@ async function saveTokenToServer(token: string): Promise<boolean> {
   if (!res.ok) return false;
   try {
     window.localStorage.setItem(LAST_TOKEN_KEY, token);
+    window.localStorage.setItem(REGISTERED_FLAG, "1");
   } catch {
     /* ignore */
   }
   return true;
+}
+
+export function hasWebPushRegisteredLocally(): boolean {
+  try {
+    return window.localStorage.getItem(REGISTERED_FLAG) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function isPushDismissed(): boolean {

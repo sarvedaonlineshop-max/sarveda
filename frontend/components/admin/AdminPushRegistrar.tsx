@@ -4,8 +4,10 @@ import { Bell, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  clearPushDismiss,
   dismissPushPrompt,
   enableAdminPush,
+  hasWebPushRegisteredLocally,
   isPushDismissed,
   refreshAdminPushIfGranted,
   type EnablePushProgress
@@ -20,7 +22,8 @@ const STEP_LABEL: Record<EnablePushProgress, string> = {
 };
 
 /**
- * Registers FCM for logged-in admins and prompts once to enable order/chat push.
+ * Registers browser/PWA FCM for logged-in admins (order + chat alerts).
+ * Flutter Task Manager is not used for these alerts.
  */
 export function AdminPushRegistrar() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -35,12 +38,26 @@ export function AdminPushRegistrar() {
       if (typeof window === "undefined" || !("Notification" in window)) return;
 
       if (Notification.permission === "granted") {
-        await refreshAdminPushIfGranted();
+        const ok = await refreshAdminPushIfGranted();
+        if (cancelled) return;
+        if (ok) return;
+        // Permission granted but token not saved — force the enable card again.
+        clearPushDismiss();
+        setShowPrompt(true);
         return;
       }
 
-      if (Notification.permission === "denied") return;
-      if (isPushDismissed()) return;
+      if (Notification.permission === "denied") {
+        if (!cancelled) {
+          setShowPrompt(true);
+          setError(
+            "Notifications are blocked for sarveda.com. Chrome ⋮ → Site settings → Notifications → Allow."
+          );
+        }
+        return;
+      }
+
+      if (isPushDismissed() && hasWebPushRegisteredLocally()) return;
       if (!cancelled) setShowPrompt(true);
     })();
     return () => {
@@ -58,24 +75,21 @@ export function AdminPushRegistrar() {
     if (result.ok) {
       setShowPrompt(false);
       setDoneHint(true);
-      window.setTimeout(() => setDoneHint(false), 3500);
+      window.setTimeout(() => setDoneHint(false), 4000);
       return;
     }
     if (result.reason === "denied") {
       setError(
-        "Notifications blocked. In Chrome site settings for sarveda.com, set Notifications to Allow, then try again."
+        "Notifications blocked. Chrome ⋮ → Site settings → sarveda.com → Notifications → Allow."
       );
       return;
     }
     if (result.reason === "not_configured") {
-      setError(
-        result.message ||
-          "Push keys missing on server. Deploy latest API and set FIREBASE_WEB_* in backend/.env."
-      );
+      setError(result.message || "Push is not configured on the server yet.");
       return;
     }
     if (result.reason === "unsupported") {
-      setShowPrompt(false);
+      setError("This browser cannot receive web push. Use Chrome on Android.");
       return;
     }
     setError(result.message || "Could not enable notifications.");
@@ -92,7 +106,7 @@ export function AdminPushRegistrar() {
         className="pointer-events-none fixed bottom-4 left-1/2 z-[80] w-[min(92vw,22rem)] -translate-x-1/2 rounded-xl bg-[#1c352a] px-4 py-3 text-center text-sm text-white shadow-lg md:bottom-6"
         role="status"
       >
-        Order &amp; chat alerts enabled
+        Web alerts on — taps open Admin (not Task Manager)
       </div>
     );
   }
@@ -103,17 +117,16 @@ export function AdminPushRegistrar() {
     <div
       className="fixed bottom-4 left-1/2 z-[80] w-[min(92vw,24rem)] -translate-x-1/2 rounded-2xl border border-[#d9d1c4] bg-[#faf6ee] p-3 shadow-[0_8px_28px_rgba(28,53,42,0.18)] md:bottom-6"
       role="dialog"
-      aria-label="Enable push notifications"
+      aria-label="Enable web push notifications"
     >
       <div className="flex items-start gap-2.5">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1c352a] text-white">
           <Bell size={16} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-[#1c352a]">Enable order &amp; chat alerts</p>
+          <p className="text-sm font-semibold text-[#1c352a]">Enable web order &amp; chat alerts</p>
           <p className="mt-0.5 text-[12px] leading-snug text-stone-600">
-            Get a phone notification when a new order is paid or a customer chats — even if admin is
-            closed.
+            Chrome / installed site only. Tap opens Admin. Task Manager is not used.
           </p>
           {busy && step ? (
             <p className="mt-1.5 text-[11px] font-medium text-[#1c352a]">{STEP_LABEL[step]}</p>
