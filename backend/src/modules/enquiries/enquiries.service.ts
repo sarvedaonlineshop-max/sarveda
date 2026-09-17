@@ -243,14 +243,7 @@ ${attachmentLinesHtml(uploaded)}
     .filter(Boolean)
     .join("\n");
 
-  await sendMail(
-    CARE_INBOX_EMAIL,
-    `[Sarveda] ${subjectLine} — ${input.customerName}`,
-    html,
-    text,
-    input.customerEmail
-  );
-
+  // Push first (do not wait on email) — ZeptoMail latency was delaying alerts.
   void import("../../config/firebase")
     .then(({ sendPushToAdmins }) =>
       sendPushToAdmins(
@@ -264,6 +257,14 @@ ${attachmentLinesHtml(uploaded)}
       )
     )
     .catch(() => undefined);
+
+  void sendMail(
+    CARE_INBOX_EMAIL,
+    `[Sarveda] ${subjectLine} — ${input.customerName}`,
+    html,
+    text,
+    input.customerEmail
+  ).catch(() => undefined);
 
   logger.info("enquiry_created", {
     threadId: thread.id,

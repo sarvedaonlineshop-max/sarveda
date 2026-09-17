@@ -128,15 +128,24 @@ export async function sendPushNotification(
     };
     const platform = opts.platform ?? "android";
 
-    // Web/PWA: data + webpush link only. Service worker paints the notification
-    // so tap always opens /admin (not Flutter).
+    // Web/PWA: include a visible notification + high urgency so Chrome delivers promptly
+    // (data-only pushes are often delayed or dropped when the browser is backgrounded).
     const messageId =
       platform === "web"
         ? await app.messaging().send({
             token: fcmToken,
             data: stringData,
             webpush: {
-              headers: { Urgency: "high" },
+              headers: {
+                Urgency: "high",
+                TTL: "120"
+              },
+              notification: {
+                title,
+                body,
+                icon: `${publicSiteBase()}/icons/icon-192.png`,
+                badge: `${publicSiteBase()}/icons/icon-192.png`
+              },
               fcmOptions: { link }
             }
           })
