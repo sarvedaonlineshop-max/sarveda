@@ -1437,26 +1437,7 @@ function AdminChatDetailInner() {
           </p>
         </div>
         <ChatFollowUpControls threadId={thread.id} lightHeader />
-        <button
-          type="button"
-          onClick={() => void toggleStatus()}
-          className="shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold"
-          style={
-            isOpen
-              ? {
-                  background: "rgba(255,255,255,0.12)",
-                  color: "#faf5ec",
-                  border: "1px solid rgba(255,255,255,0.22)"
-                }
-              : {
-                  background: "#fee2e2",
-                  color: "#991b1b",
-                  border: "1px solid #fca5a5"
-                }
-          }
-        >
-          Mark {thread.status === "CLOSED" ? "open" : "closed"}
-        </button>
+        {/* Mark closed temporarily hidden */}
       </div>
 
       {banner ? (
