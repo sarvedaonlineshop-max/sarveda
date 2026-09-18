@@ -80,7 +80,7 @@ export const aboutPage = {
       "Our Mysore team works alongside a wider network of craftspeople, musicians, practitioners, educators and collaborators across India and internationally."
     ],
     image: {
-      src: "/images/about/team-mysore.jpg",
+      src: "/images/about/team.jpg",
       alt: "The Sarveda team"
     },
     caption: "The Sarveda team."

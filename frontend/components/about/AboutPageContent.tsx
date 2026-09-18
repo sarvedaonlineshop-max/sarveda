@@ -255,7 +255,7 @@ export function AboutPageContent() {
               </div>
             </div>
             <figure>
-              <div className="relative aspect-[16/7] overflow-hidden rounded-sm bg-[#efe6d6]">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-[#efe6d6] sm:aspect-[3/2]">
                 <Image
                   src={team.image.src}
                   alt={team.image.alt}
