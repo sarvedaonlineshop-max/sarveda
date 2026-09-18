@@ -144,7 +144,9 @@ export async function sendPushNotification(
                 title,
                 body,
                 icon: `${publicSiteBase()}/icons/icon-192.png`,
-                badge: `${publicSiteBase()}/icons/icon-192.png`
+                badge: `${publicSiteBase()}/icons/icon-192.png`,
+                // Ensures notificationclick can deep-link when Admin is already open.
+                data: stringData
               },
               fcmOptions: { link }
             }

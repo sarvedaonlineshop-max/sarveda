@@ -26,6 +26,36 @@ function readConfigFromUrl() {
   }
 }
 
+function asRecord(value) {
+  return value && typeof value === "object" ? value : null;
+}
+
+/** Build absolute admin URL from FCM notification data (several shapes). */
+function resolveAdminUrl(rawData) {
+  const origin = self.location.origin;
+  const data = asRecord(rawData) || {};
+  const nested =
+    asRecord(data.FCM_MSG) ||
+    asRecord(data.fcmMessage) ||
+    asRecord(data.data) ||
+    {};
+  const merged = { ...nested, ...data };
+
+  const candidates = [
+    merged.link,
+    merged.click_action,
+    merged.chatId ? `/admin/chats/${merged.chatId}` : "",
+    merged.orderId ? `/admin/orders/${merged.orderId}` : ""
+  ].filter((v) => typeof v === "string" && v.trim());
+
+  const raw = candidates[0] || "/admin";
+  try {
+    return new URL(raw, origin).href;
+  } catch {
+    return `${origin}/admin`;
+  }
+}
+
 const firebaseConfig = readConfigFromUrl();
 if (firebaseConfig) {
   firebase.initializeApp(firebaseConfig);
@@ -33,15 +63,12 @@ if (firebaseConfig) {
 
   messaging.onBackgroundMessage((payload) => {
     // When FCM includes a notification payload, the browser already displays it.
+    // Still attach nothing here — notificationclick below reconstructs the deep link.
     if (payload.notification?.title) return;
 
     const title = payload.data?.title || "Sarveda Admin";
     const body = payload.data?.body || "";
-    const link =
-      payload.fcmOptions?.link ||
-      payload.data?.link ||
-      payload.data?.click_action ||
-      "/admin";
+    const link = resolveAdminUrl(payload.data || {});
 
     return self.registration.showNotification(title, {
       body,
@@ -56,17 +83,7 @@ if (firebaseConfig) {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const raw =
-    (event.notification &&
-      event.notification.data &&
-      event.notification.data.link) ||
-    "/admin";
-  let url = raw;
-  try {
-    url = new URL(raw, self.location.origin).href;
-  } catch {
-    url = self.location.origin + "/admin";
-  }
+  const url = resolveAdminUrl(event.notification && event.notification.data);
 
   event.waitUntil(
     (async () => {
@@ -74,20 +91,29 @@ self.addEventListener("notificationclick", (event) => {
         type: "window",
         includeUncontrolled: true
       });
+
       for (const client of all) {
-        if ("focus" in client && client.url.startsWith(self.location.origin)) {
-          await client.focus();
-          if ("navigate" in client) {
-            try {
-              await client.navigate(url);
-            } catch {
-              /* ignore */
-            }
-          }
-          return;
+        if (!client.url.startsWith(self.location.origin)) continue;
+        if (!("focus" in client)) continue;
+
+        await client.focus();
+        // Next.js App Router often ignores WindowClient.navigate() when already open.
+        // postMessage → page does location.assign so order/chat deep links always apply.
+        try {
+          client.postMessage({ type: "SARVEDA_ADMIN_PUSH_NAV", url });
+        } catch {
+          /* ignore */
         }
+        return;
       }
+
       await clients.openWindow(url);
     })()
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });

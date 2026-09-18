@@ -121,7 +121,7 @@ async function registerMessagingWorker(
     projectId: config.projectId,
     messagingSenderId: config.messagingSenderId,
     appId: config.appId,
-    v: "4"
+    v: "5"
   });
   const registration = await withTimeout(
     navigator.serviceWorker.register(`/firebase-messaging-sw.js?${params.toString()}`, {
@@ -289,26 +289,43 @@ export async function enableAdminPush(
         const title =
           payload.notification?.title || payload.data?.title || "Sarveda Admin";
         const body = payload.notification?.body || payload.data?.body || "";
-        if (Notification.permission === "granted" && body) {
-          const link =
-            payload.fcmOptions?.link ||
-            payload.data?.link ||
-            (payload.data?.chatId
-              ? `/admin/chats/${payload.data.chatId}`
-              : payload.data?.orderId
-                ? `/admin/orders/${payload.data.orderId}`
-                : "/admin");
-          const n = new Notification(title, {
-            body,
-            icon: "/icons/icon-192.png?v=sarveda-app-icon-3",
-            tag: payload.data?.chatId || payload.data?.orderId || "sarveda-admin"
-          });
-          n.onclick = () => {
-            window.focus();
-            window.location.href = link;
-            n.close();
-          };
+        if (Notification.permission !== "granted" || !body) return;
+
+        const link =
+          payload.fcmOptions?.link ||
+          payload.data?.link ||
+          (payload.data?.chatId
+            ? `/admin/chats/${payload.data.chatId}`
+            : payload.data?.orderId
+              ? `/admin/orders/${payload.data.orderId}`
+              : "/admin");
+        let absolute = link;
+        try {
+          absolute = new URL(link, window.location.origin).href;
+        } catch {
+          absolute = `${window.location.origin}/admin`;
         }
+
+        const n = new Notification(title, {
+          body,
+          icon: "/icons/icon-192.png?v=sarveda-app-icon-3",
+          tag: payload.data?.chatId || payload.data?.orderId || "sarveda-admin",
+          data: { link: absolute, ...(payload.data || {}) }
+        });
+        n.onclick = () => {
+          window.focus();
+          n.close();
+          try {
+            const next = new URL(absolute, window.location.origin);
+            if (next.origin === window.location.origin) {
+              window.location.assign(next.href);
+              return;
+            }
+          } catch {
+            /* fall through */
+          }
+          window.location.assign("/admin");
+        };
       });
     }
 
