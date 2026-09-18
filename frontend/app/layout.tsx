@@ -144,14 +144,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         ) : null}
         {isProd && metaPixelId ? (
           <>
-            <Script id="meta-pixel" strategy="afterInteractive">
+            {/* beforeInteractive so fbq exists before order-confirmed fires Purchase */}
+            <Script id="meta-pixel" strategy="beforeInteractive">
               {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
               if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
               n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
+              t.src=v;s=b.getElementsByTagName(s)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${metaPixelId}');

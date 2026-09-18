@@ -24,13 +24,23 @@ function safe(run: () => void): void {
 }
 
 function toMajor(minorUnits: number): number {
-  return Math.round(minorUnits) / 100;
+  return Math.round(Number(minorUnits) || 0) / 100;
 }
 
 /** ISO 4217 currency for Meta / GA — letters only, uppercase (e.g. INR, USD). */
 function normalizeCurrency(raw: string | undefined): string {
-  const cleaned = (raw || "INR").trim().toUpperCase().replace(/[^A-Z]/g, "");
+  const cleaned = String(raw || "INR")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "");
   return cleaned || "INR";
+}
+
+/** Meta requires a plain number > 0 (no currency symbols, not a string). */
+function metaMoneyValue(minorUnits: number): number | null {
+  const major = toMajor(minorUnits);
+  if (!Number.isFinite(major) || !(major > 0)) return null;
+  return Number(major.toFixed(2));
 }
 
 function ga4Items(items: PurchaseItem[]) {
@@ -57,6 +67,39 @@ function pushDataLayer(event: string, ecommerce: Record<string, unknown>): void 
   window.dataLayer.push({ event, ecommerce });
 }
 
+/**
+ * Order-confirmed often finishes before Next.js injects the Meta snippet.
+ * Queue until fbq exists (the official stub also queues until fbevents.js loads).
+ */
+function whenFbqReady(run: (fbq: NonNullable<Window["fbq"]>) => void): void {
+  safe(() => {
+    const started = Date.now();
+    const tryRun = () => {
+      if (typeof window.fbq === "function") {
+        run(window.fbq);
+        return;
+      }
+      if (Date.now() - started > 8000) return;
+      window.setTimeout(tryRun, 50);
+    };
+    tryRun();
+  });
+}
+
+function trackMeta(
+  event: "Purchase" | "AddToCart" | "InitiateCheckout",
+  payload: Record<string, unknown>,
+  eventId?: string
+): void {
+  whenFbqReady((fbq) => {
+    if (eventId) {
+      fbq("track", event, payload, { eventID: eventId });
+    } else {
+      fbq("track", event, payload);
+    }
+  });
+}
+
 export function trackPurchase(params: {
   orderId: string;
   value: number;
@@ -64,11 +107,11 @@ export function trackPurchase(params: {
   items: PurchaseItem[];
 }): void {
   safe(() => {
-    // Meta Events Manager requires numeric value > 0 and ISO currency (no symbols).
-    const value = toMajor(params.value);
-    if (!(value > 0)) return;
-    const currency = (params.currency || "INR").trim().toUpperCase().replace(/[^A-Z]/g, "") || "INR";
+    const value = metaMoneyValue(params.value);
+    if (value == null) return;
+    const currency = normalizeCurrency(params.currency);
     const items = params.items ?? [];
+    const eventId = `purchase_${params.orderId}`.slice(0, 64);
 
     pushDataLayer("purchase", {
       transaction_id: params.orderId,
@@ -86,16 +129,19 @@ export function trackPurchase(params: {
       });
     }
 
-    if (window.fbq) {
-      window.fbq("track", "Purchase", {
+    // Minimal required fields first — Meta Events Manager diagnostics key off these.
+    trackMeta(
+      "Purchase",
+      {
         value,
         currency,
         content_ids: items.map((i) => i.id),
         contents: metaContents(items),
         content_type: "product",
         num_items: items.reduce((s, i) => s + i.quantity, 0)
-      });
-    }
+      },
+      eventId
+    );
   });
 }
 
@@ -107,7 +153,9 @@ export function trackAddToCart(params: {
   quantity?: number;
 }): void {
   safe(() => {
-    const value = toMajor(params.value);
+    const value = metaMoneyValue(params.value);
+    if (value == null) return;
+    const currency = normalizeCurrency(params.currency);
     const quantity = params.quantity && params.quantity > 0 ? params.quantity : 1;
     const item: PurchaseItem = {
       id: params.itemId,
@@ -117,29 +165,27 @@ export function trackAddToCart(params: {
     };
 
     pushDataLayer("add_to_cart", {
-      currency: params.currency,
+      currency,
       value,
       items: ga4Items([item])
     });
 
     if (window.gtag) {
       window.gtag("event", "add_to_cart", {
-        currency: params.currency,
+        currency,
         value,
         items: ga4Items([item])
       });
     }
 
-    if (window.fbq) {
-      window.fbq("track", "AddToCart", {
-        content_ids: [params.itemId],
-        content_name: params.name,
-        contents: metaContents([item]),
-        content_type: "product",
-        value,
-        currency: params.currency
-      });
-    }
+    trackMeta("AddToCart", {
+      content_ids: [params.itemId],
+      content_name: params.name,
+      contents: metaContents([item]),
+      content_type: "product",
+      value,
+      currency
+    });
   });
 }
 
@@ -149,32 +195,32 @@ export function trackInitiateCheckout(params: {
   items?: PurchaseItem[];
 }): void {
   safe(() => {
-    const value = toMajor(params.value);
+    const value = metaMoneyValue(params.value);
+    if (value == null) return;
+    const currency = normalizeCurrency(params.currency);
     const items = params.items ?? [];
 
     pushDataLayer("begin_checkout", {
-      currency: params.currency,
+      currency,
       value,
       items: ga4Items(items)
     });
 
     if (window.gtag) {
       window.gtag("event", "begin_checkout", {
-        currency: params.currency,
+        currency,
         value,
         items: ga4Items(items)
       });
     }
 
-    if (window.fbq) {
-      window.fbq("track", "InitiateCheckout", {
-        value,
-        currency: params.currency,
-        content_ids: items.map((i) => i.id),
-        contents: metaContents(items),
-        content_type: "product",
-        num_items: items.reduce((s, i) => s + i.quantity, 0)
-      });
-    }
+    trackMeta("InitiateCheckout", {
+      value,
+      currency,
+      content_ids: items.map((i) => i.id),
+      contents: metaContents(items),
+      content_type: "product",
+      num_items: items.reduce((s, i) => s + i.quantity, 0)
+    });
   });
 }
