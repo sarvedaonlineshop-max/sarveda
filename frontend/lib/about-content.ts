@@ -99,22 +99,26 @@ export const aboutPage = {
       {
         key: "quality",
         title: "Quality through continuous improvement",
-        body: "We listen, learn and improve — from our instruments and courses to customer support and experiences."
+        body: "We listen, learn and improve — from our instruments and courses to customer support and experiences.",
+        icon: "/images/about/guide-quality.png?v=1"
       },
       {
         key: "craft",
         title: "Respect for craft",
-        body: "We value the makers, musical traditions and knowledge behind every instrument while continuing to explore new ideas from around the world."
+        body: "We value the makers, musical traditions and knowledge behind every instrument while continuing to explore new ideas from around the world.",
+        icon: "/images/about/guide-craft.png?v=1"
       },
       {
         key: "collaboration",
         title: "Learning through collaboration",
-        body: "We work with musicians, practitioners, artists and thinkers to bring different perspectives and experiences together."
+        body: "We work with musicians, practitioners, artists and thinkers to bring different perspectives and experiences together.",
+        icon: "/images/about/guide-collaboration.png?v=1"
       },
       {
         key: "curiosity",
         title: "Creativity & Curiosity",
-        body: "Music, movement, art and exploration are fundamental expressions of being human. Curiosity remains at the heart of what we do."
+        body: "Music, movement, art and exploration are fundamental expressions of being human. Curiosity remains at the heart of what we do.",
+        icon: "/images/about/guide-curiosity.png?v=1"
       }
     ]
   },
