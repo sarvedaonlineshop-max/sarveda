@@ -830,6 +830,8 @@ export async function persistManualAwb(
     forceNew?: boolean;
     /** Extra parcel on an order that may already be shipped; always lands on its own row. */
     additionalLabel?: boolean;
+    /** Partner tracking reference when it differs from AWB. */
+    trackingId?: string | null;
   }
 ): Promise<
   | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
@@ -879,6 +881,7 @@ export async function persistManualAwb(
   const trackingUrl =
     trackingUrlOverride?.trim() || trackingUrlForManualAwb(partnerCode, trimmed);
 
+  const trackingId = options?.trackingId?.trim() || "";
   await persistShipment(
     orderId,
     courierName,
@@ -893,6 +896,7 @@ export async function persistManualAwb(
         ? { customPartnerName: options.customCourierName.trim() }
         : {}),
       ...(trackingUrlOverride?.trim() ? { trackingUrlManual: trackingUrlOverride.trim() } : {}),
+      ...(trackingId && trackingId !== trimmed ? { trackingId } : {}),
       ...(options?.orderItemIds?.length ? { orderItemIds: options.orderItemIds } : {}),
       ...(options?.additionalLabel ? { additionalLabel: true } : {})
     },

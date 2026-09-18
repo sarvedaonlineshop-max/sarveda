@@ -27,6 +27,7 @@ import {
   coveredOrderItemIdsFromShipments,
   courierByOrderItemIdFromShipments,
   DELIVERY_PARTNER_OPTIONS,
+  type AssignFulfillmentMode,
   type DeliveryPartnerCode,
   type LineFulfillmentPref,
   partnerDisplayLabel,
@@ -161,6 +162,9 @@ export default function AdminShipmentCreateLabelPage() {
   const [panelSourceId, setPanelSourceId] = useState("");
   const [panelPartner, setPanelPartner] = useState<DeliveryPartnerCode | "">("");
   const [panelCustomName, setPanelCustomName] = useState("");
+  const [panelMode, setPanelMode] = useState<AssignFulfillmentMode>("automatic");
+  const [panelManualAwb, setPanelManualAwb] = useState("");
+  const [panelManualTrackingId, setPanelManualTrackingId] = useState("");
   const [manualAwb, setManualAwb] = useState("");
   const [manualTrackingUrl, setManualTrackingUrl] = useState("");
   const [addLabelOpen, setAddLabelOpen] = useState(false);
@@ -428,6 +432,10 @@ export default function AdminShipmentCreateLabelPage() {
       pushToast("Select a delivery partner.", true);
       return;
     }
+    if (panelMode === "automatic" && panelPartner !== "DELHIVERY") {
+      pushToast("Automatic mode uses Delhivery API. Switch Mode to Manual for other partners.", true);
+      return;
+    }
     if (panelPartner === "OTHER" && !panelCustomName.trim()) {
       pushToast("Enter a custom partner name for Others.", true);
       return;
@@ -453,7 +461,79 @@ export default function AdminShipmentCreateLabelPage() {
     ).catch((e) =>
       pushToast(e instanceof Error ? e.message : "Could not save source on lines", true)
     );
-    pushToast(`Assigned ${selectedOpenIds.length} item(s).`);
+    pushToast(`Assigned ${selectedOpenIds.length} item(s). Continue on the right to create the Delhivery label.`);
+  }
+
+  async function handlePanelSaveAndNotify() {
+    if (!orderId || !order) return;
+    if (selectedOpenIds.length === 0) {
+      pushToast("Select the items for this manual shipment.", true);
+      return;
+    }
+    if (!panelSourceId) {
+      pushToast("Select a source location.", true);
+      return;
+    }
+    if (!panelPartner) {
+      pushToast("Select a delivery partner.", true);
+      return;
+    }
+    if (panelPartner === "OTHER" && !panelCustomName.trim()) {
+      pushToast("Enter a custom partner name for Others.", true);
+      return;
+    }
+    const awb = panelManualAwb.trim();
+    if (awb.length < 4) {
+      pushToast("Enter the AWB number (min 4 characters).", true);
+      return;
+    }
+    const trackingRaw = panelManualTrackingId.trim();
+    const trackingIsUrl = /^https?:\/\//i.test(trackingRaw);
+
+    setShipBusy(true);
+    try {
+      setLinePrefs((prev) => {
+        const next = { ...prev };
+        for (const id of selectedOpenIds) {
+          next[id] = {
+            sourceId: panelSourceId,
+            partner: panelPartner,
+            customPartnerName: panelPartner === "OTHER" ? panelCustomName.trim() : ""
+          };
+        }
+        return next;
+      });
+      setSelectedPickupId(panelSourceId);
+      await patchAdminOrderItemWarehouses(
+        orderId,
+        selectedOpenIds.map((orderItemId) => ({
+          orderItemId,
+          pickupLocationId: panelSourceId
+        }))
+      );
+      const created = await adminSaveManualAwb(orderId, {
+        awb,
+        courier: panelPartner,
+        trackingUrl: trackingIsUrl ? trackingRaw : undefined,
+        trackingId: trackingRaw && !trackingIsUrl ? trackingRaw : undefined,
+        pickupLocationId: panelSourceId,
+        orderItemIds: selectedOpenIds,
+        customCourierName: panelPartner === "OTHER" ? panelCustomName.trim() : undefined,
+        forceNew: true
+      });
+      pushToast(
+        `Manual shipment saved — ${created.courier} · ${created.waybill}. Customer notified.`
+      );
+      setPanelManualAwb("");
+      setPanelManualTrackingId("");
+      setSelectedItemIds(new Set());
+      await load();
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Could not save manual AWB", true);
+      void load();
+    } finally {
+      setShipBusy(false);
+    }
   }
 
   async function handleCreateLabel() {
@@ -792,6 +872,10 @@ export default function AdminShipmentCreateLabelPage() {
             panelSourceId={panelSourceId}
             panelPartner={panelPartner}
             panelCustomName={panelCustomName}
+            panelMode={panelMode}
+            panelManualAwb={panelManualAwb}
+            panelManualTrackingId={panelManualTrackingId}
+            saveBusy={shipBusy}
             onToggle={(id) => {
               setSelectedItemIds((prev) => {
                 const next = new Set(prev);
@@ -810,7 +894,14 @@ export default function AdminShipmentCreateLabelPage() {
             onPanelSource={setPanelSourceId}
             onPanelPartner={setPanelPartner}
             onPanelCustomName={setPanelCustomName}
+            onPanelMode={(mode) => {
+              setPanelMode(mode);
+              if (mode === "automatic" && !panelPartner) setPanelPartner("DELHIVERY");
+            }}
+            onPanelManualAwb={setPanelManualAwb}
+            onPanelManualTrackingId={setPanelManualTrackingId}
             onApplyPanel={applyPanelToSelected}
+            onSaveAndNotify={() => void handlePanelSaveAndNotify()}
           />
 
           <dl className="mt-4 space-y-1 border-t border-stone-100 pt-3 text-sm">
@@ -1131,7 +1222,7 @@ export default function AdminShipmentCreateLabelPage() {
                     onClick={() => void handleSaveManualShipment()}
                     className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
                   >
-                    {shipBusy ? "Saving…" : "Save manual shipment"}
+                    {shipBusy ? "Saving…" : "Save and notify"}
                   </button>
                 </div>
               ) : isDelhiveryCreate ? (

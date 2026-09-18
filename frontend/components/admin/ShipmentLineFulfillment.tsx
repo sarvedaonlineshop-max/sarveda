@@ -100,6 +100,8 @@ export function courierByOrderItemIdFromShipments(
   return map;
 }
 
+export type AssignFulfillmentMode = "automatic" | "manual";
+
 type Props = {
   items: ShipmentLineItem[];
   currency: string;
@@ -113,12 +115,20 @@ type Props = {
   panelSourceId: string;
   panelPartner: DeliveryPartnerCode | "";
   panelCustomName: string;
+  panelMode: AssignFulfillmentMode;
+  panelManualAwb: string;
+  panelManualTrackingId: string;
+  saveBusy?: boolean;
   onToggle: (id: string) => void;
   onToggleAllOpen: () => void;
   onPanelSource: (id: string) => void;
   onPanelPartner: (code: DeliveryPartnerCode | "") => void;
   onPanelCustomName: (name: string) => void;
+  onPanelMode: (mode: AssignFulfillmentMode) => void;
+  onPanelManualAwb: (awb: string) => void;
+  onPanelManualTrackingId: (id: string) => void;
   onApplyPanel: () => void;
+  onSaveAndNotify: () => void;
 };
 
 export function ShipmentLineFulfillmentTable({
@@ -133,12 +143,20 @@ export function ShipmentLineFulfillmentTable({
   panelSourceId,
   panelPartner,
   panelCustomName,
+  panelMode,
+  panelManualAwb,
+  panelManualTrackingId,
+  saveBusy = false,
   onToggle,
   onToggleAllOpen,
   onPanelSource,
   onPanelPartner,
   onPanelCustomName,
-  onApplyPanel
+  onPanelMode,
+  onPanelManualAwb,
+  onPanelManualTrackingId,
+  onApplyPanel,
+  onSaveAndNotify
 }: Props) {
   const openItems = items.filter((it) => {
     const id = it.id;
@@ -252,10 +270,11 @@ export function ShipmentLineFulfillmentTable({
             Assign {selectedIds.size} selected item{selectedIds.size === 1 ? "" : "s"}
           </p>
           <p className="mt-1 text-xs text-emerald-900/80">
-            Choose source warehouse and delivery partner, then apply. Delhivery keeps the full label
-            form; other partners use manual AWB entry.
+            {panelMode === "manual"
+              ? "Book the label on the partner website, paste AWB and tracking ID here, then Save and notify."
+              : "Automatic uses the Delhivery API label form on the right. Choose source and partner, then apply."}
           </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="block text-xs font-semibold text-stone-600">
               Source location
               <select
@@ -287,6 +306,17 @@ export function ShipmentLineFulfillmentTable({
                 ))}
               </select>
             </label>
+            <label className="block text-xs font-semibold text-stone-600">
+              Mode
+              <select
+                value={panelMode}
+                onChange={(e) => onPanelMode(e.target.value as AssignFulfillmentMode)}
+                className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-normal text-stone-900"
+              >
+                <option value="automatic">Automatic</option>
+                <option value="manual">Manual</option>
+              </select>
+            </label>
           </div>
           {panelPartner === "OTHER" ? (
             <label className="mt-3 block text-xs font-semibold text-stone-600">
@@ -299,13 +329,66 @@ export function ShipmentLineFulfillmentTable({
               />
             </label>
           ) : null}
-          <button
-            type="button"
-            onClick={onApplyPanel}
-            className="mt-3 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white"
-          >
-            Apply to selected
-          </button>
+
+          {panelMode === "manual" ? (
+            <div className="mt-3 space-y-3 rounded-xl border border-emerald-200/80 bg-white/70 p-3">
+              <p className="text-xs text-stone-700">
+                Selected source:{" "}
+                <strong>
+                  {pickupOptions.find((p) => p.id === panelSourceId)?.label ||
+                    (panelSourceId ? "—" : "Not selected")}
+                  {(() => {
+                    const city = pickupOptions.find((p) => p.id === panelSourceId)?.city;
+                    return city ? ` · ${city}` : "";
+                  })()}
+                </strong>
+                <br />
+                Delivery partner:{" "}
+                <strong>
+                  {panelPartner === "OTHER"
+                    ? panelCustomName.trim() || "Others"
+                    : DELIVERY_PARTNER_OPTIONS.find((o) => o.value === panelPartner)?.label ||
+                      (panelPartner || "Not selected")}
+                </strong>
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs font-semibold text-stone-600">
+                  AWB number
+                  <input
+                    value={panelManualAwb}
+                    onChange={(e) => onPanelManualAwb(e.target.value)}
+                    placeholder="Paste AWB from partner site"
+                    className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-mono text-sm font-normal text-stone-900"
+                  />
+                </label>
+                <label className="block text-xs font-semibold text-stone-600">
+                  Tracking ID
+                  <input
+                    value={panelManualTrackingId}
+                    onChange={(e) => onPanelManualTrackingId(e.target.value)}
+                    placeholder="Tracking ID or https://… link"
+                    className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-normal text-stone-900"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                disabled={saveBusy || !panelManualAwb.trim()}
+                onClick={onSaveAndNotify}
+                className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {saveBusy ? "Saving…" : "Save and notify"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onApplyPanel}
+              className="mt-3 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white"
+            >
+              Apply to selected
+            </button>
+          )}
         </div>
       ) : null}
     </div>

@@ -1187,6 +1187,8 @@ export function adminSaveManualAwb(
     awb: string;
     courier: "DELHIVERY" | "SHIPROCKET" | "FEDEX" | "INDIA_POST" | "ARAMEX" | "OTHER";
     trackingUrl?: string;
+    /** Partner tracking reference when it differs from AWB (stored in carrierMeta). */
+    trackingId?: string;
     pickupLocationId?: string | null;
     orderItemIds?: string[];
     customCourierName?: string;

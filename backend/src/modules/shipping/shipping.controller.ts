@@ -586,6 +586,7 @@ const manualAwbBody = z.object({
   awb: z.string().min(4).max(64),
   courier: z.enum(["DELHIVERY", "SHIPROCKET", "FEDEX", "INDIA_POST", "ARAMEX", "OTHER"]),
   trackingUrl: z.string().url().max(500).optional().or(z.literal("")),
+  trackingId: z.string().min(2).max(128).optional(),
   pickupLocationId: z.string().uuid().optional().nullable(),
   orderItemIds: z.array(z.string().uuid()).min(1).max(100).optional(),
   customCourierName: z.string().min(1).max(80).optional(),
@@ -619,7 +620,8 @@ export async function postManualAwb(req: Request, res: Response, next: NextFunct
         orderItemIds: parsed.data.orderItemIds,
         customCourierName: parsed.data.customCourierName,
         forceNew: parsed.data.forceNew,
-        additionalLabel: parsed.data.additionalLabel
+        additionalLabel: parsed.data.additionalLabel,
+        trackingId: parsed.data.trackingId
       }
     );
     if (!result.success) {
