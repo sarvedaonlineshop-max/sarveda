@@ -47,6 +47,7 @@ import {
   MAX_ENQUIRY_ATTACHMENTS
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
+import { ChatFollowUpControls } from "@/components/admin/ChatFollowUpControls";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
   openAdminStartWhatsAppChat
@@ -1345,6 +1346,10 @@ function AdminChatDetailInner() {
           {displayName}
         </button>
         <div className="relative shrink-0" ref={menuRef}>
+          <div className="flex items-center gap-0.5">
+            <div className="md:hidden">
+              <ChatFollowUpControls threadId={thread.id} lightHeader />
+            </div>
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -1355,6 +1360,7 @@ function AdminChatDetailInner() {
           >
             <MoreVertical size={22} />
           </button>
+          </div>
           {menuOpen ? (
             <div
               role="menu"
@@ -1437,6 +1443,7 @@ function AdminChatDetailInner() {
             </span>
           </p>
         </div>
+        <ChatFollowUpControls threadId={thread.id} lightHeader />
         <button
           type="button"
           onClick={() => void toggleStatus()}

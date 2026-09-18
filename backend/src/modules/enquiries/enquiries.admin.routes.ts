@@ -24,6 +24,12 @@ import {
   startWhatsAppChatByPhone,
   type EnquiryAttachmentInput
 } from "./enquiries.service";
+import {
+  completeThreadFollowUp,
+  createThreadFollowUp,
+  listEnquiryAdmins,
+  listThreadFollowUps
+} from "./enquiry-follow-up.service";
 
 const router = Router();
 router.use(requireAdmin);
@@ -49,6 +55,69 @@ router.get("/unread-count", async (_req, res, next) => {
   try {
     const count = await getEnquiryUnreadCount();
     res.json({ success: true, data: { count } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/admins", async (_req, res, next) => {
+  try {
+    const admins = await listEnquiryAdmins();
+    res.json({ success: true, data: { admins } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const followUpCreateSchema = z.object({
+  notes: z.string().trim().min(1).max(2000),
+  dueAt: z.string().min(10).max(40),
+  assignedAdminId: z.string().uuid()
+});
+
+router.get("/:id/follow-ups", async (req, res, next) => {
+  try {
+    const items = await listThreadFollowUps(req.params.id);
+    res.json({ success: true, data: { items } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post(
+  "/:id/follow-ups",
+  validateBody(followUpCreateSchema),
+  async (req, res, next) => {
+    try {
+      const adminId = req.authUser?.id;
+      if (!adminId) {
+        res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+        return;
+      }
+      const dueAt = new Date(req.body.dueAt);
+      const row = await createThreadFollowUp({
+        threadId: req.params.id,
+        notes: req.body.notes,
+        dueAt,
+        assignedAdminId: req.body.assignedAdminId,
+        createdByAdminId: adminId
+      });
+      res.json({ success: true, data: row });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.patch("/follow-ups/:followUpId/complete", async (req, res, next) => {
+  try {
+    const adminId = req.authUser?.id;
+    if (!adminId) {
+      res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+      return;
+    }
+    const row = await completeThreadFollowUp(req.params.followUpId, adminId);
+    res.json({ success: true, data: row });
   } catch (err) {
     next(err);
   }

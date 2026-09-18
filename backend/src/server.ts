@@ -12,6 +12,7 @@ import { startWhatsAppBotIdleWorker } from "./jobs/whatsappBotIdleJob";
 import { startDueDateReminderWorker } from "./jobs/taskDueDateJob";
 import { startShippingRetryWorker } from "./jobs/shippingRetryJob";
 import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
+import { startEnquiryFollowUpWorker } from "./jobs/enquiryFollowUpJob";
 
 void initSentry();
 
@@ -31,4 +32,5 @@ app.listen(port, () => {
   startFlipkartMarketplaceSyncJob();
   void startTrackingSyncWorker();
   void startCartCleanupWorker();
+  void startEnquiryFollowUpWorker();
 });

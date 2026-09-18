@@ -35,6 +35,9 @@ model User {
   enquiryThreads            EnquiryThread[]
   enquiryAdminMessages      EnquiryMessage[]         @relation("EnquiryAdminMessages")
   whatsappAgentSessions     WhatsAppAgentSession[]   @relation("WhatsAppAgentSessionAdmin")
+  enquiryFollowUpsAssigned  EnquiryFollowUp[]        @relation("EnquiryFollowUpAssignee")
+  enquiryFollowUpsCreated   EnquiryFollowUp[]        @relation("EnquiryFollowUpCreator")
+  enquiryFollowUpsCompleted EnquiryFollowUp[]        @relation("EnquiryFollowUpCompleter")
   adminSessions             AdminSession[]
   adminActivities           AdminActivityLog[]       @relation("AdminActivityActor")
   fcmToken                  String?
@@ -2423,6 +2426,36 @@ enum EnquiryThreadStatus {
   CLOSED
 }
 
+enum EnquiryFollowUpStatus {
+  OPEN
+  CLOSED
+}
+
+/// Admin follow-up reminder on an enquiry chat (push at dueAt to assigned admin).
+model EnquiryFollowUp {
+  id                 String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId           String                @db.Uuid
+  notes              String                @db.VarChar(2000)
+  dueAt              DateTime
+  status             EnquiryFollowUpStatus @default(OPEN)
+  assignedAdminId    String                @db.Uuid
+  createdByAdminId   String                @db.Uuid
+  /// Set once the due-time push has been sent (idempotent).
+  notifiedAt         DateTime?
+  completedAt        DateTime?
+  completedByAdminId String?               @db.Uuid
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  thread             EnquiryThread         @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  assignedAdmin      User                  @relation("EnquiryFollowUpAssignee", fields: [assignedAdminId], references: [id], onDelete: Restrict)
+  createdByAdmin     User                  @relation("EnquiryFollowUpCreator", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  completedByAdmin   User?                 @relation("EnquiryFollowUpCompleter", fields: [completedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([threadId, dueAt(sort: Desc)])
+  @@index([status, dueAt])
+  @@index([assignedAdminId, status, dueAt])
+}
+
 model EnquiryThread {
   id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   source                EnquirySource
@@ -2447,6 +2480,7 @@ model EnquiryThread {
   user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages              EnquiryMessage[]
   whatsappAgentSessions WhatsAppAgentSession[]
+  followUps             EnquiryFollowUp[]
 
   @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
   @@index([customerEmail])

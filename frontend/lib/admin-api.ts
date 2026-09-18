@@ -3119,6 +3119,54 @@ export function patchAdminEnquiryStatus(id: string, status: "OPEN" | "CLOSED") {
   });
 }
 
+export type EnquiryAdminOption = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+};
+
+export type EnquiryFollowUpRow = {
+  id: string;
+  threadId: string;
+  notes: string;
+  dueAt: string;
+  status: "OPEN" | "CLOSED";
+  notifiedAt: string | null;
+  completedAt: string | null;
+  assignedAdmin: EnquiryAdminOption;
+  createdByAdmin: EnquiryAdminOption;
+  completedByAdmin: EnquiryAdminOption | null;
+  createdAt: string;
+};
+
+export function fetchAdminEnquiryAdmins() {
+  return adminFetch<{ admins: EnquiryAdminOption[] }>("/api/admin/enquiries/admins");
+}
+
+export function fetchAdminEnquiryFollowUps(threadId: string) {
+  return adminFetch<{ items: EnquiryFollowUpRow[] }>(
+    `/api/admin/enquiries/${encodeURIComponent(threadId)}/follow-ups`
+  );
+}
+
+export function createAdminEnquiryFollowUp(
+  threadId: string,
+  body: { notes: string; dueAt: string; assignedAdminId: string }
+) {
+  return adminFetch<EnquiryFollowUpRow>(
+    `/api/admin/enquiries/${encodeURIComponent(threadId)}/follow-ups`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export function completeAdminEnquiryFollowUp(followUpId: string) {
+  return adminFetch<EnquiryFollowUpRow>(
+    `/api/admin/enquiries/follow-ups/${encodeURIComponent(followUpId)}/complete`,
+    { method: "PATCH", body: JSON.stringify({}) }
+  );
+}
+
 export function deleteAdminEnquiryMessage(
   threadId: string,
   messageId: string,
