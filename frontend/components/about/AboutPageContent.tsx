@@ -4,61 +4,6 @@ import type { ReactNode } from "react";
 
 import { aboutPage } from "@/lib/about-content";
 
-const GOLD = "currentColor";
-
-function IconLeaf() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <path
-        d="M14 34c8-14 18-20 26-22-2 10-8 20-20 26-2-1.5-4.5-2.5-6-4Z"
-        stroke={GOLD}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M18 30c6-5 12-9 18-12" stroke={GOLD} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconCraft() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <path d="M16 14c0-4 3.5-7 8-7s8 3 8 7c0 6-5 8-8 14-3-6-8-8-8-14Z" stroke={GOLD} strokeWidth="1.6" />
-      <path d="M24 28v6" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M18 38h12" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M20 34h8" stroke={GOLD} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconCollab() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <circle cx="16" cy="18" r="5" stroke={GOLD} strokeWidth="1.6" />
-      <circle cx="32" cy="18" r="5" stroke={GOLD} strokeWidth="1.6" />
-      <circle cx="24" cy="32" r="5" stroke={GOLD} strokeWidth="1.6" />
-      <path d="M20 21l4 7M28 21l-4 7M21 18h6" stroke={GOLD} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconNote() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <path d="M20 34V14l16-4v20" stroke={GOLD} strokeWidth="1.6" strokeLinejoin="round" />
-      <circle cx="16" cy="34" r="4.5" stroke={GOLD} strokeWidth="1.6" />
-      <circle cx="32" cy="30" r="4.5" stroke={GOLD} strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-const GUIDE_ICONS: Record<string, () => ReactNode> = {
-  quality: IconLeaf,
-  craft: IconCraft,
-  collaboration: IconCollab,
-  curiosity: IconNote
-};
-
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#b98a3e]">{children}</p>
@@ -255,11 +200,18 @@ export function AboutPageContent() {
         </div>
         <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
           {guides.items.map((item) => {
-            const Icon = GUIDE_ICONS[item.key];
             return (
               <li key={item.key} className="text-center sm:text-left">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center sm:mx-0">
-                  {Icon ? <Icon /> : null}
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center sm:mx-0 sm:h-16 sm:w-16">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.icon}
+                    alt=""
+                    aria-hidden
+                    className="h-full w-full object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <h3 className="font-serif text-[1.15rem] font-semibold leading-snug text-[#1c352a]">{item.title}</h3>
                 <p className="mt-3 text-[14px] leading-relaxed text-[#5a6a61]">{item.body}</p>
