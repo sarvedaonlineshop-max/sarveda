@@ -1,5 +1,6 @@
 import { buildCourseEnquiryMessage } from "./enquiry";
 import { parseApiResponse } from "./parse-api-response";
+import type { EnquiryAntiSpamPayload } from "@/components/enquiries/useEnquiryAntiSpam";
 
 export async function submitCourseEnquiry(body: {
   email: string;
@@ -7,7 +8,7 @@ export async function submitCourseEnquiry(body: {
   courseTitle: string;
   courseUrl: string;
   message?: string;
-}): Promise<{ message: string }> {
+} & Partial<EnquiryAntiSpamPayload>): Promise<{ message: string }> {
   const res = await fetch("/api/contact/course-enquiry", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -16,7 +17,10 @@ export async function submitCourseEnquiry(body: {
       name: body.name?.trim() || undefined,
       courseTitle: body.courseTitle.trim(),
       courseUrl: body.courseUrl.trim(),
-      message: (body.message?.trim() || buildCourseEnquiryMessage(body.courseTitle.trim())).slice(0, 5000)
+      message: (body.message?.trim() || buildCourseEnquiryMessage(body.courseTitle.trim())).slice(0, 5000),
+      website: body.website ?? "",
+      formOpenedAt: body.formOpenedAt ?? Date.now(),
+      ...(body.turnstileToken ? { turnstileToken: body.turnstileToken } : {})
     })
   });
   const json = await parseApiResponse<{ message?: string }>(res);

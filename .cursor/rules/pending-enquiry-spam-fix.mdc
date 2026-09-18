@@ -1,0 +1,23 @@
+---
+description: Enquiry/Admin Chats spam hardening — Turnstile keys + ops notes
+alwaysApply: false
+---
+
+# Enquiry spam fix — shipped (ops follow-up)
+
+Code is in place. To fully enable Cloudflare Turnstile in production:
+
+1. Create a Turnstile widget at https://dash.cloudflare.com → Turnstile
+2. Set on **Vercel (frontend)**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site key>`
+3. Set on **Lightsail API (backend)**: `TURNSTILE_SECRET_KEY=<secret key>`
+4. Redeploy frontend + restart backend (`pm2 restart sarveda-backend`)
+
+Until keys are set: honeypot, timing, IP/email rate limits, thread dedupe, and content heuristics still protect the inbox. Turnstile verify is skipped when the secret is absent.
+
+## What shipped
+- Rate limit: 5 creates / 15 min / IP on enquiry + contact create routes
+- Honeypot (`website`) + min 2s form timing (required in production)
+- Optional Turnstile (required when secret is configured)
+- Dedupe: same email + source OPEN thread within 7 days → append message
+- Email caps: 8 customer messages / hour; 5 new threads / day
+- Newsletter no longer falls back to `/api/contact/support` (no fake chats)

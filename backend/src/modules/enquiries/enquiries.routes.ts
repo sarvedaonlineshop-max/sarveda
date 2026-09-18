@@ -11,6 +11,14 @@ import {
   presignEnquiryUploads,
   type EnquiryAttachmentInput
 } from "./enquiries.service";
+import {
+  assertEnquiryAntiSpam,
+  enquiryAntiSpamFieldsSchema
+} from "./enquiry-anti-spam";
+import {
+  enquiryCreateIpLimiter,
+  enquiryPresignIpLimiter
+} from "./enquiry-rate-limit";
 
 const router = Router();
 
@@ -19,30 +27,32 @@ const upload = multer({
   limits: { fileSize: MAX_ATTACHMENT_BYTES, files: MAX_ATTACHMENTS }
 });
 
-const enquiryBodySchema = z.object({
-  source: z.enum(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS"]),
-  subjectCategory: z.enum(["ORDER", "PAYMENT", "PRODUCT", "COURSE", "CORPORATE", "OTHER"]).optional(),
-  customSubject: z.string().max(200).optional(),
-  name: z.string().min(1).max(120),
-  email: z.string().email().max(200),
-  phone: z.string().max(30).optional(),
-  message: z.string().min(1).max(5000),
-  orderNumber: z.string().max(40).optional(),
-  contextTitle: z.string().max(500).optional(),
-  contextUrl: z.string().url().max(2000).optional(),
-  attachmentRefs: z
-    .array(
-      z.object({
-        fileName: z.string().min(1).max(255),
-        mimeType: z.string().min(1).max(120),
-        fileSizeBytes: z.number().int().positive().max(MAX_ATTACHMENT_BYTES),
-        s3Key: z.string().min(8).max(500),
-        s3Url: z.string().url().max(2000)
-      })
-    )
-    .max(MAX_ATTACHMENTS)
-    .optional()
-});
+const enquiryBodySchema = z
+  .object({
+    source: z.enum(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS"]),
+    subjectCategory: z.enum(["ORDER", "PAYMENT", "PRODUCT", "COURSE", "CORPORATE", "OTHER"]).optional(),
+    customSubject: z.string().max(200).optional(),
+    name: z.string().min(1).max(120),
+    email: z.string().email().max(200),
+    phone: z.string().max(30).optional(),
+    message: z.string().min(1).max(5000),
+    orderNumber: z.string().max(40).optional(),
+    contextTitle: z.string().max(500).optional(),
+    contextUrl: z.string().url().max(2000).optional(),
+    attachmentRefs: z
+      .array(
+        z.object({
+          fileName: z.string().min(1).max(255),
+          mimeType: z.string().min(1).max(120),
+          fileSizeBytes: z.number().int().positive().max(MAX_ATTACHMENT_BYTES),
+          s3Key: z.string().min(8).max(500),
+          s3Url: z.string().url().max(2000)
+        })
+      )
+      .max(MAX_ATTACHMENTS)
+      .optional()
+  })
+  .merge(enquiryAntiSpamFieldsSchema);
 
 const presignSchema = z.object({
   files: z
@@ -95,6 +105,12 @@ function multerErrorResponse(err: unknown, res: Response): boolean {
   return false;
 }
 
+function clientIp(req: Request): string | undefined {
+  const xf = req.headers["x-forwarded-for"];
+  if (typeof xf === "string" && xf.trim()) return xf.split(",")[0]?.trim();
+  return req.ip;
+}
+
 async function handleCreate(req: Request, res: Response, next: NextFunction) {
   try {
     const raw =
@@ -111,6 +127,14 @@ async function handleCreate(req: Request, res: Response, next: NextFunction) {
       return;
     }
     const data = parsed.data;
+    await assertEnquiryAntiSpam(
+      {
+        website: data.website,
+        formOpenedAt: data.formOpenedAt,
+        turnstileToken: data.turnstileToken
+      },
+      { remoteIp: clientIp(req) }
+    );
     const thread = await createEnquiryThread({
       source: data.source,
       subjectCategory: data.subjectCategory ?? null,
@@ -146,6 +170,7 @@ async function handleCreate(req: Request, res: Response, next: NextFunction) {
 
 router.post(
   "/presign",
+  enquiryPresignIpLimiter,
   optionalAuth,
   validateBody(presignSchema),
   async (req, res, next) => {
@@ -160,6 +185,7 @@ router.post(
 
 router.post(
   "/",
+  enquiryCreateIpLimiter,
   optionalAuth,
   (req, res, next) => {
     const contentType = req.headers["content-type"] ?? "";

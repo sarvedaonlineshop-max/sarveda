@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 
 /**
  * Browser hits this Next route (wins over rewrites). Forwards to Express
- * `/api/newsletter/subscribe`. If staging API is not yet deployed (404),
- * falls back to `/api/contact/newsletter` then `/api/contact/support`
- * so signups are not lost.
+ * `/api/newsletter/subscribe`, then `/api/contact/newsletter` if needed.
+ * Never falls back to support/enquiry create (that flooded Admin Chats).
  */
 
 export const runtime = "nodejs";
@@ -83,43 +82,14 @@ export async function POST(req: Request) {
       return NextResponse.json(payload, { status: viaContact.status });
     }
 
-    const fallback = await fetch(`${base}/api/contact/support`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        name: "Newsletter",
-        email,
-        subject: "Newsletter — Join the Community",
-        subjectCategory: "OTHER",
-        message: `Homepage newsletter signup (Join the Community).\nEmail: ${email}\nSource: ${source}`
-      }),
-      cache: "no-store"
-    });
-
-    const fallbackJson = (await fallback.json().catch(() => null)) as {
-      success?: boolean;
-      error?: string;
-    } | null;
-
-    if (!fallback.ok || !fallbackJson?.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: fallbackJson?.error || "Could not join right now. Please try again.",
-          code: "SUBSCRIBE_FAILED"
-        },
-        { status: fallback.status >= 400 ? fallback.status : 502 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        created: true,
-        alreadySubscribed: false,
-        message: "Welcome to the Sarveda community."
-      }
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Newsletter signup is temporarily unavailable. Please try again later.",
+        code: "SUBSCRIBE_UNAVAILABLE"
+      },
+      { status: 503 }
+    );
   } catch {
     return NextResponse.json(
       {

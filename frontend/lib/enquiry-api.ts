@@ -20,6 +20,10 @@ export type SubmitEnquiryInput = {
   contextUrl?: string;
   attachments?: File[];
   onUploadProgress?: (fileIndex: number, percent: number) => void;
+  /** Honeypot / timing / Turnstile — from useEnquiryAntiSpam().antiSpamPayload() */
+  website?: string;
+  formOpenedAt?: number;
+  turnstileToken?: string;
 };
 
 function validateClientFiles(files: File[]) {
@@ -51,7 +55,10 @@ export async function submitEnquiry(input: SubmitEnquiryInput): Promise<{ id: st
       message: input.message.trim(),
       orderNumber: input.orderNumber?.trim() || undefined,
       contextTitle: input.contextTitle?.trim() || undefined,
-      contextUrl: input.contextUrl?.trim() || undefined
+      contextUrl: input.contextUrl?.trim() || undefined,
+      website: input.website ?? "",
+      formOpenedAt: input.formOpenedAt ?? Date.now(),
+      ...(input.turnstileToken ? { turnstileToken: input.turnstileToken } : {})
     })
   );
   for (const file of files) {

@@ -21,17 +21,10 @@ import {
   closeWhatsAppAgentSessionAndRequestRating,
   startWhatsAppAgentSession
 } from "../whatsapp/whatsapp-agent-session.service";
-import {
-  CARE_INBOX_EMAIL,
-  ENQUIRY_MEDIA_S3_PREFIX,
-  MAX_ATTACHMENT_BYTES,
-  MAX_ATTACHMENT_MB,
-  MAX_ATTACHMENTS,
-  SOURCE_LABELS,
-  SUBJECT_LABELS
-} from "./enquiries.constants";
+import { CARE_INBOX_EMAIL, ENQUIRY_MEDIA_S3_PREFIX, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENT_MB, MAX_ATTACHMENTS, SOURCE_LABELS, SUBJECT_LABELS } from "./enquiries.constants";
 import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
 import { publishEnquiryEvent } from "./enquiry-realtime";
+import { antiSpamHttpError, assertEnquiryMessageLooksHuman } from "./enquiry-anti-spam";
 
 export type EnquiryAttachmentInput = {
   buffer: Buffer;
@@ -168,6 +161,27 @@ function attachmentLinesHtml(
 }
 
 export async function createEnquiryThread(input: CreateEnquiryInput) {
+  const email = input.customerEmail.trim().toLowerCase();
+  const name = input.customerName.trim();
+  const message = input.message.trim();
+  assertEnquiryMessageLooksHuman(message);
+
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentCustomerMessages = await prisma.enquiryMessage.count({
+    where: {
+      authorType: "CUSTOMER",
+      authorEmail: email,
+      createdAt: { gte: hourAgo }
+    }
+  });
+  if (recentCustomerMessages >= 8) {
+    throw antiSpamHttpError(
+      "Too many messages from this email. Please wait a bit and try again, or reply in your existing chat.",
+      "EMAIL_RATE_LIMIT",
+      429
+    );
+  }
+
   const preUploaded = input.preUploadedAttachments ?? [];
   if (preUploaded.length) {
     assertPreUploadedKeys(preUploaded);
@@ -179,13 +193,89 @@ export async function createEnquiryThread(input: CreateEnquiryInput) {
   const now = new Date();
   const subjectLine = formatThreadSubject(input);
 
+  // Dedupe: same email + source with an OPEN thread in the last 7 days → append, don't spam inbox.
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const existing = await prisma.enquiryThread.findFirst({
+    where: {
+      customerEmail: email,
+      source: input.source,
+      status: "OPEN",
+      lastMessageAt: { gte: sevenDaysAgo }
+    },
+    orderBy: { lastMessageAt: "desc" }
+  });
+
+  if (existing) {
+    const thread = await prisma.enquiryThread.update({
+      where: { id: existing.id },
+      data: {
+        unreadByAdmin: true,
+        lastMessageAt: now,
+        customerName: name || existing.customerName,
+        customerPhone: input.customerPhone?.trim() || existing.customerPhone,
+        orderNumber: input.orderNumber?.trim() || existing.orderNumber,
+        contextTitle: input.contextTitle?.trim() || existing.contextTitle,
+        contextUrl: input.contextUrl?.trim() || existing.contextUrl,
+        messages: {
+          create: {
+            authorType: "CUSTOMER",
+            authorName: name,
+            authorEmail: email,
+            body: message,
+            attachments: {
+              create: uploaded.map((u) => ({
+                fileName: u.fileName,
+                mimeType: u.mimeType,
+                fileSizeBytes: u.fileSizeBytes,
+                s3Key: u.s3Key,
+                s3Url: u.s3Url
+              }))
+            }
+          }
+        }
+      },
+      include: {
+        messages: { include: { attachments: true }, orderBy: { createdAt: "asc" } }
+      }
+    });
+
+    void import("../../config/firebase")
+      .then(({ sendPushToAdmins }) =>
+        sendPushToAdmins(
+          "Chat reply",
+          `${name}: ${subjectLine}`.slice(0, 180),
+          { type: "chat", chatId: thread.id, source: input.source }
+        )
+      )
+      .catch(() => undefined);
+
+    logger.info("enquiry_appended_existing_thread", {
+      threadId: thread.id,
+      source: input.source,
+      email
+    });
+    return thread;
+  }
+
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const threadsToday = await prisma.enquiryThread.count({
+    where: { customerEmail: email, createdAt: { gte: dayAgo } }
+  });
+  if (threadsToday >= 5) {
+    throw antiSpamHttpError(
+      "Too many new conversations from this email today. Please wait or use your existing chat.",
+      "EMAIL_THREAD_LIMIT",
+      429
+    );
+  }
+
   const thread = await prisma.enquiryThread.create({
     data: {
       source: input.source,
       subjectCategory: input.subjectCategory ?? null,
       customSubject: input.customSubject?.trim() || null,
-      customerName: input.customerName.trim(),
-      customerEmail: input.customerEmail.trim().toLowerCase(),
+      customerName: name,
+      customerEmail: email,
       customerPhone: input.customerPhone?.trim() || null,
       orderNumber: input.orderNumber?.trim() || null,
       contextTitle: input.contextTitle?.trim() || null,
@@ -196,9 +286,9 @@ export async function createEnquiryThread(input: CreateEnquiryInput) {
       messages: {
         create: {
           authorType: "CUSTOMER",
-          authorName: input.customerName.trim(),
-          authorEmail: input.customerEmail.trim().toLowerCase(),
-          body: input.message.trim(),
+          authorName: name,
+          authorEmail: email,
+          body: message,
           attachments: {
             create: uploaded.map((u) => ({
               fileName: u.fileName,
@@ -217,26 +307,26 @@ export async function createEnquiryThread(input: CreateEnquiryInput) {
   });
 
   const html = `<p><strong>New enquiry</strong> (${SOURCE_LABELS[input.source]})</p>
-<p><strong>From:</strong> ${input.customerName} &lt;${input.customerEmail}&gt;</p>
+<p><strong>From:</strong> ${name} &lt;${email}&gt;</p>
 ${input.customerPhone ? `<p><strong>Phone:</strong> ${input.customerPhone}</p>` : ""}
 ${input.orderNumber ? `<p><strong>Order:</strong> ${input.orderNumber}</p>` : ""}
 ${input.contextTitle ? `<p><strong>Regarding:</strong> ${input.contextTitle}</p>` : ""}
 ${input.contextUrl ? `<p><strong>Page:</strong> <a href="${input.contextUrl}">${input.contextUrl}</a></p>` : ""}
 <p><strong>Subject:</strong> ${subjectLine}</p>
-<p><strong>Message:</strong></p><p>${input.message.replace(/\n/g, "<br/>")}</p>
+<p><strong>Message:</strong></p><p>${message.replace(/\n/g, "<br/>")}</p>
 ${attachmentLinesHtml(uploaded)}
 <p style="margin-top:16px;"><a href="${adminChatUrl(thread.id)}">Open in Sarveda Admin → Chats</a></p>
 <p style="color:#78716c;font-size:12px;">Thread ID: ${thread.id}</p>`;
 
   const text = [
     `New enquiry (${SOURCE_LABELS[input.source]})`,
-    `From: ${input.customerName} <${input.customerEmail}>`,
+    `From: ${name} <${email}>`,
     input.customerPhone ? `Phone: ${input.customerPhone}` : "",
     input.orderNumber ? `Order: ${input.orderNumber}` : "",
     input.contextTitle ? `Regarding: ${input.contextTitle}` : "",
     `Subject: ${subjectLine}`,
     "",
-    input.message,
+    message,
     "",
     `Admin: ${adminChatUrl(thread.id)}`
   ]
@@ -248,7 +338,7 @@ ${attachmentLinesHtml(uploaded)}
     .then(({ sendPushToAdmins }) =>
       sendPushToAdmins(
         "New chat",
-        `${input.customerName}: ${subjectLine}`.slice(0, 180),
+        `${name}: ${subjectLine}`.slice(0, 180),
         {
           type: "chat",
           chatId: thread.id,
@@ -260,16 +350,21 @@ ${attachmentLinesHtml(uploaded)}
 
   void sendMail(
     CARE_INBOX_EMAIL,
-    `[Sarveda] ${subjectLine} — ${input.customerName}`,
+    `[Sarveda] ${subjectLine} — ${name}`,
     html,
     text,
-    input.customerEmail
-  ).catch(() => undefined);
+    email
+  ).catch((err) => {
+    logger.error("enquiry_notify_email_failed", {
+      threadId: thread.id,
+      error: err instanceof Error ? err.message : String(err)
+    });
+  });
 
   logger.info("enquiry_created", {
     threadId: thread.id,
     source: input.source,
-    email: input.customerEmail
+    email
   });
 
   return thread;

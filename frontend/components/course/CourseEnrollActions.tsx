@@ -10,6 +10,7 @@ import { buildCourseEnquiryMessage, buildEnquiryWhatsAppUrl } from "@/lib/enquir
 import { formatINRFromPaise } from "@/lib/money";
 import type { EnrollableItem } from "@/lib/enrollable";
 import { absoluteUrl } from "@/lib/site";
+import { useEnquiryAntiSpam } from "@/components/enquiries/useEnquiryAntiSpam";
 
 type Props = {
   item: EnrollableItem;
@@ -36,6 +37,8 @@ export function CourseEnrollActions({
   const [enquiryMessage, setEnquiryMessage] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+    useEnquiryAntiSpam();
 
   const courseUrl = absoluteUrl(`/${pathPrefix}/${course.slug}`);
   const resolvedPayLabel =
@@ -87,6 +90,10 @@ export function CourseEnrollActions({
       setError("Please enter your email address.");
       return;
     }
+    if (!turnstileReady) {
+      setError("Please complete the security check.");
+      return;
+    }
     setEmailSending(true);
     setError(null);
     try {
@@ -94,10 +101,12 @@ export function CourseEnrollActions({
         email: email.trim(),
         courseTitle: course.title,
         courseUrl,
-        message: enquiryMessage.trim() || buildCourseEnquiryMessage(course.title)
+        message: enquiryMessage.trim() || buildCourseEnquiryMessage(course.title),
+        ...antiSpamPayload()
       });
       setEmailSent(true);
     } catch (ex) {
+      resetTurnstile();
       setError(ex instanceof Error ? ex.message : "Could not send enquiry. Please try WhatsApp.");
     } finally {
       setEmailSending(false);
@@ -185,7 +194,8 @@ export function CourseEnrollActions({
               {emailSent ? (
                 <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
               ) : (
-                <>
+                <div className="relative space-y-3">
+                  {antiSpamFields}
                   <input
                     type="email"
                     value={email}
@@ -208,7 +218,7 @@ export function CourseEnrollActions({
                   >
                     {emailSending ? "Sending…" : "Email enquiry"}
                   </button>
-                </>
+                </div>
               )}
             </div>
           ) : showEnquire && pathPrefix === "event" ? (
@@ -247,13 +257,16 @@ function EventEmailEnquiry({
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+    useEnquiryAntiSpam();
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className="relative mt-4 space-y-3">
       {sent ? (
         <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
       ) : (
         <>
+          {antiSpamFields}
           <input
             type="email"
             value={email}
@@ -277,6 +290,10 @@ function EventEmailEnquiry({
                   setError("Please enter your email.");
                   return;
                 }
+                if (!turnstileReady) {
+                  setError("Please complete the security check.");
+                  return;
+                }
                 setSending(true);
                 setError(null);
                 try {
@@ -288,10 +305,12 @@ function EventEmailEnquiry({
                     email: email.trim(),
                     message: message.trim(),
                     contextTitle: title,
-                    contextUrl: courseUrl
+                    contextUrl: courseUrl,
+                    ...antiSpamPayload()
                   });
                   setSent(true);
                 } catch (e) {
+                  resetTurnstile();
                   setError(e instanceof Error ? e.message : "Could not send enquiry.");
                 } finally {
                   setSending(false);

@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { fetchMe } from "@/lib/auth-client";
 import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
+import { useEnquiryAntiSpam } from "@/components/enquiries/useEnquiryAntiSpam";
 import { PaymentSuccessMark } from "@/components/orders/PaymentSuccessMark";
 import { submitEnquiry } from "@/lib/enquiry-api";
 import {
@@ -310,6 +311,8 @@ function ContactFormInner() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [confirmText, setConfirmText] = useState<string | null>(null);
+  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+    useEnquiryAntiSpam();
 
   useEffect(() => {
     setOrderNumber(presetOrder);
@@ -336,6 +339,10 @@ function ContactFormInner() {
       setError("Please select a category.");
       return;
     }
+    if (!turnstileReady) {
+      setError("Please complete the security check.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -347,11 +354,13 @@ function ContactFormInner() {
         phone: phone.trim(),
         message: message.trim() || defaultComplaintMessage() || "I need help with my order.",
         orderNumber: orderNumber.trim() || undefined,
-        attachments: files
+        attachments: files,
+        ...antiSpamPayload()
       });
       setConfirmText(result.message);
       setSubmitted(true);
     } catch (err) {
+      resetTurnstile();
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -388,8 +397,9 @@ function ContactFormInner() {
   return (
     <form
       onSubmit={(event) => void onSubmit(event)}
-      className="flex min-h-0 flex-col bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:h-full lg:overflow-hidden lg:px-8 lg:py-6"
+      className="relative flex min-h-0 flex-col bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:h-full lg:overflow-hidden lg:px-8 lg:py-6"
     >
+      {antiSpamFields}
       <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-brand-ink md:text-3xl lg:text-[2rem]">
         Contact Us
       </h1>

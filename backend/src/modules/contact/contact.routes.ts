@@ -5,33 +5,50 @@ import { logger } from "../../config/logger";
 import { optionalAuth } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
 import { createEnquiryThread } from "../enquiries/enquiries.service";
+import {
+  assertEnquiryAntiSpam,
+  enquiryAntiSpamFieldsSchema
+} from "../enquiries/enquiry-anti-spam";
+import { enquiryCreateIpLimiter } from "../enquiries/enquiry-rate-limit";
 
 const router = Router();
 
-const corporateSchema = z.object({
-  name: z.string().min(1).max(120),
-  email: z.string().email().max(200),
-  phone: z.string().max(30).optional(),
-  message: z.string().min(1).max(5000)
-});
+function clientIp(req: { headers: Record<string, unknown>; ip?: string }): string | undefined {
+  const xf = req.headers["x-forwarded-for"];
+  if (typeof xf === "string" && xf.trim()) return xf.split(",")[0]?.trim();
+  return req.ip;
+}
 
-const courseEnquirySchema = z.object({
-  email: z.string().email().max(200),
-  name: z.string().max(120).optional(),
-  courseTitle: z.string().min(1).max(500),
-  courseUrl: z.string().url().max(2000),
-  message: z.string().min(1).max(5000)
-});
+const corporateSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    email: z.string().email().max(200),
+    phone: z.string().max(30).optional(),
+    message: z.string().min(1).max(5000)
+  })
+  .merge(enquiryAntiSpamFieldsSchema);
 
-const supportSchema = z.object({
-  name: z.string().min(1).max(120),
-  email: z.string().email().max(200),
-  phone: z.string().max(30).optional(),
-  subject: z.string().max(200).optional(),
-  subjectCategory: z.enum(["ORDER", "PAYMENT", "PRODUCT", "COURSE", "CORPORATE", "OTHER"]).optional(),
-  message: z.string().min(1).max(5000),
-  orderNumber: z.string().max(40).optional()
-});
+const courseEnquirySchema = z
+  .object({
+    email: z.string().email().max(200),
+    name: z.string().max(120).optional(),
+    courseTitle: z.string().min(1).max(500),
+    courseUrl: z.string().url().max(2000),
+    message: z.string().min(1).max(5000)
+  })
+  .merge(enquiryAntiSpamFieldsSchema);
+
+const supportSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    email: z.string().email().max(200),
+    phone: z.string().max(30).optional(),
+    subject: z.string().max(200).optional(),
+    subjectCategory: z.enum(["ORDER", "PAYMENT", "PRODUCT", "COURSE", "CORPORATE", "OTHER"]).optional(),
+    message: z.string().min(1).max(5000),
+    orderNumber: z.string().max(40).optional()
+  })
+  .merge(enquiryAntiSpamFieldsSchema);
 
 const newsletterSchema = z.object({
   email: z.string().email().max(200),
@@ -40,19 +57,28 @@ const newsletterSchema = z.object({
 
 router.post(
   "/corporate",
+  enquiryCreateIpLimiter,
   validateBody(corporateSchema),
   async (req, res, next) => {
     try {
-      const { name, email, phone, message } = req.body as z.infer<typeof corporateSchema>;
+      const body = req.body as z.infer<typeof corporateSchema>;
+      await assertEnquiryAntiSpam(
+        {
+          website: body.website,
+          formOpenedAt: body.formOpenedAt,
+          turnstileToken: body.turnstileToken
+        },
+        { remoteIp: clientIp(req) }
+      );
       const thread = await createEnquiryThread({
         source: "CORPORATE",
         subjectCategory: "CORPORATE",
-        customerName: name,
-        customerEmail: email,
-        customerPhone: phone ?? null,
-        message
+        customerName: body.name,
+        customerEmail: body.email,
+        customerPhone: body.phone ?? null,
+        message: body.message
       });
-      logger.info("corporate_contact_submitted", { email, threadId: thread.id });
+      logger.info("corporate_contact_submitted", { email: body.email, threadId: thread.id });
       res.json({
         success: true,
         data: { id: thread.id, message: "Thank you — we will reply within 24 hours." }
@@ -65,10 +91,19 @@ router.post(
 
 router.post(
   "/course-enquiry",
+  enquiryCreateIpLimiter,
   validateBody(courseEnquirySchema),
   async (req, res, next) => {
     try {
       const body = req.body as z.infer<typeof courseEnquirySchema>;
+      await assertEnquiryAntiSpam(
+        {
+          website: body.website,
+          formOpenedAt: body.formOpenedAt,
+          turnstileToken: body.turnstileToken
+        },
+        { remoteIp: clientIp(req) }
+      );
       const thread = await createEnquiryThread({
         source: "COURSE",
         subjectCategory: "COURSE",
@@ -95,11 +130,20 @@ router.post(
 
 router.post(
   "/support",
+  enquiryCreateIpLimiter,
   optionalAuth,
   validateBody(supportSchema),
   async (req, res, next) => {
     try {
       const body = req.body as z.infer<typeof supportSchema>;
+      await assertEnquiryAntiSpam(
+        {
+          website: body.website,
+          formOpenedAt: body.formOpenedAt,
+          turnstileToken: body.turnstileToken
+        },
+        { remoteIp: clientIp(req) }
+      );
       const orderNumber = body.orderNumber?.trim() || null;
       const thread = await createEnquiryThread({
         source: "CONTACT",

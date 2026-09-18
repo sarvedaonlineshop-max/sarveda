@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 
+import { useEnquiryAntiSpam } from "@/components/enquiries/useEnquiryAntiSpam";
 import { submitEnquiry } from "@/lib/enquiry-api";
 
 type Props = {
@@ -19,10 +20,16 @@ export function EnquiryPanelForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+    useEnquiryAntiSpam();
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!turnstileReady) {
+      setError("Please complete the security check.");
+      return;
+    }
     setLoading(true);
     const form = e.currentTarget;
     const data = new FormData(form);
@@ -34,13 +41,16 @@ export function EnquiryPanelForm({
         name: String(data.get("name") ?? ""),
         email: String(data.get("email") ?? ""),
         phone: String(data.get("phone") ?? "") || undefined,
-        message: String(data.get("message") ?? "")
+        message: String(data.get("message") ?? ""),
+        ...antiSpamPayload(),
+        website: String(data.get("website") ?? "") || ""
       });
       setEmail(String(data.get("email") ?? ""));
       setSubmitted(true);
       form.reset();
       void result;
     } catch (err) {
+      resetTurnstile();
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -59,7 +69,8 @@ export function EnquiryPanelForm({
     <div>
       <h3 className="font-serif text-xl font-semibold text-stone-900">{title}</h3>
       <p className="mt-1 text-sm text-stone-600">{subtitle}</p>
-      <form onSubmit={(e) => void onSubmit(e)} className="mt-5 space-y-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="relative mt-5 space-y-4">
+        {antiSpamFields}
         <input
           name="name"
           required

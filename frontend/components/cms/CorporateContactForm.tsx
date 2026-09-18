@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 
+import { useEnquiryAntiSpam } from "@/components/enquiries/useEnquiryAntiSpam";
 import { getApiBase } from "@/lib/api";
 
 export function CorporateContactForm() {
@@ -9,14 +10,21 @@ export function CorporateContactForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replyEmail, setReplyEmail] = useState("");
+  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+    useEnquiryAntiSpam();
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!turnstileReady) {
+      setError("Please complete the security check.");
+      return;
+    }
     setLoading(true);
     const form = e.currentTarget;
     const data = new FormData(form);
     const email = String(data.get("email") ?? "");
+    const honeypot = String(data.get("website") ?? "");
 
     try {
       const res = await fetch(`${getApiBase()}/api/contact/corporate`, {
@@ -27,7 +35,10 @@ export function CorporateContactForm() {
           name: String(data.get("name") ?? ""),
           email,
           phone: String(data.get("phone") ?? ""),
-          message: String(data.get("query") ?? data.get("message") ?? "")
+          message: String(data.get("query") ?? data.get("message") ?? ""),
+          ...antiSpamPayload(),
+          // Prefer honeypot value from DOM if a bot filled it
+          website: honeypot || ""
         })
       });
       const json = (await res.json()) as { success?: boolean; error?: string };
@@ -38,6 +49,7 @@ export function CorporateContactForm() {
       setSubmitted(true);
       form.reset();
     } catch (err) {
+      resetTurnstile();
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -53,7 +65,8 @@ export function CorporateContactForm() {
   }
 
   return (
-    <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
+    <form onSubmit={(e) => void onSubmit(e)} className="relative space-y-4">
+      {antiSpamFields}
       <input
         name="name"
         required
