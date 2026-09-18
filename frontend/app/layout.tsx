@@ -12,7 +12,10 @@ import "./globals.css";
 
 const isProd = process.env.NODE_ENV === "production";
 const ga4Id = process.env.NEXT_PUBLIC_GA4_ID?.trim();
-const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim();
+/** Ads Meta Pixel — website-code only (not GTM) to avoid double counting. */
+const metaPixelId =
+  process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ||
+  (isProductionSite() ? "901430008340660" : "");
 /** Ads team GTM container — override with NEXT_PUBLIC_GTM_ID if needed. */
 const gtmId =
   process.env.NEXT_PUBLIC_GTM_ID?.trim() ||
@@ -140,8 +143,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </>
         ) : null}
         {isProd && metaPixelId ? (
-          <Script id="meta-pixel" strategy="afterInteractive">
-            {`
+          <>
+            <Script id="meta-pixel" strategy="afterInteractive">
+              {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -153,7 +157,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               fbq('init', '${metaPixelId}');
               fbq('track', 'PageView');
             `}
-          </Script>
+            </Script>
+            <noscript>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                height={1}
+                width={1}
+                style={{ display: "none" }}
+                src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+                alt=""
+              />
+            </noscript>
+          </>
         ) : null}
         <CartProvider>
           <AttributionProvider>

@@ -27,6 +27,12 @@ function toMajor(minorUnits: number): number {
   return Math.round(minorUnits) / 100;
 }
 
+/** ISO 4217 currency for Meta / GA — letters only, uppercase (e.g. INR, USD). */
+function normalizeCurrency(raw: string | undefined): string {
+  const cleaned = (raw || "INR").trim().toUpperCase().replace(/[^A-Z]/g, "");
+  return cleaned || "INR";
+}
+
 function ga4Items(items: PurchaseItem[]) {
   return items.map((i) => ({
     item_id: i.id,
@@ -58,12 +64,15 @@ export function trackPurchase(params: {
   items: PurchaseItem[];
 }): void {
   safe(() => {
+    // Meta Events Manager requires numeric value > 0 and ISO currency (no symbols).
     const value = toMajor(params.value);
+    if (!(value > 0)) return;
+    const currency = (params.currency || "INR").trim().toUpperCase().replace(/[^A-Z]/g, "") || "INR";
     const items = params.items ?? [];
 
     pushDataLayer("purchase", {
       transaction_id: params.orderId,
-      currency: params.currency,
+      currency,
       value,
       items: ga4Items(items)
     });
@@ -72,7 +81,7 @@ export function trackPurchase(params: {
       window.gtag("event", "purchase", {
         transaction_id: params.orderId,
         value,
-        currency: params.currency,
+        currency,
         items: ga4Items(items)
       });
     }
@@ -80,7 +89,7 @@ export function trackPurchase(params: {
     if (window.fbq) {
       window.fbq("track", "Purchase", {
         value,
-        currency: params.currency,
+        currency,
         content_ids: items.map((i) => i.id),
         contents: metaContents(items),
         content_type: "product",
