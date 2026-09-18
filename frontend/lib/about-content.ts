@@ -14,7 +14,7 @@ export const aboutPage = {
     intro:
       "Sarveda brings together instruments, learning, experiences and wellbeing to inspire exploration, creativity and a deeper relationship with ourselves.",
     image: {
-      src: "/images/about/hero-mysore-warehouse.jpg",
+      src: "/images/about/hero-mysore-warehouse.jpg?v=2",
       alt: "Sarveda Mysore warehouse — singing bowls, handpans and instrument collection"
     }
   },

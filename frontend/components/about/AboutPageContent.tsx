@@ -26,15 +26,16 @@ export function AboutPageContent() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-[#efe6d6]">
         <div className="absolute inset-0">
-          <Image
+          {/* Static asset — avoid Vercel /_next/image 402 on replaced uploads */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={hero.image.src}
             alt={hero.image.alt}
-            fill
-            priority
-            className="object-cover object-[70%_center]"
-            sizes="100vw"
+            className="absolute inset-0 h-full w-full object-cover object-[72%_center]"
+            fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#faf5ec] via-[#faf5ec]/92 to-[#faf5ec]/25 sm:via-[#faf5ec]/88 sm:to-transparent" />
+          {/* Light fade only — photo already softens on the left for text */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#faf5ec]/95 via-[#faf5ec]/55 to-transparent sm:via-[#faf5ec]/40" />
         </div>
         <div className="page-shell relative z-10 py-14 sm:py-16 lg:py-20">
           <div className="max-w-xl">
