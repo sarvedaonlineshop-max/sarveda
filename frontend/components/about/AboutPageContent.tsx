@@ -5,7 +5,9 @@ import { aboutPage } from "@/lib/about-content";
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#b98a3e]">{children}</p>
+    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#b98a3e] sm:text-[15px] sm:tracking-[0.18em]">
+      {children}
+    </p>
   );
 }
 
