@@ -137,13 +137,14 @@ export function AboutPageContent() {
       {/* Founder */}
       <section className="page-shell py-14 sm:py-16 lg:py-20">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-14">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-[#efe6d6] sm:aspect-[5/4] lg:aspect-[4/5]">
-            <Image
+          <div className="relative aspect-[3/2] overflow-hidden rounded-sm bg-[#efe6d6] sm:aspect-[5/4] lg:aspect-[4/3]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={founder.image.src}
               alt={founder.image.alt}
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 1024px) 100vw, 42vw"
+              className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
+              loading="lazy"
+              decoding="async"
             />
           </div>
           <div>

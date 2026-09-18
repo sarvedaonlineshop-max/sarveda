@@ -70,7 +70,7 @@ export const aboutPage = {
     name: "Arjun Arora",
     role: "Founder, Sarveda",
     image: {
-      src: "/images/about/founder-arjun-instruments.jpg",
+      src: "/images/about/founder-arjun-instruments.jpg?v=2",
       alt: "Arjun Arora, founder of Sarveda, seated among sound instruments"
     },
     paragraphs: [
@@ -127,8 +127,7 @@ export const aboutPage = {
     body: "Sarveda continues to expand, explore and create — bringing together tools, knowledge and experiences that inspire the journey within.",
     ctas: [
       { label: "Explore Instruments", href: "/store" },
-      { label: "Explore Courses & Experiences", href: "/courses" },
-      { label: "Work With Sarveda", href: "/corporate-wellness" }
+      { label: "Explore Courses & Experiences", href: "/courses" }
     ]
   }
 } as const;
