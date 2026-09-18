@@ -1377,14 +1377,7 @@ function AdminChatDetailInner() {
               >
                 View details
               </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => void toggleStatus()}
-                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
-              >
-                Mark {thread.status === "CLOSED" ? "open" : "closed"}
-              </button>
+              {/* Mark closed temporarily hidden */}
             </div>
           ) : null}
         </div>
