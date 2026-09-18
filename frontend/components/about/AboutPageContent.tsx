@@ -170,18 +170,48 @@ export function AboutPageContent() {
         </div>
       </section>
 
-      {/* Our story */}
+      {/* Our story — title + lead left; remaining copy right; leaf graphic far right */}
       <section className="page-shell py-14 sm:py-16 lg:py-20">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
+        <Eyebrow>{story.eyebrow}</Eyebrow>
+        <div className="mt-3 grid items-start gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)_minmax(7rem,0.28fr)] lg:gap-10 xl:gap-14">
           <div>
-            <Eyebrow>{story.eyebrow}</Eyebrow>
-            <SectionTitle className="mt-3">{story.title}</SectionTitle>
+            <SectionTitle>{story.title}</SectionTitle>
+            <div className="mt-4 h-[3px] w-14 bg-[#b98a3e]" />
+            <p className="mt-6 text-[15px] leading-relaxed text-[#4f5f56] sm:text-base sm:leading-7">
+              {story.paragraphs[0]}
+            </p>
           </div>
           <div className="space-y-5 text-[15px] leading-relaxed text-[#4f5f56] sm:text-base sm:leading-7">
-            {story.paragraphs.map((p) => (
-              <p key={p.slice(0, 40)}>{p}</p>
-            ))}
+            <p>{story.paragraphs[1]}</p>
+            <p>{story.paragraphs[2]}</p>
+            <p className="font-serif text-[1.05rem] font-semibold leading-snug text-[#1c352a] sm:text-[1.15rem] sm:leading-relaxed">
+              {story.paragraphs[3]}
+            </p>
           </div>
+          <div className="mx-auto hidden w-full max-w-[11rem] justify-self-end lg:block xl:max-w-[13rem]">
+            {/* Static asset — avoid Vercel /_next/image 402 on new uploads */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={story.image.src}
+              alt={story.image.alt}
+              aria-hidden={story.image.alt ? undefined : true}
+              className="h-auto w-full object-contain object-top"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+        {/* Mobile / tablet: show leaf below copy */}
+        <div className="mt-10 flex justify-center lg:hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={story.image.src}
+            alt=""
+            aria-hidden
+            className="h-auto w-40 object-contain sm:w-48"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </section>
 

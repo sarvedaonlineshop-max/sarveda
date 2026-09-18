@@ -26,7 +26,11 @@ export const aboutPage = {
       "From our facility in Mysore, we curate and develop a wide range of sound and musical instruments and mindful-living products, working with craftspeople, makers and specialist manufacturers in India and internationally.",
       "Alongside this, we collaborate with musicians, facilitators, teachers and practitioners to create courses, workshops, retreats, performances and wellbeing experiences.",
       "The intention remains the same as when we began: to create meaningful tools and experiences that encourage exploration — within and beyond."
-    ]
+    ],
+    image: {
+      src: "/images/about/story-leaf.png",
+      alt: ""
+    }
   },
   whatWeDo: {
     eyebrow: "What we do",
