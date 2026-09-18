@@ -81,9 +81,9 @@ export const aboutPage = {
     ],
     image: {
       src: "/images/about/team.jpg",
-      alt: "The Sarveda team"
+      alt: "The Sarveda team at our Mysore facility"
     },
-    caption: "The Sarveda team."
+    caption: "The Sarveda team at our Mysore facility."
   },
   guides: {
     eyebrow: "What guides us",

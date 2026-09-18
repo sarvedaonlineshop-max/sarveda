@@ -256,12 +256,14 @@ export function AboutPageContent() {
             </div>
             <figure>
               <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-[#efe6d6] sm:aspect-[3/2]">
-                <Image
+                {/* Local static asset — bypass /_next/image (Vercel optimizer 402 on new uploads). */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={team.image.src}
                   alt={team.image.alt}
-                  fill
-                  className="object-cover object-center"
-                  sizes="(max-width: 1024px) 100vw, 55vw"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <figcaption className="mt-3 text-center text-sm text-[#7d7263]">{team.caption}</figcaption>
