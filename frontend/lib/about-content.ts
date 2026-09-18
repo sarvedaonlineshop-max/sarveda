@@ -39,25 +39,29 @@ export const aboutPage = {
         key: "instruments",
         title: "Instruments & Mindful Living",
         body: "Curated sound and musical instruments, yoga and meditation accessories, and tools for practitioners, musicians and explorers worldwide.",
-        href: "/store"
+        href: "/store",
+        icon: "/images/about/what-instruments.png"
       },
       {
         key: "learning",
         title: "Learning",
         body: "Courses and certification programs across sound therapy, music, yoga, meditation and related practices — online and in person.",
-        href: "/courses"
+        href: "/courses",
+        icon: "/images/about/what-learning.png"
       },
       {
         key: "experiences",
         title: "Experiences",
         body: "Workshops, retreats, sound experiences, performances and gatherings created with artists and facilitators.",
-        href: "/events"
+        href: "/events",
+        icon: "/images/about/what-experiences.png"
       },
       {
         key: "organisations",
         title: "Wellbeing for Organisations",
         body: "Sound, mindfulness, yoga and creative wellbeing programs for companies, hotels, spas, retreats and other organisations.",
-        href: "/corporate-wellness"
+        href: "/corporate-wellness",
+        icon: "/images/about/what-organisations.png"
       }
     ]
   },

@@ -6,61 +6,6 @@ import { aboutPage } from "@/lib/about-content";
 
 const GOLD = "currentColor";
 
-function IconBowl() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <path d="M8 24c2.2 10 8.2 16 16 16s13.8-6 16-16H8Z" stroke={GOLD} strokeWidth="1.6" />
-      <path d="M10 24h28" stroke={GOLD} strokeWidth="1.6" />
-      <path d="M21 21l7.5-12" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="29" cy="8" r="1.8" fill={GOLD} />
-    </svg>
-  );
-}
-
-function IconBook() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <path
-        d="M10 12.5c4.5-2 8.5-2 14 0v25c-5.5-2-9.5-2-14 0V12.5Z"
-        stroke={GOLD}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M24 12.5c4.5-2 8.5-2 14 0v25c-5.5-2-9.5-2-14 0V12.5Z"
-        stroke={GOLD}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M24 12.5v25" stroke={GOLD} strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-function IconPeople() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <circle cx="24" cy="14" r="5" stroke={GOLD} strokeWidth="1.6" />
-      <path d="M14 34c1.4-5.5 5-8.5 10-8.5s8.6 3 10 8.5" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="12" cy="17" r="3.5" stroke={GOLD} strokeWidth="1.4" />
-      <path d="M6.5 33c1-3.8 3.2-5.8 6-6.2" stroke={GOLD} strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="36" cy="17" r="3.5" stroke={GOLD} strokeWidth="1.4" />
-      <path d="M41.5 33c-1-3.8-3.2-5.8-6-6.2" stroke={GOLD} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconBuilding() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
-      <path d="M12 40V14l12-6 12 6v26" stroke={GOLD} strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M18 40V22h12v18" stroke={GOLD} strokeWidth="1.5" />
-      <path d="M8 40h32" stroke={GOLD} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M21 26h2.5M24.5 26H27M21 30h2.5M24.5 30H27M21 34h2.5M24.5 34H27" stroke={GOLD} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function IconLeaf() {
   return (
     <svg viewBox="0 0 48 48" className="h-12 w-12 text-[#3f4f46]" fill="none" aria-hidden>
@@ -106,13 +51,6 @@ function IconNote() {
     </svg>
   );
 }
-
-const WHAT_ICONS: Record<string, () => ReactNode> = {
-  instruments: IconBowl,
-  learning: IconBook,
-  experiences: IconPeople,
-  organisations: IconBuilding
-};
 
 const GUIDE_ICONS: Record<string, () => ReactNode> = {
   quality: IconLeaf,
@@ -224,11 +162,18 @@ export function AboutPageContent() {
           </div>
           <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {whatWeDo.items.map((item) => {
-              const Icon = WHAT_ICONS[item.key];
               return (
                 <li key={item.key} className="text-center sm:text-left">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center sm:mx-0">
-                    {Icon ? <Icon /> : null}
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center sm:mx-0 sm:h-[4.5rem] sm:w-[4.5rem]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.icon}
+                      alt=""
+                      aria-hidden
+                      className="h-full w-full object-contain"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <h3 className="font-serif text-[1.05rem] font-semibold uppercase tracking-[0.04em] text-[#1c352a]">
                     <Link href={item.href} className="transition hover:text-[#b98a3e]">
