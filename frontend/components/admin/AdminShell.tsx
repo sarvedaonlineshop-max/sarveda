@@ -34,6 +34,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/returns": "Returns",
   "/admin/returns/analytics": "Returns Intel",
   "/admin/chats": "Chats",
+  "/admin/tasks": "Tasks",
   "/admin/customers": "Customers",
   "/admin/marketplaces": "Marketplaces",
   "/admin/old-orders": "Old Orders",
@@ -459,10 +460,26 @@ function AdminShellInner({
             </div>
           </header>
 
-          <main className="admin-workspace" style={{ flex: 1, padding: "24px 30px 48px", position: "relative" }}>
+          <main
+            className="admin-workspace"
+            style={{
+              flex: 1,
+              padding:
+                pathname.startsWith("/admin/chats") || pathname.startsWith("/admin/tasks")
+                  ? "0"
+                  : "24px 30px 48px",
+              position: "relative"
+            }}
+          >
             <AdminLoadingOverlay show={isNavigating} label="Loading page…" />
             <div
-              key={pathname.startsWith("/admin/chats") ? "/admin/chats" : pathname}
+              key={
+                pathname.startsWith("/admin/chats")
+                  ? "/admin/chats"
+                  : pathname.startsWith("/admin/tasks")
+                    ? "/admin/tasks"
+                    : pathname
+              }
               className="admin-content-enter"
               style={{
                 width: "100%",
