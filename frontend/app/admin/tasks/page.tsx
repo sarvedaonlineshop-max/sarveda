@@ -12,7 +12,10 @@ export default function AdminTasksPage() {
         data-admin-tasks
         className="admin-tasks-frame relative mx-auto flex h-full min-h-0 w-full max-w-[480px] flex-col overflow-hidden bg-[#ECE5DD] md:max-w-none"
       >
-        <TasksApp presetEmail={admin?.email ?? undefined} />
+        <TasksApp
+          embedInAdmin
+          presetEmail={admin?.email ?? undefined}
+        />
       </div>
     </div>
   );

@@ -1,5 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
+
+import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
 // ── Types ──────────────────────────────────────────────
 type View = "login"|"home"|"assigned"|"alltasks"
@@ -1017,11 +1020,13 @@ function AssigneeAvatars({
 
 // ── Main App ───────────────────────────────────────────
 type TasksAppProps = {
-  /** Prefills the Task Manager login email (admin embed). */
+  /** Prefills the Task Manager login email (standalone app). */
   presetEmail?: string;
+  /** Skip Task Manager login and use the admin session. */
+  embedInAdmin?: boolean;
 };
 
-export default function TasksApp({ presetEmail }: TasksAppProps) {
+export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksAppProps) {
 
   // Auth state
   const [view,setView] = useState<View>("login");
@@ -1327,6 +1332,38 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
     setMyName(name);setMyPhone(phone);
   }
 
+  async function enterFromAdmin() {
+    setLErr("");
+    setLLoading(true);
+    try {
+      const r = await fetch(`${API}/complaints/auth/from-admin`, {
+        method: "POST",
+        credentials: "include"
+      });
+      const d = await r.json() as {
+        error?: string;
+        data?: { token?: string; user?: { email?: string; name?: string; phone?: string } };
+        token?: string;
+        user?: { email?: string; name?: string; phone?: string };
+      };
+      if (!r.ok) throw new Error(d.error ?? "Could not open tasks");
+      const t = d.data?.token ?? d.token;
+      const u = d.data?.user ?? d.user;
+      if (!t || !u?.email) throw new Error("Could not open tasks");
+      saveSession(t, u.email, u.name ?? "", u.phone ?? "", true);
+      setView("home");
+      seedAppHistory(["home"]);
+      void loadAll(t);
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(() => void loadNotifications(t), 30_000);
+    } catch (err) {
+      setLErr(err instanceof Error ? err.message : "Could not open tasks");
+      setView("login");
+    } finally {
+      setLLoading(false);
+    }
+  }
+
   function logout(message?: string) {
     ["sv_token","sv_email","sv_name","sv_phone","sv_expiry"]
       .forEach(k=>localStorage.removeItem(k));
@@ -1338,6 +1375,9 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
     setMyAssignments([]);
     setDashStats({ open: 0, inProgress: 0, resolved: 0, total: 0 });
     if (message) setLErr(message);
+    if (embedInAdmin) {
+      void enterFromAdmin();
+    }
   }
 
   function authFailed(message: string) {
@@ -1646,6 +1686,12 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
 
   // Restore session on mount
   useEffect(() => {
+    if (embedInAdmin) {
+      void enterFromAdmin();
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+      };
+    }
     const t = localStorage.getItem("sv_token");
     const e = localStorage.getItem("sv_email");
     const n = localStorage.getItem("sv_name");
@@ -1674,7 +1720,7 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+  },[embedInAdmin]);
 
   useEffect(() => {
     if (!presetEmail) return;
@@ -2964,6 +3010,7 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
   `;
 
   function MainHeader() {
+    if (embedInAdmin) return null;
     return (
       <div style={{
         background:"#075E54",
@@ -3471,8 +3518,77 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
     );
   }
 
+  useAdminPageHeader(
+    () => {
+      if (!embedInAdmin) return { title: "Tasks" };
+      const onList =
+        view === "home" || view === "assigned" || view === "alltasks" || view === "profile";
+      return {
+        title: view === "detail" && selected?.title ? selected.title : "Tasks",
+        subtitle:
+          onList && unreadCount > 0 ? (
+            <span className="md:hidden">{unreadCount} unread</span>
+          ) : undefined,
+        actions: (
+          <button
+            type="button"
+            onClick={() => {
+              pushView("notifications");
+              void markAllRead();
+            }}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#faf5ec]/90 hover:bg-white/10"
+            title="Notifications"
+            aria-label="Task notifications"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 ? (
+              <span
+                style={{
+                  position: "absolute",
+                  top: 4,
+                  right: 4,
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 4px",
+                  borderRadius: 999,
+                  background: "#dc2626",
+                  color: "#fff",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </button>
+        )
+      };
+    },
+    [embedInAdmin, view, selected?.title, unreadCount, pushView]
+  );
+
   // ── LOGIN VIEW ────────────────────────────────────────
-  if (view==="login") return (
+  if (view==="login") {
+    if (embedInAdmin) {
+      return (
+        <div
+          className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 px-6 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="text-sm font-medium text-[#1c352a]">
+            {lLoading || !lErr ? "Opening tasks…" : "Could not open tasks"}
+          </span>
+          <span className="text-xs text-[#5a6a61]">
+            {lErr || "Using your admin session"}
+          </span>
+        </div>
+      );
+    }
+    return (
     <>
       <style>{CSS}</style>
       <div style={{
@@ -3864,7 +3980,8 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
         </p>
       </div>
     </>
-  );
+    );
+  }
 
   // ── HOME VIEW ────────────────────────────────────────
   if (view==="home") return (
@@ -6481,6 +6598,7 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
             </form>
           </div>
 
+          {embedInAdmin ? null : (
           <button onClick={() => logout()} style={{
             width:"100%",padding:"14px",
             borderRadius:"12px",
@@ -6491,6 +6609,7 @@ export default function TasksApp({ presetEmail }: TasksAppProps) {
           }}>
             Sign Out
           </button>
+          )}
         </div>
         <BottomNav embedded/>
 
