@@ -1016,7 +1016,12 @@ function AssigneeAvatars({
 }
 
 // ── Main App ───────────────────────────────────────────
-export default function TasksApp() {
+type TasksAppProps = {
+  /** Prefills the Task Manager login email (admin embed). */
+  presetEmail?: string;
+};
+
+export default function TasksApp({ presetEmail }: TasksAppProps) {
 
   // Auth state
   const [view,setView] = useState<View>("login");
@@ -1670,6 +1675,11 @@ export default function TasksApp() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+
+  useEffect(() => {
+    if (!presetEmail) return;
+    setLEmail((prev) => prev || presetEmail);
+  }, [presetEmail]);
 
   // Badge-only when app returns — do NOT reload lists/chat (that caused jump/flash).
   useEffect(() => {

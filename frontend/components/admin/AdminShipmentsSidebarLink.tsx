@@ -7,6 +7,7 @@ import { Truck } from "lucide-react";
 
 import { fetchAdminShipments } from "@/lib/admin-api";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
+import { AdminTasksSidebarLink } from "@/components/admin/AdminTasksSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import {
   applySidebarHover,
@@ -83,6 +84,7 @@ export function AdminShipmentsSidebarLink({ onNavigate }: { onNavigate?: () => v
         ) : null}
       </Link>
       <AdminChatsSidebarLink onNavigate={onNavigate} placedNextToShipments />
+      <AdminTasksSidebarLink onNavigate={onNavigate} />
     </>
   );
 }
