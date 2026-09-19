@@ -1,6 +1,6 @@
 "use client";
 
-import TasksApp from "@/app/complaints/page";
+import TasksApp from "@/components/tasks/TasksApp";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 
 export default function AdminTasksPage() {
