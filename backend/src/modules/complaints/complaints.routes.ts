@@ -12,7 +12,7 @@ import {
   sendTaskEmails,
   taskEmailHtml
 } from "./task-notification-delivery";
-import { verifyAccessToken, signAccessToken } from "../../utils/jwt";
+import { AUTH_COOKIE_NAME, verifyAccessToken, signAccessToken } from "../../utils/jwt";
 import {
   loginComplaintWithPassword,
   provisionWhitelistCredentials
@@ -54,17 +54,28 @@ function mediaType(mime: string): string {
 
 async function verifyComplaintAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const raw = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+    const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+    const raw = bearer || (req.cookies?.[AUTH_COOKIE_NAME] as string | undefined);
     if (!raw) {
       res.status(401).json({ success: false, error: "No token", code: "UNAUTHORIZED" });
       return;
     }
     const payload = verifyAccessToken(raw);
     const email = payload.email.toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, name: true, phone: true, avatarUrl: true, role: true, deletedAt: true }
+    });
+    if (!user || user.deletedAt) {
+      res.status(401).json({ success: false, error: "Authentication failed", code: "UNAUTHORIZED" });
+      return;
+    }
+
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
     const whitelisted = await prisma.complaintWhitelist.findFirst({
       where: { email, isActive: true }
     });
-    if (!whitelisted) {
+    if (!whitelisted && !isAdmin) {
       res.status(403).json({
         success: false,
         error: "Your email is not authorized to use this app. Contact admin.",
@@ -73,18 +84,13 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: { id: true, name: true, phone: true, avatarUrl: true }
-    });
-
     req.complaintUser = {
       id: payload.sub,
       email,
-      name: user?.name ?? whitelisted.name ?? undefined,
-      phone: user?.phone ?? null,
-      avatarUrl: user?.avatarUrl ?? whitelisted.avatarUrl ?? undefined,
-      complaintRole: whitelisted.role
+      name: user.name ?? whitelisted?.name ?? undefined,
+      phone: user.phone ?? null,
+      avatarUrl: user.avatarUrl ?? whitelisted?.avatarUrl ?? undefined,
+      complaintRole: whitelisted?.role ?? "ADMIN"
     };
     next();
   } catch {
@@ -904,6 +910,47 @@ router.patch("/profile/notification-preferences", verifyComplaintAuth, async (re
       { emailNotificationsEnabled, pushNotificationsEnabled }
     );
     res.json({ success: true, data: { user } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/auth/from-admin", requireAdmin, async (req, res, next) => {
+  try {
+    const admin = req.authUser!;
+    const email = admin.email.toLowerCase();
+    const whitelist = await prisma.complaintWhitelist.upsert({
+      where: { email },
+      create: {
+        email,
+        name: admin.name ?? null,
+        role: "ADMIN",
+        isActive: true
+      },
+      update: {
+        isActive: true,
+        ...(admin.name ? { name: admin.name } : {})
+      }
+    });
+    const token = signAccessToken({
+      sub: admin.id,
+      email,
+      role: admin.role ?? "ADMIN",
+      complaintRole: whitelist.role
+    });
+    res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: admin.id,
+          email,
+          name: admin.name ?? whitelist.name,
+          phone: null,
+          complaintRole: whitelist.role
+        }
+      }
+    });
   } catch (err) {
     next(err);
   }
