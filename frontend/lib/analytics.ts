@@ -60,11 +60,29 @@ function metaContents(items: PurchaseItem[]) {
   }));
 }
 
-/** Meta / Ads tags configured in GTM read value + currency from this event. */
-function pushDataLayer(event: string, ecommerce: Record<string, unknown>): void {
+/**
+ * Push ecommerce events for GTM / GA4 / Google Ads tags.
+ * Flat `value` + `currency` (+ optional `transaction_id`) sit at the root so
+ * GTM Data Layer Variables and Google Ads Conversion tags can read them
+ * without nested ecommerce lookups (common Ads setup).
+ */
+function pushDataLayer(
+  event: string,
+  ecommerce: Record<string, unknown>,
+  extras?: Record<string, unknown>
+): void {
   if (!Array.isArray(window.dataLayer)) window.dataLayer = [];
   window.dataLayer.push({ ecommerce: null });
-  window.dataLayer.push({ event, ecommerce });
+  window.dataLayer.push({
+    event,
+    ...(typeof ecommerce.transaction_id === "string"
+      ? { transaction_id: ecommerce.transaction_id }
+      : {}),
+    ...(typeof ecommerce.value === "number" ? { value: ecommerce.value } : {}),
+    ...(typeof ecommerce.currency === "string" ? { currency: ecommerce.currency } : {}),
+    ...extras,
+    ecommerce
+  });
 }
 
 /**
@@ -100,6 +118,50 @@ function trackMeta(
   });
 }
 
+/** Optional direct Google Ads conversion (same idea as Meta pixel on-site). */
+function googleAdsPurchaseSendTo(): string | null {
+  const id = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim();
+  if (!id) return null;
+  const label = process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL?.trim();
+  return label ? `${id}/${label}` : id;
+}
+
+function trackGoogleAdsConversion(params: {
+  transactionId: string;
+  value: number;
+  currency: string;
+}): void {
+  const sendTo = googleAdsPurchaseSendTo();
+  if (!sendTo || !window.gtag) return;
+  window.gtag("event", "conversion", {
+    send_to: sendTo,
+    value: params.value,
+    currency: params.currency,
+    transaction_id: params.transactionId
+  });
+}
+
+/** SPA route changes — GTM / Google Ads remarketing need a page_view signal. */
+export function trackSpaPageView(pathname: string): void {
+  safe(() => {
+    if (!pathname) return;
+    if (!Array.isArray(window.dataLayer)) window.dataLayer = [];
+    window.dataLayer.push({
+      event: "page_view",
+      page_path: pathname,
+      page_location: typeof window !== "undefined" ? window.location.href : pathname,
+      page_title: typeof document !== "undefined" ? document.title : undefined
+    });
+    if (window.gtag) {
+      window.gtag("event", "page_view", {
+        page_path: pathname,
+        page_location: window.location.href,
+        page_title: document.title
+      });
+    }
+  });
+}
+
 export function trackPurchase(params: {
   orderId: string;
   value: number;
@@ -113,12 +175,16 @@ export function trackPurchase(params: {
     const items = params.items ?? [];
     const eventId = `purchase_${params.orderId}`.slice(0, 64);
 
-    pushDataLayer("purchase", {
-      transaction_id: params.orderId,
-      currency,
-      value,
-      items: ga4Items(items)
-    });
+    pushDataLayer(
+      "purchase",
+      {
+        transaction_id: params.orderId,
+        currency,
+        value,
+        items: ga4Items(items)
+      },
+      { event_id: eventId }
+    );
 
     if (window.gtag) {
       window.gtag("event", "purchase", {
@@ -128,6 +194,12 @@ export function trackPurchase(params: {
         items: ga4Items(items)
       });
     }
+
+    trackGoogleAdsConversion({
+      transactionId: params.orderId,
+      value,
+      currency
+    });
 
     // Minimal required fields first — Meta Events Manager diagnostics key off these.
     trackMeta(

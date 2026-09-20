@@ -5,6 +5,7 @@ import Script from "next/script";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { AttributionProvider } from "@/components/attribution/AttributionProvider";
 import { LogoutTransitionOverlay } from "@/components/auth/LogoutTransitionOverlay";
+import { GtmSpaTracker } from "@/components/analytics/GtmSpaTracker";
 import { Layout } from "@/components/layout/Layout";
 import { getSiteUrl, isProductionSite } from "@/lib/site";
 
@@ -173,6 +174,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         ) : null}
         <CartProvider>
           <AttributionProvider>
+            {gtmId || (isProd && ga4Id) ? <GtmSpaTracker /> : null}
             <LogoutTransitionOverlay />
             <Layout>{children}</Layout>
           </AttributionProvider>
