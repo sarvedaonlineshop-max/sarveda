@@ -35,6 +35,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/returns/analytics": "Returns Intel",
   "/admin/chats": "Chats",
   "/admin/tasks": "Tasks",
+  "/admin/profile": "Profile",
   "/admin/customers": "Customers",
   "/admin/marketplaces": "Marketplaces",
   "/admin/old-orders": "Old Orders",
@@ -465,7 +466,9 @@ function AdminShellInner({
             style={{
               flex: 1,
               padding:
-                pathname.startsWith("/admin/chats") || pathname.startsWith("/admin/tasks")
+                pathname.startsWith("/admin/chats") ||
+                pathname.startsWith("/admin/tasks") ||
+                pathname.startsWith("/admin/profile")
                   ? "0"
                   : "24px 30px 48px",
               position: "relative"
@@ -478,7 +481,9 @@ function AdminShellInner({
                   ? "/admin/chats"
                   : pathname.startsWith("/admin/tasks")
                     ? "/admin/tasks"
-                    : pathname
+                    : pathname.startsWith("/admin/profile")
+                      ? "/admin/profile"
+                      : pathname
               }
               className="admin-content-enter"
               style={{
