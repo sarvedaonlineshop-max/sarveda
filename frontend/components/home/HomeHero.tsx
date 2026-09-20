@@ -24,7 +24,7 @@ export function HomeHero() {
           priority
           quality={90}
           sizes="100vw"
-          className="object-cover object-[78%_42%] sm:object-[72%_40%] md:object-center"
+          className="object-cover object-[96%_40%] sm:object-[86%_38%] md:object-center"
           aria-hidden
         />
 
