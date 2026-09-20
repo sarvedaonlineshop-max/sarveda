@@ -37,3 +37,18 @@ export function monthKeyKolkata(d: Date): string {
 export function dateKeyKolkata(d: Date): string {
   return d.toLocaleDateString("en-CA", { timeZone: KOLKATA });
 }
+
+/** Time key HH:mm:ss in Kolkata (24-hour). */
+export function timeKeyKolkata(d: Date): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: KOLKATA,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(d);
+  const h = parts.find((p) => p.type === "hour")?.value ?? "00";
+  const m = parts.find((p) => p.type === "minute")?.value ?? "00";
+  const s = parts.find((p) => p.type === "second")?.value ?? "00";
+  return `${h}:${m}:${s}`;
+}

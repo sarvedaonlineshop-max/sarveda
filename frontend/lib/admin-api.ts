@@ -266,7 +266,8 @@ export type AdminReportType =
   | "razorpay"
   | "paypal"
   | "stripe"
-  | "gateways";
+  | "gateways"
+  | "attribution";
 
 export type AdminReportPeriod = "daily" | "weekly" | "monthly" | "financial_year";
 

@@ -39,7 +39,8 @@ const REPORT_ICONS: Record<string, string> = {
   razorpay: "💳",
   paypal: "🌐",
   stripe: "⚡",
-  gateways: "🔗"
+  gateways: "🔗",
+  attribution: "📣"
 };
 
 const REPORTS: Array<{
@@ -57,6 +58,12 @@ const REPORTS: Array<{
     type: "products",
     title: "Products",
     blurb: "Units sold and revenue by SKU in the selected period."
+  },
+  {
+    type: "attribution",
+    title: "Marketing Attribution",
+    blurb:
+      "Paid order line items with product name, variant, SKU, date, time, and marketing attributes from the order MA card."
   },
   {
     type: "customers",
@@ -119,7 +126,7 @@ export default function AdminReportsPage() {
       icon: "📊",
       subtitle: (
         <>
-          Operational Excel exports for sales, products, customers, and payments. Financial
+          Operational Excel exports for sales, products, marketing attribution, customers, and payments. Financial
           statements and ledgers live under Accounting → Financial Reports. Customer downloads are
           super-admin only. Sales analytics also appear on the{" "}
           <a href="/admin" style={{ color: "#b98a3e", fontWeight: 700 }}>
