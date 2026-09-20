@@ -21,6 +21,8 @@ const metaPixelId =
 const gtmId =
   process.env.NEXT_PUBLIC_GTM_ID?.trim() ||
   (isProductionSite() ? "GTM-N92L9537" : "");
+/** Optional Google Ads account for direct conversion (AW-…). */
+const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() || "";
 
 /** Body / UI — designer: Manrope (was Inter; revert by swapping imports). */
 const manrope = Manrope({
@@ -139,6 +141,27 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 gtag('config', '${ga4Id}', {
                   page_path: window.location.pathname,
                 });
+                ${
+                  googleAdsId
+                    ? `gtag('config', '${googleAdsId}');`
+                    : ""
+                }
+              `}
+            </Script>
+          </>
+        ) : null}
+        {isProd && !ga4Id && googleAdsId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-ads-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${googleAdsId}');
               `}
             </Script>
           </>
