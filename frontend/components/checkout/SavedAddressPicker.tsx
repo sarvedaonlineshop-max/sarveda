@@ -2,6 +2,7 @@
 
 import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
 import { countryByCode } from "@/lib/countries";
+import { digitsOnlyPhone } from "@/lib/checkout-validation";
 
 export type SavedAddress = {
   id: string;
@@ -36,7 +37,7 @@ export function SavedAddressPicker({ addresses, onSelect }: Props) {
             onClick={() =>
               onSelect({
                 shippingFullName: a.fullName,
-                phone: a.phone.replace(/^\+\d+/, ""),
+                phone: digitsOnlyPhone(a.phone, a.country),
                 phoneDial: countryByCode(a.country)?.dial ?? "+91",
                 line1: a.line1,
                 line2: a.line2 ?? "",

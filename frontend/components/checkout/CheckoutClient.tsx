@@ -9,7 +9,11 @@ import { CouponInput } from "@/components/checkout/CouponInput";
 import { PaymentSelector } from "@/components/checkout/PaymentSelector";
 import { useCartData } from "@/components/cart/CartProvider";
 import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-prefill";
-import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
+import {
+  digitsOnlyPhone,
+  toCheckoutApiPhone,
+  type CheckoutFieldErrors
+} from "@/lib/checkout-validation";
 import type { CreateOrderBody } from "@/lib/checkout-api";
 import { fetchPublicOrder } from "@/lib/checkout-api";
 import { fetchOrderPublic, reorderCancelledOrder, type OrderPublic } from "@/lib/orders-api";
@@ -46,7 +50,7 @@ function formFromOrder(order: OrderPublic, email: string): CheckoutAddressForm {
   const phoneRaw = addr?.phone?.trim() ?? "";
   return {
     email: email.trim().toLowerCase(),
-    phone: phoneRaw.replace(/^\+\d+/, ""),
+    phone: digitsOnlyPhone(phoneRaw, country),
     phoneDial: countryByCode(country)?.dial ?? "+91",
     shippingFullName: addr?.fullName?.trim() ?? "",
     line1: addr?.line1?.trim() ?? "",
@@ -157,7 +161,10 @@ export function CheckoutClient() {
         ...current,
         email: current.email || user.email,
         shippingFullName: current.shippingFullName || user.name?.trim() || current.shippingFullName,
-        phone: current.phone || user.phone?.replace(/^\+\d+/, "") || current.phone
+        phone:
+          current.phone ||
+          (user.phone ? digitsOnlyPhone(user.phone, current.country) : "") ||
+          current.phone
       }));
       void fetchMyAddresses().then((addrs) => {
         setSavedAddresses(addrs);
@@ -170,7 +177,7 @@ export function CheckoutClient() {
             ...current,
             email: current.email || user.email,
             shippingFullName: primary.fullName,
-            phone: primary.phone.replace(/^\+\d+/, ""),
+            phone: digitsOnlyPhone(primary.phone, primary.country),
             phoneDial: countryByCode(primary.country)?.dial ?? "+91",
             line1: primary.line1,
             line2: primary.line2 ?? "",

@@ -73,10 +73,10 @@ export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
   const phone = form.phone.trim();
   if (!phone) {
     fieldErrors.phone = "Enter your mobile number.";
+  } else if (/[^\d]/.test(phone)) {
+    fieldErrors.phone = "Enter digits only.";
   } else if (country === "IN") {
-    const digits = phone.replace(/\D/g, "");
-    const national = digits.startsWith("91") ? digits.slice(2) : digits;
-    if (national.length !== 10) {
+    if (phone.length !== 10) {
       fieldErrors.phone = "Enter a valid 10-digit mobile number.";
     }
   }
@@ -85,12 +85,18 @@ export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
   return { message: firstError, fieldErrors };
 }
 
+/** Strip dial/symbols; keep national digits only (max 10 for IN). */
+export function digitsOnlyPhone(raw: string, country = "IN"): string {
+  const withoutDial = raw.trim().replace(/^\+\d+/, "");
+  const digits = withoutDial.replace(/\D/g, "");
+  return country === "IN" ? digits.slice(0, 10) : digits.slice(0, 15);
+}
+
 export function toCheckoutApiPhone(form: CheckoutFormInput): string {
   const dial = form.phoneDial.trim().replace(/\s/g, "");
   const digits = form.phone.replace(/\D/g, "");
   if (form.country === "IN") {
-    const national = digits.startsWith("91") ? digits.slice(2) : digits;
-    return `${dial}${national}`;
+    return `${dial}${digits}`;
   }
   if (digits.startsWith(dial.replace("+", ""))) {
     return `+${digits}`;

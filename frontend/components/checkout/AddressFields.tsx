@@ -207,13 +207,17 @@ export function AddressFields({
             <input
               required
               type="tel"
-              inputMode="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="tel-national"
               placeholder={isIndia ? "10-digit mobile" : "Phone number"}
               className={`${inputClass(fieldState("phone"))} pr-10`}
               value={form.phone}
               onBlur={() => touch("phone")}
-              onChange={(event) => patch({ phone: event.target.value })}
+              onChange={(event) => {
+                const digits = event.target.value.replace(/\D/g, "");
+                patch({ phone: isIndia ? digits.slice(0, 10) : digits.slice(0, 15) });
+              }}
             />
             {fieldState("phone") !== "idle" ? (
               <span
