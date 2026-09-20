@@ -1024,9 +1024,15 @@ type TasksAppProps = {
   presetEmail?: string;
   /** Skip Task Manager login and use the admin session. */
   embedInAdmin?: boolean;
+  /** Admin Profile tab opens the profile screen only. */
+  initialView?: "home" | "profile";
 };
 
-export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksAppProps) {
+export default function TasksApp({
+  presetEmail,
+  embedInAdmin = false,
+  initialView = "home"
+}: TasksAppProps) {
 
   // Auth state
   const [view,setView] = useState<View>("login");
@@ -1351,8 +1357,14 @@ export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksApp
       const u = d.data?.user ?? d.user;
       if (!t || !u?.email) throw new Error("Could not open tasks");
       saveSession(t, u.email, u.name ?? "", u.phone ?? "", true);
-      setView("home");
-      seedAppHistory(["home"]);
+      const start = embedInAdmin && initialView === "profile" ? "profile" : "home";
+      setView(start);
+      seedAppHistory([start]);
+      if (start === "profile") {
+        setPName(u.name ?? "");
+        setPPhone(u.phone ?? "");
+        void loadMeProfile(t);
+      }
       void loadAll(t);
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(() => void loadNotifications(t), 30_000);
@@ -3108,12 +3120,19 @@ export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksApp
   }
 
   function BottomNav({embedded}:{embedded?:boolean}) {
-    const tabs = [
-      {id:"home",icon:"🏠",label:"Home"},
-      {id:"assigned",icon:"📤",label:"Assigned"},
-      {id:"alltasks",icon:"📋",label:"All Tasks"},
-      {id:"profile",icon:"👤",label:"Profile"},
-    ] as const;
+    if (embedInAdmin && initialView === "profile") return null;
+    const tabs = embedInAdmin
+      ? ([
+          {id:"home",icon:"🏠",label:"Home"},
+          {id:"assigned",icon:"📤",label:"Assigned"},
+          {id:"alltasks",icon:"📋",label:"All Tasks"},
+        ] as const)
+      : ([
+          {id:"home",icon:"🏠",label:"Home"},
+          {id:"assigned",icon:"📤",label:"Assigned"},
+          {id:"alltasks",icon:"📋",label:"All Tasks"},
+          {id:"profile",icon:"👤",label:"Profile"},
+        ] as const);
     return (
       <div style={{
         ...(embedded?{}:{
@@ -3124,7 +3143,7 @@ export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksApp
         background:"#fff",
         borderTop:"1px solid #e0d8ce",
         display:"grid",
-        gridTemplateColumns:"repeat(4,1fr)",
+        gridTemplateColumns:`repeat(${tabs.length},1fr)`,
         paddingBottom:
           "env(safe-area-inset-bottom,4px)",
         flexShrink:0,
@@ -3521,8 +3540,9 @@ export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksApp
   useAdminPageHeader(
     () => {
       if (!embedInAdmin) return { title: "Tasks" };
+      if (initialView === "profile") return { title: "Profile" };
       const onList =
-        view === "home" || view === "assigned" || view === "alltasks" || view === "profile";
+        view === "home" || view === "assigned" || view === "alltasks";
       return {
         title: view === "detail" && selected?.title ? selected.title : "Tasks",
         subtitle:
@@ -3567,7 +3587,7 @@ export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksApp
         )
       };
     },
-    [embedInAdmin, view, selected?.title, unreadCount, pushView]
+    [embedInAdmin, initialView, view, selected?.title, unreadCount, pushView]
   );
 
   // ── LOGIN VIEW ────────────────────────────────────────
@@ -3580,7 +3600,13 @@ export default function TasksApp({ presetEmail, embedInAdmin = false }: TasksApp
           aria-live="polite"
         >
           <span className="text-sm font-medium text-[#1c352a]">
-            {lLoading || !lErr ? "Opening tasks…" : "Could not open tasks"}
+            {lLoading || !lErr
+              ? initialView === "profile"
+                ? "Opening profile…"
+                : "Opening tasks…"
+              : initialView === "profile"
+                ? "Could not open profile"
+                : "Could not open tasks"}
           </span>
           <span className="text-xs text-[#5a6a61]">
             {lErr || "Using your admin session"}
