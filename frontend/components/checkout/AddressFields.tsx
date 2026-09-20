@@ -93,12 +93,22 @@ export function AddressFields({
 }: Props) {
   const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
   const isIndia = form.country === "IN";
+  const isIndianMobile = isIndia || form.phoneDial === "+91";
 
   useEffect(() => {
     if (indiaCheckoutOnly && form.country !== "IN") {
       onChange({ ...form, country: "IN", phoneDial: "+91" });
+      return;
     }
-  }, [indiaCheckoutOnly, form, onChange]);
+    // Shipping to India always uses +91 — no mismatched dial codes.
+    if (form.country === "IN" && form.phoneDial !== "+91") {
+      onChange({
+        ...form,
+        phoneDial: "+91",
+        phone: form.phone.replace(/\D/g, "").slice(0, 10)
+      });
+    }
+  }, [form, indiaCheckoutOnly, onChange]);
 
   function patch(partial: Partial<CheckoutAddressForm>) {
     onChange({ ...form, ...partial });
@@ -192,9 +202,17 @@ export function AddressFields({
         <span className="mb-1 block text-sm font-medium text-brand-ink">Mobile number</span>
         <div className="flex gap-2">
           <select
-            className="min-h-[48px] w-28 rounded-xl border border-[#E3D9C8] bg-white px-2 text-sm text-brand-ink focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
-            value={form.phoneDial}
-            onChange={(event) => patch({ phoneDial: event.target.value })}
+            className="min-h-[48px] w-28 rounded-xl border border-[#E3D9C8] bg-white px-2 text-sm text-brand-ink focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20 disabled:cursor-not-allowed disabled:bg-brand-cream disabled:opacity-80"
+            value={isIndia ? "+91" : form.phoneDial}
+            disabled={isIndia}
+            onChange={(event) => {
+              const phoneDial = event.target.value;
+              const digits = form.phone.replace(/\D/g, "");
+              patch({
+                phoneDial,
+                phone: phoneDial === "+91" ? digits.slice(0, 10) : digits.slice(0, 15)
+              });
+            }}
             aria-label="Country calling code"
           >
             {COUNTRIES.map((row) => (
@@ -210,13 +228,15 @@ export function AddressFields({
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="tel-national"
-              placeholder={isIndia ? "10-digit mobile" : "Phone number"}
+              placeholder={isIndianMobile ? "10-digit mobile" : "Phone number"}
               className={`${inputClass(fieldState("phone"))} pr-10`}
               value={form.phone}
               onBlur={() => touch("phone")}
               onChange={(event) => {
                 const digits = event.target.value.replace(/\D/g, "");
-                patch({ phone: isIndia ? digits.slice(0, 10) : digits.slice(0, 15) });
+                patch({
+                  phone: isIndianMobile ? digits.slice(0, 10) : digits.slice(0, 15)
+                });
               }}
             />
             {fieldState("phone") !== "idle" ? (
