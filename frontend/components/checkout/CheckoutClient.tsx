@@ -147,10 +147,14 @@ export function CheckoutClient() {
     if (!resumeOrderNumber) {
       const saved = loadSavedCheckoutShipping();
       if (saved) {
+        const country = saved.country ?? "IN";
         setForm((current) => ({
           ...current,
           ...saved,
-          phoneDial: saved.phoneDial ?? countryByCode(saved.country ?? "IN")?.dial ?? "+91"
+          phone: saved.phone
+            ? digitsOnlyPhone(saved.phone, country)
+            : current.phone,
+          phoneDial: saved.phoneDial ?? countryByCode(country)?.dial ?? "+91"
         }));
       }
     }
