@@ -14,6 +14,10 @@ import {
 } from "../../utils/reporting-time";
 import { listAdminSessions } from "../auth/admin-session";
 import { logger } from "../../config/logger";
+import {
+  ATTRIBUTION_REPORT_COLUMNS,
+  toAttributionReportRow
+} from "./attribution-report";
 
 type DumpTopItem = {
   sku: string;
@@ -60,7 +64,8 @@ const reportTypeSchema = z.enum([
   "razorpay",
   "paypal",
   "stripe",
-  "gateways"
+  "gateways",
+  "attribution"
 ]);
 
 export type ReportPeriod = z.infer<typeof periodSchema>;
@@ -398,6 +403,67 @@ async function gatewayRows(from: Date, to: Date, provider?: PaymentProvider) {
   }));
 }
 
+async function attributionRows(from: Date, to: Date) {
+  const items = await prisma.orderItem.findMany({
+    where: {
+      order: {
+        deletedAt: null,
+        placedAt: { gte: from, lt: to },
+        status: { in: REPORT_ORDER_STATUSES }
+      }
+    },
+    take: 30000,
+    orderBy: [{ order: { placedAt: "desc" } }, { id: "asc" }],
+    select: {
+      skuSnapshot: true,
+      nameSnapshot: true,
+      qtyOrdered: true,
+      variant: {
+        select: {
+          sku: true,
+          productRel: { select: { name: true } },
+          attributeValues: {
+            take: 8,
+            select: {
+              attributeValue: {
+                select: {
+                  value: true,
+                  attribute: { select: { name: true } }
+                }
+              }
+            }
+          }
+        }
+      },
+      order: {
+        select: {
+          orderNumber: true,
+          placedAt: true,
+          createdAt: true,
+          attribution: true
+        }
+      }
+    }
+  });
+
+  return items.map((it) =>
+    toAttributionReportRow({
+      orderNumber: it.order.orderNumber,
+      skuSnapshot: it.skuSnapshot,
+      nameSnapshot: it.nameSnapshot,
+      qtyOrdered: it.qtyOrdered,
+      placedAt: it.order.placedAt ?? it.order.createdAt,
+      productName: it.variant?.productRel.name,
+      variantSku: it.variant?.sku,
+      variantAttributes: it.variant?.attributeValues.map((row) => ({
+        name: row.attributeValue.attribute.name,
+        value: row.attributeValue.value
+      })),
+      attribution: it.order.attribution
+    })
+  );
+}
+
 export async function adminReportAnalytics(req: Request, res: Response, next: NextFunction) {
   try {
     const dumpTop = loadWooDumpTopItems();
@@ -655,6 +721,10 @@ export async function exportAdminReport(req: Request, res: Response, next: NextF
         rows
       );
       filename = `sarveda-vendors-${label}.xlsx`;
+    } else if (type === "attribution") {
+      const rows = await attributionRows(from, to);
+      buffer = await buildWorkbookBuffer("Marketing attribution", ATTRIBUTION_REPORT_COLUMNS, rows);
+      filename = `sarveda-marketing-attribution-${label}.xlsx`;
     } else {
       const providerMap: Record<string, PaymentProvider | undefined> = {
         razorpay: "RAZORPAY",
