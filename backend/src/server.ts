@@ -13,6 +13,8 @@ import { startDueDateReminderWorker } from "./jobs/taskDueDateJob";
 import { startShippingRetryWorker } from "./jobs/shippingRetryJob";
 import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
 import { startEnquiryFollowUpWorker } from "./jobs/enquiryFollowUpJob";
+import { logger } from "./config/logger";
+import { ensureCanonicalStoreAdmins } from "./modules/complaints/whitelist-auth";
 
 void initSentry();
 
@@ -21,6 +23,9 @@ const port = Number(process.env.PORT ?? 5000);
 app.listen(port, () => {
   process.stdout.write(`Sarveda backend running on http://localhost:${port}\n`);
   validateFirebaseConfig();
+  void ensureCanonicalStoreAdmins().catch((err) => {
+    logger.error("canonical_store_admin_provision_failed", { err });
+  });
   startPaymentTimeoutWorker();
   startWhatsAppBotIdleWorker();
   startDueDateReminderWorker();

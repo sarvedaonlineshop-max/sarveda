@@ -7,6 +7,7 @@ import { logger } from "../../config/logger";
 import { sendMail, sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
+import { CANONICAL_STORE_ADMINS } from "../complaints/canonical-store-admins";
 import {
   ensureComplaintUser,
   syncComplaintPassword
@@ -34,12 +35,14 @@ const emailCheck = z.string().email();
  */
 function adminBootstrapEmailSet(): Set<string> {
   const raw = process.env.ADMIN_BOOTSTRAP_EMAILS ?? "";
-  return new Set(
-    raw
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean)
-  );
+  const emails = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  for (const admin of CANONICAL_STORE_ADMINS) {
+    emails.push(admin.email.toLowerCase());
+  }
+  return new Set(emails);
 }
 
 /** Comma-separated emails forced to SUPER_ADMIN on login (default: partha@sarveda.com). */

@@ -1,7 +1,11 @@
-import type { ComplaintAppRole, ComplaintWhitelist, User } from "@prisma/client";
+import type { ComplaintAppRole, ComplaintWhitelist, User, Role } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 import { hashPassword, verifyPassword } from "../../utils/hash";
+import { CANONICAL_STORE_ADMINS } from "./canonical-store-admins";
+
+export { CANONICAL_STORE_ADMINS } from "./canonical-store-admins";
 
 export const COMPLAINT_DEFAULT_PASSWORD = "sarveda123";
 
@@ -137,4 +141,104 @@ export async function provisionWhitelistCredentials(
 
   await ensureComplaintUser(updated.email, updated.name, passwordHash);
   return updated;
+}
+
+function nextAdminRole(current: Role | undefined): Role {
+  if (current === "SUPER_ADMIN") return "SUPER_ADMIN";
+  return "ADMIN";
+}
+
+/**
+ * Create or update a store ADMIN user and Tasks/Chats whitelist row.
+ * Sets the team default password only when missing, unless resetPassword is true.
+ */
+export async function provisionStoreAdmin(opts: {
+  email: string;
+  name?: string | null;
+  resetPassword?: boolean;
+}): Promise<{ email: string; userId: string; created: boolean; promoted: boolean }> {
+  const email = opts.email.toLowerCase().trim();
+  const name = opts.name?.trim() || email.split("@")[0] || null;
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing?.deletedAt) {
+    throw httpError(403, "Account is disabled", "ACCOUNT_DISABLED");
+  }
+
+  const created = !existing;
+  const promoted = Boolean(existing && existing.role === "CUSTOMER");
+  const needsPassword =
+    Boolean(opts.resetPassword) || !existing?.passwordHash;
+
+  const passwordHash = needsPassword
+    ? await hashComplaintDefaultPassword()
+    : existing?.passwordHash ?? (await hashComplaintDefaultPassword());
+
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          role: nextAdminRole(existing.role),
+          isVerified: true,
+          ...(name && !existing.name ? { name } : {}),
+          ...(needsPassword ? { passwordHash } : {})
+        }
+      })
+    : await prisma.user.create({
+        data: {
+          email,
+          name,
+          passwordHash,
+          isVerified: true,
+          role: "ADMIN"
+        }
+      });
+
+  const syncedHash = user.passwordHash ?? passwordHash;
+  await prisma.complaintWhitelist.upsert({
+    where: { email },
+    create: {
+      email,
+      name: user.name,
+      role: "ADMIN",
+      isActive: true,
+      passwordHash: syncedHash
+    },
+    update: {
+      isActive: true,
+      role: "ADMIN",
+      passwordHash: syncedHash,
+      ...(user.name ? { name: user.name } : {})
+    }
+  });
+
+  logger.info("store_admin_provisioned", {
+    email,
+    created,
+    promoted,
+    resetPassword: Boolean(opts.resetPassword)
+  });
+
+  return { email, userId: user.id, created, promoted };
+}
+
+/** Idempotent boot hook — never overwrites an existing password. */
+export async function ensureCanonicalStoreAdmins(): Promise<void> {
+  if (!process.env.DATABASE_URL) return;
+  if (process.env.NODE_ENV === "test") return;
+
+  for (const admin of CANONICAL_STORE_ADMINS) {
+    try {
+      await provisionStoreAdmin({
+        email: admin.email,
+        name: admin.name,
+        resetPassword: false
+      });
+    } catch (err) {
+      logger.error("canonical_store_admin_provision_failed", {
+        email: admin.email,
+        err
+      });
+    }
+  }
 }
