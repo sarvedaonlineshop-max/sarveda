@@ -28,6 +28,7 @@
     "seed:corporate": "tsx scripts/seed-corporate-wellness.ts",
     "seed:whitelist-passwords": "prisma generate && tsx scripts/seed-whitelist-passwords.ts",
     "provision:admin": "tsx scripts/provision-admin-user.ts",
+    "upload:home-about-video": "tsx scripts/upload-home-about-video.ts",
     "seed:pickup-locations": "tsx scripts/seed-pickup-locations.ts",
     "import:content": "npm run import:courses && npm run import:events && npm run import:pages",
     "import:all": "npm run import:content && npm run import:vaidya && npm run import:mentors && npm run import:retreats && npm run import:testimonials && npm run import:offers && npm run import:posts",

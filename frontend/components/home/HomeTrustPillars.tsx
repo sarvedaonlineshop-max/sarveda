@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import { HomeAboutVideo } from "./HomeAboutVideo";
+
 /**
  * Homepage section 2 — “Thoughtfully Curated. Globally Trusted.”
  * Left: copy. Right (desktop): 2×2 trust icons. Mobile: icons in one row under copy.
@@ -34,7 +36,7 @@ export function HomeTrustPillars() {
       className="overflow-hidden border-b border-brand-cream-dark/50 bg-[#f9f6f0]"
       aria-labelledby="home-curated-heading"
     >
-      <div className="page-shell flex flex-col gap-6 pb-8 pt-3 sm:pb-10 sm:pt-4 md:pb-12 md:pt-6 lg:grid lg:grid-cols-2 lg:items-center lg:gap-10 lg:pb-14 lg:pt-8 xl:gap-14">
+      <div className="page-shell flex flex-col gap-6 pb-8 pt-3 sm:pb-10 sm:pt-4 md:pb-12 md:pt-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 lg:pb-14 lg:pt-8 xl:gap-14">
         <div className="min-w-0 w-full lg:pr-2 xl:pr-4">
           <h2
             id="home-curated-heading"
@@ -53,6 +55,8 @@ export function HomeTrustPillars() {
             growing learning community offering courses, workshops, and experiences in sound,
             yoga, and meditation.
           </p>
+
+          <HomeAboutVideo />
         </div>
 
         <ul className="grid grid-cols-4 gap-x-2 gap-y-0 sm:gap-x-3 md:gap-x-4 lg:grid-cols-2 lg:gap-x-8 lg:gap-y-8 xl:gap-x-10 xl:gap-y-10">
