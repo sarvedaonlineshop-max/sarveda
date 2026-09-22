@@ -222,7 +222,7 @@ export async function provisionStoreAdmin(opts: {
   return { email, userId: user.id, created, promoted };
 }
 
-/** Idempotent boot hook — never overwrites an existing password. */
+/** Idempotent boot hook. Only overwrites a password when the canonical row sets resetPassword. */
 export async function ensureCanonicalStoreAdmins(): Promise<void> {
   if (!process.env.DATABASE_URL) return;
   if (process.env.NODE_ENV === "test") return;
@@ -232,7 +232,7 @@ export async function ensureCanonicalStoreAdmins(): Promise<void> {
       await provisionStoreAdmin({
         email: admin.email,
         name: admin.name,
-        resetPassword: false
+        resetPassword: Boolean(admin.resetPassword)
       });
     } catch (err) {
       logger.error("canonical_store_admin_provision_failed", {
