@@ -16,6 +16,7 @@ import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoader";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
+import { CHAT_LEAD_BLUE } from "@/lib/chat-lead-history";
 
 const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
@@ -579,10 +580,19 @@ export function AdminChatsInbox() {
                           <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#25d366]" />
                         ) : null}
                       </div>
-                      <p className="mt-0.5 truncate text-[10px] uppercase tracking-wide text-stone-400">
-                        {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
-                        {thread.orderNumber ? ` · ${thread.orderNumber}` : ""}
-                      </p>
+                      {thread.lastAdminName ? (
+                        <p
+                          className="mt-0.5 truncate text-[13px] font-medium leading-snug md:text-[12px]"
+                          style={{ color: CHAT_LEAD_BLUE }}
+                        >
+                          {thread.lastAdminName}
+                        </p>
+                      ) : (
+                        <p className="mt-0.5 truncate text-[10px] uppercase tracking-wide text-stone-400">
+                          {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
+                          {thread.orderNumber ? ` · ${thread.orderNumber}` : ""}
+                        </p>
+                      )}
                     </div>
                   </Link>
                 </li>

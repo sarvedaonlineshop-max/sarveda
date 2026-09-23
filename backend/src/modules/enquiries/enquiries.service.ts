@@ -29,6 +29,7 @@ import { CARE_INBOX_EMAIL, ENQUIRY_MEDIA_S3_PREFIX, MAX_ATTACHMENT_BYTES, MAX_AT
 import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
 import { publishEnquiryEvent } from "./enquiry-realtime";
 import { antiSpamHttpError, assertEnquiryMessageLooksHuman } from "./enquiry-anti-spam";
+import { WA_BOT_AUTHOR } from "../whatsapp/whatsapp-bot.service";
 import {
   outreachCustomerFirstName,
   outreachMediaKind,
@@ -434,7 +435,58 @@ export async function listEnquiryThreads(params: {
     prisma.enquiryThread.count({ where }),
     prisma.enquiryThread.count({ where: { unreadByAdmin: true } })
   ]);
-  return { items, total, page, limit, unreadCount };
+
+  const threadIds = items.map((t) => t.id);
+  const latestAdminAt =
+    threadIds.length === 0
+      ? []
+      : await prisma.enquiryMessage.groupBy({
+          by: ["threadId"],
+          where: {
+            threadId: { in: threadIds },
+            authorType: "ADMIN",
+            authorName: { not: WA_BOT_AUTHOR }
+          },
+          _max: { createdAt: true }
+        });
+  const lastAdminMessages =
+    latestAdminAt.length === 0
+      ? []
+      : await prisma.enquiryMessage.findMany({
+          where: {
+            authorType: "ADMIN",
+            OR: latestAdminAt.map((row) => ({
+              threadId: row.threadId,
+              createdAt: row._max.createdAt ?? undefined
+            }))
+          },
+          select: {
+            threadId: true,
+            authorName: true,
+            adminUser: { select: { name: true, email: true } }
+          }
+        });
+  const lastAdminByThread = new Map<string, string>();
+  for (const row of lastAdminMessages) {
+    if (lastAdminByThread.has(row.threadId)) continue;
+    const name =
+      row.adminUser?.name?.trim() ||
+      row.authorName?.trim() ||
+      row.adminUser?.email?.split("@")[0] ||
+      "";
+    if (name && name !== WA_BOT_AUTHOR) lastAdminByThread.set(row.threadId, name);
+  }
+
+  return {
+    items: items.map((t) => ({
+      ...t,
+      lastAdminName: lastAdminByThread.get(t.id) ?? null
+    })),
+    total,
+    page,
+    limit,
+    unreadCount
+  };
 }
 
 export async function getEnquiryUnreadCount(): Promise<number> {
