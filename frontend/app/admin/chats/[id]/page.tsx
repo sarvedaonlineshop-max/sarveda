@@ -1161,6 +1161,17 @@ function AdminChatDetailInner() {
     }
   }
 
+  function resizeComposerField() {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "40px";
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+  }
+
+  useLayoutEffect(() => {
+    resizeComposerField();
+  }, [reply]);
+
   function handleReplyChange(value: string) {
     setReply(value);
     const now = Date.now();
@@ -1534,12 +1545,6 @@ function AdminChatDetailInner() {
         className="admin-chat-thread-composer relative shrink-0 px-2 py-2 md:border-t md:border-[#2c2420]/20 md:px-3"
         style={{ background: "#efe8dc" }}
       >
-        {windowClosed ? (
-          <p className="mb-2 px-1 text-center text-[12px] leading-snug text-stone-500">
-            The 24-hour WhatsApp window has closed. Type a follow-up and send — we will use this
-            customer&apos;s number and the outreach template. Free chat unlocks after they reply.
-          </p>
-        ) : null}
         {Object.keys(typingAdmins).length > 0 ? (
           <div className="mb-1.5 text-xs font-medium text-green-700">
             {Object.values(typingAdmins).join(", ")} typing…
@@ -1640,14 +1645,8 @@ function AdminChatDetailInner() {
             onBlur={() => void setAdminEnquiryTyping(id, false).catch(() => undefined)}
             rows={1}
             disabled={sending}
-            placeholder={
-              windowClosed
-                ? "Write a follow-up to reopen this chat…"
-                : files.length
-                  ? "Add a caption (optional)…"
-                  : "Type a message"
-            }
-            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-full border border-[#2c2420]/35 bg-white px-4 py-2.5 text-sm leading-5 text-stone-800 outline-none focus:border-[#25d366] disabled:opacity-60"
+            placeholder={files.length ? "Add a caption (optional)…" : "enter message"}
+            className="max-h-24 min-h-[40px] flex-1 resize-none overflow-y-auto rounded-full border border-[#2c2420]/35 bg-white px-4 py-2 text-sm leading-5 text-stone-800 outline-none focus:border-[#25d366] disabled:opacity-60"
           />
 
           <button

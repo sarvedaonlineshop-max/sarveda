@@ -170,10 +170,15 @@
     position: relative !important;
     z-index: 25 !important;
     flex-shrink: 0 !important;
-    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
     background: #efe8dc !important;
     border-top: none !important;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.14) !important;
+  }
+  /* Keep home-indicator padding only when the keyboard is closed. */
+  [data-admin-path^="/admin/chats/"] .admin-chat-thread-composer:not(:focus-within) {
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
   }
   [data-admin-path^="/admin/chats/"] .admin-chat-thread-messages {
     flex: 1 1 auto !important;
