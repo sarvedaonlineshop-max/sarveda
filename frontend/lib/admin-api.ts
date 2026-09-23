@@ -2979,6 +2979,7 @@ export type EnquiryThreadListItem = {
   unreadByAdmin: boolean;
   lastMessageAt: string;
   createdAt: string;
+  lastAdminName?: string | null;
   messages: Array<{ body: string; authorType: string; createdAt: string }>;
 };
 

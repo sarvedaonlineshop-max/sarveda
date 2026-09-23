@@ -54,6 +54,10 @@ import {
 } from "@/components/admin/AdminChatsInbox";
 import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
 import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
+import {
+  buildChatLeadHistory,
+  formatLeadWhen
+} from "@/lib/chat-lead-history";
 
 /** Broad accept — strict MIME-only lists silently drop HEIC / odd desktop picks. */
 const CHAT_FILE_ACCEPT =
@@ -908,6 +912,7 @@ function AdminChatDetailInner() {
   const [deleteNotifyCustomer, setDeleteNotifyCustomer] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [leadHistoryOpen, setLeadHistoryOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1238,6 +1243,7 @@ function AdminChatDetailInner() {
     thread.customerName?.trim() || thread.customerEmail?.trim() || "Customer";
   const initial = (displayName[0] || "?").toUpperCase();
   const sourceLabel = ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source;
+  const leadHistory = buildChatLeadHistory(thread.messages);
 
   const detailsModal =
     detailsOpen && typeof document !== "undefined"
@@ -1313,9 +1319,64 @@ function AdminChatDetailInner() {
         )
       : null;
 
+  const leadHistoryModal =
+    leadHistoryOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[230] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lead-history-title"
+            onClick={(ev) => {
+              if (ev.target === ev.currentTarget) setLeadHistoryOpen(false);
+            }}
+          >
+            <div className="max-h-[85dvh] w-full overflow-y-auto rounded-t-2xl bg-[#f7f3eb] shadow-xl sm:max-w-md sm:rounded-2xl">
+              <div className="sticky top-0 flex items-center justify-between border-b border-[#e8e2d9] bg-[#f7f3eb] px-4 py-3">
+                <h2 id="lead-history-title" className="text-[17px] font-semibold text-[#1c352a]">
+                  Lead history
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setLeadHistoryOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-black/5"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {leadHistory.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-stone-500">
+                  No admin has replied on this chat yet.
+                </p>
+              ) : (
+                <ul className="divide-y divide-[#e8e2d9] px-2 pb-6">
+                  {leadHistory.map((row) => (
+                    <li key={row.key} className="flex items-start justify-between gap-3 px-3 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold text-[#1c352a]">{row.name}</p>
+                        <p className="mt-0.5 text-[12px] text-stone-500">
+                          First {formatLeadWhen(row.firstAt)}
+                          {row.firstAt !== row.lastAt ? ` · Last ${formatLeadWhen(row.lastAt)}` : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[12px] text-stone-400">
+                        {row.count} {row.count === 1 ? "reply" : "replies"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div className="admin-chat-thread-root relative flex h-full min-h-0 flex-col bg-[#efe8dc]">
       {detailsModal}
+      {leadHistoryModal}
       {viewer ? (
         <MediaViewerOverlay
           viewer={viewer}
@@ -1410,6 +1471,17 @@ function AdminChatDetailInner() {
               >
                 View details
               </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setLeadHistoryOpen(true);
+                }}
+                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
+              >
+                Lead history
+              </button>
               {/* Mark closed temporarily hidden */}
             </div>
           ) : null}
@@ -1470,6 +1542,13 @@ function AdminChatDetailInner() {
           </p>
         </div>
         <ChatFollowUpControls threadId={thread.id} lightHeader />
+        <button
+          type="button"
+          onClick={() => setLeadHistoryOpen(true)}
+          className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/10"
+        >
+          Lead history
+        </button>
         {/* Mark closed temporarily hidden */}
       </div>
 
