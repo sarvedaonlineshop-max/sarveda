@@ -174,6 +174,52 @@ type ExotelMsg = {
   data?: { sid?: string };
 };
 
+export type WhatsAppTemplateHeader =
+  | { type: "image"; link: string }
+  | { type: "video"; link: string }
+  | { type: "document"; link: string; filename?: string };
+
+export function buildWhatsAppTemplateComponents(
+  bodyParams: TemplateParams,
+  header?: WhatsAppTemplateHeader | null
+): Array<Record<string, unknown>> {
+  const components: Array<Record<string, unknown>> = [];
+  if (header?.type === "image") {
+    components.push({
+      type: "header",
+      parameters: [{ type: "image", image: { link: header.link } }]
+    });
+  } else if (header?.type === "video") {
+    components.push({
+      type: "header",
+      parameters: [{ type: "video", video: { link: header.link } }]
+    });
+  } else if (header?.type === "document") {
+    components.push({
+      type: "header",
+      parameters: [
+        {
+          type: "document",
+          document: {
+            link: header.link,
+            filename: (header.filename || "file").slice(0, 240)
+          }
+        }
+      ]
+    });
+  }
+  if (bodyParams.length > 0) {
+    components.push({
+      type: "body",
+      parameters: bodyParams.map((text) => ({
+        type: "text",
+        text: sanitizeWhatsAppTemplateText(String(text ?? ""))
+      }))
+    });
+  }
+  return components;
+}
+
 /**
  * Send an approved WhatsApp template (works outside the 24h session window).
  * Returns the provider message sid when Exotel returns one.
@@ -182,7 +228,8 @@ export async function sendWhatsAppNamedTemplate(
   toE164: string,
   templateName: string,
   bodyParams: TemplateParams = [],
-  languageCode?: string
+  languageCode?: string,
+  header?: WhatsAppTemplateHeader | null
 ): Promise<string | null> {
   if (!isExotelConfigured()) {
     throw new Error("WhatsApp is not configured on the server (Exotel env missing).");
@@ -192,6 +239,8 @@ export async function sendWhatsAppNamedTemplate(
     languageCode?.trim() ||
     process.env.EXOTEL_WHATSAPP_LANG?.trim() ||
     "en";
+
+  const components = buildWhatsAppTemplateComponents(bodyParams, header);
 
   const payload = {
     whatsapp: {
@@ -205,19 +254,7 @@ export async function sendWhatsAppNamedTemplate(
             template: {
               name: templateName,
               language: { code: lang, policy: "deterministic" },
-              ...(bodyParams.length > 0
-                ? {
-                    components: [
-                      {
-                        type: "body",
-                        parameters: bodyParams.map((text) => ({
-                          type: "text",
-                          text: sanitizeWhatsAppTemplateText(String(text ?? ""))
-                        }))
-                      }
-                    ]
-                  }
-                : {})
+              ...(components.length > 0 ? { components } : {})
             }
           }
         }

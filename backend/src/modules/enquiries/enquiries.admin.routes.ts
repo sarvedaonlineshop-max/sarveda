@@ -336,7 +336,8 @@ router.post(
         message.includes("too large for WhatsApp") ||
         message.includes("24-hour") ||
         message.includes("no customer number") ||
-        message.includes("Message is required")
+        message.includes("Message is required") ||
+        (message.includes("approved") && message.includes("media header"))
       ) {
         res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
         return;

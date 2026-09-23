@@ -10,7 +10,11 @@ import { prisma } from "../../config/db";
 import { getPublicMediaUrl, presignPutUploadUrl, uploadAsset } from "../../config/s3";
 import { logger } from "../../config/logger";
 import { sendMail } from "../notifications/email";
-import { toWhatsAppE164, sendWhatsAppNamedTemplate } from "../notifications/whatsapp";
+import {
+  toWhatsAppE164,
+  sendWhatsAppNamedTemplate,
+  type WhatsAppTemplateHeader
+} from "../notifications/whatsapp";
 import {
   sendWhatsAppSessionMedia,
   sendWhatsAppSessionText,
@@ -25,7 +29,11 @@ import { CARE_INBOX_EMAIL, ENQUIRY_MEDIA_S3_PREFIX, MAX_ATTACHMENT_BYTES, MAX_AT
 import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
 import { publishEnquiryEvent } from "./enquiry-realtime";
 import { antiSpamHttpError, assertEnquiryMessageLooksHuman } from "./enquiry-anti-spam";
-import { outreachCustomerFirstName } from "./whatsapp-outreach";
+import {
+  outreachCustomerFirstName,
+  outreachMediaKind,
+  outreachMediaTemplateName
+} from "./whatsapp-outreach";
 
 export { outreachCustomerFirstName } from "./whatsapp-outreach";
 
@@ -476,18 +484,33 @@ type OutreachThread = {
  * Send the approved outreach template on an existing WhatsApp thread.
  * Used for brand-new numbers (via start) and for established chats after the 24h window.
  */
+function rewriteOutreachTemplateError(err: unknown, templateName: string): Error {
+  const raw = err instanceof Error ? err.message : String(err);
+  if (
+    /template/i.test(raw) &&
+    /not (found|exist|approved)|invalid|132000|132001|does not exist|unknown/i.test(raw)
+  ) {
+    return new Error(
+      `WhatsApp needs an approved “${templateName}” template with a matching media header to send files after 24 hours. Create it in Meta ({{1}} name, {{2}} message), then retry.`
+    );
+  }
+  return err instanceof Error ? err : new Error(raw);
+}
+
 async function sendAdminOutreachOnThread(opts: {
   thread: OutreachThread;
   admin: { id: string; email: string; name: string | null };
   message: string;
   customerNameOverride?: string | null;
+  attachments?: PreUploadedEnquiryAttachment[];
 }) {
   const to = opts.thread.waPhone || toWhatsAppE164(opts.thread.customerPhone);
   if (!to) {
     throw new Error("This WhatsApp thread has no customer number.");
   }
+  const files = opts.attachments ?? [];
   const trimmedMessage = opts.message.trim();
-  if (!trimmedMessage) {
+  if (!trimmedMessage && files.length === 0) {
     throw new Error("Message is required.");
   }
 
@@ -497,12 +520,66 @@ async function sendAdminOutreachOnThread(opts: {
     opts.customerNameOverride || opts.thread.customerName,
     to
   );
-  const templateName =
-    process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
   const nameParam = outreachName.slice(0, 60);
-  const messageParam = trimmedMessage.slice(0, 1024);
-  const sid = await sendWhatsAppNamedTemplate(to, templateName, [nameParam, messageParam]);
-  const bodyPreview = `Namaste ${nameParam},\n\n${messageParam}`;
+  const defaultCaption = "Please see the attached file.";
+  let sid: string | null = null;
+  let bodyPreview = "";
+  let templateName =
+    process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+
+  if (files.length === 0) {
+    const messageParam = trimmedMessage.slice(0, 1024);
+    sid = await sendWhatsAppNamedTemplate(to, templateName, [nameParam, messageParam]);
+    bodyPreview = `Namaste ${nameParam},\n\n${messageParam}`;
+  } else {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]!;
+      const kind = outreachMediaKind(file.mimeType, file.fileName);
+      if (kind === "video") {
+        const mime = file.mimeType.toLowerCase();
+        const name = file.fileName.toLowerCase();
+        const okMp4 =
+          mime === "video/mp4" ||
+          mime === "video/3gpp" ||
+          name.endsWith(".mp4") ||
+          name.endsWith(".3gp");
+        if (!okMp4) {
+          throw new Error(
+            `WhatsApp only accepts MP4 video (not ${file.fileName}). Export/convert to MP4 (H.264) under 16 MB and try again.`
+          );
+        }
+        if (file.fileSizeBytes > 16 * 1024 * 1024) {
+          throw new Error(
+            `${file.fileName} is too large for WhatsApp video (max 16 MB). Compress it and try again.`
+          );
+        }
+      }
+      templateName = outreachMediaTemplateName(kind);
+      const caption = (i === 0 ? trimmedMessage || defaultCaption : file.fileName || defaultCaption).slice(
+        0,
+        1024
+      );
+      const header: WhatsAppTemplateHeader =
+        kind === "document"
+          ? { type: "document", link: file.s3Url, filename: file.fileName }
+          : { type: kind, link: file.s3Url };
+      try {
+        const mediaSid = await sendWhatsAppNamedTemplate(
+          to,
+          templateName,
+          [nameParam, caption],
+          undefined,
+          header
+        );
+        if (i === 0) {
+          sid = mediaSid;
+          bodyPreview = `Namaste ${nameParam},\n\n${caption}`;
+        }
+      } catch (err) {
+        throw rewriteOutreachTemplateError(err, templateName);
+      }
+    }
+  }
 
   const message = await prisma.enquiryMessage.create({
     data: {
@@ -513,7 +590,16 @@ async function sendAdminOutreachOnThread(opts: {
       authorEmail: opts.admin.email,
       body: bodyPreview,
       waMessageSid: sid,
-      waStatus: "sent"
+      waStatus: "sent",
+      attachments: {
+        create: files.map((u) => ({
+          fileName: u.fileName,
+          mimeType: u.mimeType,
+          fileSizeBytes: u.fileSizeBytes,
+          s3Key: u.s3Key,
+          s3Url: u.s3Url
+        }))
+      }
     },
     include: { attachments: true }
   });
@@ -528,6 +614,7 @@ async function sendAdminOutreachOnThread(opts: {
     waPhone: to,
     templateName,
     sid,
+    attachmentCount: files.length,
     adminId: opts.admin.id
   });
   publishEnquiryEvent({ type: "thread_changed", threadId: opts.thread.id });
@@ -674,15 +761,12 @@ export async function replyToEnquiryThread(
     }
     const last = thread.lastCustomerMessageAt;
     if (!last || Date.now() - last.getTime() > WA_SESSION_WINDOW_MS) {
-      if (attachments.length > 0) {
-        throw new Error(
-          "Attachments cannot be sent after the 24-hour WhatsApp window. Send a text follow-up first — free chat unlocks after they reply."
-        );
-      }
+      const uploaded = await uploadEnquiryFiles(attachments);
       const { message } = await sendAdminOutreachOnThread({
         thread,
         admin,
-        message: trimmed
+        message: trimmed,
+        attachments: uploaded
       });
       return message;
     }
