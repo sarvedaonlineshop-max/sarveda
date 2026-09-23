@@ -1096,10 +1096,7 @@ function AdminChatDetailInner() {
     }
   }
 
-  const windowClosed =
-    thread?.source === "WHATSAPP" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
-  const canSend =
-    Boolean(reply.trim() || (!windowClosed && files.length > 0)) && !sending;
+  const canSend = Boolean(reply.trim() || files.length > 0) && !sending;
 
   async function sendReply() {
     if (!canSend || !id || !thread) return;
@@ -1107,26 +1104,17 @@ function AdminChatDetailInner() {
     setError(null);
     const closedWindow =
       thread.source === "WHATSAPP" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
-    if (closedWindow) {
-      if (files.length > 0) {
-        setError(
-          "Attachments cannot be sent after the 24-hour window. Send a text follow-up first."
-        );
-        setSending(false);
-        return;
-      }
-      if (!reply.trim()) {
-        setError("Write a follow-up message to send the outreach template.");
-        setSending(false);
-        return;
-      }
+    if (closedWindow && !reply.trim() && files.length === 0) {
+      setError("Write a message or attach a file.");
+      setSending(false);
+      return;
     }
-    const hasMedia = !closedWindow && files.length > 0;
+    const hasMedia = files.length > 0;
     setUploadPercent(hasMedia ? 0 : null);
     if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
     void setAdminEnquiryTyping(id, false).catch(() => undefined);
     try {
-      if (closedWindow) {
+      if (closedWindow && !hasMedia) {
         const split = splitPhoneForStartForm(thread.waPhone ?? thread.customerPhone);
         const result = await startAdminWhatsAppChat({
           countryDialCode: split.dial,
@@ -1145,6 +1133,9 @@ function AdminChatDetailInner() {
           files,
           hasMedia ? { onUploadProgress: (pct) => setUploadPercent(pct) } : undefined
         );
+        if (closedWindow) {
+          setBanner("Outreach template sent. Free chat unlocks after they reply.");
+        }
       }
       setReply("");
       setFiles([]);
@@ -1622,15 +1613,13 @@ function AdminChatDetailInner() {
           />
           <button
             type="button"
-            disabled={sending || windowClosed}
+            disabled={sending}
             onClick={() => fileRef.current?.click()}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a] disabled:opacity-40"
             title={
-              windowClosed
-                ? "Attachments unlock after the customer replies"
-                : isWhatsApp
-                  ? "Attach files (videos must be MP4, max 16 MB)"
-                  : "Attach files"
+              isWhatsApp
+                ? "Attach files (videos must be MP4, max 16 MB)"
+                : "Attach files"
             }
             aria-label="Attach files"
           >
