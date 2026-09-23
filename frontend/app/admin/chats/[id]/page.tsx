@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   Download,
   FileText,
-  MessageSquarePlus,
   MoreVertical,
   Paperclip,
   Pencil,
@@ -34,6 +33,7 @@ import {
   patchAdminEnquiryStatus,
   replyAdminEnquiryThread,
   setAdminEnquiryTyping,
+  startAdminWhatsAppChat,
   type EnquiryAttachmentRow,
   type EnquiryMessageRow,
   type EnquiryThreadDetail
@@ -50,7 +50,7 @@ import { useAdminUser } from "@/components/admin/AdminUserContext";
 import { ChatFollowUpControls } from "@/components/admin/ChatFollowUpControls";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
-  openAdminStartWhatsAppChat
+  splitPhoneForStartForm
 } from "@/components/admin/AdminChatsInbox";
 import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
 import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
@@ -1096,23 +1096,56 @@ function AdminChatDetailInner() {
     }
   }
 
-  const canSend = Boolean(reply.trim() || files.length > 0) && !sending;
+  const windowClosed =
+    thread?.source === "WHATSAPP" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
+  const canSend =
+    Boolean(reply.trim() || (!windowClosed && files.length > 0)) && !sending;
 
   async function sendReply() {
-    if (!canSend || !id) return;
+    if (!canSend || !id || !thread) return;
     setSending(true);
     setError(null);
-    const hasMedia = files.length > 0;
+    const closedWindow =
+      thread.source === "WHATSAPP" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
+    if (closedWindow) {
+      if (files.length > 0) {
+        setError(
+          "Attachments cannot be sent after the 24-hour window. Send a text follow-up first."
+        );
+        setSending(false);
+        return;
+      }
+      if (!reply.trim()) {
+        setError("Write a follow-up message to send the outreach template.");
+        setSending(false);
+        return;
+      }
+    }
+    const hasMedia = !closedWindow && files.length > 0;
     setUploadPercent(hasMedia ? 0 : null);
     if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
     void setAdminEnquiryTyping(id, false).catch(() => undefined);
     try {
-      await replyAdminEnquiryThread(
-        id,
-        reply.trim(),
-        files,
-        hasMedia ? { onUploadProgress: (pct) => setUploadPercent(pct) } : undefined
-      );
+      if (closedWindow) {
+        const split = splitPhoneForStartForm(thread.waPhone ?? thread.customerPhone);
+        const result = await startAdminWhatsAppChat({
+          countryDialCode: split.dial,
+          phone: split.national,
+          customerName: thread.customerName || undefined,
+          message: reply.trim()
+        });
+        setBanner(
+          result.warning ||
+            "Outreach template sent. Free chat unlocks after they reply."
+        );
+      } else {
+        await replyAdminEnquiryThread(
+          id,
+          reply.trim(),
+          files,
+          hasMedia ? { onUploadProgress: (pct) => setUploadPercent(pct) } : undefined
+        );
+      }
       setReply("");
       setFiles([]);
       setUploadPercent(null);
@@ -1202,8 +1235,6 @@ function AdminChatDetailInner() {
   const displayName =
     thread.customerName?.trim() || thread.customerEmail?.trim() || "Customer";
   const initial = (displayName[0] || "?").toUpperCase();
-  const sessionOpen = !isWhatsApp || isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
-  const composerLocked = isWhatsApp && !sessionOpen;
   const sourceLabel = ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source;
 
   const detailsModal =
@@ -1503,29 +1534,12 @@ function AdminChatDetailInner() {
         className="admin-chat-thread-composer relative shrink-0 px-2 py-2 md:border-t md:border-[#2c2420]/20 md:px-3"
         style={{ background: "#efe8dc" }}
       >
-        {composerLocked ? (
-          <div className="flex flex-col items-center gap-2 py-3">
-            <p className="max-w-sm text-center text-[12px] leading-snug text-stone-500">
-              The 24-hour WhatsApp window has closed. Free-form replies are blocked until the
-              customer messages again — or send a new outreach template.
-            </p>
-            <button
-              type="button"
-              onClick={() =>
-                openAdminStartWhatsAppChat({
-                  phone: thread.waPhone ?? thread.customerPhone,
-                  customerName: thread.customerName
-                })
-              }
-              className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
-              style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
-            >
-              <MessageSquarePlus size={18} strokeWidth={2.25} />
-              Start new chat
-            </button>
-          </div>
-        ) : (
-          <>
+        {windowClosed ? (
+          <p className="mb-2 px-1 text-center text-[12px] leading-snug text-stone-500">
+            The 24-hour WhatsApp window has closed. Type a follow-up and send — we will use this
+            customer&apos;s number and the outreach template. Free chat unlocks after they reply.
+          </p>
+        ) : null}
         {Object.keys(typingAdmins).length > 0 ? (
           <div className="mb-1.5 text-xs font-medium text-green-700">
             {Object.values(typingAdmins).join(", ")} typing…
@@ -1603,13 +1617,15 @@ function AdminChatDetailInner() {
           />
           <button
             type="button"
-            disabled={sending}
+            disabled={sending || windowClosed}
             onClick={() => fileRef.current?.click()}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a] disabled:opacity-40"
             title={
-              isWhatsApp
-                ? "Attach files (videos must be MP4, max 16 MB)"
-                : "Attach files"
+              windowClosed
+                ? "Attachments unlock after the customer replies"
+                : isWhatsApp
+                  ? "Attach files (videos must be MP4, max 16 MB)"
+                  : "Attach files"
             }
             aria-label="Attach files"
           >
@@ -1624,7 +1640,13 @@ function AdminChatDetailInner() {
             onBlur={() => void setAdminEnquiryTyping(id, false).catch(() => undefined)}
             rows={1}
             disabled={sending}
-            placeholder={files.length ? "Add a caption (optional)…" : "Type a message"}
+            placeholder={
+              windowClosed
+                ? "Write a follow-up to reopen this chat…"
+                : files.length
+                  ? "Add a caption (optional)…"
+                  : "Type a message"
+            }
             className="max-h-28 min-h-[40px] flex-1 resize-none rounded-full border border-[#2c2420]/35 bg-white px-4 py-2.5 text-sm leading-5 text-stone-800 outline-none focus:border-[#25d366] disabled:opacity-60"
           />
 
@@ -1648,8 +1670,6 @@ function AdminChatDetailInner() {
             {error}
           </p>
         ) : null}
-          </>
-        )}
       </div>
     </div>
   );
