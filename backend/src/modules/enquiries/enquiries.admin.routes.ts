@@ -333,7 +333,10 @@ router.post(
       if (
         message.includes("WhatsApp only accepts") ||
         message.includes("WhatsApp cannot deliver") ||
-        message.includes("too large for WhatsApp")
+        message.includes("too large for WhatsApp") ||
+        message.includes("24-hour") ||
+        message.includes("no customer number") ||
+        message.includes("Message is required")
       ) {
         res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
         return;
