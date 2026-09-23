@@ -1642,6 +1642,11 @@ function AdminChatDetailInner() {
             value={reply}
             onChange={(e) => handleReplyChange(e.target.value)}
             onKeyDown={onComposerKeyDown}
+            onFocus={() => {
+              window.scrollTo(0, 0);
+              document.documentElement.scrollTop = 0;
+              document.body.scrollTop = 0;
+            }}
             onBlur={() => void setAdminEnquiryTyping(id, false).catch(() => undefined)}
             rows={1}
             disabled={sending}

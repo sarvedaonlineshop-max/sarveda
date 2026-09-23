@@ -3,10 +3,12 @@
 import { usePathname } from "next/navigation";
 
 import { AdminChatsInbox } from "@/components/admin/AdminChatsInbox";
+import { useAdminChatViewportLock } from "@/components/admin/useAdminChatViewportLock";
 
 export default function AdminChatsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const onThread = Boolean(pathname && /^\/admin\/chats\/[^/]+$/.test(pathname));
+  useAdminChatViewportLock(true);
 
   return (
     <div

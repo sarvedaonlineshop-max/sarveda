@@ -91,9 +91,9 @@
 
   /* Chats — list + thread mobile layout: lock the page so only the list/messages scroll. */
   [data-admin-path^="/admin/chats"] .admin-motion-root > div > div.flex.flex-col.min-h-screen {
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: var(--admin-chat-vvh, 100dvh) !important;
+    min-height: var(--admin-chat-vvh, 100dvh) !important;
+    max-height: var(--admin-chat-vvh, 100dvh) !important;
     overflow: hidden !important;
   }
   [data-admin-path^="/admin/chats"] header {
@@ -160,8 +160,18 @@
     overflow: hidden !important;
     background: #efe8dc !important;
   }
+  [data-admin-path^="/admin/chats/"] .admin-chat-thread-shell {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: var(--admin-chat-vvh, 100dvh) !important;
+    max-height: var(--admin-chat-vvh, 100dvh) !important;
+    z-index: 20 !important;
+  }
   [data-admin-path^="/admin/chats/"] .admin-chat-thread-header {
-    position: relative !important;
+    position: sticky !important;
+    top: 0 !important;
     z-index: 25 !important;
     flex-shrink: 0 !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22) !important;
@@ -322,6 +332,16 @@
     max-width: 100% !important;
   }
 }
+@media (max-width: 767px) {
+  html.admin-chat-vv-lock,
+  html.admin-chat-vv-lock body {
+    overflow: hidden !important;
+    height: var(--admin-chat-vvh, 100dvh) !important;
+    max-height: var(--admin-chat-vvh, 100dvh) !important;
+    overscroll-behavior: none !important;
+  }
+}
+
 [data-admin-path^="/admin/tasks"] .admin-content-enter,
 [data-admin-path^="/admin/profile"] .admin-content-enter {
   display: flex;
