@@ -45,7 +45,7 @@ export function buildChatLeadHistory(
       existing.count += 1;
     }
   }
-  return [...map.values()].sort(
+  return Array.from(map.values()).sort(
     (a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime()
   );
 }
