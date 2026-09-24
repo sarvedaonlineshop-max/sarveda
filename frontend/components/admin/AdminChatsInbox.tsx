@@ -16,7 +16,12 @@ import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoader";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
-import { CHAT_LEAD_BLUE, resolveThreadLeadStatus } from "@/lib/chat-lead-history";
+import {
+  CHAT_LEAD_BLUE,
+  buildAllInboxRowMeta,
+  compareThreadsForAllInbox,
+  resolveThreadLeadStatus
+} from "@/lib/chat-lead-history";
 
 const LEAD_STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
@@ -25,20 +30,6 @@ const LEAD_STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "FOLLOW_UP", label: "Follow-up" },
   { value: "CLOSED", label: "Closed" }
 ];
-
-const LEAD_STATUS_LABELS: Record<string, string> = {
-  NEW: "New",
-  ONGOING: "Ongoing",
-  FOLLOW_UP: "Follow-up",
-  CLOSED: "Closed"
-};
-
-const LEAD_STATUS_COLORS: Record<string, string> = {
-  NEW: "#2563eb",
-  ONGOING: "#d97706",
-  FOLLOW_UP: CHAT_LEAD_BLUE,
-  CLOSED: "#78716c"
-};
 
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
   { dial: "91", label: "India (+91)" },
@@ -204,7 +195,7 @@ export function AdminChatsInbox() {
   const filtered = useMemo(() => {
     const byStatus = leadStatus
       ? items.filter((t) => resolveThreadLeadStatus(t) === leadStatus)
-      : items;
+      : [...items].sort(compareThreadsForAllInbox);
     const needle = q.trim().toLowerCase();
     if (!needle) return byStatus;
     const needleDigits = needle.replace(/\D/g, "");
@@ -566,6 +557,7 @@ export function AdminChatsInbox() {
               const initial = (thread.customerName?.trim()?.[0] || "?").toUpperCase();
               const isWa = thread.source === "WHATSAPP";
               const selected = activeId === thread.id;
+              const rowMeta = buildAllInboxRowMeta(thread);
               return (
                 <li key={thread.id}>
                   <Link
@@ -614,23 +606,26 @@ export function AdminChatsInbox() {
                           <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#25d366]" />
                         ) : null}
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2">
-                        {thread.lastAdminName ? (
+                      <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                        {rowMeta.statusLabel ? (
+                          <span
+                            className="shrink-0 text-[11px] font-semibold uppercase tracking-wide"
+                            style={{ color: rowMeta.statusColor ?? "#78716c" }}
+                          >
+                            {rowMeta.statusLabel}
+                          </span>
+                        ) : null}
+                        {rowMeta.attendingName ? (
                           <p
                             className="min-w-0 truncate text-[13px] font-medium leading-snug md:text-[12px]"
                             style={{ color: CHAT_LEAD_BLUE }}
                           >
-                            {thread.lastAdminName}
+                            {rowMeta.attendingName}
                           </p>
                         ) : null}
-                        {thread.leadStatus ? (
-                          <span
-                            className="shrink-0 text-[11px] font-semibold uppercase tracking-wide"
-                            style={{ color: LEAD_STATUS_COLORS[thread.leadStatus] ?? "#78716c" }}
-                          >
-                            {LEAD_STATUS_LABELS[thread.leadStatus] ?? thread.leadStatus}
-                          </span>
-                        ) : null}
+                        <span className="shrink-0 text-[11px] font-medium text-stone-400">
+                          {rowMeta.sourceLabel}
+                        </span>
                       </div>
                     </div>
                   </Link>
