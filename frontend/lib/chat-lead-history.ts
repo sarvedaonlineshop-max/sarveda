@@ -53,16 +53,19 @@ export type InboxRowMeta = {
   sourceLabel: string;
 };
 
-/** All-tab row: New/Ongoing/Follow-up only, attending if not New, then source. */
-export function buildAllInboxRowMeta(thread: {
-  source: string;
-  status?: string | null;
-  leadStatus?: string | null;
-  lastAdminName?: string | null;
-  hasOpenFollowUp?: boolean | null;
-}): InboxRowMeta {
+/** Inbox row: attending if not New, then source. Status chips only when `showStatus` (All tab). */
+export function buildAllInboxRowMeta(
+  thread: {
+    source: string;
+    status?: string | null;
+    leadStatus?: string | null;
+    lastAdminName?: string | null;
+    hasOpenFollowUp?: boolean | null;
+  },
+  options?: { showStatus?: boolean }
+): InboxRowMeta {
   const status = resolveThreadLeadStatus(thread);
-  const showStatus = status === "NEW" || status === "ONGOING" || status === "FOLLOW_UP";
+  const showStatus = Boolean(options?.showStatus);
   return {
     status,
     statusLabel: showStatus ? LEAD_STATUS_LABELS[status] : null,

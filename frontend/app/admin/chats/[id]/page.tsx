@@ -1442,7 +1442,11 @@ function AdminChatDetailInner() {
         <div className="relative shrink-0" ref={menuRef}>
           <div className="flex items-center gap-0.5">
             <div className="md:hidden">
-              <ChatFollowUpControls threadId={thread.id} lightHeader />
+              <ChatFollowUpControls
+                threadId={thread.id}
+                lightHeader
+                onFollowUpDone={() => void load()}
+              />
             </div>
           <button
             type="button"
@@ -1550,7 +1554,11 @@ function AdminChatDetailInner() {
             </span>
           </p>
         </div>
-        <ChatFollowUpControls threadId={thread.id} lightHeader />
+        <ChatFollowUpControls
+          threadId={thread.id}
+          lightHeader
+          onFollowUpDone={() => void load()}
+        />
         <button
           type="button"
           onClick={() => setLeadHistoryOpen(true)}

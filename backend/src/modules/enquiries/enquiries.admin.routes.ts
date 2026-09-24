@@ -118,6 +118,8 @@ router.patch("/follow-ups/:followUpId/complete", async (req, res, next) => {
       return;
     }
     const row = await completeThreadFollowUp(req.params.followUpId, adminId);
+    // Done means the follow-up work is finished — close the chat (same as Mark closed).
+    await patchEnquiryThreadStatus(row.threadId, "CLOSED");
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);

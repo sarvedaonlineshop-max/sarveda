@@ -8,50 +8,73 @@ import { describe, it } from "node:test";
 import { buildAllInboxRowMeta, compareThreadsForAllInbox } from "./chat-lead-history";
 
 describe("buildAllInboxRowMeta", () => {
-  it("shows New and source, without attending", () => {
-    const meta = buildAllInboxRowMeta({
-      source: "WHATSAPP",
-      status: "OPEN"
-    });
+  it("shows New and source on All, without attending", () => {
+    const meta = buildAllInboxRowMeta(
+      {
+        source: "WHATSAPP",
+        status: "OPEN"
+      },
+      { showStatus: true }
+    );
     assert.equal(meta.status, "NEW");
     assert.equal(meta.statusLabel, "New");
     assert.equal(meta.attendingName, null);
     assert.equal(meta.sourceLabel, "WhatsApp");
   });
 
-  it("shows Ongoing, attending, and source", () => {
-    const meta = buildAllInboxRowMeta({
-      source: "CONTACT",
-      status: "OPEN",
-      lastAdminName: "Sowmya"
-    });
+  it("shows Ongoing, attending, and source on All", () => {
+    const meta = buildAllInboxRowMeta(
+      {
+        source: "CONTACT",
+        status: "OPEN",
+        lastAdminName: "Sowmya"
+      },
+      { showStatus: true }
+    );
     assert.equal(meta.statusLabel, "Ongoing");
     assert.equal(meta.attendingName, "Sowmya");
     assert.equal(meta.sourceLabel, "Contact");
   });
 
-  it("shows Follow-up, attending, and source", () => {
-    const meta = buildAllInboxRowMeta({
-      source: "INSIGHTS",
-      status: "OPEN",
-      lastAdminName: "Prem",
-      hasOpenFollowUp: true
-    });
+  it("shows Follow-up, attending, and source on All", () => {
+    const meta = buildAllInboxRowMeta(
+      {
+        source: "INSIGHTS",
+        status: "OPEN",
+        lastAdminName: "Prem",
+        hasOpenFollowUp: true
+      },
+      { showStatus: true }
+    );
     assert.equal(meta.statusLabel, "Follow-up");
     assert.equal(meta.attendingName, "Prem");
     assert.equal(meta.sourceLabel, "Insights");
   });
 
-  it("omits Closed because that status is understood", () => {
-    const meta = buildAllInboxRowMeta({
-      source: "WHATSAPP",
-      status: "CLOSED",
-      lastAdminName: "Arjun"
-    });
+  it("shows Closed on All with attending and source", () => {
+    const meta = buildAllInboxRowMeta(
+      {
+        source: "WHATSAPP",
+        status: "CLOSED",
+        lastAdminName: "Arjun"
+      },
+      { showStatus: true }
+    );
     assert.equal(meta.status, "CLOSED");
-    assert.equal(meta.statusLabel, null);
+    assert.equal(meta.statusLabel, "Closed");
     assert.equal(meta.attendingName, "Arjun");
     assert.equal(meta.sourceLabel, "WhatsApp");
+  });
+
+  it("omits status on filtered sections because the pill already names it", () => {
+    const meta = buildAllInboxRowMeta({
+      source: "CONTACT",
+      status: "OPEN",
+      lastAdminName: "Sowmya"
+    });
+    assert.equal(meta.statusLabel, null);
+    assert.equal(meta.attendingName, "Sowmya");
+    assert.equal(meta.sourceLabel, "Contact");
   });
 });
 
