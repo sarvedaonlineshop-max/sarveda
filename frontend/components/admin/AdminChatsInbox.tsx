@@ -16,7 +16,7 @@ import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoader";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
-import { CHAT_LEAD_BLUE } from "@/lib/chat-lead-history";
+import { CHAT_LEAD_BLUE, resolveThreadLeadStatus } from "@/lib/chat-lead-history";
 
 const LEAD_STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
@@ -116,6 +116,13 @@ export function AdminChatsInbox() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStatus, setLeadStatus] = useState("");
+  const [leadStatusCounts, setLeadStatusCounts] = useState({
+    ALL: 0,
+    NEW: 0,
+    ONGOING: 0,
+    FOLLOW_UP: 0,
+    CLOSED: 0
+  });
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
 
@@ -145,17 +152,25 @@ export function AdminChatsInbox() {
       const data = await fetchAdminEnquiries({
         page: 1,
         limit: 100,
-        leadStatus: leadStatus || undefined,
         q: debouncedQ || undefined
       });
       setItems(data.items);
       setUnreadCount(data.unreadCount);
+      if (data.leadStatusCounts) {
+        setLeadStatusCounts(data.leadStatusCounts);
+      } else {
+        const next = { ALL: data.items.length, NEW: 0, ONGOING: 0, FOLLOW_UP: 0, CLOSED: 0 };
+        for (const thread of data.items) {
+          next[resolveThreadLeadStatus(thread)] += 1;
+        }
+        setLeadStatusCounts(next);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load chats");
     } finally {
       setLoading(false);
     }
-  }, [leadStatus, debouncedQ]);
+  }, [debouncedQ]);
 
   useEffect(() => {
     void load();
@@ -187,10 +202,13 @@ export function AdminChatsInbox() {
   }, []);
 
   const filtered = useMemo(() => {
+    const byStatus = leadStatus
+      ? items.filter((t) => resolveThreadLeadStatus(t) === leadStatus)
+      : items;
     const needle = q.trim().toLowerCase();
-    if (!needle) return items;
+    if (!needle) return byStatus;
     const needleDigits = needle.replace(/\D/g, "");
-    return items.filter((t) => {
+    return byStatus.filter((t) => {
       const phoneDigits = (t.customerPhone ?? "").replace(/\D/g, "");
       const waDigits = (t.waPhone ?? "").replace(/\D/g, "");
       if (
@@ -214,7 +232,7 @@ export function AdminChatsInbox() {
         .toLowerCase();
       return hay.includes(needle);
     });
-  }, [items, q]);
+  }, [items, q, leadStatus]);
 
   const onListView = pathname === "/admin/chats" || pathname === "/admin/chats/";
 
@@ -500,6 +518,10 @@ export function AdminChatsInbox() {
         <div className="admin-mobile-pill-row flex flex-wrap gap-1.5 py-3.5 md:mt-2.5 md:py-0">
           {LEAD_STATUS_FILTERS.map((f) => {
             const active = leadStatus === f.value;
+            const count =
+              f.value === ""
+                ? leadStatusCounts.ALL
+                : leadStatusCounts[f.value as keyof typeof leadStatusCounts];
             return (
               <button
                 key={f.value || "all"}
@@ -511,7 +533,7 @@ export function AdminChatsInbox() {
                     : "bg-[#f0ebe3] text-stone-600 hover:bg-[#e9e3d8] md:bg-white md:ring-1 md:ring-[#d9d1c4] md:hover:bg-[#faf5ec]"
                 }`}
               >
-                {f.label}
+                {f.label} ({count})
               </button>
             );
           })}

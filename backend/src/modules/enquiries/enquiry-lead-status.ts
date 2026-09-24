@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 export const ENQUIRY_LEAD_STATUSES = ["NEW", "ONGOING", "FOLLOW_UP", "CLOSED"] as const;
 export type EnquiryLeadStatus = (typeof ENQUIRY_LEAD_STATUSES)[number];
 
@@ -19,7 +21,7 @@ export function resolveEnquiryLeadStatus(flags: {
 export function enquiryLeadStatusWhere(
   leadStatus: EnquiryLeadStatus,
   botAuthor: string
-): Record<string, unknown> {
+): Prisma.EnquiryThreadWhereInput {
   const attended = {
     messages: {
       some: {

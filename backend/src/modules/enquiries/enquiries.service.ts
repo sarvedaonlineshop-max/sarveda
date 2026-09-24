@@ -424,29 +424,46 @@ export async function listEnquiryThreads(params: {
           ]
         }
       : {};
-  const where = {
+  const baseWhere = {
     ...(params.unreadOnly ? { unreadByAdmin: true } : {}),
     ...(params.source ? { source: params.source } : {}),
-    ...(params.leadStatus ? enquiryLeadStatusWhere(params.leadStatus, WA_BOT_AUTHOR) : {}),
     ...searchWhere
   };
-  const [items, total, unreadCount] = await Promise.all([
-    prisma.enquiryThread.findMany({
-      where,
-      orderBy: { lastMessageAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { body: true, authorType: true, createdAt: true }
+  const where = {
+    ...baseWhere,
+    ...(params.leadStatus ? enquiryLeadStatusWhere(params.leadStatus, WA_BOT_AUTHOR) : {})
+  };
+  const [items, total, unreadCount, allCount, newCount, ongoingCount, followUpCount, closedCount] =
+    await Promise.all([
+      prisma.enquiryThread.findMany({
+        where,
+        orderBy: { lastMessageAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { body: true, authorType: true, createdAt: true }
+          }
         }
-      }
-    }),
-    prisma.enquiryThread.count({ where }),
-    prisma.enquiryThread.count({ where: { unreadByAdmin: true } })
-  ]);
+      }),
+      prisma.enquiryThread.count({ where }),
+      prisma.enquiryThread.count({ where: { unreadByAdmin: true } }),
+      prisma.enquiryThread.count({ where: baseWhere }),
+      prisma.enquiryThread.count({
+        where: { AND: [baseWhere, enquiryLeadStatusWhere("NEW", WA_BOT_AUTHOR)] }
+      }),
+      prisma.enquiryThread.count({
+        where: { AND: [baseWhere, enquiryLeadStatusWhere("ONGOING", WA_BOT_AUTHOR)] }
+      }),
+      prisma.enquiryThread.count({
+        where: { AND: [baseWhere, enquiryLeadStatusWhere("FOLLOW_UP", WA_BOT_AUTHOR)] }
+      }),
+      prisma.enquiryThread.count({
+        where: { AND: [baseWhere, enquiryLeadStatusWhere("CLOSED", WA_BOT_AUTHOR)] }
+      })
+    ]);
 
   const threadIds = items.map((t) => t.id);
   const latestAdminAt =
@@ -503,6 +520,7 @@ export async function listEnquiryThreads(params: {
     items: items.map((t) => ({
       ...t,
       lastAdminName: lastAdminByThread.get(t.id) ?? null,
+      hasOpenFollowUp: openFollowUpThreads.has(t.id),
       leadStatus: resolveEnquiryLeadStatus({
         threadStatus: t.status,
         hasHumanAdmin: lastAdminByThread.has(t.id),
@@ -512,7 +530,14 @@ export async function listEnquiryThreads(params: {
     total,
     page,
     limit,
-    unreadCount
+    unreadCount,
+    leadStatusCounts: {
+      ALL: allCount,
+      NEW: newCount,
+      ONGOING: ongoingCount,
+      FOLLOW_UP: followUpCount,
+      CLOSED: closedCount
+    }
   };
 }
 

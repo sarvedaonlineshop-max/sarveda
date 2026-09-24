@@ -1,5 +1,27 @@
 export const CHAT_LEAD_BLUE = "#53bdeb";
 
+export type ChatLeadStatus = "NEW" | "ONGOING" | "FOLLOW_UP" | "CLOSED";
+
+export function resolveThreadLeadStatus(thread: {
+  status?: string | null;
+  leadStatus?: string | null;
+  lastAdminName?: string | null;
+  hasOpenFollowUp?: boolean | null;
+}): ChatLeadStatus {
+  if (
+    thread.leadStatus === "NEW" ||
+    thread.leadStatus === "ONGOING" ||
+    thread.leadStatus === "FOLLOW_UP" ||
+    thread.leadStatus === "CLOSED"
+  ) {
+    return thread.leadStatus;
+  }
+  if (thread.status === "CLOSED") return "CLOSED";
+  if (thread.hasOpenFollowUp) return "FOLLOW_UP";
+  if (thread.lastAdminName) return "ONGOING";
+  return "NEW";
+}
+
 const BOT_AUTHOR = "Sarveda Assistant";
 
 export type ChatLeadHistoryRow = {
