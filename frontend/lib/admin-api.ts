@@ -2980,6 +2980,7 @@ export type EnquiryThreadListItem = {
   lastMessageAt: string;
   createdAt: string;
   lastAdminName?: string | null;
+  hasOpenFollowUp?: boolean;
   leadStatus?: "NEW" | "ONGOING" | "FOLLOW_UP" | "CLOSED";
   messages: Array<{ body: string; authorType: string; createdAt: string }>;
 };
@@ -3041,6 +3042,13 @@ export function fetchAdminEnquiries(params?: {
     page: number;
     limit: number;
     unreadCount: number;
+    leadStatusCounts?: {
+      ALL: number;
+      NEW: number;
+      ONGOING: number;
+      FOLLOW_UP: number;
+      CLOSED: number;
+    };
   }>(`/api/admin/enquiries${qs ? `?${qs}` : ""}`);
 }
 
