@@ -141,6 +141,25 @@ export async function createThreadFollowUp(input: {
   return row;
 }
 
+/** Close every open follow-up on a thread (customer replied, or the chat was marked closed). */
+export async function completeOpenFollowUpsForThread(
+  threadId: string,
+  reason: "customer_reply" | "thread_closed"
+) {
+  const result = await prisma.enquiryFollowUp.updateMany({
+    where: { threadId, status: "OPEN" },
+    data: { status: "CLOSED", completedAt: new Date() }
+  });
+  if (result.count > 0) {
+    logger.info("enquiry_follow_ups_auto_completed", {
+      threadId,
+      reason,
+      count: result.count
+    });
+  }
+  return result.count;
+}
+
 export async function completeThreadFollowUp(followUpId: string, completedByAdminId: string) {
   const existing = await prisma.enquiryFollowUp.findUnique({
     where: { id: followUpId },

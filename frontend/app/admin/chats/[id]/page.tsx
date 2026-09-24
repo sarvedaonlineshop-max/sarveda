@@ -1482,7 +1482,16 @@ function AdminChatDetailInner() {
               >
                 Lead history
               </button>
-              {/* Mark closed temporarily hidden */}
+              {isOpen ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => void toggleStatus()}
+                  className="block w-full px-4 py-3 text-left text-[15px] text-red-700 hover:bg-stone-100"
+                >
+                  Mark closed
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -1549,7 +1558,15 @@ function AdminChatDetailInner() {
         >
           Lead history
         </button>
-        {/* Mark closed temporarily hidden */}
+        {isOpen ? (
+          <button
+            type="button"
+            onClick={() => void toggleStatus()}
+            className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#f8d0c8] hover:bg-white/10"
+          >
+            Mark closed
+          </button>
+        ) : null}
       </div>
 
       {banner ? (
