@@ -17,6 +17,7 @@ import {
   getEnquiryThread,
   getEnquiryUnreadCount,
   listEnquiryThreads,
+  isEnquiryLeadStatus,
   patchEnquiryThreadStatus,
   replyToEnquiryThread,
   deleteAdminEnquiryMessage,
@@ -254,11 +255,15 @@ router.get("/", async (req, res, next) => {
     const allowed = new Set(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS", "WHATSAPP"]);
     const source = rawSource && allowed.has(rawSource) ? rawSource : undefined;
     const q = typeof req.query.q === "string" ? req.query.q : undefined;
+    const rawLead =
+      typeof req.query.leadStatus === "string" ? req.query.leadStatus.trim().toUpperCase() : "";
+    const leadStatus = isEnquiryLeadStatus(rawLead) ? rawLead : undefined;
     const data = await listEnquiryThreads({
       page,
       limit,
       unreadOnly,
       source: source as Parameters<typeof listEnquiryThreads>[0]["source"],
+      leadStatus,
       q
     });
     res.json({ success: true, data });

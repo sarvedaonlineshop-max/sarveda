@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useAdminUser } from "@/components/admin/AdminUserContext";
+import { ADMIN_CHATS_REFRESH_EVENT } from "@/components/admin/AdminChatsInbox";
 import {
   completeAdminEnquiryFollowUp,
   createAdminEnquiryFollowUp,
@@ -152,6 +153,7 @@ export function ChatFollowUpControls({ threadId, lightHeader = false }: Props) {
         dueAt: duePreview.toISOString(),
         assignedAdminId
       });
+      window.dispatchEvent(new Event(ADMIN_CHATS_REFRESH_EVENT));
       setNotes("");
       setMode(null);
     } catch (e) {
@@ -166,6 +168,7 @@ export function ChatFollowUpControls({ threadId, lightHeader = false }: Props) {
     setError(null);
     try {
       await completeAdminEnquiryFollowUp(id);
+      window.dispatchEvent(new Event(ADMIN_CHATS_REFRESH_EVENT));
       await loadHistory();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not mark done");

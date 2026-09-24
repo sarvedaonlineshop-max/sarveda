@@ -18,15 +18,27 @@ import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subject
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 import { CHAT_LEAD_BLUE } from "@/lib/chat-lead-history";
 
-const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
+const LEAD_STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
-  { value: "WHATSAPP", label: "WhatsApp" },
-  { value: "CONTACT", label: "Contact" },
-  { value: "CORPORATE", label: "Corporate" },
-  { value: "COURSE", label: "Course" },
-  { value: "EVENT", label: "Event" },
-  { value: "INSIGHTS", label: "Insights" }
+  { value: "NEW", label: "New" },
+  { value: "ONGOING", label: "Ongoing" },
+  { value: "FOLLOW_UP", label: "Follow-up" },
+  { value: "CLOSED", label: "Closed" }
 ];
+
+const LEAD_STATUS_LABELS: Record<string, string> = {
+  NEW: "New",
+  ONGOING: "Ongoing",
+  FOLLOW_UP: "Follow-up",
+  CLOSED: "Closed"
+};
+
+const LEAD_STATUS_COLORS: Record<string, string> = {
+  NEW: "#2563eb",
+  ONGOING: "#d97706",
+  FOLLOW_UP: CHAT_LEAD_BLUE,
+  CLOSED: "#78716c"
+};
 
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
   { dial: "91", label: "India (+91)" },
@@ -103,7 +115,7 @@ export function AdminChatsInbox() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState("");
+  const [leadStatus, setLeadStatus] = useState("");
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
 
@@ -133,7 +145,7 @@ export function AdminChatsInbox() {
       const data = await fetchAdminEnquiries({
         page: 1,
         limit: 100,
-        source: source || undefined,
+        leadStatus: leadStatus || undefined,
         q: debouncedQ || undefined
       });
       setItems(data.items);
@@ -143,7 +155,7 @@ export function AdminChatsInbox() {
     } finally {
       setLoading(false);
     }
-  }, [source, debouncedQ]);
+  }, [leadStatus, debouncedQ]);
 
   useEffect(() => {
     void load();
@@ -486,13 +498,13 @@ export function AdminChatsInbox() {
         </div>
 
         <div className="admin-mobile-pill-row flex flex-wrap gap-1.5 py-3.5 md:mt-2.5 md:py-0">
-          {SOURCE_FILTERS.map((f) => {
-            const active = source === f.value;
+          {LEAD_STATUS_FILTERS.map((f) => {
+            const active = leadStatus === f.value;
             return (
               <button
                 key={f.value || "all"}
                 type="button"
-                onClick={() => setSource(f.value)}
+                onClick={() => setLeadStatus(f.value)}
                 className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
                   active
                     ? "bg-[#3d8b4f] text-white shadow-[0_1px_2px_rgba(28,53,42,0.18)]"
@@ -580,19 +592,24 @@ export function AdminChatsInbox() {
                           <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#25d366]" />
                         ) : null}
                       </div>
-                      {thread.lastAdminName ? (
-                        <p
-                          className="mt-0.5 truncate text-[13px] font-medium leading-snug md:text-[12px]"
-                          style={{ color: CHAT_LEAD_BLUE }}
-                        >
-                          {thread.lastAdminName}
-                        </p>
-                      ) : (
-                        <p className="mt-0.5 truncate text-[10px] uppercase tracking-wide text-stone-400">
-                          {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
-                          {thread.orderNumber ? ` · ${thread.orderNumber}` : ""}
-                        </p>
-                      )}
+                      <div className="mt-0.5 flex items-center gap-2">
+                        {thread.lastAdminName ? (
+                          <p
+                            className="min-w-0 truncate text-[13px] font-medium leading-snug md:text-[12px]"
+                            style={{ color: CHAT_LEAD_BLUE }}
+                          >
+                            {thread.lastAdminName}
+                          </p>
+                        ) : null}
+                        {thread.leadStatus ? (
+                          <span
+                            className="shrink-0 text-[11px] font-semibold uppercase tracking-wide"
+                            style={{ color: LEAD_STATUS_COLORS[thread.leadStatus] ?? "#78716c" }}
+                          >
+                            {LEAD_STATUS_LABELS[thread.leadStatus] ?? thread.leadStatus}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </Link>
                 </li>

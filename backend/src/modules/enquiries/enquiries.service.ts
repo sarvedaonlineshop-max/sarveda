@@ -30,6 +30,15 @@ import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
 import { publishEnquiryEvent } from "./enquiry-realtime";
 import { antiSpamHttpError, assertEnquiryMessageLooksHuman } from "./enquiry-anti-spam";
 import { WA_BOT_AUTHOR } from "../whatsapp/whatsapp-bot.service";
+import { completeOpenFollowUpsForThread } from "./enquiry-follow-up.service";
+import {
+  enquiryLeadStatusWhere,
+  resolveEnquiryLeadStatus,
+  type EnquiryLeadStatus
+} from "./enquiry-lead-status";
+
+export type { EnquiryLeadStatus } from "./enquiry-lead-status";
+export { isEnquiryLeadStatus } from "./enquiry-lead-status";
 import {
   outreachCustomerFirstName,
   outreachMediaKind,
@@ -205,13 +214,12 @@ export async function createEnquiryThread(input: CreateEnquiryInput) {
   const now = new Date();
   const subjectLine = formatThreadSubject(input);
 
-  // Dedupe: same email + source with an OPEN thread in the last 7 days → append, don't spam inbox.
+  // Dedupe: same email + source in the last 7 days → append (reopens a closed thread).
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const existing = await prisma.enquiryThread.findFirst({
     where: {
       customerEmail: email,
       source: input.source,
-      status: "OPEN",
       lastMessageAt: { gte: sevenDaysAgo }
     },
     orderBy: { lastMessageAt: "desc" }
@@ -221,6 +229,7 @@ export async function createEnquiryThread(input: CreateEnquiryInput) {
     const thread = await prisma.enquiryThread.update({
       where: { id: existing.id },
       data: {
+        status: "OPEN",
         unreadByAdmin: true,
         lastMessageAt: now,
         customerName: name || existing.customerName,
@@ -266,6 +275,7 @@ export async function createEnquiryThread(input: CreateEnquiryInput) {
       source: input.source,
       email
     });
+    await completeOpenFollowUpsForThread(thread.id, "customer_reply");
     return thread;
   }
 
@@ -387,6 +397,7 @@ export async function listEnquiryThreads(params: {
   limit?: number;
   unreadOnly?: boolean;
   source?: EnquirySource;
+  leadStatus?: EnquiryLeadStatus;
   /** Search name, email, phone, order number, context */
   q?: string;
 }) {
@@ -416,6 +427,7 @@ export async function listEnquiryThreads(params: {
   const where = {
     ...(params.unreadOnly ? { unreadByAdmin: true } : {}),
     ...(params.source ? { source: params.source } : {}),
+    ...(params.leadStatus ? enquiryLeadStatusWhere(params.leadStatus, WA_BOT_AUTHOR) : {}),
     ...searchWhere
   };
   const [items, total, unreadCount] = await Promise.all([
@@ -477,10 +489,25 @@ export async function listEnquiryThreads(params: {
     if (name && name !== WA_BOT_AUTHOR) lastAdminByThread.set(row.threadId, name);
   }
 
+  const openFollowUpRows =
+    threadIds.length === 0
+      ? []
+      : await prisma.enquiryFollowUp.findMany({
+          where: { threadId: { in: threadIds }, status: "OPEN" },
+          select: { threadId: true },
+          distinct: ["threadId"]
+        });
+  const openFollowUpThreads = new Set(openFollowUpRows.map((r) => r.threadId));
+
   return {
     items: items.map((t) => ({
       ...t,
-      lastAdminName: lastAdminByThread.get(t.id) ?? null
+      lastAdminName: lastAdminByThread.get(t.id) ?? null,
+      leadStatus: resolveEnquiryLeadStatus({
+        threadStatus: t.status,
+        hasHumanAdmin: lastAdminByThread.has(t.id),
+        hasOpenFollowUp: openFollowUpThreads.has(t.id)
+      })
     })),
     total,
     page,
@@ -513,7 +540,30 @@ export async function getEnquiryThread(id: string) {
     data: { unreadByAdmin: false }
   });
 
-  return { ...thread, unreadByAdmin: false };
+  const [humanAdmin, openFollowUp] = await Promise.all([
+    prisma.enquiryMessage.findFirst({
+      where: {
+        threadId: id,
+        authorType: "ADMIN",
+        authorName: { not: WA_BOT_AUTHOR }
+      },
+      select: { id: true }
+    }),
+    prisma.enquiryFollowUp.findFirst({
+      where: { threadId: id, status: "OPEN" },
+      select: { id: true }
+    })
+  ]);
+
+  return {
+    ...thread,
+    unreadByAdmin: false,
+    leadStatus: resolveEnquiryLeadStatus({
+      threadStatus: thread.status,
+      hasHumanAdmin: Boolean(humanAdmin),
+      hasOpenFollowUp: Boolean(openFollowUp)
+    })
+  };
 }
 
 function syntheticWaEmail(e164: string): string {
@@ -992,6 +1042,9 @@ export async function patchEnquiryThreadStatus(
     where: { id: threadId },
     data: { status }
   });
+  if (status === "CLOSED") {
+    await completeOpenFollowUpsForThread(threadId, "thread_closed");
+  }
   if (status === "CLOSED" && thread.source === "WHATSAPP") {
     const phone = thread.waPhone || toWhatsAppE164(thread.customerPhone);
     if (phone) {

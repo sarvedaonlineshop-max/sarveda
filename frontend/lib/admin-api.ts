@@ -2980,6 +2980,7 @@ export type EnquiryThreadListItem = {
   lastMessageAt: string;
   createdAt: string;
   lastAdminName?: string | null;
+  leadStatus?: "NEW" | "ONGOING" | "FOLLOW_UP" | "CLOSED";
   messages: Array<{ body: string; authorType: string; createdAt: string }>;
 };
 
@@ -3023,6 +3024,7 @@ export function fetchAdminEnquiries(params?: {
   limit?: number;
   unreadOnly?: boolean;
   source?: string;
+  leadStatus?: string;
   q?: string;
 }) {
   const q = new URLSearchParams();
@@ -3030,6 +3032,7 @@ export function fetchAdminEnquiries(params?: {
   if (params?.limit) q.set("limit", String(params.limit));
   if (params?.unreadOnly) q.set("unreadOnly", "true");
   if (params?.source) q.set("source", params.source);
+  if (params?.leadStatus) q.set("leadStatus", params.leadStatus);
   if (params?.q?.trim()) q.set("q", params.q.trim());
   const qs = q.toString();
   return adminFetch<{

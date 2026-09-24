@@ -16,6 +16,7 @@ import { logger } from "../../config/logger";
 import { uploadAsset } from "../../config/s3";
 import { ENQUIRY_MEDIA_S3_PREFIX } from "../enquiries/enquiries.constants";
 import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
+import { completeOpenFollowUpsForThread } from "../enquiries/enquiry-follow-up.service";
 import { toWhatsAppE164 } from "../notifications/whatsapp";
 import { enqueueBotTurn } from "./whatsapp-bot.service";
 import { isExotelConfigured, sendExotelWhatsAppContent } from "./whatsapp-exotel";
@@ -692,6 +693,7 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
     }
   }
 
+  await completeOpenFollowUpsForThread(thread.id, "customer_reply");
   await prisma.enquiryThread.update({
     where: { id: thread.id },
     data: {
