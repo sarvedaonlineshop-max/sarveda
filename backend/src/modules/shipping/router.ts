@@ -365,7 +365,7 @@ export async function autoSelectAndCreate(
         }
       },
       addresses: true,
-      payments: { select: { provider: true }, orderBy: { createdAt: "desc" } },
+      payments: { select: { provider: true, status: true }, orderBy: { createdAt: "desc" } },
       shipments: {
         where: { awb: { not: null } },
         select: { awb: true, carrierMeta: true }
@@ -705,7 +705,7 @@ export async function persistManualAwb(
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, deletedAt: null },
-    include: { payments: { select: { provider: true }, orderBy: { createdAt: "desc" } } }
+    include: { payments: { select: { provider: true, status: true }, orderBy: { createdAt: "desc" } } }
   });
   if (!order) {
     return { success: false, error: "Order not found", code: "NOT_FOUND" };
@@ -880,7 +880,7 @@ export async function createReverseShipmentForOrder(
     include: {
       items: true,
       addresses: true,
-      payments: { select: { provider: true }, orderBy: { createdAt: "desc" } }
+      payments: { select: { provider: true, status: true }, orderBy: { createdAt: "desc" } }
     }
   });
   if (!order) {
