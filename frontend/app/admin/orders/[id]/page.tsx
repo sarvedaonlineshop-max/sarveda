@@ -44,6 +44,7 @@ import {
   type AdminPickupLocationRow,
   type DelhiveryShipBox
 } from "@/lib/admin-api";
+import { carrierActionsEnabled } from "@/lib/cod-shipping";
 import { formatMinorFromPaise } from "@/lib/money";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { isDigitalOnlyOrder } from "@/lib/digital-order";
@@ -2609,16 +2610,6 @@ export default function AdminOrderDetailPage() {
     }
   }
 
-  function carrierUiEnabled(o: OrderLoaded): boolean {
-    if (["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(o.status)) return false;
-    const isCodPaid =
-      o.status === "PAID" &&
-      o.paymentStatus === "PENDING" &&
-      (o.payments ?? []).some((p) => p.provider === "COD");
-    if (o.paymentStatus !== "CAPTURED" && !isCodPaid) return false;
-    return ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(o.status);
-  }
-
   if (err && !order) {
     return (
       <div>
@@ -2650,7 +2641,7 @@ export default function AdminOrderDetailPage() {
   }
 
   const hasRazorpay = (order.payments ?? []).some((p) => p.provider === "RAZORPAY");
-  const shipUi = carrierUiEnabled(order);
+  const shipUi = carrierActionsEnabled(order);
   const awbRows = allOrderAwbRows(order.shipments);
   const forwardShipment = primaryForwardShipment(order.shipments);
   const hasForwardAwb = !!forwardShipment?.awb?.trim();
