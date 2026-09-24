@@ -557,7 +557,7 @@ export function AdminChatsInbox() {
               const initial = (thread.customerName?.trim()?.[0] || "?").toUpperCase();
               const isWa = thread.source === "WHATSAPP";
               const selected = activeId === thread.id;
-              const rowMeta = buildAllInboxRowMeta(thread);
+              const rowMeta = buildAllInboxRowMeta(thread, { showStatus: !leadStatus });
               return (
                 <li key={thread.id}>
                   <Link

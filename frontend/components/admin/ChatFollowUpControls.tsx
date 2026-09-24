@@ -53,9 +53,15 @@ type Props = {
   threadId: string;
   /** Light styles for the green WhatsApp / dark chat header */
   lightHeader?: boolean;
+  /** Fired after Done closes the follow-up (and the chat). */
+  onFollowUpDone?: () => void;
 };
 
-export function ChatFollowUpControls({ threadId, lightHeader = false }: Props) {
+export function ChatFollowUpControls({
+  threadId,
+  lightHeader = false,
+  onFollowUpDone
+}: Props) {
   const me = useAdminUser();
   const [mode, setMode] = useState<MenuMode>(null);
   const [admins, setAdmins] = useState<EnquiryAdminOption[]>([]);
@@ -169,6 +175,7 @@ export function ChatFollowUpControls({ threadId, lightHeader = false }: Props) {
     try {
       await completeAdminEnquiryFollowUp(id);
       window.dispatchEvent(new Event(ADMIN_CHATS_REFRESH_EVENT));
+      onFollowUpDone?.();
       await loadHistory();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not mark done");

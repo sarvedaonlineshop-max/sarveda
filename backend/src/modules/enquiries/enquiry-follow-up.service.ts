@@ -160,6 +160,7 @@ export async function completeOpenFollowUpsForThread(
   return result.count;
 }
 
+/** Marks one follow-up Done. The admin route then closes the chat so it leaves Follow-up / Ongoing. */
 export async function completeThreadFollowUp(followUpId: string, completedByAdminId: string) {
   const existing = await prisma.enquiryFollowUp.findUnique({
     where: { id: followUpId },
