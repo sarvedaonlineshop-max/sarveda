@@ -8,8 +8,8 @@ module.exports = {
       args: "start -H 127.0.0.1 -p 3000",
       env: {
         NODE_ENV: "production",
-        BACKEND_PROXY_URL: "http://127.0.0.1:4000",
-        INTERNAL_API_URL: "http://127.0.0.1:4000"
+        BACKEND_PROXY_URL: "http://127.0.0.1:5000",
+        INTERNAL_API_URL: "http://127.0.0.1:5000"
       }
     }
   ]

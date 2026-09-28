@@ -20,8 +20,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
   echo "  NEXT_PUBLIC_MEDIA_CDN_URL=https://sarveda-media.s3.amazonaws.com" >&2
   echo "  NEXT_PUBLIC_RAZORPAY_KEY_ID=<same public key as Vercel>" >&2
   echo "  JWT_SECRET=<same value as the API .env>" >&2
-  echo "  BACKEND_PROXY_URL=http://127.0.0.1:4000" >&2
-  echo "  INTERNAL_API_URL=http://127.0.0.1:4000" >&2
+  echo "  BACKEND_PROXY_URL=http://127.0.0.1:5000" >&2
+  echo "  INTERNAL_API_URL=http://127.0.0.1:5000" >&2
   exit 1
 fi
 
