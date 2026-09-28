@@ -149,11 +149,12 @@ export function getCancellationEligibility(
  * Admin "Cancel" on the order page. Hidden once a label exists or the order
  * is marked shipped — those orders must use return / RTO, not this case.
  */
-export function adminCanCreatePreDispatchCancellation(
-  order: CancellationEligibilityInput & {
-    shipments?: Array<{ status: ShipmentStatus | string; awb?: string | null }>;
-  }
-): { allowed: boolean; code?: string; message?: string } {
+export function adminCanCreatePreDispatchCancellation(order: {
+  status: OrderStatus;
+  paymentStatus: string;
+  payments?: Array<{ provider: PaymentProvider | string }>;
+  shipments?: Array<{ status: ShipmentStatus | string; awb?: string | null }>;
+}): { allowed: boolean; code?: string; message?: string } {
   if (["CANCELLED", "REFUNDED"].includes(order.status)) {
     return {
       allowed: false,
