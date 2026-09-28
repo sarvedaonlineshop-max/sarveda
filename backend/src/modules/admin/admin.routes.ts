@@ -169,6 +169,16 @@ router.patch(
   admin.patchOrderAddress
 );
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
+router.post(
+  "/orders/:orderId/cancel-case",
+  validateBody(
+    z.object({
+      reasonCode: z.enum(["mistake", "price_high", "delivery_slow", "no_longer_needed", "other"]),
+      message: z.string().trim().max(2000).optional()
+    })
+  ),
+  serviceRequest.adminCreateCancellationCase
+);
 router.post("/orders/:orderId/service-requests/:requestId/approve", serviceRequest.adminApproveServiceRequest);
 router.post("/orders/:orderId/service-requests/:requestId/reject", serviceRequest.adminRejectServiceRequest);
 router.post(

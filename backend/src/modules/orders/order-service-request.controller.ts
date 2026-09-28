@@ -8,6 +8,7 @@ import {
   pendingServiceRequestCount,
   processServiceRequestRefund,
   reviewServiceRequest,
+  adminCreatePreDispatchCancellation,
   submitServiceRequest,
   type SubmitServiceRequestItem
 } from "./order-service-request.service";
@@ -520,6 +521,29 @@ export async function adminDownloadServiceRequestPhoto(
     res.setHeader("Content-Disposition", `attachment; filename="${asset.fileName.replace(/"/g, "")}"`);
     res.send(asset.buffer);
   } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminCreateCancellationCase(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId } = req.params;
+    const body = req.body as { reasonCode?: string; message?: string };
+    const created = await adminCreatePreDispatchCancellation({
+      orderId,
+      adminUserId: admin.id,
+      adminEmail: admin.email,
+      reasonCode: String(body.reasonCode ?? "").trim(),
+      message: body.message
+    });
+    res.status(201).json({ success: true, data: { request: created } });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
     next(err);
   }
 }

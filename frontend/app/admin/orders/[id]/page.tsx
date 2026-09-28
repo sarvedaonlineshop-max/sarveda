@@ -60,6 +60,7 @@ import {
 } from "@/lib/chargeable-weight";
 import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
 import { allOrderAwbRows, paymentModeLabel, primaryForwardShipment, shippingModeLabel, type ShipmentCarrierMeta } from "@/lib/shipment-labels";
+import { adminCreateCancellationCase, CANCEL_ONLY_REASONS } from "@/lib/order-service-request";
 
 const MAX_SHIP_BOXES = 5;
 /** Per-line warehouse/courier bulk UI — hidden until multi-carrier routing is re-enabled. */
@@ -749,8 +750,10 @@ function AdminOrderProductionView({
   onGenerateChallan,
   onEditAddress,
   onStatusChange,
+  onCancelOrder,
   onSetShipmentStatus,
   statusSaving,
+  cancelSaving,
   refundContent: _refundContent,
   ewayBill,
   serviceRequests: _serviceRequests,
@@ -773,8 +776,10 @@ function AdminOrderProductionView({
   onGenerateChallan: (refresh: boolean) => void;
   onEditAddress: (address: AddressRow) => void;
   onStatusChange: (status: string) => void;
+  onCancelOrder: () => void;
   onSetShipmentStatus: (waybill: string, status: string) => void;
   statusSaving: boolean;
+  cancelSaving: boolean;
   refundContent: ReactNode;
   ewayBill: ReactNode;
   serviceRequests: ReactNode;
@@ -1123,6 +1128,29 @@ function AdminOrderProductionView({
       ? []
       : (nextStatuses[order.status] ?? []);
 
+  const paymentProvider = order.payments?.[0]?.provider;
+  const paidForCancel =
+    order.paymentStatus === "CAPTURED" ||
+    order.status === "PAID" ||
+    (paymentProvider === "COD" && !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status));
+  const shipmentMade =
+    ["SHIPPED", "DELIVERED"].includes(order.status) ||
+    order.shipments.some((s) =>
+      ["PICKED", "INTRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "RTO"].includes(s.status)
+    ) ||
+    order.shipments.some((s) => Boolean(s.awb?.trim()));
+  const pendingCancelCase = (order.serviceRequests ?? []).find(
+    (r) =>
+      r.type === "CANCEL_BEFORE_DELIVERY" &&
+      ["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "NEEDS_DISCUSSION"].includes(r.status)
+  );
+  const showAdminCancel =
+    paidForCancel &&
+    !shipmentMade &&
+    !["CANCELLED", "REFUNDED", "DELIVERED", "SHIPPED"].includes(order.status) &&
+    !pendingCancelCase &&
+    order.items.length > 0;
+
   const goTo = (sectionId: string, opts?: { openShipmentTimeline?: boolean }) => {
     if (opts?.openShipmentTimeline) setShipmentTimelineOpen(true);
     scrollToSection(sectionId);
@@ -1396,6 +1424,24 @@ function AdminOrderProductionView({
                   >
                     {statusSaving ? "Updating…" : "Mark Processing"}
                   </button>
+                ) : null}
+                {showAdminCancel ? (
+                  <button
+                    type="button"
+                    disabled={cancelSaving}
+                    onClick={onCancelOrder}
+                    className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-700 disabled:opacity-50"
+                  >
+                    {cancelSaving ? "Opening…" : "Cancel"}
+                  </button>
+                ) : null}
+                {pendingCancelCase?.caseNumber ? (
+                  <Link
+                    href={`/admin/returns/${encodeURIComponent(pendingCancelCase.caseNumber)}`}
+                    className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900"
+                  >
+                    Cancellation case {pendingCancelCase.caseNumber}
+                  </Link>
                 ) : null}
               </div>
               <p className="mt-2 text-sm text-stone-500">
@@ -2075,6 +2121,10 @@ export default function AdminOrderDetailPage() {
   const [bulkCourier, setBulkCourier] = useState("AUTO");
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>(CANCEL_ONLY_REASONS[0]?.code ?? "no_longer_needed");
+  const [cancelNote, setCancelNote] = useState("");
+  const [cancelSaving, setCancelSaving] = useState(false);
   const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
   const [manualAwb, setManualAwb] = useState("");
   const [manualTrackingUrl, setManualTrackingUrl] = useState("");
@@ -2115,6 +2165,29 @@ export default function AdminOrderDetailPage() {
   const pushToast = useCallback((message: string, error = false) => {
     setToast({ message, error });
   }, []);
+
+  async function handleCreateCancellation() {
+    if (!id || cancelSaving) return;
+    if (cancelReason === "other" && !cancelNote.trim()) {
+      pushToast("Add a short note for Other", true);
+      return;
+    }
+    setCancelSaving(true);
+    try {
+      const created = await adminCreateCancellationCase(id, {
+        reasonCode: cancelReason,
+        message: cancelNote
+      });
+      setCancelOpen(false);
+      setCancelNote("");
+      pushToast(`Cancellation case ${created.caseNumber} created. Approve it under Returns to refund and cancel.`);
+      await load();
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Could not open cancellation case", true);
+    } finally {
+      setCancelSaving(false);
+    }
+  }
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -2751,6 +2824,63 @@ export default function AdminOrderDetailPage() {
         onConfirm={() => void handleStatusConfirm()}
       />
 
+      {cancelOpen
+        ? createPortal(
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true">
+              <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900">
+                <h2 className="text-xl font-bold text-stone-950 dark:text-stone-100">Cancel this order?</h2>
+                <p className="mt-2 text-sm leading-6 text-stone-600 dark:text-stone-300">
+                  This opens a cancellation case for every item, the same request a customer sends from their account. Approve it under Returns to refund and cancel. Available only before a shipment is created.
+                </p>
+                <label className="mt-4 block text-sm">
+                  <span className="font-semibold text-stone-700 dark:text-stone-200">Reason</span>
+                  <select
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  >
+                    {CANCEL_ONLY_REASONS.map((reason) => (
+                      <option key={reason.code} value={reason.code}>
+                        {reason.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="mt-3 block text-sm">
+                  <span className="font-semibold text-stone-700 dark:text-stone-200">
+                    Note{cancelReason === "other" ? " (required)" : " (optional)"}
+                  </span>
+                  <textarea
+                    value={cancelNote}
+                    onChange={(e) => setCancelNote(e.target.value)}
+                    rows={3}
+                    className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  />
+                </label>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    disabled={cancelSaving}
+                    onClick={() => setCancelOpen(false)}
+                    className="rounded-xl border border-stone-300 px-4 py-2 text-sm dark:border-stone-600"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cancelSaving || (cancelReason === "other" && !cancelNote.trim())}
+                    onClick={() => void handleCreateCancellation()}
+                    className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {cancelSaving ? "Opening…" : "Create cancellation case"}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+
       <AdminConfirmModal
         open={cancelAwbConfirm !== null}
         title="Cancel Delhivery label?"
@@ -2960,8 +3090,10 @@ export default function AdminOrderDetailPage() {
           });
         }}
         onStatusChange={(status) => setStatusConfirm(status)}
+        onCancelOrder={() => setCancelOpen(true)}
         onSetShipmentStatus={(waybill, status) => void handleSetShipmentStatus(waybill, status)}
         statusSaving={statusSaving}
+        cancelSaving={cancelSaving}
         refundContent={null}
         serviceRequests={null}
         ewayBill={<AdminOrderEwayBillCard orderId={id} onToast={pushToast} />}

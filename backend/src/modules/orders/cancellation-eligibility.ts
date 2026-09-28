@@ -145,6 +145,44 @@ export function getCancellationEligibility(
   };
 }
 
+/**
+ * Admin "Cancel" on the order page. Hidden once a label exists or the order
+ * is marked shipped — those orders must use return / RTO, not this case.
+ */
+export function adminCanCreatePreDispatchCancellation(
+  order: CancellationEligibilityInput & {
+    shipments?: Array<{ status: ShipmentStatus | string; awb?: string | null }>;
+  }
+): { allowed: boolean; code?: string; message?: string } {
+  if (["CANCELLED", "REFUNDED"].includes(order.status)) {
+    return {
+      allowed: false,
+      code: "ORDER_TERMINAL",
+      message: "This order is already closed."
+    };
+  }
+
+  const eligibility = getCancellationEligibility(order);
+  const hasLabel = (order.shipments ?? []).some((s) => (s.awb ?? "").trim().length > 0);
+  if (order.status === "SHIPPED" || order.status === "DELIVERED" || eligibility.dispatched || hasLabel) {
+    return {
+      allowed: false,
+      code: "CANCELLATION_NOT_ALLOWED_AFTER_DISPATCH",
+      message: "This order already has a shipment. Shipped orders cannot be cancelled here."
+    };
+  }
+
+  if (!eligibility.adminCanApproveCancel) {
+    return {
+      allowed: false,
+      code: eligibility.blockCode ?? "NOT_ELIGIBLE",
+      message: eligibility.customerMessage ?? "This order cannot be cancelled."
+    };
+  }
+
+  return { allowed: true };
+}
+
 /** Adjustment-oriented cancel reasons — admin review only in Phase 1A (no auto mutation). */
 export const ADJUSTMENT_CANDIDATE_REASON_CODES = new Set([
   "change_address",

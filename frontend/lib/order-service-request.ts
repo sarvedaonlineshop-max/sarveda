@@ -479,6 +479,33 @@ export async function verifySupplementaryRazorpayPayment(body: {
   }
 }
 
+export async function adminCreateCancellationCase(
+  orderId: string,
+  payload: { reasonCode: string; message?: string }
+): Promise<{ id: string; caseNumber: string; status: string }> {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/cancel-case`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        reasonCode: payload.reasonCode,
+        message: payload.message?.trim() || undefined
+      })
+    }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: { request?: { id: string; caseNumber: string; status: string } };
+  };
+  if (!res.ok || !json.success || !json.data?.request) {
+    throw new Error(json.error || "Could not open cancellation case");
+  }
+  return json.data.request;
+}
+
 export async function approveServiceRequest(orderId: string, requestId: string, adminNote?: string) {
   const res = await fetch(
     `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/approve`,

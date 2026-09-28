@@ -23,6 +23,7 @@ import { initiateGatewayRefund, initiatePartialGatewayRefund } from "../payments
 import { capRefundAmountToPolicy } from "./order-refund-calculator.service";
 import { loadOrderRefundPreview } from "./order-refund-preview.service";
 import {
+  adminCanCreatePreDispatchCancellation,
   getCancellationEligibility,
   isAdjustmentCandidateReason,
   orderIsPaidForCancellation
@@ -421,6 +422,141 @@ export async function submitServiceRequest(opts: {
   });
 
   return created;
+}
+
+/**
+ * Admin opens the same pre-dispatch cancellation case a customer creates from
+ * their account. Approval (existing returns flow) performs the refund and cancel.
+ */
+export async function adminCreatePreDispatchCancellation(opts: {
+  orderId: string;
+  adminUserId: string;
+  adminEmail: string;
+  reasonCode: string;
+  message?: string;
+}): Promise<{ id: string; caseNumber: string; status: string }> {
+  const order = await prisma.order.findFirst({
+    where: { id: opts.orderId, deletedAt: null },
+    include: {
+      payments: { orderBy: { createdAt: "desc" }, take: 1 },
+      items: true,
+      shipments: { select: { status: true, awb: true } }
+    }
+  });
+  if (!order) {
+    throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+
+  const gate = adminCanCreatePreDispatchCancellation({
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    payments: order.payments,
+    shipments: order.shipments
+  });
+  if (!gate.allowed) {
+    throw Object.assign(new Error(gate.message ?? "This order cannot be cancelled"), {
+      statusCode: 400,
+      code: gate.code ?? "NOT_ELIGIBLE"
+    });
+  }
+
+  if (isAdjustmentCandidateReason(opts.reasonCode)) {
+    throw Object.assign(
+      new Error("Address, item, and quantity changes use the order change request flow — not cancellation."),
+      { statusCode: 400, code: "USE_ADJUSTMENT_REQUEST" }
+    );
+  }
+
+  const note = opts.message?.trim() || "";
+  const reasonLabel = reasonLabelFor("CANCEL_BEFORE_DELIVERY", opts.reasonCode, note);
+  if (!reasonLabel || !isValidCancelReason(opts.reasonCode)) {
+    throw Object.assign(new Error("Invalid cancellation reason"), {
+      statusCode: 400,
+      code: "BAD_REQUEST"
+    });
+  }
+  if (opts.reasonCode === "other" && !note) {
+    throw Object.assign(new Error("Add a short note for Other"), {
+      statusCode: 400,
+      code: "NOTE_REQUIRED"
+    });
+  }
+  if (!order.items.length) {
+    throw Object.assign(new Error("This order has no items to cancel"), {
+      statusCode: 400,
+      code: "ITEMS_REQUIRED"
+    });
+  }
+
+  const existingPending = await prisma.orderServiceRequest.findFirst({
+    where: { orderId: order.id, status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "NEEDS_DISCUSSION"] } }
+  });
+  if (existingPending) {
+    throw Object.assign(new Error("A request is already waiting for approval on this order"), {
+      statusCode: 409,
+      code: "REQUEST_PENDING"
+    });
+  }
+
+  const requestId = randomUUID();
+  const summaryLabel =
+    order.items.length === 1
+      ? `${order.items[0].nameSnapshot} — ${reasonLabel}`
+      : `${order.items.length} items — ${reasonLabel}`;
+  const adminEmail = opts.adminEmail.trim().toLowerCase();
+  const customerEmail = order.email.trim().toLowerCase();
+
+  const { nextReturnCaseNumber } = await import("./return-case-number");
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  const caseNumber = await nextReturnCaseNumber();
+
+  const created = await prisma.orderServiceRequest.create({
+    data: {
+      id: requestId,
+      caseNumber,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      customerEmail,
+      type: "CANCEL_BEFORE_DELIVERY",
+      channel: "MANUAL",
+      reasonCode: opts.reasonCode,
+      reasonLabel: summaryLabel,
+      message: note || `Opened by admin (${adminEmail}) before dispatch`,
+      otherMessage: opts.reasonCode === "other" ? note : null,
+      items: {
+        create: order.items.map((item) => ({
+          id: randomUUID(),
+          orderItemId: item.id,
+          nameSnapshot: item.nameSnapshot,
+          skuSnapshot: item.skuSnapshot,
+          qtySelected: item.qtyOrdered,
+          reasonCode: opts.reasonCode,
+          reasonLabel,
+          otherMessage: opts.reasonCode === "other" ? note : null,
+          message: note || null
+        }))
+      }
+    }
+  });
+
+  await appendCaseEvent({
+    requestId: created.id,
+    eventType: "CASE_CREATED",
+    message: `Case ${caseNumber} opened by admin before dispatch`,
+    payloadJson: { type: "CANCEL_BEFORE_DELIVERY", caseNumber, channel: "MANUAL" },
+    actor: { userId: opts.adminUserId, email: adminEmail, role: "ADMIN" }
+  });
+
+  void notifyServiceRequestSubmitted({
+    orderNumber: order.orderNumber,
+    customerEmail,
+    type: "CANCEL_BEFORE_DELIVERY",
+    reasonLabel: summaryLabel,
+    message: note || undefined
+  });
+
+  return { id: created.id, caseNumber: created.caseNumber, status: created.status };
 }
 
 /**
