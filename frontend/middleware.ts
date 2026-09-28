@@ -122,6 +122,31 @@ function maintenanceHtmlResponse(): NextResponse {
   });
 }
 
+const PUBLIC_HOSTS = new Set([
+  "sarveda.com",
+  "www.sarveda.com",
+  "sarveda-demo.xyz",
+  "www.sarveda-demo.xyz",
+  "localhost",
+  "127.0.0.1"
+]);
+
+/**
+ * Browser-facing origin. `request.nextUrl` is the internal Next listener
+ * (localhost:3000) behind nginx, so cloning it sends logged-in admins off the public site.
+ */
+function publicOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const hostHeader = forwardedHost || request.headers.get("host")?.trim() || "";
+  const hostname = hostHeader.split(":")[0]?.toLowerCase() ?? "";
+  if (!PUBLIC_HOSTS.has(hostname)) return "https://sarveda.com";
+  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  const protocol = proto === "http" || proto === "https" ? proto : hostname === "localhost" || hostname === "127.0.0.1" ? "http" : "https";
+  const host =
+    hostname === "localhost" || hostname === "127.0.0.1" ? hostHeader : hostname;
+  return `${protocol}://${host}`;
+}
+
 function detectCountryCode(request: NextRequest): string | null {
   const geoCountry = request.geo?.country?.trim();
   if (geoCountry) return geoCountry.toUpperCase();
@@ -170,10 +195,9 @@ export async function middleware(request: NextRequest) {
   // Installed PWA starts at `/`. Send logged-in admins straight to /admin (no storefront flash).
   if (pathname === "/" || pathname === "") {
     if (await isAdminSession(request)) {
-      const target = request.nextUrl.clone();
-      target.pathname = "/admin";
-      target.search = "";
-      return NextResponse.redirect(target);
+      const redirect = NextResponse.redirect(new URL("/admin", publicOrigin(request)), 307);
+      redirect.headers.set("Cache-Control", "no-store");
+      return redirect;
     }
   }
 
@@ -189,7 +213,7 @@ export async function middleware(request: NextRequest) {
     }
     const secret = maintenanceBypassSecret();
     if (secret && request.nextUrl.searchParams.get("maint_bypass") === secret) {
-      const clean = request.nextUrl.clone();
+      const clean = new URL(request.nextUrl.pathname + request.nextUrl.search, publicOrigin(request));
       clean.searchParams.delete("maint_bypass");
       const redirect = NextResponse.redirect(clean);
       redirect.cookies.set({
@@ -213,7 +237,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/shop" || pathname === "/shop/") {
     const category = searchParams.get("category")?.trim();
     if (category) {
-      const target = new URL(`/product-category/${encodeURIComponent(category)}`, request.url);
+      const target = new URL(`/product-category/${encodeURIComponent(category)}`, publicOrigin(request));
       const page = searchParams.get("page");
       if (page && page !== "1") target.searchParams.set("page", page);
       const redirect = NextResponse.redirect(target, 301);
@@ -233,7 +257,7 @@ export async function middleware(request: NextRequest) {
     const redirectPath = resolveStorePathToProductRedirect(pathname, searchParams);
     if (redirectPath) {
       // Always internal /product/... — never absolute external hosts.
-      const target = new URL(redirectPath, request.nextUrl.origin);
+      const target = new URL(redirectPath, publicOrigin(request));
       const redirect = NextResponse.redirect(target, 301);
       ensurePricingZoneCookie(request, redirect);
       return redirect;
@@ -246,7 +270,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/product-category/")) {
     const redirectPath = resolveNestedCategoryRedirect(pathname, searchParams);
     if (redirectPath) {
-      const target = new URL(redirectPath, request.nextUrl.origin);
+      const target = new URL(redirectPath, publicOrigin(request));
       const redirect = NextResponse.redirect(target, 301);
       ensurePricingZoneCookie(request, redirect);
       return redirect;
