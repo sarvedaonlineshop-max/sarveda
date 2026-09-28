@@ -7,7 +7,7 @@ export const HOME_ABOUT_VIDEO_SRC = "/images/home/homepage-about.mp4";
 export const HOME_ABOUT_POSTER_SRC = "/images/home/homepage-about-poster.jpg";
 
 /**
- * 16:9 brand video under the Thoughtfully Curated copy.
+ * 16:9 brand video beside the Thoughtfully Curated copy.
  * Shows a still thumbnail until the shopper taps play.
  */
 export function HomeAboutVideo({ className = "" }: { className?: string }) {
