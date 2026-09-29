@@ -36,7 +36,7 @@ import { isZohoInventorySyncEnabled } from "../zoho/zoho-inventory-sync-flag";
 import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
-import { liveAdminOrderWhere } from "./live-order-filter";
+import { excludeCoursePaymentOrders, liveAdminOrderWhere } from "./live-order-filter";
 import {
   getReservedStockSummary,
   listReservedMismatches,
@@ -188,6 +188,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     };
 
     const liveOrders = liveAdminOrderWhere(now);
+    const shopOrders = { AND: [liveOrders, excludeCoursePaymentOrders()] };
 
     const [
       revenueAgg,
@@ -220,13 +221,13 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.count({
-        where: { AND: [liveOrders, { placedAt: { gte: today, lt: tomorrow } }] }
+        where: { AND: [shopOrders, { placedAt: { gte: today, lt: tomorrow } }] }
       }),
       prisma.order.count({
-        where: { AND: [liveOrders, { placedAt: { gte: weekStart } }] }
+        where: { AND: [shopOrders, { placedAt: { gte: weekStart } }] }
       }),
       prisma.order.count({
-        where: { AND: [liveOrders, { placedAt: { gte: monthStart } }] }
+        where: { AND: [shopOrders, { placedAt: { gte: monthStart } }] }
       }),
       prisma.product.groupBy({
         by: ["status"],
@@ -234,7 +235,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         _count: { id: true }
       }),
       prisma.order.findMany({
-        where: liveOrders,
+        where: shopOrders,
         orderBy: { createdAt: "desc" },
         take: 5,
         select: {
@@ -628,7 +629,11 @@ function parseOrdersListFilters(req: Request): OrdersListFilters {
 }
 
 function ordersSearchWhere(f: OrdersListFilters): Prisma.OrderWhereInput {
-  const parts: Prisma.OrderWhereInput[] = [liveAdminOrderWhere(f.now), channelWhere(f.channel)];
+  const parts: Prisma.OrderWhereInput[] = [
+    liveAdminOrderWhere(f.now),
+    excludeCoursePaymentOrders(),
+    channelWhere(f.channel)
+  ];
 
   if (f.orderNumber) {
     parts.push({ orderNumber: { contains: f.orderNumber, mode: "insensitive" } });
@@ -962,7 +967,7 @@ export async function customerOrders(req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const where = { customerId };
+    const where = { AND: [{ customerId }, excludeCoursePaymentOrders()] };
     const [total, rows] = await prisma.$transaction([
       prisma.order.count({ where }),
       prisma.order.findMany({

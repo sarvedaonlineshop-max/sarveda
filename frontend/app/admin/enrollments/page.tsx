@@ -78,7 +78,7 @@ export default function AdminEnrollmentsPage() {
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
   const [courseId, setCourseId] = useState("");
-  const [status, setStatus] = useState("ACTIVE");
+  const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<CourseEnrollmentsListData | null>(null);
   const [courses, setCourses] = useState<CourseEnrollmentFilterCourse[]>([]);
@@ -121,7 +121,7 @@ export default function AdminEnrollmentsPage() {
     () => ({
       title: "Course Enrollments",
       icon: "🎓",
-      subtitle: <>Students enrolled after course payment — linked to the order and searchable by order #.</>
+      subtitle: <>Course payments, including future checkouts. These do not appear in Orders.</>
     }),
     []
   );
@@ -180,9 +180,9 @@ export default function AdminEnrollmentsPage() {
             onFocus={focusGold}
             onBlur={blurGold}
           >
-            <option value="ACTIVE">Active</option>
+            <option value="ALL">All payments</option>
+            <option value="ACTIVE">Enrolled</option>
             <option value="CANCELLED">Cancelled</option>
-            <option value="ALL">All statuses</option>
           </select>
           <button
             type="submit"
@@ -212,7 +212,7 @@ export default function AdminEnrollmentsPage() {
       {data ? (
         <>
           <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)", fontWeight: 500 }}>
-            {data.pagination.total.toLocaleString("en-IN")} enrollment
+            {data.pagination.total.toLocaleString("en-IN")} course payment
             {data.pagination.total === 1 ? "" : "s"}
             {courseId ? (
               <>
@@ -236,10 +236,9 @@ export default function AdminEnrollmentsPage() {
               }}
             >
               <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎓</div>
-              <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>No enrollments found</p>
+              <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>No course payments found</p>
               <p style={{ color: "var(--admin-text-muted, #8a7060)", fontSize: "13px", marginTop: "8px" }}>
-                Enrollments are created when a signed-in customer completes payment for a course with
-                online checkout enabled. Guest checkouts create a student account on payment so they appear here.
+                Paid and unpaid course checkouts are listed here. They are kept out of Orders.
               </p>
             </div>
           ) : (
@@ -319,14 +318,21 @@ export default function AdminEnrollmentsPage() {
                         )}
                       </td>
                       <td style={{ ...tdSt, whiteSpace: "nowrap", color: "var(--admin-text, #2c2420)", fontWeight: 600 }}>
-                        {row.order
-                          ? formatMinorFromPaise(row.order.grandTotalInPaise, row.order.currency)
-                          : "—"}
+                        {row.order ? (
+                          <>
+                            <div>{formatMinorFromPaise(row.order.grandTotalInPaise, row.order.currency)}</div>
+                            <div style={{ marginTop: "4px", fontSize: "11px", fontWeight: 700, color: "var(--admin-text-muted, #8a7060)" }}>
+                              {row.order.paymentStatus.replaceAll("_", " ")}
+                            </div>
+                          </>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td style={tdSt}>
                         <span
                           style={
-                            row.status === "ACTIVE"
+                            row.status === "ACTIVE" || row.order?.paymentStatus === "CAPTURED"
                               ? {
                                   display: "inline-block",
                                   padding: "3px 10px",
@@ -349,7 +355,9 @@ export default function AdminEnrollmentsPage() {
                                 }
                           }
                         >
-                          {row.status === "ACTIVE" ? "● ACTIVE" : "● CANCELLED"}
+                          {row.status === "ACTIVE"
+                            ? "● ENROLLED"
+                            : `● ${row.status.replaceAll("_", " ")}`}
                         </span>
                       </td>
                     </tr>
@@ -363,7 +371,7 @@ export default function AdminEnrollmentsPage() {
             page={page}
             totalPages={data.pagination.totalPages}
             total={data.pagination.total}
-            itemLabel="enrollments"
+            itemLabel="payments"
             onPrev={() => setPage((p) => Math.max(1, p - 1))}
             onNext={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))}
           />

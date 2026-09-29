@@ -23,6 +23,33 @@ function liveOrderNumberExclusions(): Prisma.OrderWhereInput[] {
  * Pre-cutover (before LAUNCH_ORDER_CUTOVER_ISO): all real website orders.
  * Post-cutover: only orders placed on/after the cutover instant.
  */
+/**
+ * Orders whose every line is a course checkout. Mixed carts that also contain
+ * a physical product are not course payments.
+ */
+export function coursePaymentOrderWhere(): Prisma.OrderWhereInput {
+  return {
+    AND: [
+      { items: { some: {} } },
+      {
+        items: {
+          every: {
+            OR: [
+              { digitalOffer: { is: { kind: "COURSE" } } },
+              { skuSnapshot: { startsWith: "COURSE-", mode: "insensitive" } }
+            ]
+          }
+        }
+      }
+    ]
+  };
+}
+
+/** Course checkout is recorded as an order, but it is not a shop order. */
+export function excludeCoursePaymentOrders(): Prisma.OrderWhereInput {
+  return { NOT: coursePaymentOrderWhere() };
+}
+
 export function liveAdminOrderWhere(now = new Date()): Prisma.OrderWhereInput {
   const exclusions = liveOrderNumberExclusions();
 

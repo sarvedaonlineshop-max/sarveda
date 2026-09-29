@@ -1,6 +1,7 @@
 import type { DigitalAccessStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { coursePaymentOrderWhere } from "./live-order-filter";
 
 export type ListEnrollmentsParams = {
   page: number;
@@ -10,56 +11,96 @@ export type ListEnrollmentsParams = {
   status?: DigitalAccessStatus | "ALL";
 };
 
+/** Course-only checkout orders. These are hidden from the shop Orders list. */
+function coursePaymentListWhere(): Prisma.OrderWhereInput {
+  return {
+    deletedAt: null,
+    AND: [coursePaymentOrderWhere()]
+  };
+}
+
 export async function listCourseEnrollments(params: ListEnrollmentsParams) {
   const { page, limit, courseId, q } = params;
   const skip = (page - 1) * limit;
-
-  const where: Prisma.EnrollmentWhereInput = {};
-
-  if (params.status && params.status !== "ALL") {
-    where.status = params.status;
-  }
+  const where: Prisma.OrderWhereInput = coursePaymentListWhere();
+  const and: Prisma.OrderWhereInput[] = [];
 
   if (courseId) {
-    where.courseId = courseId;
+    and.push({
+      OR: [
+        { items: { some: { digitalOffer: { is: { courseId } } } } },
+        { enrollments: { some: { courseId } } }
+      ]
+    });
+  }
+
+  if (params.status === "ACTIVE") {
+    and.push({ enrollments: { some: { status: "ACTIVE" } } });
+  } else if (params.status === "CANCELLED") {
+    and.push({
+      OR: [
+        { enrollments: { some: { status: "CANCELLED" } } },
+        { enrollments: { none: {} }, status: { in: ["CANCELLED", "REFUNDED"] } }
+      ]
+    });
   }
 
   const trimmedQ = q?.trim();
   if (trimmedQ) {
-    where.OR = [
-      { user: { email: { contains: trimmedQ, mode: "insensitive" } } },
-      { user: { name: { contains: trimmedQ, mode: "insensitive" } } },
-      { user: { phone: { contains: trimmedQ } } },
-      { course: { title: { contains: trimmedQ, mode: "insensitive" } } },
-      { order: { orderNumber: { contains: trimmedQ, mode: "insensitive" } } }
-    ];
+    and.push({
+      OR: [
+        { email: { contains: trimmedQ, mode: "insensitive" } },
+        { phone: { contains: trimmedQ } },
+        { orderNumber: { contains: trimmedQ, mode: "insensitive" } },
+        { customer: { name: { contains: trimmedQ, mode: "insensitive" } } },
+        { customer: { email: { contains: trimmedQ, mode: "insensitive" } } },
+        { items: { some: { nameSnapshot: { contains: trimmedQ, mode: "insensitive" } } } },
+        { items: { some: { digitalOffer: { is: { course: { title: { contains: trimmedQ, mode: "insensitive" } } } } } } }
+      ]
+    });
+  }
+
+  if (and.length) {
+    const base = coursePaymentListWhere();
+    where.AND = [...(Array.isArray(base.AND) ? base.AND : []), ...and];
   }
 
   const [total, rows] = await prisma.$transaction([
-    prisma.enrollment.count({ where }),
-    prisma.enrollment.findMany({
+    prisma.order.count({ where }),
+    prisma.order.findMany({
       where,
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
+        orderNumber: true,
+        email: true,
+        phone: true,
         status: true,
+        paymentStatus: true,
+        grandTotalInPaise: true,
+        currency: true,
+        placedAt: true,
         createdAt: true,
-        user: {
-          select: { id: true, email: true, name: true, phone: true }
-        },
-        course: {
-          select: { id: true, slug: true, title: true }
-        },
-        order: {
+        customer: { select: { id: true, email: true, name: true, phone: true } },
+        enrollments: {
+          take: 1,
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
-            orderNumber: true,
-            grandTotalInPaise: true,
-            currency: true,
-            paymentStatus: true,
-            status: true
+            status: true,
+            createdAt: true,
+            course: { select: { id: true, slug: true, title: true } }
+          }
+        },
+        items: {
+          take: 1,
+          select: {
+            nameSnapshot: true,
+            digitalOffer: {
+              select: { course: { select: { id: true, slug: true, title: true } } }
+            }
           }
         }
       }
@@ -67,23 +108,35 @@ export async function listCourseEnrollments(params: ListEnrollmentsParams) {
   ]);
 
   return {
-    items: rows.map((row) => ({
-      id: row.id,
-      status: row.status,
-      enrolledAt: row.createdAt.toISOString(),
-      user: row.user,
-      course: row.course,
-      order: row.order
-        ? {
-            id: row.order.id,
-            orderNumber: row.order.orderNumber,
-            grandTotalInPaise: row.order.grandTotalInPaise,
-            currency: row.order.currency,
-            paymentStatus: row.order.paymentStatus,
-            orderStatus: row.order.status
-          }
-        : null
-    })),
+    items: rows.map((row) => {
+      const enrollment = row.enrollments[0] ?? null;
+      const course = enrollment?.course ?? row.items[0]?.digitalOffer?.course ?? null;
+      const person = row.customer;
+      return {
+        id: enrollment?.id ?? row.id,
+        status: enrollment?.status ?? row.paymentStatus,
+        enrolledAt: (enrollment?.createdAt ?? row.placedAt ?? row.createdAt).toISOString(),
+        user: {
+          id: person?.id ?? row.id,
+          email: person?.email ?? row.email,
+          name: person?.name ?? null,
+          phone: person?.phone ?? row.phone ?? null
+        },
+        course: {
+          id: course?.id ?? "",
+          slug: course?.slug ?? "",
+          title: course?.title ?? row.items[0]?.nameSnapshot ?? "Course"
+        },
+        order: {
+          id: row.id,
+          orderNumber: row.orderNumber,
+          grandTotalInPaise: row.grandTotalInPaise,
+          currency: row.currency,
+          paymentStatus: row.paymentStatus,
+          orderStatus: row.status
+        }
+      };
+    }),
     pagination: {
       page,
       limit,
