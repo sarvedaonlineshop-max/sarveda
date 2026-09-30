@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -128,10 +126,11 @@ body {
   -webkit-tap-highlight-color: transparent;
   background-color: var(--brand-cream);
   color: var(--brand-ink);
-  font-family: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+  /* Storefront uses next/font Manrope (--font-inter). Do not pull Google Fonts CSS here. */
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-.font-mono-admin { font-family: 'JetBrains Mono', monospace; }
+.font-mono-admin { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 
 /* ─── Premium Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; }

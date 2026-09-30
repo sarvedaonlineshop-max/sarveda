@@ -49,9 +49,10 @@ export function HomeAboutVideo({ className = "" }: { className?: string }) {
               src={HOME_ABOUT_POSTER_SRC}
               alt="Sarveda artisans and sound healing practice"
               fill
-              sizes="(max-width: 768px) 92vw, 1100px"
+              loading="lazy"
+              sizes="(max-width: 768px) 92vw, 40vw"
+              quality={65}
               className="object-cover"
-              priority={false}
             />
             <span className="relative z-[2] flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full bg-[#1a2e26] text-white shadow-[0_8px_24px_rgba(26,46,38,0.35)] ring-4 ring-white/80 transition hover:scale-105 sm:h-[4.75rem] sm:w-[4.75rem]">
               <svg className="ml-1 h-7 w-7" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
