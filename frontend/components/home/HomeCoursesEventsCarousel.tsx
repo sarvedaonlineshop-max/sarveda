@@ -183,7 +183,12 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   useEffect(() => {
     if (!loop) return;
 
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    let active = false;
     const step = () => {
+      if (!active) return;
       if (!pausedRef.current && !draggingRef.current) {
         // DOM-only paint — no setState (keeps Home soft-nav responsive).
         applyOffset(offsetRef.current + AUTO_SPEED);
@@ -191,9 +196,31 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
       rafRef.current = requestAnimationFrame(step);
     };
 
-    rafRef.current = requestAnimationFrame(step);
+    const start = () => {
+      if (active) return;
+      active = true;
+      rafRef.current = requestAnimationFrame(step);
+    };
+    const stop = () => {
+      active = false;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) start();
+        else stop();
+      },
+      { rootMargin: "120px 0px", threshold: 0.05 }
+    );
+    io.observe(viewport);
+
     return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      io.disconnect();
+      stop();
     };
   }, [applyOffset, loop]);
 
