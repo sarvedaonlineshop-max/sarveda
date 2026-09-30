@@ -93,8 +93,8 @@ export function DeferredMarketingTags({ gtmId, metaPixelId, ga4Id, googleAdsId }
     window.addEventListener("pointerdown", onInteract, { once: true });
     window.addEventListener("keydown", onInteract, { once: true });
     window.addEventListener("touchstart", onInteract, { once: true, passive: true });
-    // Real users who never interact still get tags; lab tests usually finish before this.
-    timer = setTimeout(run, 8000);
+    // Late fallback for users who never interact; keep past typical lab LCP window.
+    timer = setTimeout(run, 15000);
 
     return () => {
       cancelled = true;
