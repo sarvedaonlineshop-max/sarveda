@@ -222,8 +222,13 @@ export type UpdateProfileInput = {
 
 /** Coalesce concurrent /api/auth/me calls (header + cart boot) into one network request. */
 let profileInflight: Promise<ProfileSession | null> | null = null;
+let profileCache: { at: number; value: ProfileSession | null } | null = null;
+const PROFILE_CACHE_MS = 2500;
 
 export async function fetchProfileDetails(): Promise<ProfileSession | null> {
+  if (profileCache && Date.now() - profileCache.at < PROFILE_CACHE_MS) {
+    return profileCache.value;
+  }
   if (profileInflight) return profileInflight;
 
   profileInflight = (async () => {
@@ -232,17 +237,26 @@ export async function fetchProfileDetails(): Promise<ProfileSession | null> {
         credentials: "include",
         headers: { Accept: "application/json" }
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        profileCache = { at: Date.now(), value: null };
+        return null;
+      }
       const json = (await res.json()) as {
         success?: boolean;
         data?: { user: PublicUser; primaryAddress?: PrimaryAddress | null };
       };
-      if (!json.success || !json.data?.user) return null;
-      return {
+      if (!json.success || !json.data?.user) {
+        profileCache = { at: Date.now(), value: null };
+        return null;
+      }
+      const value = {
         user: json.data.user,
         primaryAddress: json.data.primaryAddress ?? null
       };
+      profileCache = { at: Date.now(), value };
+      return value;
     } catch {
+      profileCache = { at: Date.now(), value: null };
       return null;
     } finally {
       profileInflight = null;

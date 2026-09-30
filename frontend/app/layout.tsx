@@ -43,11 +43,12 @@ const manrope = Manrope({
 /** Headings — designer: Cormorant Garamond (was Fraunces; revert by swapping imports). */
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["600", "700"],
   style: ["normal", "italic"],
   variable: "--font-fraunces",
   display: "swap",
-  preload: true
+  // Body/LCP image first — heading font can swap in without blocking hero paint.
+  preload: false
 });
 
 const defaultOgTitle = "Sarveda — Music, Sound Healing, Yoga & Meditation";
