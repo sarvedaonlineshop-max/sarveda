@@ -4,7 +4,7 @@ import { Cormorant_Garamond, Manrope } from "next/font/google";
 import { DeferredMarketingTags } from "@/components/analytics/DeferredMarketingTags";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { AttributionProvider } from "@/components/attribution/AttributionProvider";
-import { LogoutTransitionOverlay } from "@/components/auth/LogoutTransitionOverlay";
+import { DeferredLogoutOverlay } from "@/components/auth/DeferredLogoutOverlay";
 import { GtmSpaTracker } from "@/components/analytics/GtmSpaTracker";
 import { Layout } from "@/components/layout/Layout";
 import { getSiteUrl, isProductionSite } from "@/lib/site";
@@ -43,10 +43,11 @@ const manrope = Manrope({
 /** Headings — designer: Cormorant Garamond (was Fraunces; revert by swapping imports). */
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-fraunces",
-  display: "swap"
+  display: "swap",
+  preload: true
 });
 
 const defaultOgTitle = "Sarveda — Music, Sound Healing, Yoga & Meditation";
@@ -152,7 +153,7 @@ export default function RootLayout({
         <CartProvider>
           <AttributionProvider>
             {gtmId || (isProd && ga4Id) ? <GtmSpaTracker /> : null}
-            <LogoutTransitionOverlay />
+            <DeferredLogoutOverlay />
             <Layout>{children}</Layout>
           </AttributionProvider>
         </CartProvider>

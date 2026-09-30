@@ -23,14 +23,37 @@ export function useStorefrontSession(): PublicUser | null {
     }
 
     let cancelled = false;
-    void fetchMe().then((user) => {
-      if (cancelled) return;
-      setSessionUser(user);
-      if (user) void syncPricingZoneFromGeo();
-    });
+    let idleId: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const load = () => {
+      void fetchMe().then((user) => {
+        if (cancelled) return;
+        setSessionUser(user);
+        if (user) void syncPricingZoneFromGeo();
+      });
+    };
+
+    // Profile/account need session sooner; home can wait for idle.
+    const urgent =
+      pathname.startsWith("/profile") ||
+      pathname.startsWith("/my-account") ||
+      pathname.startsWith("/orders");
+
+    if (urgent) {
+      load();
+    } else if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(load, { timeout: 2500 });
+    } else {
+      timer = setTimeout(load, 900);
+    }
 
     return () => {
       cancelled = true;
+      if (idleId != null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timer) clearTimeout(timer);
     };
   }, [pathname]);
 

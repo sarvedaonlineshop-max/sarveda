@@ -218,7 +218,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    let idleId: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const boot = async () => {
       try {
         const user = await fetchMe();
         if (cancelled) return;
@@ -243,9 +246,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setError("Cart failed to load");
         }
       }
-    })();
+    };
+
+    const path = typeof window !== "undefined" ? window.location.pathname : "";
+    const urgent =
+      path.startsWith("/cart") ||
+      path.startsWith("/checkout") ||
+      path.startsWith("/product/");
+
+    const schedule = () => {
+      if (urgent) {
+        void boot();
+        return;
+      }
+      const run = () => {
+        if (!cancelled) void boot();
+      };
+      if (typeof window.requestIdleCallback === "function") {
+        idleId = window.requestIdleCallback(run, { timeout: 2500 });
+      } else {
+        timer = setTimeout(run, 900);
+      }
+    };
+
+    schedule();
+
     return () => {
       cancelled = true;
+      if (idleId != null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timer) clearTimeout(timer);
     };
   }, [applyCartResponse, refreshCart]);
 
