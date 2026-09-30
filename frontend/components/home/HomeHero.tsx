@@ -20,11 +20,11 @@ export function HomeHero() {
         ].join(" ")}
       >
         <Image
-          src="/images/home/homepage-banner.png"
+          src="/images/home/homepage-banner.jpg"
           alt=""
           fill
           priority
-          quality={90}
+          quality={70}
           sizes="100vw"
           className="object-cover object-[88%_30%] sm:object-[84%_28%] md:object-center"
           aria-hidden

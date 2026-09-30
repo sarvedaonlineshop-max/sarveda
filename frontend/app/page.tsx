@@ -10,6 +10,7 @@ import { HomeNewsletter } from "@/components/home/HomeNewsletter";
 import { HomeTrustPillars } from "@/components/home/HomeTrustPillars";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourses, fetchEvents, fetchBlogPosts } from "@/lib/api";
+import type { CourseListItem } from "@/lib/course-types";
 import { organizationJsonLd } from "@/lib/seo-product";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
@@ -22,6 +23,27 @@ export const metadata: Metadata = {
   robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
   alternates: { canonical: canonical("/") }
 };
+
+/** Card dates and instructor photos only — drop bios, FAQs, and curriculum from the homepage payload. */
+function courseForHome(course: CourseListItem): CourseListItem {
+  const extra = course.extra;
+  if (!extra || typeof extra !== "object") return course;
+  const slim: Record<string, unknown> = {};
+  for (const key of ["startDate", "endDate", "duration", "durationHours", "mode", "venue", "schedule", "sessions", "curriculum"]) {
+    if (extra[key] != null) slim[key] = extra[key];
+  }
+  if (Array.isArray(extra.teachers)) {
+    slim.teachers = extra.teachers.map((teacher) => {
+      if (!teacher || typeof teacher !== "object") return teacher;
+      const row = teacher as Record<string, unknown>;
+      return {
+        name: typeof row.name === "string" ? row.name : "",
+        imageUrl: typeof row.imageUrl === "string" ? row.imageUrl : null
+      };
+    });
+  }
+  return { ...course, extra: slim };
+}
 
 function websiteJsonLd() {
   return {
@@ -38,11 +60,14 @@ export default async function HomePage() {
   let posts: Awaited<ReturnType<typeof fetchBlogPosts>> = [];
 
   try {
-    [courses, events, posts] = await Promise.all([
+    const [courseRows, eventRows, postRows] = await Promise.all([
       fetchCourses({ next: { revalidate: 300 } }),
       fetchEvents({ next: { revalidate: 120 } }),
       fetchBlogPosts({ next: { revalidate: 120 } })
     ]);
+    courses = courseRows.map(courseForHome);
+    events = eventRows;
+    posts = postRows.slice(0, 3);
   } catch {
     /* Keep buildable when API is unreachable */
   }

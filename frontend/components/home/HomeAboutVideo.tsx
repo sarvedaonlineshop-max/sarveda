@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const HOME_ABOUT_VIDEO_SRC = "/images/home/homepage-about.mp4";
 export const HOME_ABOUT_POSTER_SRC = "/images/home/homepage-about-poster.jpg";
@@ -14,14 +14,15 @@ export function HomeAboutVideo({ className = "" }: { className?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
 
-  const startPlayback = useCallback(() => {
+  useEffect(() => {
+    if (!playing) return;
     const el = videoRef.current;
     if (!el) return;
-    setPlaying(true);
+    el.load();
     void el.play().catch(() => {
       setPlaying(false);
     });
-  }, []);
+  }, [playing]);
 
   return (
     <div className={`w-full py-6 sm:py-8 md:py-10 ${className}`.trim()}>
@@ -32,16 +33,16 @@ export function HomeAboutVideo({ className = "" }: { className?: string }) {
           poster={HOME_ABOUT_POSTER_SRC}
           controls={playing}
           playsInline
-          preload="metadata"
+          preload="none"
           onPlay={() => setPlaying(true)}
         >
-          <source src={HOME_ABOUT_VIDEO_SRC} type="video/mp4" />
+          {playing ? <source src={HOME_ABOUT_VIDEO_SRC} type="video/mp4" /> : null}
         </video>
 
         {!playing ? (
           <button
             type="button"
-            onClick={startPlayback}
+            onClick={() => setPlaying(true)}
             className="absolute inset-0 z-[1] flex items-center justify-center"
             aria-label="Play Sarveda film"
           >

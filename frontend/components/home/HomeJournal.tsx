@@ -52,7 +52,6 @@ export function HomeJournal({ posts }: Props) {
                         fill
                         sizes="(max-width: 1024px) 90vw, 28vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        unoptimized
                       />
                     ) : (
                       <div className="absolute inset-0 bg-brand-forest/20" />

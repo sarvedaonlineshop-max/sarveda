@@ -31,7 +31,6 @@ export function InstructorAvatars({ people, className = "", seam = false }: Prop
               fill
               className="object-cover object-center"
               sizes="50px"
-              unoptimized
             />
           ) : (
             <span className="flex h-full w-full items-center justify-center font-serif text-sm font-semibold text-brand-forest">

@@ -333,6 +333,10 @@ const nextConfig = {
     ];
   },
   images: {
+    // Cap the largest candidate so a desktop visit does not ask the optimizer for 3840px.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ["image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "sarveda.com", pathname: "/**" },
       { protocol: "https", hostname: "sarveda-media.s3.amazonaws.com", pathname: "/**" },

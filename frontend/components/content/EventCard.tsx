@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
@@ -74,11 +75,23 @@ export function EventCard({ event, compact = false }: Props) {
           {typeLabel}
         </span>
         {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt=""
-            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
-          />
+          imageSrc.startsWith("/api/") ? (
+            <img
+              src={imageSrc}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <Image
+              src={imageSrc}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 86vw, 340px"
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          )
         ) : (
           <div className="h-full w-full bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}
