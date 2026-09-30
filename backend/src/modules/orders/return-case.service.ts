@@ -526,6 +526,44 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
     request.closedAt = closed.closedAt;
   }
 
+  // Prepaid cancel/return: Payment may already be REFUNDED via gateway/webhook while the
+  // case row still says NONE / REFUND_PENDING — heal on read.
+  if (
+    !request.refundProcessedAt &&
+    (request.resolutionStatus === "NONE" ||
+      request.resolutionStatus === "REFUND_PENDING" ||
+      request.resolutionStatus === "REFUND_PROCESSING") &&
+    ["APPROVED", "PARTIALLY_APPROVED"].includes(request.status)
+  ) {
+    const { syncReturnCasesAfterOrderRefund } = await import("./service-request-refund-sync.service");
+    const healed = await syncReturnCasesAfterOrderRefund(request.orderId, {
+      reason: "Healed from payment refund state on case load"
+    });
+    if (healed > 0) {
+      const refreshed = await prisma.orderServiceRequest.findUnique({
+        where: { id: request.id },
+        select: {
+          resolutionStatus: true,
+          refundProcessedAt: true,
+          refundCompletedAt: true,
+          refundInitiatedAt: true,
+          refundTotalInPaise: true,
+          refundProviderReference: true,
+          closedAt: true
+        }
+      });
+      if (refreshed) {
+        request.resolutionStatus = refreshed.resolutionStatus;
+        request.refundProcessedAt = refreshed.refundProcessedAt;
+        request.refundCompletedAt = refreshed.refundCompletedAt;
+        request.refundInitiatedAt = refreshed.refundInitiatedAt;
+        request.refundTotalInPaise = refreshed.refundTotalInPaise;
+        request.refundProviderReference = refreshed.refundProviderReference;
+        request.closedAt = refreshed.closedAt;
+      }
+    }
+  }
+
   const stage = deriveReturnCaseStage(request);
   const policySummary = summarizeCaseShippingPolicy(
     request.items.map((i) => i.shippingRefundPolicy)

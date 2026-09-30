@@ -249,6 +249,21 @@ export async function finalizeGatewayRefund(opts: {
     );
   }
 
+  // Keep return/cancellation desk cases in sync with Payment refund state.
+  if (result.fullyRefunded || !result.duplicate) {
+    try {
+      const { syncReturnCasesAfterOrderRefund } = await import(
+        "../orders/service-request-refund-sync.service"
+      );
+      await syncReturnCasesAfterOrderRefund(opts.orderId, {
+        providerRefundId: opts.providerRefundId,
+        reason: opts.reason
+      });
+    } catch (err) {
+      logger.error("sync_return_cases_after_finalize_failed", { orderId: opts.orderId, err });
+    }
+  }
+
   return { fullyRefunded: result.fullyRefunded, duplicate: result.duplicate };
 }
 
@@ -324,6 +339,24 @@ export async function applyExternalProviderRefund(
         "REFUNDED",
         input.reason || `${input.provider} refund webhook`
       );
+    }
+
+    if (mappedStatus === "processed") {
+      try {
+        const { syncReturnCasesAfterOrderRefund } = await import(
+          "../orders/service-request-refund-sync.service"
+        );
+        await syncReturnCasesAfterOrderRefund(result.orderId, {
+          providerRefundId: input.providerRefundId,
+          amountInPaise: input.amountInPaise,
+          reason: input.reason || `${input.provider} refund webhook`
+        });
+      } catch (err) {
+        logger.error("sync_return_cases_after_webhook_duplicate_failed", {
+          orderId: result.orderId,
+          err
+        });
+      }
     }
 
     return {
@@ -420,6 +453,24 @@ export async function applyExternalProviderRefund(
         "REFUNDED",
         input.reason || `${input.provider} refund webhook`
       );
+    }
+
+    if (mappedStatus === "processed") {
+      try {
+        const { syncReturnCasesAfterOrderRefund } = await import(
+          "../orders/service-request-refund-sync.service"
+        );
+        await syncReturnCasesAfterOrderRefund(result.orderId, {
+          providerRefundId: input.providerRefundId,
+          amountInPaise: input.amountInPaise,
+          reason: input.reason || `${input.provider} refund webhook`
+        });
+      } catch (err) {
+        logger.error("sync_return_cases_after_webhook_failed", {
+          orderId: result.orderId,
+          err
+        });
+      }
     }
 
     return {

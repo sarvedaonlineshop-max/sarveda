@@ -718,7 +718,7 @@ export async function reviewServiceRequest(opts: {
     opts.approve && request.type === "CANCEL_BEFORE_DELIVERY"
       ? await prisma.payment.findMany({
           where: { orderId: request.orderId },
-          select: { provider: true, status: true }
+          select: { provider: true, status: true, amountInPaise: true, refundedInPaise: true }
         })
       : [];
   const closeCodCancellation =
@@ -726,6 +726,17 @@ export async function reviewServiceRequest(opts: {
     request.type === "CANCEL_BEFORE_DELIVERY" &&
     orderPayments.some((p) => p.provider === "COD") &&
     !orderPayments.some((p) => p.status === "CAPTURED");
+  const markPrepaidCancellationRefunded =
+    opts.approve &&
+    request.type === "CANCEL_BEFORE_DELIVERY" &&
+    !closeCodCancellation &&
+    orderPayments.some(
+      (p) =>
+        p.provider !== "COD" &&
+        (p.status === "REFUNDED" ||
+          (p.amountInPaise > 0 && (p.refundedInPaise ?? 0) >= p.amountInPaise))
+    );
+  const refundCloseNow = new Date();
 
   const updated = await prisma.orderServiceRequest.update({
     where: { id: request.id },
@@ -740,8 +751,16 @@ export async function reviewServiceRequest(opts: {
         ? { returnPhysicalStatus: "NOT_REQUIRED" as const }
         : {}),
       ...(closeCodCancellation
-        ? { resolutionStatus: "CLOSED" as const, closedAt: new Date() }
-        : {})
+        ? { resolutionStatus: "CLOSED" as const, closedAt: refundCloseNow }
+        : markPrepaidCancellationRefunded
+          ? {
+              resolutionStatus: "REFUNDED" as const,
+              refundProcessedAt: refundCloseNow,
+              refundInitiatedAt: refundCloseNow,
+              refundCompletedAt: refundCloseNow,
+              closedAt: refundCloseNow
+            }
+          : {})
     },
     include: { photos: true, items: { include: { photos: true } } }
   });

@@ -28,6 +28,7 @@ import { isAccountingEmailAllowed } from "@/lib/accounting-access";
 import { AdminAccountingSidebarTree } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
+import { AdminReturnsSidebarLink } from "@/components/admin/AdminReturnsSidebarLink";
 import { AdminShipmentsSidebarLink } from "@/components/admin/AdminShipmentsSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
@@ -79,7 +80,7 @@ const accountingFlagOn =
 
 const primaryNav: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: icon.dashboard, match: "exact" },
-  { href: "/admin/returns", label: "Returns", icon: icon.reports },
+  // Returns is rendered via AdminReturnsSidebarLink (pending-approval badge).
   { href: "/admin/products", label: "Products", icon: icon.products },
   { href: "/admin/inventory", label: "Inventory", icon: icon.inventory },
   { href: "/admin/content?type=courses", label: "Courses", icon: icon.courses },
@@ -226,7 +227,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         />
         <AdminOrdersSidebarLink onNavigate={onNavigate} />
         <AdminShipmentsSidebarLink onNavigate={onNavigate} />
-        {primaryNav.slice(1, 7).map((item) => (
+        <AdminReturnsSidebarLink onNavigate={onNavigate} />
+        {primaryNav.slice(1, 6).map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -238,7 +240,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
         ))}
         <AdminChatsSidebarLink onNavigate={onNavigate} />
-        {primaryNav.slice(7).map((item) => (
+        {primaryNav.slice(6).map((item) => (
           <NavLink
             key={item.href}
             item={item}
