@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
 
 import { ZONE_COOKIE, countryToZone, isValidZone } from "@/lib/currency";
 import { detectCountryFromHeaders } from "@/lib/geo-zone";
@@ -10,20 +9,6 @@ import { resolveStorePathToProductRedirect } from "@/lib/legacy-woo-product-url"
 const ZONE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const AUTH_COOKIE = "sarveda_auth";
 const MAINT_BYPASS_COOKIE = "sarveda_maint_bypass";
-
-async function isAdminSession(request: NextRequest): Promise<boolean> {
-  const token = request.cookies.get(AUTH_COOKIE)?.value?.trim();
-  if (!token) return false;
-  const secret = process.env.JWT_SECRET?.trim();
-  if (!secret) return false;
-  try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    const role = typeof payload.role === "string" ? payload.role : "";
-    return role === "ADMIN" || role === "SUPER_ADMIN";
-  } catch {
-    return false;
-  }
-}
 
 function isMaintenanceModeEnabled(): boolean {
   const value = process.env.MAINTENANCE_MODE?.trim().toLowerCase();
@@ -190,15 +175,6 @@ export async function middleware(request: NextRequest) {
       "https://sarveda.com"
     );
     return NextResponse.redirect(target, 308);
-  }
-
-  // Installed PWA starts at `/`. Send logged-in admins straight to /admin (no storefront flash).
-  if (pathname === "/" || pathname === "") {
-    if (await isAdminSession(request)) {
-      const redirect = NextResponse.redirect(new URL("/admin", publicOrigin(request)), 307);
-      redirect.headers.set("Cache-Control", "no-store");
-      return redirect;
-    }
   }
 
   // Cutover / ops: temporary public maintenance (admin + /api stay open via matcher).
