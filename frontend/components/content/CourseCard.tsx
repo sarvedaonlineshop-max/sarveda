@@ -74,23 +74,13 @@ export function CourseCard({ course, compact = false }: Props) {
           {tagLabel}
         </span>
         {course.imageUrl ? (
-          course.imageUrl.startsWith("/api/") ? (
-            <img
-              src={course.imageUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
-            />
-          ) : (
-            <Image
-              src={course.imageUrl}
-              alt=""
-              fill
-              sizes="(max-width: 768px) 86vw, 340px"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
-            />
-          )
+          <Image
+            src={course.imageUrl}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 86vw, 340px"
+            className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+          />
         ) : (
           <div className="h-full w-full bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}

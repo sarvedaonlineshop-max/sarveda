@@ -64,8 +64,9 @@ export default async function HomePage() {
       fetchEvents({ next: { revalidate: 120 } }),
       fetchBlogPosts({ next: { revalidate: 120 } })
     ]);
-    courses = courseRows.map(courseForHome);
-    events = eventRows;
+    // Keep the home rail light — full catalogs blow HTML + mentor/image work on mobile LCP.
+    courses = courseRows.map(courseForHome).slice(0, 8);
+    events = eventRows.slice(0, 6);
     posts = postRows.slice(0, 3);
   } catch {
     /* Keep buildable when API is unreachable */
@@ -75,27 +76,14 @@ export default async function HomePage() {
     <div className="overflow-x-hidden bg-brand-cream md:bg-brand-cream">
       <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
 
-      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
-        <HomeHero />
-      </div>
-      <div className="sv-listing-hero-fade-late md:opacity-100 md:[animation:none]">
-        <HomeTrustPillars />
-      </div>
-      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
-        <HomeInstrumentCategories />
-      </div>
-      <div className="sv-listing-hero-fade-late md:opacity-100 md:[animation:none]">
-        <HomeExperienceSections courses={courses} events={events} />
-      </div>
-      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
-        <HomeJournal posts={posts} />
-      </div>
-      <div className="sv-listing-hero-fade-late md:opacity-100 md:[animation:none]">
-        <HomeInstagram />
-      </div>
-      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
-        <HomeNewsletter />
-      </div>
+      {/* No entrance fades on the homepage — opacity:0 until JS/CSS runs was crushing mobile LCP. */}
+      <HomeHero />
+      <HomeTrustPillars />
+      <HomeInstrumentCategories />
+      <HomeExperienceSections courses={courses} events={events} />
+      <HomeJournal posts={posts} />
+      <HomeInstagram />
+      <HomeNewsletter />
     </div>
   );
 }

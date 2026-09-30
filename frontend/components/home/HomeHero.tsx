@@ -44,6 +44,7 @@ export function HomeHero() {
             src="/images/home/hero-spiral-overlay.png"
             alt=""
             fill
+            loading="lazy"
             sizes="(max-width: 768px) 48vw, 30vw"
             className="object-contain object-right md:object-left"
           />

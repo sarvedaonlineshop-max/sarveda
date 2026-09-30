@@ -12,17 +12,26 @@ import { getSiteUrl, isProductionSite } from "@/lib/site";
 import "./globals.css";
 
 const isProd = process.env.NODE_ENV === "production";
-const ga4Id = process.env.NEXT_PUBLIC_GA4_ID?.trim();
+
+/** Ignore empty / placeholder env values like G-XXXXXXXXXX so we never preload junk tags. */
+function publicMeasurementId(raw: string | undefined): string {
+  const id = raw?.trim() || "";
+  if (!id) return "";
+  if (/X{4,}/i.test(id) || /placeholder/i.test(id)) return "";
+  return id;
+}
+
+const ga4Id = publicMeasurementId(process.env.NEXT_PUBLIC_GA4_ID);
 /** Ads Meta Pixel — website-code only (not GTM) to avoid double counting. */
 const metaPixelId =
-  process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ||
+  publicMeasurementId(process.env.NEXT_PUBLIC_META_PIXEL_ID) ||
   (isProductionSite() ? "901430008340660" : "");
 /** Ads team GTM container — override with NEXT_PUBLIC_GTM_ID if needed. */
 const gtmId =
-  process.env.NEXT_PUBLIC_GTM_ID?.trim() ||
+  publicMeasurementId(process.env.NEXT_PUBLIC_GTM_ID) ||
   (isProductionSite() ? "GTM-N92L9537" : "");
 /** Optional Google Ads account for direct conversion (AW-…). */
-const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() || "";
+const googleAdsId = publicMeasurementId(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID);
 
 /** Body / UI — designer: Manrope (was Inter; revert by swapping imports). */
 const manrope = Manrope({
@@ -109,7 +118,8 @@ export default function RootLayout({
       <body className={`${manrope.className} min-h-screen bg-brand-cream font-sans tracking-wide text-brand-ink antialiased`}>
         {gtmId ? (
           <>
-            <Script id="google-tag-manager" strategy="beforeInteractive">
+            {/* afterInteractive: beforeInteractive was dominating mobile TBT/LCP */}
+            <Script id="google-tag-manager" strategy="afterInteractive">
               {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -168,8 +178,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         ) : null}
         {isProd && metaPixelId ? (
           <>
-            {/* beforeInteractive so fbq exists before order-confirmed fires Purchase */}
-            <Script id="meta-pixel" strategy="beforeInteractive">
+            {/* afterInteractive is enough for Purchase on order-confirmed (fbq queues calls). */}
+            <Script id="meta-pixel" strategy="afterInteractive">
               {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
