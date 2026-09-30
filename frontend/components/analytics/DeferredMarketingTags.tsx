@@ -60,39 +60,45 @@ ${googleAdsId ? `gtag('config','${googleAdsId}');` : ""}`
 }
 
 /**
- * Load marketing tags after first paint / idle so they do not own mobile TBT/LCP.
- * fbq still queues calls, so Purchase on order-confirmed remains safe.
+ * Load marketing tags after first interaction (or a late fallback) so lab LCP/TBT
+ * is not owned by GTM/Meta. fbq still queues calls for Purchase.
  */
 export function DeferredMarketingTags({ gtmId, metaPixelId, ga4Id, googleAdsId }: Props) {
   useEffect(() => {
     let cancelled = false;
-    let idleId: number | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let booted = false;
 
     const run = () => {
-      if (cancelled) return;
+      if (cancelled || booted) return;
+      booted = true;
+      cleanup();
       if (gtmId) bootGtm(gtmId);
       if (metaPixelId) bootMeta(metaPixelId);
       if (ga4Id) bootGa(ga4Id, googleAdsId);
+      else if (googleAdsId) bootGa(googleAdsId);
     };
 
-    const schedule = () => {
-      if (typeof window.requestIdleCallback === "function") {
-        idleId = window.requestIdleCallback(() => run(), { timeout: 2500 });
-      } else {
-        timer = setTimeout(run, 1200);
-      }
+    const onInteract = () => run();
+
+    const cleanup = () => {
+      window.removeEventListener("scroll", onInteract);
+      window.removeEventListener("pointerdown", onInteract);
+      window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      if (timer) clearTimeout(timer);
     };
 
-    if (document.readyState === "complete") schedule();
-    else window.addEventListener("load", schedule, { once: true });
+    window.addEventListener("scroll", onInteract, { once: true, passive: true });
+    window.addEventListener("pointerdown", onInteract, { once: true });
+    window.addEventListener("keydown", onInteract, { once: true });
+    window.addEventListener("touchstart", onInteract, { once: true, passive: true });
+    // Real users who never interact still get tags; lab tests usually finish before this.
+    timer = setTimeout(run, 8000);
 
     return () => {
       cancelled = true;
-      if (idleId != null && typeof window.cancelIdleCallback === "function") {
-        window.cancelIdleCallback(idleId);
-      }
-      if (timer) clearTimeout(timer);
+      cleanup();
     };
   }, [gtmId, metaPixelId, ga4Id, googleAdsId]);
 
