@@ -30,7 +30,6 @@ export function HomeAboutVideo({ className = "" }: { className?: string }) {
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
-          poster={HOME_ABOUT_POSTER_SRC}
           controls={playing}
           playsInline
           preload="none"
