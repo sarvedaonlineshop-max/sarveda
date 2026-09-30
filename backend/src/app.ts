@@ -230,14 +230,22 @@ app.use("/api/checkout", optionalAuth, checkoutLimiter);
 app.use("/api/payments/razorpay/verify", paymentLimiter);
 app.use("/api/payments/stripe", paymentLimiter);
 
+function isLoopback(req: Request): boolean {
+  const ip = req.ip ?? "";
+  return ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+}
+
 app.use(
   "/api",
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    // Storefront + Vercel ISR can burst; 200/15min caused 429 plain-text during builds
+    // Storefront + Vercel ISR can burst; 200/15min caused 429 plain-text during builds.
+    // Next on this box fetches Express at 127.0.0.1, so every product page shares one
+    // bucket. A catalog crawl then 429s and the PDP caches HTTP 404.
     max: process.env.NODE_ENV === "production" ? 800 : 2000,
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: (req) => isLoopback(req)
   })
 );
 

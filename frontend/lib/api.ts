@@ -90,8 +90,10 @@ export async function fetchProductBySlug(
     }
   });
   const json = await parseApiResponse<{ product: ProductDetail }>(res);
+  if (res.status === 404) return null;
   if (!res.ok || !("success" in json) || !json.success) {
-    return null;
+    const err = json as ApiErrorBody;
+    throw new Error(err.error || `Request failed: ${res.status}`);
   }
   return json.data.product;
 }
@@ -283,10 +285,14 @@ export async function fetchRelatedProducts(
     /* fall through to category list */
   }
 
-  const list = categorySlug
-    ? await fetchProductList({ category: categorySlug }, init, { limit: 16 })
-    : await fetchProductList({}, init, { limit: 16 });
-  return list.items.filter((p) => p.slug !== excludeSlug).slice(0, take);
+  try {
+    const list = categorySlug
+      ? await fetchProductList({ category: categorySlug }, init, { limit: 16 })
+      : await fetchProductList({}, init, { limit: 16 });
+    return list.items.filter((p) => p.slug !== excludeSlug).slice(0, take);
+  } catch {
+    return [];
+  }
 }
 
 /** Slugs for static generation (build-time; falls back to [] if API is offline). */
