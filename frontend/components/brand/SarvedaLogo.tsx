@@ -68,7 +68,7 @@ export function SarvedaLogo({
         }
         style={responsive ? { width: "auto" } : { height, width }}
         decoding="async"
-        fetchPriority="high"
+        fetchPriority={tone === "onLight" ? "high" : "low"}
         aria-hidden={!showWordmark}
       />
     </div>
