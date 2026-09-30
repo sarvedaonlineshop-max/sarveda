@@ -13,6 +13,7 @@ import {
   Timer
 } from "lucide-react";
 import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalytics";
+import { AdminOrderFlowChart } from "@/components/admin/AdminOrderFlowChart";
 import { AdminSkeleton, AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 import type { DashboardData } from "@/lib/admin-api";
@@ -311,6 +312,8 @@ export default function AdminDashboardPage() {
           </motion.div>
         ))}
       </div>
+
+      <AdminOrderFlowChart points={data.ordersByDayLast30 ?? []} />
 
       <div>
         <h3 style={{ fontSize: "20px", fontWeight: 800, color: "var(--admin-text, #2c2420)", marginBottom: "12px", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>Analytics</h3>

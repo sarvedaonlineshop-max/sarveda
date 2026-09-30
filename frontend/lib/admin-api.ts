@@ -89,6 +89,7 @@ export type DashboardData = {
       pendingOrderNumbers: string[];
     }>;
   };
+  ordersByDayLast30?: Array<{ date: string; orders: number }>;
   revenueByDayLast7: Array<{ date: string; revenueInPaise: number }>;
   revenueByDayLast30: Array<{ date: string; revenueInPaise: number }>;
   revenueByMonthLast12: Array<{ month: string; revenueInPaise: number }>;

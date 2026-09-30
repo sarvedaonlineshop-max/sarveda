@@ -126,6 +126,24 @@ function buildMonthlySeries(
   return keys.map((month) => ({ month, revenueInPaise: byMonth.get(month) ?? 0 }));
 }
 
+function buildDailyOrderCountSeriesKolkata(
+  startDay: Date,
+  dayCount: number,
+  orders: { placedAt: Date | null; createdAt: Date }[]
+): Array<{ date: string; orders: number }> {
+  const byDay = new Map<string, number>();
+  for (let i = 0; i < dayCount; i++) {
+    byDay.set(dateKeyKolkata(addDaysInstant(startDay, i)), 0);
+  }
+  for (const order of orders) {
+    const key = dateKeyKolkata(order.placedAt ?? order.createdAt);
+    if (byDay.has(key)) byDay.set(key, (byDay.get(key) ?? 0) + 1);
+  }
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, orders]) => ({ date, orders }));
+}
+
 function buildDailySeriesKolkata(
   startDay: Date,
   dayCount: number,
@@ -202,7 +220,8 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       recentOrders,
       ordersForChart7,
       ordersForChart30,
-      ordersForChart12m
+      ordersForChart12m,
+      ordersForFlowChart
     ] = await Promise.all([
       prisma.order.aggregate({
         where: revenueWhere,
@@ -259,6 +278,10 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       prisma.order.findMany({
         where: { AND: [revenueWhere, { placedAt: { gte: chart12mStart } }] },
         select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
+      }),
+      prisma.order.findMany({
+        where: { AND: [shopOrders, { placedAt: { gte: chart30Start } }] },
+        select: { placedAt: true, createdAt: true }
       })
     ]);
 
@@ -283,6 +306,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     const reservedSummary = await getReservedStockSummary();
     const reservedMismatchSamples = await listReservedMismatches(8);
 
+    const ordersByDayLast30 = buildDailyOrderCountSeriesKolkata(chart30Start, 30, ordersForFlowChart);
     const revenueByDayLast7 = buildDailySeriesKolkata(chart7Start, 7, ordersForChart7);
     const revenueByDayLast30 = buildDailySeriesKolkata(chart30Start, 30, ordersForChart30);
     const revenueByMonthLast12 = buildMonthlySeriesKolkata(now, 12, ordersForChart12m);
@@ -347,6 +371,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
             pendingOrderNumbers: r.pendingOrderNumbers
           }))
         },
+        ordersByDayLast30,
         revenueByDayLast7,
         revenueByDayLast30,
         revenueByMonthLast12,
