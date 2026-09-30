@@ -714,6 +714,19 @@ export async function reviewServiceRequest(opts: {
     };
   }
 
+  const orderPayments =
+    opts.approve && request.type === "CANCEL_BEFORE_DELIVERY"
+      ? await prisma.payment.findMany({
+          where: { orderId: request.orderId },
+          select: { provider: true, status: true }
+        })
+      : [];
+  const closeCodCancellation =
+    opts.approve &&
+    request.type === "CANCEL_BEFORE_DELIVERY" &&
+    orderPayments.some((p) => p.provider === "COD") &&
+    !orderPayments.some((p) => p.status === "CAPTURED");
+
   const updated = await prisma.orderServiceRequest.update({
     where: { id: request.id },
     data: {
@@ -722,7 +735,13 @@ export async function reviewServiceRequest(opts: {
       reviewedByEmail: opts.adminEmail,
       adminNote: opts.adminNote?.trim() || null,
       slaPausedAt: null,
-      ...(opts.approve ? { refundApprovedAt: request.type === "REFUND_AFTER_DELIVERY" ? new Date() : undefined } : {})
+      ...(opts.approve ? { refundApprovedAt: request.type === "REFUND_AFTER_DELIVERY" ? new Date() : undefined } : {}),
+      ...(opts.approve && request.type === "CANCEL_BEFORE_DELIVERY"
+        ? { returnPhysicalStatus: "NOT_REQUIRED" as const }
+        : {}),
+      ...(closeCodCancellation
+        ? { resolutionStatus: "CLOSED" as const, closedAt: new Date() }
+        : {})
     },
     include: { photos: true, items: { include: { photos: true } } }
   });

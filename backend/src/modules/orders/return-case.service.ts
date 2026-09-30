@@ -477,9 +477,8 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
             }
           },
           payments: {
-            where: { status: "CAPTURED" },
             orderBy: { createdAt: "desc" },
-            take: 3,
+            take: 5,
             select: {
               id: true,
               provider: true,
@@ -498,8 +497,36 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
   }
 
   const events = await listCaseEvents(request.id);
+  // COD rows are usually PENDING (cash not captured). Prefer COD when present.
+  const payments = request.order.payments;
+  const isCodPayment = payments.some((p) => p.provider === "COD");
+  const payment =
+    payments.find((p) => p.provider === "COD") ??
+    payments.find((p) => p.status === "CAPTURED") ??
+    payments[0] ??
+    null;
+
+  // Pre-dispatch COD cancel: no gateway refund — close the case so UI does not say "Refund pending".
+  if (
+    request.type === "CANCEL_BEFORE_DELIVERY" &&
+    request.status === "APPROVED" &&
+    request.returnPhysicalStatus === "NOT_REQUIRED" &&
+    isCodPayment &&
+    !payments.some((p) => p.status === "CAPTURED") &&
+    !request.refundProcessedAt &&
+    !request.closedAt &&
+    (request.resolutionStatus === "NONE" || request.resolutionStatus === "REFUND_PENDING")
+  ) {
+    const closed = await prisma.orderServiceRequest.update({
+      where: { id: request.id },
+      data: { resolutionStatus: "CLOSED", closedAt: new Date() },
+      select: { resolutionStatus: true, closedAt: true }
+    });
+    request.resolutionStatus = closed.resolutionStatus;
+    request.closedAt = closed.closedAt;
+  }
+
   const stage = deriveReturnCaseStage(request);
-  const payment = request.order.payments[0] ?? null;
   const policySummary = summarizeCaseShippingPolicy(
     request.items.map((i) => i.shippingRefundPolicy)
   );
