@@ -6,5 +6,6 @@ export const CANONICAL_STORE_ADMINS: ReadonlyArray<{
 }> = [
   { email: "sowmya@sarveda.com", name: "Sowmya" },
   { email: "accounts@sarveda.com", name: "Accounts" },
-  { email: "prem@sarveda.com", name: "Prem", resetPassword: true }
+  { email: "prem@sarveda.com", name: "Prem", resetPassword: true },
+  { email: "neetha@sarveda.com", name: "Neetha", resetPassword: true }
 ];
