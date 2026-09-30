@@ -6,7 +6,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
-import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
+import { signOutToLogin } from "@/components/auth/signOutToLogin";
 import { getApiBase } from "@/lib/api";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchProfileDetails, updateProfile, type PrimaryAddress } from "@/lib/auth-client";

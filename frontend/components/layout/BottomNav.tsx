@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
-import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
+import { signOutToLogin } from "@/components/auth/signOutToLogin";
 import { isAdminRole } from "@/lib/auth-client";
 import { isMainNavActive } from "@/lib/main-nav";
 import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
@@ -163,7 +162,6 @@ export function BottomNav() {
   const [showMoreHint, setShowMoreHint] = useState(false);
   const [profileTab, setProfileTab] = useState("details");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -343,39 +341,25 @@ export function BottomNav() {
 
   return (
     <>
-      <AnimatePresence>
-        {menuOpen ? (
-          <motion.button
-            key="menu-backdrop"
-            type="button"
-            aria-label="Close navigation"
-            className="fixed inset-0 z-[70] bg-black/40 md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0.08 : 0.22 }}
-            onClick={() => {
-              setMenuOpen(false);
-              window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
+      {menuOpen ? (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          className="fixed inset-0 z-[70] bg-black/40 md:hidden"
+          onClick={() => {
+            setMenuOpen(false);
+            window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
+          }}
+        />
+      ) : null}
 
-      <AnimatePresence>
-        {menuOpen ? (
-          <motion.div
-            key="menu-sheet"
-            className="fixed inset-x-0 z-[80] md:hidden"
-            style={{
-              top: "var(--storefront-header-live-offset, 4.5rem)",
-              transformOrigin: "top center"
-            }}
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -28, scaleY: 0.86 }}
-            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scaleY: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -20, scaleY: 0.92 }}
-            transition={{ duration: reduceMotion ? 0.1 : 0.34, ease: [0.22, 1, 0.36, 1] }}
-          >
+      {menuOpen ? (
+        <div
+          className="fixed inset-x-0 z-[80] md:hidden"
+          style={{
+            top: "var(--storefront-header-live-offset, 4.5rem)"
+          }}
+        >
             <div className="relative mx-auto max-w-sm px-3 pt-2">
               <div
                 className="relative overflow-hidden rounded-b-2xl rounded-t-xl border border-white/10 shadow-[0_18px_40px_rgba(16,32,26,0.28),0_4px_12px_rgba(16,32,26,0.12)]"
@@ -520,9 +504,8 @@ export function BottomNav() {
                 ) : null}
               </div>
             </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+        </div>
+      ) : null}
 
       <nav
         className="fixed inset-x-0 bottom-0 z-[65] border-t border-white/10 safe-area-pb md:hidden"

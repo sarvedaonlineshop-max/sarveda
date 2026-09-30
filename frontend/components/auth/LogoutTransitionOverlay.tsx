@@ -4,15 +4,13 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoader";
-import { logoutSession } from "@/lib/auth-client";
-
-export const LOGOUT_START_EVENT = "sarveda-logout-start";
+import { LOGOUT_START_EVENT } from "@/components/auth/signOutToLogin";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Full-screen Sarveda signature overlay while signing out.
- * Mount once near the app root. Trigger via {@link signOutToLogin}.
+ * Mount once near the app root (deferred). Trigger via {@link signOutToLogin}.
  */
 export function LogoutTransitionOverlay() {
   const [visible, setVisible] = useState(false);
@@ -54,14 +52,4 @@ export function LogoutTransitionOverlay() {
   );
 }
 
-/** Storefront sign-out: show overlay, clear session, go to login. */
-export async function signOutToLogin(): Promise<void> {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(LOGOUT_START_EVENT));
-  }
-  try {
-    await logoutSession();
-  } finally {
-    window.location.assign("/login");
-  }
-}
+export { signOutToLogin, LOGOUT_START_EVENT } from "@/components/auth/signOutToLogin";

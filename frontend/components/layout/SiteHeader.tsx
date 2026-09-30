@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
-import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
+import { signOutToLogin } from "@/components/auth/signOutToLogin";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe } from "@/lib/auth-client";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";

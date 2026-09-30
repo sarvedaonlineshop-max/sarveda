@@ -220,25 +220,36 @@ export type UpdateProfileInput = {
   };
 };
 
+/** Coalesce concurrent /api/auth/me calls (header + cart boot) into one network request. */
+let profileInflight: Promise<ProfileSession | null> | null = null;
+
 export async function fetchProfileDetails(): Promise<ProfileSession | null> {
-  try {
-    const res = await fetch(`${getApiBase()}/api/auth/me`, {
-      credentials: "include",
-      headers: { Accept: "application/json" }
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      success?: boolean;
-      data?: { user: PublicUser; primaryAddress?: PrimaryAddress | null };
-    };
-    if (!json.success || !json.data?.user) return null;
-    return {
-      user: json.data.user,
-      primaryAddress: json.data.primaryAddress ?? null
-    };
-  } catch {
-    return null;
-  }
+  if (profileInflight) return profileInflight;
+
+  profileInflight = (async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/auth/me`, {
+        credentials: "include",
+        headers: { Accept: "application/json" }
+      });
+      if (!res.ok) return null;
+      const json = (await res.json()) as {
+        success?: boolean;
+        data?: { user: PublicUser; primaryAddress?: PrimaryAddress | null };
+      };
+      if (!json.success || !json.data?.user) return null;
+      return {
+        user: json.data.user,
+        primaryAddress: json.data.primaryAddress ?? null
+      };
+    } catch {
+      return null;
+    } finally {
+      profileInflight = null;
+    }
+  })();
+
+  return profileInflight;
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<ProfileSession> {
