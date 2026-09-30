@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
-import Script from "next/script";
 
+import { DeferredMarketingTags } from "@/components/analytics/DeferredMarketingTags";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { AttributionProvider } from "@/components/attribution/AttributionProvider";
 import { LogoutTransitionOverlay } from "@/components/auth/LogoutTransitionOverlay";
@@ -113,97 +113,41 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const marketingEnabled = Boolean(gtmId || (isProd && (ga4Id || metaPixelId || googleAdsId)));
+
   return (
     <html lang="en" className={`${manrope.variable} ${cormorant.variable}`}>
       <body className={`${manrope.className} min-h-screen bg-brand-cream font-sans tracking-wide text-brand-ink antialiased`}>
         {gtmId ? (
-          <>
-            {/* afterInteractive: beforeInteractive was dominating mobile TBT/LCP */}
-            <Script id="google-tag-manager" strategy="afterInteractive">
-              {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${gtmId}');`}
-            </Script>
-            <noscript>
-              <iframe
-                src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-                height={0}
-                width={0}
-                style={{ display: "none", visibility: "hidden" }}
-                title="Google Tag Manager"
-              />
-            </noscript>
-          </>
-        ) : null}
-        {isProd && ga4Id ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
-              strategy="afterInteractive"
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height={0}
+              width={0}
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
             />
-            <Script id="ga4-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${ga4Id}', {
-                  page_path: window.location.pathname,
-                });
-                ${
-                  googleAdsId
-                    ? `gtag('config', '${googleAdsId}');`
-                    : ""
-                }
-              `}
-            </Script>
-          </>
-        ) : null}
-        {isProd && !ga4Id && googleAdsId ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-ads-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${googleAdsId}');
-              `}
-            </Script>
-          </>
+          </noscript>
         ) : null}
         {isProd && metaPixelId ? (
-          <>
-            {/* afterInteractive is enough for Purchase on order-confirmed (fbq queues calls). */}
-            <Script id="meta-pixel" strategy="afterInteractive">
-              {`
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${metaPixelId}');
-              fbq('track', 'PageView');
-            `}
-            </Script>
-            <noscript>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                height={1}
-                width={1}
-                style={{ display: "none" }}
-                src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
-                alt=""
-              />
-            </noscript>
-          </>
+          <noscript>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              height={1}
+              width={1}
+              style={{ display: "none" }}
+              src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+              alt=""
+            />
+          </noscript>
+        ) : null}
+        {marketingEnabled ? (
+          <DeferredMarketingTags
+            gtmId={gtmId || undefined}
+            metaPixelId={isProd ? metaPixelId || undefined : undefined}
+            ga4Id={isProd ? ga4Id || undefined : undefined}
+            googleAdsId={isProd ? googleAdsId || undefined : undefined}
+          />
         ) : null}
         <CartProvider>
           <AttributionProvider>

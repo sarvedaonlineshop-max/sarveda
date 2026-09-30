@@ -1,17 +1,35 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 
-import { HomeExperienceSections } from "@/components/home/HomeExperienceSections";
 import { HomeHero } from "@/components/home/HomeHero";
-import { HomeInstagram } from "@/components/home/HomeInstagram";
-import { HomeInstrumentCategories } from "@/components/home/HomeInstrumentCategories";
-import { HomeJournal } from "@/components/home/HomeJournal";
-import { HomeNewsletter } from "@/components/home/HomeNewsletter";
 import { HomeTrustPillars } from "@/components/home/HomeTrustPillars";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourses, fetchEvents, fetchBlogPosts } from "@/lib/api";
 import type { CourseListItem } from "@/lib/course-types";
 import { organizationJsonLd } from "@/lib/seo-product";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
+
+const HomeInstrumentCategories = dynamic(
+  () =>
+    import("@/components/home/HomeInstrumentCategories").then((m) => m.HomeInstrumentCategories),
+  { ssr: true }
+);
+const HomeExperienceSections = dynamic(
+  () => import("@/components/home/HomeExperienceSections").then((m) => m.HomeExperienceSections),
+  { ssr: true }
+);
+const HomeJournal = dynamic(
+  () => import("@/components/home/HomeJournal").then((m) => m.HomeJournal),
+  { ssr: true }
+);
+const HomeInstagram = dynamic(
+  () => import("@/components/home/HomeInstagram").then((m) => m.HomeInstagram),
+  { ssr: true }
+);
+const HomeNewsletter = dynamic(
+  () => import("@/components/home/HomeNewsletter").then((m) => m.HomeNewsletter),
+  { ssr: true }
+);
 
 export const revalidate = 120;
 
