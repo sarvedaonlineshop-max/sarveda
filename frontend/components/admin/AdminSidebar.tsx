@@ -19,12 +19,14 @@ import {
   ShoppingCart,
   Star,
   Tags,
+  Server,
   Truck,
   UserRound,
   Users
 } from "lucide-react";
 import { logoutSession } from "@/lib/auth-client";
 import { isAccountingEmailAllowed } from "@/lib/accounting-access";
+import { isServersDashboardEmail } from "@/lib/servers-access";
 import { AdminAccountingSidebarTree } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
@@ -67,7 +69,8 @@ const icon = {
   catalogGaps: <ScanSearch {...iconProps} />,
   purchases: <ShoppingCart {...iconProps} />,
   content: <FileText {...iconProps} />,
-  activity: <Activity {...iconProps} />
+  activity: <Activity {...iconProps} />,
+  servers: <Server {...iconProps} />
 };
 
 const purchasesEnabled =
@@ -281,6 +284,18 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
         ))}
       </NavGroup>
+
+      {isServersDashboardEmail(adminUser?.email) ? (
+        <NavGroup label="Servers">
+          <NavLink
+            item={{ href: "/admin/servers", label: "Status", icon: icon.servers }}
+            activePath={activePath}
+            pendingHref={pendingHref}
+            onNavigate={onNavigate}
+            beginNavigation={beginNavigation}
+          />
+        </NavGroup>
+      ) : null}
 
       {isSuper ? (
         <NavGroup label="Super admin">
