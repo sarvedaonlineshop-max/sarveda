@@ -9,12 +9,11 @@
  * Evidence: docs/audit/merchant_woo_sarveda_mapping.tsv (NEEDS 301 rows).
  * Do NOT change Product.slug values; this map preserves old landing leaves only.
  *
- * Unresolved audited leaves (no redirect): elemental-chimes, box-tanpura.
+ * Unresolved audited leaves (no redirect): box-tanpura.
  *
  * Yoast product-sitemap leaves still MANUAL_REVIEW (no single proven native target):
- * engraved-copper-water-bottles (split plain/vintage; Woo parent 6080 absent),
- * natural-bamboo-xylophone-with-5-keys, copper-bottle-curved-copper-diamond-groove,
- * crystal-bowl-o-rings-support-rings, overtone-flute, overtone-flute-2.
+ * natural-bamboo-xylophone-with-5-keys, crystal-bowl-o-rings-support-rings,
+ * overtone-flute, overtone-flute-2.
  */
 
 /** Explicit audited Woo leaf → current Product.slug (renames only; leaf ≠ slug ignoring case). */
@@ -104,6 +103,20 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "yoga-strap": "yoga-belt-strap",
   "zafu-meditation-cushion-with-lotus-embroidery": "zafu-meditation-cushion-lotus-embroidery",
   "zafu-zabuton-meditation-cushion-combo-with-lotus-embroidery": "zafu-zabuton-combo-lotus-embroidery",
+  // Owner-confirmed 2026-10-01. Old slugs that 404; live catalog pages below.
+  "8-keys-wooden-xylophone": "teak-wood-stainless-steel-xylophone",
+  "32-bar-rod-chime": "25-bar-rod-chime",
+  "singing-bowl-handmade-with-mantra": "singing-bowls-with-sacred-mantra-printed",
+  "kenari-seed-shell-shaker-with-bamboo-handle": "kenari-seed-shell-shakers",
+  "kenari-seed-shell-shaker-large": "kenari-seed-shell-shakers",
+  "6-3-inches-mini-tongue-drum": "11-note-tongue-drum",
+  "handmade-polished-singing-bowls-for-sound-therapy": "handmade-singing-bowls-all-sizes",
+  "shamanic-drum-with-butterfly-artwork": "shamanic-drum",
+  "engraved-copper-water-bottles": "7-chakras-vintage-copper-bottles",
+  "copper-bottle-curved-copper-diamond-groove": "copper-bottle-curved-vintage-hammered",
+  "elemental-chimes": "elemental-chimes-new",
+  "wooden-maracas-shaker-with-dot-painting": "wooden-maracas-shakers-plain-dot-painted",
+  "9-10-notes-handpan-drum-handcrafted-to-precision": "handpan",
 };
 
 /**
@@ -112,7 +125,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
  */
 export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "11-note-tongue-drum",
-  "32-bar-rod-chime",
+  "25-bar-rod-chime",
   "7-chakra-morchang",
   "7-chakras-copper-bottles-with-handle",
   "7-chakras-mystical-incense-sticks-set",
@@ -121,7 +134,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "7-chakras-yoga-mats",
   "8-key-kalimba",
   "8-keys-metallophone",
-  "8-keys-wooden-xylophone",
+  "elemental-chimes-new",
   "Copper-Tongue-Cleaner",
   "angel-tuning-forks",
   "ankh",
@@ -263,7 +276,6 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
 
 /** Explicit no-target leaves from the Merchant audit — never invent a destination. */
 export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set([
-  "elemental-chimes",
   "box-tanpura"
 ]);
 
@@ -272,12 +284,10 @@ export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set([
  * (split parents, missing wooCommerceId, or catalog gap). Do not 301-guess.
  */
 export const LEGACY_WOO_MANUAL_REVIEW_LEAVES: ReadonlySet<string> = new Set([
-  "engraved-copper-water-bottles", // Woo 6080 split → plain 5675 + vintage 5682
   "natural-bamboo-xylophone-with-5-keys", // SKU MI-XP-B-5 unmatched on Sarveda
-  "copper-bottle-curved-copper-diamond-groove", // Woo 5934 absent
-  "crystal-bowl-o-rings-support-rings", // Woo 49760 absent
-  "overtone-flute", // Woo 51353 absent
-  "overtone-flute-2" // Woo 51382 absent
+  "crystal-bowl-o-rings-support-rings", // Woo 49760 absent — add tonight
+  "overtone-flute", // Woo 51353 absent — create tonight
+  "overtone-flute-2" // Woo 51382 absent — create tonight
 ]);
 
 const SLUG_SAFE = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;

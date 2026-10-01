@@ -99,17 +99,16 @@ describe("resolveLegacyWooProductSlug", () => {
     }
   });
 
-  it("leaves elemental-chimes and box-tanpura unresolved", () => {
-    assert.ok(LEGACY_WOO_UNRESOLVED_LEAVES.has("elemental-chimes"));
+  it("leaves box-tanpura unresolved and sends elemental-chimes to the live page", () => {
     assert.ok(LEGACY_WOO_UNRESOLVED_LEAVES.has("box-tanpura"));
-    assert.deepEqual(resolveLegacyWooProductSlug("elemental-chimes"), {
-      ok: false,
-      reason: "unresolved_audit"
-    });
+    assert.equal(LEGACY_WOO_UNRESOLVED_LEAVES.has("elemental-chimes"), false);
     assert.deepEqual(resolveLegacyWooProductSlug("box-tanpura"), {
       ok: false,
       reason: "unresolved_audit"
     });
+    const chimes = resolveLegacyWooProductSlug("elemental-chimes");
+    assert.equal(chimes.ok, true);
+    if (chimes.ok) assert.equal(chimes.slug, "elemental-chimes-new");
   });
 
   it("maps proven Yoast product-sitemap aliases", () => {
@@ -176,7 +175,19 @@ describe("resolveLegacyWooProductSlug", () => {
       "/product/coconut-maracas-shakers"
     );
     assert.equal(resolveProductPathToRedirect("/product/ocean-drums"), null);
-    assert.equal(resolveProductPathToRedirect("/product/elemental-chimes"), null);
+    assert.equal(
+      resolveProductPathToRedirect("/product/elemental-chimes"),
+      "/product/elemental-chimes-new"
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/8-keys-wooden-xylophone"),
+      "/product/teak-wood-stainless-steel-xylophone"
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/32-bar-rod-chime"),
+      "/product/25-bar-rod-chime"
+    );
+    assert.equal(resolveProductPathToRedirect("/product/caxixi"), null);
     assert.equal(resolveProductPathToRedirect("/product/box-tanpura"), null);
   });
 
@@ -332,12 +343,12 @@ describe("resolveStorePathToProductRedirect", () => {
     assert.equal(resolveStorePathToProductRedirect("/store/"), null);
   });
 
-  it("elemental-chimes and box-tanpura do not redirect", () => {
+  it("elemental-chimes redirects and box-tanpura does not", () => {
     assert.equal(
       resolveStorePathToProductRedirect(
         "/store/sound-musical-instruments/chimes/elemental-chimes/"
       ),
-      null
+      "/product/elemental-chimes-new"
     );
     assert.equal(
       resolveStorePathToProductRedirect(
