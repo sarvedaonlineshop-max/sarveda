@@ -36,6 +36,48 @@ export type ServersSnapshot = {
   };
 };
 
+export type ServersDetail =
+  | {
+      view: "people";
+      people: Array<{ ip: string; country: string; utm: string | null; pages: string[] }>;
+    }
+  | {
+      view: "storefront";
+      storefront: Array<{
+        ip: string;
+        utm: string | null;
+        firstAt: string;
+        lastAt: string;
+        products: string[];
+        productCount: number;
+        addedToCart: boolean;
+        checkout: boolean;
+        bought: boolean;
+      }>;
+    }
+  | { view: "missing"; missing: Array<{ path: string; utm: string | null; at: string }> }
+  | { view: "outages"; outages: Array<{ from: string; to: string; requests: number; reason: string }> };
+
+export async function fetchServersDetail(view: ServersDetail["view"]): Promise<ServersDetail> {
+  const res = await fetch(`${getApiBase()}/api/admin/servers/detail?view=${view}`, {
+    credentials: "include",
+    headers: { Accept: "application/json" }
+  });
+  const json = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    data?: ServersDetail;
+    error?: string;
+    code?: string;
+  };
+  if (!res.ok || json.success === false || !json.data) {
+    throw new AdminApiError(json.error?.trim() || `Request failed (${res.status})`, {
+      status: res.status,
+      code: json.code
+    });
+  }
+  return json.data;
+}
+
 export async function fetchServersSnapshot(): Promise<ServersSnapshot> {
   const res = await fetch(`${getApiBase()}/api/admin/servers`, {
     credentials: "include",

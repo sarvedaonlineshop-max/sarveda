@@ -8,7 +8,9 @@ import type { Request, Response } from "express";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { getRedisConnection } from "../../config/redisConnection";
-import { startOfTodayIstUtc, summarizeAccessLines } from "./servers.metrics";
+import { z } from "zod";
+
+import { detailAccessLines, startOfTodayIstUtc, summarizeAccessLines, type AccessDetail } from "./servers.metrics";
 
 const execFileAsync = promisify(execFile);
 
@@ -188,6 +190,79 @@ async function buildSnapshot(): Promise<Snapshot> {
       memoryTotalMb: Math.round(total / (1024 * 1024))
     }
   };
+}
+
+const detailViewSchema = z.enum(["people", "storefront", "missing", "outages"]);
+const countryByIp = new Map<string, string>();
+let detailCache: { at: number; data: AccessDetail } | null = null;
+
+async function lookupCountries(ips: string[]): Promise<void> {
+  const pending = ips.filter((ip) => !countryByIp.has(ip));
+  for (let i = 0; i < pending.length; i += 100) {
+    const batch = pending.slice(i, i + 100);
+    try {
+      const res = await fetch("http://ip-api.com/batch?fields=status,country,query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batch),
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!res.ok) continue;
+      const rows = (await res.json()) as Array<{ status?: string; country?: string; query?: string }>;
+      for (const row of rows) {
+        if (!row.query) continue;
+        countryByIp.set(row.query, row.status === "success" && row.country ? row.country : "Unknown");
+      }
+    } catch (err) {
+      logger.warn("servers country lookup failed", { err });
+    }
+  }
+  for (const ip of pending) {
+    if (!countryByIp.has(ip)) countryByIp.set(ip, "Unknown");
+  }
+}
+
+async function loadDetail(): Promise<AccessDetail> {
+  if (detailCache && Date.now() - detailCache.at < 60_000) return detailCache.data;
+  const start = startOfTodayIstUtc();
+  const chunks = await Promise.all(LOG_FILES.map((path) => readLines(path)));
+  const data = detailAccessLines(chunks.flat(), start);
+  detailCache = { at: Date.now(), data };
+  return data;
+}
+
+export async function serversDetail(req: Request, res: Response) {
+  const parsed = detailViewSchema.safeParse(req.query.view);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: "Unknown detail", code: "BAD_REQUEST" });
+    return;
+  }
+  try {
+    const data = await loadDetail();
+    if (parsed.data === "people") {
+      await lookupCountries(data.people.map((row) => row.ip));
+      res.json({
+        success: true,
+        data: {
+          view: "people",
+          people: data.people.map((row) => ({ ...row, country: countryByIp.get(row.ip) ?? "Unknown" }))
+        }
+      });
+      return;
+    }
+    if (parsed.data === "storefront") {
+      res.json({ success: true, data: { view: "storefront", storefront: data.storefront } });
+      return;
+    }
+    if (parsed.data === "missing") {
+      res.json({ success: true, data: { view: "missing", missing: data.missing } });
+      return;
+    }
+    res.json({ success: true, data: { view: "outages", outages: data.outages } });
+  } catch (err) {
+    logger.error("servers detail failed", { err });
+    res.status(500).json({ success: false, error: "Could not read server detail", code: "SERVERS_DETAIL_FAILED" });
+  }
 }
 
 export async function serversDashboard(_req: Request, res: Response) {

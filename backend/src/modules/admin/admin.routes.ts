@@ -34,7 +34,7 @@ import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
 import { purchasesAdminRoutes } from "../purchases/purchases.routes";
 import { accountingAdminRoutes } from "../accounting/accounting.routes";
 import { isAccountingEmailAllowed } from "../accounting/accounting-access";
-import { isServersDashboardEmail, serversDashboard } from "./servers.handlers";
+import { isServersDashboardEmail, serversDashboard, serversDetail } from "./servers.handlers";
 import { generateDeliveryChallanBodySchema } from "../delivery-challans/challan.schemas";
 import {
   ewayCancelBodySchema,
@@ -92,6 +92,16 @@ router.get("/servers", (req, res, next) => {
   }
   return next();
 }, serversDashboard);
+router.get("/servers/detail", (req, res, next) => {
+  if (!isServersDashboardEmail(req.authUser?.email)) {
+    return res.status(403).json({
+      success: false,
+      error: "Servers is limited to the store owner",
+      code: "SERVERS_ACCESS_DENIED"
+    });
+  }
+  return next();
+}, serversDetail);
 router.get("/analytics/woo-products", admin.wooProductAnalytics);
 router.get("/reports/export", reports.exportAdminReport);
 router.get("/reports/analytics", reports.adminReportAnalytics);

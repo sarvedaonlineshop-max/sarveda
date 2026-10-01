@@ -171,3 +171,224 @@ export function summarizeAccessLines(lines: Iterable<string>, start: Date): Traf
     topShopper404
   };
 }
+
+export type PeopleVisit = {
+  ip: string;
+  utm: string | null;
+  pages: string[];
+};
+
+export type StorefrontVisit = {
+  ip: string;
+  utm: string | null;
+  firstAt: string;
+  lastAt: string;
+  products: string[];
+  productCount: number;
+  addedToCart: boolean;
+  checkout: boolean;
+  bought: boolean;
+};
+
+export type MissingPageHit = {
+  path: string;
+  utm: string | null;
+  at: string;
+};
+
+export type ShopOutage = {
+  from: string;
+  to: string;
+  requests: number;
+  reason: string;
+};
+
+export type AccessDetail = {
+  people: PeopleVisit[];
+  storefront: StorefrontVisit[];
+  missing: MissingPageHit[];
+  outages: ShopOutage[];
+};
+
+const PAGE_AREAS: Array<[string, (path: string) => boolean]> = [
+  ["Home", (path) => path === "/"],
+  ["Store", (path) => path === "/store" || path === "/shop" || path.startsWith("/store/") || path.startsWith("/shop/") || path.startsWith("/product-category") || path.startsWith("/search")],
+  ["Product", (path) => path.startsWith("/product/")],
+  ["Cart", (path) => path === "/cart" || path.startsWith("/cart/")],
+  ["Checkout", (path) => path === "/checkout" || path.startsWith("/checkout/")],
+  ["Course", (path) => path.startsWith("/course")],
+  ["Event", (path) => path.startsWith("/event")],
+  ["Retreat", (path) => path.startsWith("/retreat")],
+  ["Admin", (path) => path.startsWith("/admin")]
+];
+
+function pageArea(path: string): string | null {
+  if (path.startsWith("/api") || path.startsWith("/_next") || STATIC_EXT.test(path)) return null;
+  for (const [name, match] of PAGE_AREAS) {
+    if (match(path)) return name;
+  }
+  return "Other page";
+}
+
+function utmLabel(url: string): string | null {
+  const q = url.split("?")[1];
+  if (!q) return null;
+  let params: URLSearchParams;
+  try {
+    params = new URLSearchParams(q);
+  } catch {
+    return null;
+  }
+  const parts = ["utm_source", "utm_medium", "utm_campaign"]
+    .map((key) => params.get(key)?.trim())
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.slice(0, 80));
+  return parts.length > 0 ? parts.join(" / ") : null;
+}
+
+function productSlug(path: string): string | null {
+  if (!path.startsWith("/product/")) return null;
+  const slug = path.slice("/product/".length).split("/")[0] ?? "";
+  if (!slug || slug.length > 180) return null;
+  return slug;
+}
+
+function outageReason(group: Array<{ status: number; api: boolean }>): string {
+  const shopStopped = group.some((row) => row.status === 502 && !row.api);
+  const apiStopped = group.some((row) => row.status === 502 && row.api);
+  const slow = group.some((row) => row.status === 504);
+  const unavailable = group.some((row) => row.status === 503);
+  const parts: string[] = [];
+  if (shopStopped) parts.push("The shop was stopped, so pages did not open.");
+  if (apiStopped) parts.push("The API was stopped, so those requests did not reach the server.");
+  if (slow) parts.push("The server took too long to answer.");
+  if (unavailable) parts.push("The server said it was unavailable.");
+  return parts.join(" ") || "The server did not answer.";
+}
+
+/**
+ * One pass over today's log for the Servers detail tables.
+ * People and storefront rows exist only when the log has a shopper address.
+ */
+export function detailAccessLines(lines: Iterable<string>, start: Date): AccessDetail {
+  type Visit = {
+    utm: string | null;
+    pages: Set<string>;
+    products: Set<string>;
+    first: number;
+    last: number;
+    storefront: boolean;
+    cart: boolean;
+    checkout: boolean;
+    bought: boolean;
+  };
+  const visits = new Map<string, Visit>();
+  const missing: MissingPageHit[] = [];
+  const down: Array<{ at: number; status: number; api: boolean }> = [];
+
+  for (const line of lines) {
+    const m = LINE.exec(line);
+    if (!m) continue;
+    const when = parseNginxTime(m[2] ?? "");
+    if (!when || when < start) continue;
+    const method = m[3] ?? "";
+    const url = m[4] ?? "";
+    const status = Number(m[5]);
+    const size = Number(m[6]);
+    const ua = m[8] ?? "";
+    const path = url.split("?")[0] ?? url;
+    const ip = clientIp(m[9]);
+    const scanner = isScanner(ua, path);
+    const browser = ua.toLowerCase().includes("mozilla") && !scanner;
+    const at = when.getTime();
+
+    if (status === 502 || status === 503 || status === 504) {
+      down.push({ at, status, api: path.startsWith("/api/") });
+    }
+
+    if (status === 404 && browser && Number.isFinite(size) && size >= 2000) {
+      missing.push({ path, utm: utmLabel(url), at: when.toISOString() });
+    }
+
+    if (!browser || !ip) continue;
+    let visit = visits.get(ip);
+    if (!visit) {
+      visit = {
+        utm: null,
+        pages: new Set(),
+        products: new Set(),
+        first: at,
+        last: at,
+        storefront: false,
+        cart: false,
+        checkout: false,
+        bought: false
+      };
+      visits.set(ip, visit);
+    }
+    if (at < visit.first) visit.first = at;
+    if (at > visit.last) visit.last = at;
+    const utm = utmLabel(url);
+    if (!visit.utm && utm) visit.utm = utm;
+    const area = pageArea(path);
+    if (area && (method === "GET" || method === "HEAD")) visit.pages.add(area);
+    if (isStorefrontPage(method, path)) visit.storefront = true;
+    const slug = productSlug(path);
+    if (slug && (method === "GET" || method === "HEAD") && status < 400) visit.products.add(slug);
+    if (method === "POST" && path === "/api/cart/add" && status >= 200 && status < 400) visit.cart = true;
+    if ((path === "/checkout" || path.startsWith("/checkout/")) && (method === "GET" || method === "HEAD")) {
+      visit.checkout = true;
+    }
+    if (method === "POST" && (path === "/api/checkout" || path.startsWith("/api/checkout/")) && status < 500) {
+      visit.checkout = true;
+    }
+    if (path.startsWith("/order/confirmed")) visit.bought = true;
+  }
+
+  const people: PeopleVisit[] = [...visits.entries()]
+    .map(([ip, visit]) => ({
+      ip,
+      utm: visit.utm,
+      pages: [...visit.pages].sort()
+    }))
+    .sort((a, b) => b.pages.length - a.pages.length || a.ip.localeCompare(b.ip));
+
+  const storefront: StorefrontVisit[] = [...visits.entries()]
+    .filter(([, visit]) => visit.storefront)
+    .map(([ip, visit]) => {
+      const names = [...visit.products].sort();
+      return {
+        ip,
+        utm: visit.utm,
+        firstAt: new Date(visit.first).toISOString(),
+        lastAt: new Date(visit.last).toISOString(),
+        products: names.slice(0, 12),
+        productCount: names.length,
+        addedToCart: visit.cart,
+        checkout: visit.checkout,
+        bought: visit.bought
+      };
+    })
+    .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+
+  missing.sort((a, b) => b.at.localeCompare(a.at));
+
+  const sortedDown = [...down].sort((a, b) => a.at - b.at);
+  const groups: Array<typeof sortedDown> = [];
+  for (const row of sortedDown) {
+    const current = groups[groups.length - 1];
+    const prev = current?.[current.length - 1];
+    if (!current || !prev || row.at - prev.at > 10 * 60 * 1000) groups.push([row]);
+    else current.push(row);
+  }
+  const outages: ShopOutage[] = groups
+    .map((group) => ({
+      from: new Date(group[0]!.at).toISOString(),
+      to: new Date(group[group.length - 1]!.at).toISOString(),
+      requests: group.length,
+      reason: outageReason(group)
+    }))
+    .reverse();
+
+  return { people, storefront, missing: missing.slice(0, 400), outages };
+}
