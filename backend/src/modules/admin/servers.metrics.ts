@@ -188,6 +188,9 @@ export type StorefrontVisit = {
   addedToCart: boolean;
   checkout: boolean;
   bought: boolean;
+  /** human = paced browsing. bot = catalog walk or a crawler browser name. */
+  audience: "human" | "bot";
+  note: string | null;
 };
 
 export type MissingPageHit = {
@@ -253,6 +256,44 @@ function productSlug(path: string): string | null {
   return slug;
 }
 
+/** Browser names that real shoppers almost never send, and catalog crawlers do. */
+function isCrawlerBrowser(ua: string): boolean {
+  const u = ua.toLowerCase();
+  if (u === "mozilla/5.0") return true;
+  if (u.includes("android 10; k")) return true;
+  if (u.includes("; wv)")) return true;
+  if (u.includes("headless")) return true;
+  return false;
+}
+
+/**
+ * A purchase is a person. Otherwise a bot is an address that sprinted through
+ * many products, or did most of its browsing with a crawler browser name.
+ */
+export function classifyAudience(visit: {
+  products: number;
+  productGaps: number;
+  fastProductGaps: number;
+  crawlerPages: number;
+  browserPages: number;
+  bought: boolean;
+}): { audience: "human" | "bot"; note: string | null } {
+  if (visit.bought) return { audience: "human", note: null };
+  const fastShare = visit.productGaps > 0 ? visit.fastProductGaps / visit.productGaps : 0;
+  const sprinted = visit.products >= 12 && visit.productGaps >= 8 && fastShare >= 0.55;
+  const crawlerLed = visit.crawlerPages >= 8 && visit.crawlerPages > visit.browserPages;
+  if (sprinted) {
+    return {
+      audience: "bot",
+      note: `Opened ${visit.products} products a few seconds apart`
+    };
+  }
+  if (crawlerLed) {
+    return { audience: "bot", note: "Browser name used by catalog crawlers" };
+  }
+  return { audience: "human", note: null };
+}
+
 function outageReason(group: Array<{ status: number; api: boolean }>): string {
   const shopStopped = group.some((row) => row.status === 502 && !row.api);
   const apiStopped = group.some((row) => row.status === 502 && row.api);
@@ -277,10 +318,17 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
     products: Set<string>;
     first: number;
     last: number;
+    storefrontFirst: number | null;
+    storefrontLast: number | null;
     storefront: boolean;
     cart: boolean;
     checkout: boolean;
     bought: boolean;
+    lastProductAt: number | null;
+    productGaps: number;
+    fastProductGaps: number;
+    crawlerPages: number;
+    browserPages: number;
   };
   const visits = new Map<string, Visit>();
   const missing: MissingPageHit[] = [];
@@ -319,10 +367,17 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
         products: new Set(),
         first: at,
         last: at,
+        storefrontFirst: null,
+        storefrontLast: null,
         storefront: false,
         cart: false,
         checkout: false,
-        bought: false
+        bought: false,
+        lastProductAt: null,
+        productGaps: 0,
+        fastProductGaps: 0,
+        crawlerPages: 0,
+        browserPages: 0
       };
       visits.set(ip, visit);
     }
@@ -332,9 +387,22 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
     if (!visit.utm && utm) visit.utm = utm;
     const area = pageArea(path);
     if (area && (method === "GET" || method === "HEAD")) visit.pages.add(area);
-    if (isStorefrontPage(method, path)) visit.storefront = true;
+    if (isStorefrontPage(method, path)) {
+      visit.storefront = true;
+      if (visit.storefrontFirst == null || at < visit.storefrontFirst) visit.storefrontFirst = at;
+      if (visit.storefrontLast == null || at > visit.storefrontLast) visit.storefrontLast = at;
+      if (isCrawlerBrowser(ua)) visit.crawlerPages += 1;
+      else visit.browserPages += 1;
+    }
     const slug = productSlug(path);
-    if (slug && (method === "GET" || method === "HEAD") && status < 400) visit.products.add(slug);
+    if (slug && (method === "GET" || method === "HEAD") && status < 400) {
+      visit.products.add(slug);
+      if (visit.lastProductAt != null) {
+        visit.productGaps += 1;
+        if (at - visit.lastProductAt < 8_000) visit.fastProductGaps += 1;
+      }
+      visit.lastProductAt = at;
+    }
     if (method === "POST" && path === "/api/cart/add" && status >= 200 && status < 400) visit.cart = true;
     if ((path === "/checkout" || path.startsWith("/checkout/")) && (method === "GET" || method === "HEAD")) {
       visit.checkout = true;
@@ -357,16 +425,28 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
     .filter(([, visit]) => visit.storefront)
     .map(([ip, visit]) => {
       const names = [...visit.products].sort();
+      const judged = classifyAudience({
+        products: names.length,
+        productGaps: visit.productGaps,
+        fastProductGaps: visit.fastProductGaps,
+        crawlerPages: visit.crawlerPages,
+        browserPages: visit.browserPages,
+        bought: visit.bought
+      });
+      const from = visit.storefrontFirst ?? visit.first;
+      const to = visit.storefrontLast ?? visit.last;
       return {
         ip,
         utm: visit.utm,
-        firstAt: new Date(visit.first).toISOString(),
-        lastAt: new Date(visit.last).toISOString(),
+        firstAt: new Date(from).toISOString(),
+        lastAt: new Date(to).toISOString(),
         products: names.slice(0, 12),
         productCount: names.length,
         addedToCart: visit.cart,
         checkout: visit.checkout,
-        bought: visit.bought
+        bought: visit.bought,
+        audience: judged.audience,
+        note: judged.note
       };
     })
     .sort((a, b) => b.lastAt.localeCompare(a.lastAt));

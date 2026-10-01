@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { detailAccessLines, startOfTodayIstUtc, summarizeAccessLines } from "../../src/modules/admin/servers.metrics";
+import {
+  classifyAudience,
+  detailAccessLines,
+  startOfTodayIstUtc,
+  summarizeAccessLines
+} from "../../src/modules/admin/servers.metrics";
 
 function line(opts: {
   time?: string;
@@ -98,6 +103,7 @@ describe("servers access summary", () => {
     expect(buyer?.addedToCart).toBe(true);
     expect(buyer?.checkout).toBe(true);
     expect(buyer?.bought).toBe(true);
+    expect(buyer?.audience).toBe("human");
     expect(detail.people.find((row) => row.ip === "8.8.8.8")?.pages).toEqual(["Course"]);
     expect(detail.missing).toEqual([
       expect.objectContaining({ path: "/product/missing-bowl" })
@@ -106,6 +112,39 @@ describe("servers access summary", () => {
     expect(detail.outages[0]?.requests).toBe(2);
     expect(detail.outages[0]?.reason).toContain("shop was stopped");
     expect(detail.outages[0]?.reason).toContain("API was stopped");
+  });
+
+  it("treats a fast catalog walk as a bot and a purchase as a person", () => {
+    expect(
+      classifyAudience({
+        products: 31,
+        productGaps: 30,
+        fastProductGaps: 27,
+        crawlerPages: 0,
+        browserPages: 40,
+        bought: false
+      }).audience
+    ).toBe("bot");
+    expect(
+      classifyAudience({
+        products: 3,
+        productGaps: 2,
+        fastProductGaps: 0,
+        crawlerPages: 0,
+        browserPages: 6,
+        bought: false
+      }).audience
+    ).toBe("human");
+    expect(
+      classifyAudience({
+        products: 40,
+        productGaps: 39,
+        fastProductGaps: 39,
+        crawlerPages: 40,
+        browserPages: 0,
+        bought: true
+      }).audience
+    ).toBe("human");
   });
 
   it("leaves people empty when the log has no client address", () => {

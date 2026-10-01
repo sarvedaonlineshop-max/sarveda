@@ -251,7 +251,17 @@ export async function serversDetail(req: Request, res: Response) {
       return;
     }
     if (parsed.data === "storefront") {
-      res.json({ success: true, data: { view: "storefront", storefront: data.storefront } });
+      await lookupCountries(data.storefront.map((row) => row.ip));
+      res.json({
+        success: true,
+        data: {
+          view: "storefront",
+          storefront: data.storefront.map((row) => ({
+            ...row,
+            country: countryByIp.get(row.ip) ?? "Unknown"
+          }))
+        }
+      });
       return;
     }
     if (parsed.data === "missing") {

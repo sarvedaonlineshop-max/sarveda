@@ -140,6 +140,114 @@ function CountryBars({ rows }: { rows: Array<{ country: string }> }) {
   );
 }
 
+function TabButton({
+  label,
+  active,
+  onClick
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: "1px solid #e4d9c8",
+        background: active ? "#1e3a2f" : "#fff",
+        color: active ? "#fffdf8" : "#1e3a2f",
+        borderRadius: "999px",
+        padding: "6px 12px",
+        cursor: "pointer",
+        fontSize: "13px"
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function StorefrontPanel({
+  rows
+}: {
+  rows: Extract<ServersDetail, { view: "storefront" }>["storefront"];
+}) {
+  const [audience, setAudience] = useState<"human" | "bot">("human");
+  const [stage, setStage] = useState<"all" | "cart" | "checkout" | "bought">("all");
+  const humans = rows.filter((row) => row.audience === "human");
+  const bots = rows.filter((row) => row.audience === "bot");
+  const group = audience === "human" ? humans : bots;
+  const stageCount = {
+    all: group.length,
+    cart: group.filter((row) => row.addedToCart).length,
+    checkout: group.filter((row) => row.checkout).length,
+    bought: group.filter((row) => row.bought).length
+  };
+  const shown = group.filter((row) => {
+    if (stage === "cart") return row.addedToCart;
+    if (stage === "checkout") return row.checkout;
+    if (stage === "bought") return row.bought;
+    return true;
+  });
+
+  return (
+    <>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+        <TabButton label={`Humans (${humans.length})`} active={audience === "human"} onClick={() => setAudience("human")} />
+        <TabButton label={`Bots (${bots.length})`} active={audience === "bot"} onClick={() => setAudience("bot")} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+        <TabButton label={`All (${stageCount.all})`} active={stage === "all"} onClick={() => setStage("all")} />
+        <TabButton label={`Added to cart (${stageCount.cart})`} active={stage === "cart"} onClick={() => setStage("cart")} />
+        <TabButton label={`Till checkout (${stageCount.checkout})`} active={stage === "checkout"} onClick={() => setStage("checkout")} />
+        <TabButton label={`Bought (${stageCount.bought})`} active={stage === "bought"} onClick={() => setStage("bought")} />
+      </div>
+      <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#6b6258" }}>
+        A bot opened many products a few seconds apart, or browsed with a browser name catalog crawlers use. Someone who
+        completed an order stays under Humans.
+      </p>
+      <TableWrap>
+        <thead>
+          <tr>
+            <th style={th}>IP address</th>
+            <th style={th}>Country</th>
+            <th style={th}>Source UTM</th>
+            <th style={th}>Timing</th>
+            <th style={th}>Product checked</th>
+            <th style={th}>Added to cart</th>
+            <th style={th}>Checkout</th>
+            <th style={th}>Bought</th>
+            <th style={th}>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((row) => (
+            <tr key={row.ip}>
+              <td style={td}>{row.ip}</td>
+              <td style={td}>{row.country}</td>
+              <td style={td}>{row.utm ?? "—"}</td>
+              <td style={td}>
+                {formatWhen(row.firstAt)}
+                {row.lastAt !== row.firstAt ? ` – ${formatWhen(row.lastAt)}` : ""}
+              </td>
+              <td style={td}>
+                {row.productCount === 0
+                  ? "—"
+                  : `${row.products.join(", ")}${row.productCount > row.products.length ? ` +${row.productCount - row.products.length} more` : ""}`}
+              </td>
+              <td style={td}>{yesNo(row.addedToCart)}</td>
+              <td style={td}>{yesNo(row.checkout)}</td>
+              <td style={td}>{yesNo(row.bought)}</td>
+              <td style={td}>{row.note ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </TableWrap>
+    </>
+  );
+}
+
 function DetailPanel({ detail }: { detail: ServersDetail }) {
   if (detail.view === "people") {
     return (
@@ -171,44 +279,7 @@ function DetailPanel({ detail }: { detail: ServersDetail }) {
   }
 
   if (detail.view === "storefront") {
-    return (
-      <>
-        <p style={{ margin: "0 0 12px", fontWeight: 700, color: "#1e3a2f" }}>Checked the storefront</p>
-        <TableWrap>
-          <thead>
-            <tr>
-              <th style={th}>IP address</th>
-              <th style={th}>Source UTM</th>
-              <th style={th}>Timing</th>
-              <th style={th}>Product checked</th>
-              <th style={th}>Added to cart</th>
-              <th style={th}>Checkout</th>
-              <th style={th}>Bought</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.storefront.map((row) => (
-              <tr key={row.ip}>
-                <td style={td}>{row.ip}</td>
-                <td style={td}>{row.utm ?? "—"}</td>
-                <td style={td}>
-                  {formatWhen(row.firstAt)}
-                  {row.lastAt !== row.firstAt ? ` – ${formatWhen(row.lastAt)}` : ""}
-                </td>
-                <td style={td}>
-                  {row.productCount === 0
-                    ? "—"
-                    : `${row.products.join(", ")}${row.productCount > row.products.length ? ` +${row.productCount - row.products.length} more` : ""}`}
-                </td>
-                <td style={td}>{yesNo(row.addedToCart)}</td>
-                <td style={td}>{yesNo(row.checkout)}</td>
-                <td style={td}>{yesNo(row.bought)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </TableWrap>
-      </>
-    );
+    return <StorefrontPanel rows={detail.storefront} />;
   }
 
   if (detail.view === "missing") {

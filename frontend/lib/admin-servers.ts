@@ -53,6 +53,9 @@ export type ServersDetail =
         addedToCart: boolean;
         checkout: boolean;
         bought: boolean;
+        audience: "human" | "bot";
+        note: string | null;
+        country: string;
       }>;
     }
   | { view: "missing"; missing: Array<{ path: string; utm: string | null; at: string }> }
