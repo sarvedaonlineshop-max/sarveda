@@ -12,8 +12,8 @@
  * Unresolved audited leaves (no redirect): box-tanpura.
  *
  * Yoast product-sitemap leaves still MANUAL_REVIEW (no single proven native target):
- * natural-bamboo-xylophone-with-5-keys, crystal-bowl-o-rings-support-rings,
- * overtone-flute, overtone-flute-2.
+ * natural-bamboo-xylophone-with-5-keys, crystal-bowl-o-rings-support-rings.
+ * overtone-flute and overtone-flute-2 are live products at those slugs.
  */
 
 /** Explicit audited Woo leaf → current Product.slug (renames only; leaf ≠ slug ignoring case). */
@@ -113,6 +113,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "handmade-polished-singing-bowls-for-sound-therapy": "handmade-singing-bowls-all-sizes",
   "shamanic-drum-with-butterfly-artwork": "shamanic-drum",
   "engraved-copper-water-bottles": "7-chakras-vintage-copper-bottles",
+  "harmonic-flute": "overtone-flute-2",
   "copper-bottle-curved-copper-diamond-groove": "copper-bottle-curved-vintage-hammered",
   "elemental-chimes": "elemental-chimes-new",
   "wooden-maracas-shaker-with-dot-painting": "wooden-maracas-shakers-plain-dot-painted",
@@ -206,6 +207,8 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "mini-flat-maracas",
   "native-american-style-flute-handcrafted-wooden-melody-maker",
   "ocean-drums",
+  "overtone-flute",
+  "overtone-flute-2",
   "painted-egg-shakers",
   "pangi-seed-shell-rattle",
   "pulse-tubes",
@@ -285,9 +288,7 @@ export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set([
  */
 export const LEGACY_WOO_MANUAL_REVIEW_LEAVES: ReadonlySet<string> = new Set([
   "natural-bamboo-xylophone-with-5-keys", // SKU MI-XP-B-5 unmatched on Sarveda
-  "crystal-bowl-o-rings-support-rings", // Woo 49760 absent — add tonight
-  "overtone-flute", // Woo 51353 absent — create tonight
-  "overtone-flute-2" // Woo 51382 absent — create tonight
+  "crystal-bowl-o-rings-support-rings" // Woo 49760 absent — add tonight
 ]);
 
 const SLUG_SAFE = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;

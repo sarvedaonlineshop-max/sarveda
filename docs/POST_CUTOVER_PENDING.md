@@ -44,7 +44,8 @@
 
 - [ ] Align sitemap `/shop` entry with canonical `/store` (hygiene)
 - [ ] Resolve or permanently document **6** MANUAL_REVIEW Woo product leaves (intentional 404s today)
-- [ ] **2026-10-01, 9:00 PM IST:** Create overtone flute from old Sarveda, then redirect `/product/overtone-flute` and `/product/overtone-flute-2`. Also add crystal bowl O-rings (`/product/crystal-bowl-o-rings-support-rings`) tonight.
+- [x] **2026-10-01:** Overtone Flute and Harmonic Flute created from the old site at `/product/overtone-flute` and `/product/overtone-flute-2`.
+- [ ] Crystal bowl O-rings (`/product/crystal-bowl-o-rings-support-rings`) still to add.
 - [ ] Future: `/product/caxixi` — still sold, no live page yet. Do not redirect until the page exists.
 - [ ] No redirect (stopped or not a product): `/product/null`, `/product/eco-friendly-neem-wood-toothbrush`, `/product/spirulina`, `/product/mini-bamboo-and-aluminium-bar-chime`.
 - [ ] Still unmapped: `/product/natural-bamboo-xylophone-with-5-keys`.
@@ -74,8 +75,8 @@ Logged 1 Oct 2026, midnight–early afternoon IST. **75 requests, 22 addresses.*
 | 1 | `/product/engraved-copper-water-bottles` | Split across more than one bottle; confirm target |
 | 1 | `/product/copper-bottle-curved-copper-diamond-groove` | Confirm live slug |
 | 1 | `/product/crystal-bowl-o-rings-support-rings` | Confirm live slug |
-| 1 | `/product/overtone-flute` | Create from old Sarveda at 9:00 PM IST, then redirect |
-| 1 | `/product/overtone-flute-2` | Same as overtone flute |
+| 1 | `/product/overtone-flute` | Live product (Woo 51353). No redirect. |
+| 1 | `/product/overtone-flute-2` | Live Harmonic Flute (Woo 51382). No redirect. |
 | 1 | `/product/natural-bamboo-xylophone-with-5-keys` | Confirm live slug |
 - [ ] Monitor GSC 404s for retired WP URLs (tags, authors, zoom, shipping classes) → redirect only if traffic warrants
 - [ ] Optional rich results: Article / Person / AggregateRating JSON-LD
