@@ -3,6 +3,7 @@ import type { ComplaintAppRole, ComplaintWhitelist, User, Role } from "@prisma/c
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { hashPassword, verifyPassword } from "../../utils/hash";
+import { isStaffLoginBlocked } from "../auth/staff-access";
 import { CANONICAL_STORE_ADMINS } from "./canonical-store-admins";
 
 export { CANONICAL_STORE_ADMINS } from "./canonical-store-admins";
@@ -80,6 +81,9 @@ export async function loginComplaintWithPassword(
   password: string
 ): Promise<{ user: ComplaintLoginUser; whitelist: ComplaintWhitelist }> {
   const normalized = email.toLowerCase().trim();
+  if (isStaffLoginBlocked(normalized)) {
+    throw httpError(403, "This account cannot sign in.", "ACCOUNT_DISABLED");
+  }
   const whitelist = await prisma.complaintWhitelist.findFirst({
     where: { email: normalized, isActive: true }
   });

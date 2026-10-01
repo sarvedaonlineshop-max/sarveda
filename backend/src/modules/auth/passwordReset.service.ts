@@ -6,6 +6,7 @@ import { buildShopEmail, sendMail } from "../notifications/email";
 import { syncComplaintPassword } from "../complaints/whitelist-auth";
 
 import { getPrimaryFrontendBase } from "./redirect";
+import { isStaffLoginBlocked } from "./staff-access";
 
 const RESET_EXPIRY_MINUTES = 30;
 
@@ -17,8 +18,12 @@ function httpError(status: number, message: string, code: string): Error {
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  if (isStaffLoginBlocked(normalized)) {
+    throw httpError(403, "This account cannot sign in.", "ACCOUNT_DISABLED");
+  }
   const user = await prisma.user.findUnique({
-    where: { email: email.trim().toLowerCase() },
+    where: { email: normalized },
     select: { id: true, email: true, name: true, deletedAt: true }
   });
 
@@ -71,6 +76,9 @@ export async function verifyOtpForPasswordReset(
   code: string
 ): Promise<{ resetToken: string }> {
   const normalized = target.trim().toLowerCase();
+  if (isStaffLoginBlocked(normalized)) {
+    throw httpError(403, "This account cannot sign in.", "ACCOUNT_DISABLED");
+  }
   const row = await prisma.otpCode.findFirst({
     where: {
       target: normalized,

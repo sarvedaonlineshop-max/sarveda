@@ -8,6 +8,7 @@ import { sendMail, sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
 import { CANONICAL_STORE_ADMINS } from "../complaints/canonical-store-admins";
+import { isStaffLoginBlocked, staffRoleAfterLogin, type StaffRole } from "./staff-access";
 import {
   ensureComplaintUser,
   syncComplaintPassword
@@ -56,23 +57,32 @@ function superAdminBootstrapEmailSet(): Set<string> {
   );
 }
 
+function rejectBlockedStaffLogin(email: string) {
+  if (!isStaffLoginBlocked(email)) return;
+  throw httpError(403, "This account cannot sign in.", "ACCOUNT_DISABLED");
+}
+
 async function applyAdminBootstrapIfNeeded(user: User): Promise<User> {
   const email = user.email.toLowerCase();
   const superAllow = superAdminBootstrapEmailSet();
-  if (superAllow.has(email) && user.role !== "SUPER_ADMIN") {
-    return prisma.user.update({
-      where: { id: user.id },
-      data: { role: "SUPER_ADMIN" }
-    });
-  }
-
   const allow = adminBootstrapEmailSet();
-  if (allow.size === 0) return user;
-  if (!allow.has(email)) return user;
-  if (user.role !== "CUSTOMER") return user;
+  const whitelist = isStaffLoginBlocked(email)
+    ? null
+    : await prisma.complaintWhitelist.findFirst({
+        where: { email, isActive: true },
+        select: { id: true }
+      });
+  const nextRole = staffRoleAfterLogin({
+    email,
+    role: user.role as StaffRole,
+    superAdmins: superAllow,
+    bootstrapAdmins: allow,
+    activeWhitelist: Boolean(whitelist)
+  });
+  if (nextRole === user.role) return user;
   return prisma.user.update({
     where: { id: user.id },
-    data: { role: "ADMIN" }
+    data: { role: nextRole }
   });
 }
 
@@ -215,6 +225,7 @@ export async function registerUser(body: RegisterBody) {
 
 export async function loginUser(res: Response, body: LoginBody) {
   const email = body.email.trim().toLowerCase();
+  rejectBlockedStaffLogin(email);
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || user.deletedAt) {
     throw httpError(404, "No account found for this email. Contact admin for access.", "ACCOUNT_NOT_FOUND");
@@ -252,6 +263,7 @@ export function logoutUser(res: Response) {
 
 export async function sendOtp(body: SendOtpBody) {
   const normalized = normalizeLoginTarget(body.target);
+  if (normalized.kind === "email") rejectBlockedStaffLogin(normalized.value);
 
   // Login OTP only for existing accounts — avoids blasting codes to unknown addresses.
   if (normalized.kind === "email") {
@@ -333,6 +345,7 @@ export async function sendOtp(body: SendOtpBody) {
 
 export async function verifyOtpAndLogin(res: Response, body: VerifyOtpBody) {
   const normalized = normalizeLoginTarget(body.target);
+  if (normalized.kind === "email") rejectBlockedStaffLogin(normalized.value);
 
   const row = await prisma.otpCode.findFirst({
     where: {
@@ -528,6 +541,7 @@ export async function upsertGoogleUser(profile: GoogleLikeProfile) {
   if (!email) {
     throw httpError(400, "Google account returned no verified email", "GOOGLE_EMAIL_MISSING");
   }
+  rejectBlockedStaffLogin(email);
 
   let user = await prisma.user.findFirst({
     where: {
