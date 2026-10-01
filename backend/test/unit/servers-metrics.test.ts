@@ -45,15 +45,31 @@ describe("servers access summary", () => {
       [
         line({ path: "/wp-login.php", status: 404, size: 150, ua: "Mozilla/5.0", cf: "1.1.1.1" }),
         line({ path: "/product/missing", status: 404, size: 4000, cf: "2.2.2.2" }),
-        line({ path: "/", status: 502, size: 200, cf: "3.3.3.3" })
+        line({ path: "/", status: 502, size: 200, cf: "3.3.3.3" }),
+        line({ path: "/api/media/legacy-uploads/old.jpg", status: 500, size: 80, cf: "4.4.4.4" })
       ],
       start
     );
     expect(summary.scanner404).toBe(1);
     expect(summary.shopperHtml404).toBe(1);
     expect(summary.serverErrors).toBe(1);
+    expect(summary.shopOutages).toBe(1);
     expect(summary.shopperFailedPeople).toBe(2);
     expect(summary.topShopper404).toEqual([{ path: "/product/missing", count: 1 }]);
+  });
+
+  it("groups unreachable requests a few minutes apart as one stop", () => {
+    const summary = summarizeAccessLines(
+      [
+        line({ time: "01/Oct/2026:11:02:10 +0000", path: "/", status: 502 }),
+        line({ time: "01/Oct/2026:11:05:20 +0000", path: "/store", status: 502 }),
+        line({ time: "01/Oct/2026:11:24:40 +0000", path: "/", status: 503 }),
+        line({ path: "/api/media/legacy-uploads/photo.jpg", status: 500 })
+      ],
+      start
+    );
+    expect(summary.serverErrors).toBe(3);
+    expect(summary.shopOutages).toBe(2);
   });
 
   it("leaves people empty when the log has no client address", () => {

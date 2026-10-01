@@ -169,9 +169,10 @@ async function buildSnapshot(): Promise<Snapshot> {
   const free = os.freemem();
   const [load1, load5] = os.loadavg();
   const note =
-    traffic.people === null
-      ? "Visitor counts start once the web log records the shopper address. Failure counts cover all of today."
-      : "People are distinct shopper addresses since the web log started recording them. One person on two networks counts twice. Failure counts cover all of today.";
+    (traffic.people === null
+      ? "Visitor counts start once the web log records the shopper address. "
+      : "People are distinct shopper addresses since the web log started recording them. One person on two networks counts twice. ") +
+    `Server failures are only requests that found the shop or the API stopped, in ${traffic.shopOutages} stop${traffic.shopOutages === 1 ? "" : "s"} today. A slow picture is not counted.`;
 
   return {
     generatedAt: new Date().toISOString(),

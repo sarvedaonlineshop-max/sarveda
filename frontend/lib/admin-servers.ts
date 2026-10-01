@@ -11,6 +11,7 @@ export type ServersSnapshot = {
     shopperHtml404: number;
     shopperFailedPeople: number | null;
     serverErrors: number;
+    shopOutages: number;
     scanner404: number;
     linesWithClientIp: number;
     topShopper404: Array<{ path: string; count: number }>;

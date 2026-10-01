@@ -115,7 +115,11 @@ export default function AdminServersPage() {
               value={t.shopperFailedPeople == null ? String(t.shopperHtml404) : String(t.shopperFailedPeople)}
               hint={`${t.shopperHtml404.toLocaleString("en-IN")} missing pages`}
             />
-            <Stat label="Server failures" value={String(t.serverErrors)} hint="500–504 responses today" />
+            <Stat
+              label="Shop was unreachable"
+              value={String(t.serverErrors)}
+              hint={`${t.shopOutages} stop${t.shopOutages === 1 ? "" : "s"} today. Picture errors are not counted.`}
+            />
             <Stat label="Scanner probes" value={t.scanner404.toLocaleString("en-IN")} hint="Old WordPress and bots, ignored above" />
           </div>
           <p style={{ margin: 0, fontSize: "13px", color: "#6b6258" }}>{t.note}</p>

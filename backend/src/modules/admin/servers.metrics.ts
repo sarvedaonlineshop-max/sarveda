@@ -12,7 +12,10 @@ export type TrafficSummary = {
   storefrontPageLoads: number;
   shopperHtml404: number;
   shopperFailedPeople: number | null;
+  /** Requests that could not reach the shop or the API (502–504). Picture errors are not included. */
   serverErrors: number;
+  /** Separate stops, grouped when unreachable requests are a few minutes apart. */
+  shopOutages: number;
   scanner404: number;
   linesWithClientIp: number;
   topShopper404: Shopper404[];
@@ -75,6 +78,17 @@ function clientIp(cf: string | undefined): string | null {
   return cf;
 }
 
+/** Unreachable requests more than ten minutes apart count as another stop. */
+function countOutages(times: number[]): number {
+  if (times.length === 0) return 0;
+  const sorted = [...times].sort((a, b) => a - b);
+  let outages = 1;
+  for (let i = 1; i < sorted.length; i += 1) {
+    if (sorted[i]! - sorted[i - 1]! > 10 * 60 * 1000) outages += 1;
+  }
+  return outages;
+}
+
 function isStorefrontPage(method: string, path: string): boolean {
   if (method !== "GET" && method !== "HEAD") return false;
   const p = path.split("?")[0] ?? path;
@@ -91,6 +105,7 @@ export function summarizeAccessLines(lines: Iterable<string>, start: Date): Traf
   let storefrontPageLoads = 0;
   let shopperHtml404 = 0;
   let serverErrors = 0;
+  const unreachableAt: number[] = [];
   let scanner404 = 0;
   let linesWithClientIp = 0;
   let sawClientIp = false;
@@ -115,7 +130,12 @@ export function summarizeAccessLines(lines: Iterable<string>, start: Date): Traf
     const browser = ua.toLowerCase().includes("mozilla") && !scanner;
 
     if (status === 404 && scanner) scanner404 += 1;
-    if (status >= 500 && status <= 599) serverErrors += 1;
+    // 502–504: nginx could not reach the shop or the API, so the client got nothing.
+    // 500 is the process answering with an error (for example a slow old photo) and is not a stop.
+    if (status === 502 || status === 503 || status === 504) {
+      serverErrors += 1;
+      unreachableAt.push(when.getTime());
+    }
 
     if (browser && ip) people.add(ip);
 
@@ -125,7 +145,7 @@ export function summarizeAccessLines(lines: Iterable<string>, start: Date): Traf
     }
 
     const shopperMissingPage = status === 404 && browser && Number.isFinite(size) && size >= 2000;
-    const shopperServerError = status >= 500 && status <= 599 && browser;
+    const shopperServerError = (status === 502 || status === 503 || status === 504) && browser;
     if (shopperMissingPage) {
       shopperHtml404 += 1;
       shopper404.set(path, (shopper404.get(path) ?? 0) + 1);
@@ -145,6 +165,7 @@ export function summarizeAccessLines(lines: Iterable<string>, start: Date): Traf
     shopperHtml404,
     shopperFailedPeople: sawClientIp ? failedPeople.size : null,
     serverErrors,
+    shopOutages: countOutages(unreachableAt),
     scanner404,
     linesWithClientIp,
     topShopper404
