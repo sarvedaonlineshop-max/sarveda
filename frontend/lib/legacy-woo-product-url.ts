@@ -83,7 +83,11 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "shamanic-drums": "shamanic-drum",
   "shruthi-thali-gong-plates": "gong-plates-shruti-plates-plain", // Woo 45485
   "singing-bowl-silk-ring-cushions-accessories": "singing-bowls-silk-ring-cushion-accessories",
-  "singing-bowl-with-7-chakra-healing-from-sound-therapy": "handcrafted-set-of-7-bowls-for-sound-therapy",
+  "singing-bowl-with-7-chakra-healing-from-sound-therapy":
+    "handcrafted-set-of-7-bowls-for-sound-therapy-7-chakra-set",
+  // Former target 404s. Live PDP is the 7-chakra-set slug (checked 2026-10-01).
+  "handcrafted-set-of-7-bowls-for-sound-therapy":
+    "handcrafted-set-of-7-bowls-for-sound-therapy-7-chakra-set",
   "singing-bowl-with-mantra-rustic-blue-color": "singing-bowl-with-mantra-rustic-blue-colour",
   "sughosh-shankh-natural-conch-shell": "sughosh-shankh",
   "the-beginner-set": "the-three-bowl-set-root-heart-and-third-eye",
@@ -167,7 +171,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "gong-plates-shruti-plates-plain",
   "gong-stand",
   "grooved-hammered-plain-copper-bottle",
-  "handcrafted-set-of-7-bowls-for-sound-therapy",
+  "handcrafted-set-of-7-bowls-for-sound-therapy-7-chakra-set",
   "handheld-natural-coconut-shaker",
   "handmade-singing-bowls-all-sizes",
   "handpan",
@@ -413,6 +417,26 @@ export function buildLegacyProductRedirectTarget(
   const qs = pickSafeLegacyProductQuery(searchParams);
   const s = qs.toString();
   return s ? `${path}?${s}` : path;
+}
+
+/**
+ * /product/{old-slug} → /product/{current-slug} for audited renames.
+ * Current slugs (exact match) are left alone. The 7 unmapped leaves stay unresolved.
+ */
+export function resolveProductPathToRedirect(
+  pathname: string,
+  searchParams?: URLSearchParams | Iterable<[string, string]> | null
+): string | null {
+  if (!pathname) return null;
+  const raw = pathname.split("?")[0] ?? "";
+  const normalized = raw.replace(/\/+$/, "") || "/";
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length !== 2 || parts[0] !== "product") return null;
+  const leaf = parts[1] ?? "";
+  if (!SLUG_SAFE.test(leaf)) return null;
+  const resolved = resolveLegacyWooProductSlug(leaf);
+  if (!resolved.ok || resolved.slug === leaf) return null;
+  return buildLegacyProductRedirectTarget(resolved.slug, searchParams ?? null);
 }
 
 /** High-level: pathname + query → internal redirect path, or null if no product match. */

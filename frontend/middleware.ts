@@ -4,7 +4,10 @@ import type { NextRequest } from "next/server";
 import { ZONE_COOKIE, countryToZone, isValidZone } from "@/lib/currency";
 import { detectCountryFromHeaders } from "@/lib/geo-zone";
 import { resolveNestedCategoryRedirect } from "@/lib/legacy-woo-category-url";
-import { resolveStorePathToProductRedirect } from "@/lib/legacy-woo-product-url";
+import {
+  resolveProductPathToRedirect,
+  resolveStorePathToProductRedirect
+} from "@/lib/legacy-woo-product-url";
 
 const ZONE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const AUTH_COOKIE = "sarveda_auth";
@@ -216,6 +219,17 @@ export async function middleware(request: NextRequest) {
       const target = new URL(`/product-category/${encodeURIComponent(category)}`, publicOrigin(request));
       const page = searchParams.get("page");
       if (page && page !== "1") target.searchParams.set("page", page);
+      const redirect = NextResponse.redirect(target, 301);
+      ensurePricingZoneCookie(request, redirect);
+      return redirect;
+    }
+  }
+
+  // Old Woo permalinks: /product/{renamed-slug} → 301 /product/{current-slug}
+  if (pathname.startsWith("/product/")) {
+    const redirectPath = resolveProductPathToRedirect(pathname, searchParams);
+    if (redirectPath) {
+      const target = new URL(redirectPath, publicOrigin(request));
       const redirect = NextResponse.redirect(target, 301);
       ensurePricingZoneCookie(request, redirect);
       return redirect;

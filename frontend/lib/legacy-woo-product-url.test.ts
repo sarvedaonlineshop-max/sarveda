@@ -14,6 +14,7 @@ import {
   extractLegacyStoreProductLeaf,
   pickSafeLegacyProductQuery,
   resolveLegacyWooProductSlug,
+  resolveProductPathToRedirect,
   resolveStorePathToProductRedirect
 } from "./legacy-woo-product-url";
 
@@ -149,6 +150,34 @@ describe("resolveLegacyWooProductSlug", () => {
       ok: false,
       reason: "unknown"
     });
+  });
+
+  it("sends the 7-chakra bowl set to the live slug, not the dead mapped name", () => {
+    const live = "handcrafted-set-of-7-bowls-for-sound-therapy-7-chakra-set";
+    assert.equal(
+      LEGACY_WOO_LEAF_ALIASES["singing-bowl-with-7-chakra-healing-from-sound-therapy"],
+      live
+    );
+    assert.equal(LEGACY_WOO_LEAF_ALIASES["handcrafted-set-of-7-bowls-for-sound-therapy"], live);
+    assert.equal(
+      resolveProductPathToRedirect("/product/singing-bowl-with-7-chakra-healing-from-sound-therapy"),
+      `/product/${live}`
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/handcrafted-set-of-7-bowls-for-sound-therapy"),
+      `/product/${live}`
+    );
+    assert.equal(resolveProductPathToRedirect(`/product/${live}`), null);
+  });
+
+  it("redirects renamed /product/ permalinks and leaves current slugs", () => {
+    assert.equal(
+      resolveProductPathToRedirect("/product/wooden-maracas-shaker"),
+      "/product/coconut-maracas-shakers"
+    );
+    assert.equal(resolveProductPathToRedirect("/product/ocean-drums"), null);
+    assert.equal(resolveProductPathToRedirect("/product/elemental-chimes"), null);
+    assert.equal(resolveProductPathToRedirect("/product/box-tanpura"), null);
   });
 
   it("rejects unsafe leaf input", () => {
