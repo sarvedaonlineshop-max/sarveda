@@ -115,7 +115,7 @@ const td: React.CSSProperties = {
 function CountryBars({ rows }: { rows: Array<{ country: string }> }) {
   const counts = new Map<string, number>();
   for (const row of rows) counts.set(row.country || "Unknown", (counts.get(row.country || "Unknown") ?? 0) + 1);
-  const bars = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const bars = Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const max = bars[0]?.[1] ?? 1;
   return (
     <div style={{ display: "grid", gap: "8px", marginBottom: "16px" }}>
