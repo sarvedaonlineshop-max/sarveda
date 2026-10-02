@@ -100,7 +100,18 @@ Logged 1 Oct 2026, midnight–early afternoon IST. **75 requests, 22 addresses.*
 
 ---
 
-## F. Explicitly out of scope for tonight
+## F. Servers page — visit columns (do in one go, not started)
+
+Agreed 2 Oct 2026. Do not ship this piecemeal. The Humans / Bots label stays a guess. There is no absolute bot detector, and this change does not add one.
+
+Evidence from the crystal-bowl test on `49.204.161.219`: one real open (`GET /api/products/crystal-bowls-set-of-7`) plus 17 product names from store prefetches (`GET /product/…?_rsc=`). The sprint rule counted the 17 and put the visit under Bots. Add to cart does not move a row to Humans. Only a finished order does.
+
+- [ ] **Products checked** counts a real product open only: `GET /api/products/{slug}` (the PDP data request after View product). Ignore `GET /product/{slug}?_rsc=` prefetches that come from the store or a category. Several real opens stay as several products when someone goes back and forth. Scrolling the store adds none.
+- [ ] **Pages loaded** is a new storefront column from the page areas already known in the log: Home, Store, Product, Cart, Checkout, Course, Event, Retreat, Admin. It does not list product names.
+- [ ] **Bot sprint rule** uses only those real product opens. A fast walk through store prefetches is not a bot. A fast walk through many real PDPs can still be a bot. A completed order stays under Humans.
+- [ ] Keep the columns already shipped: place (city, state), added-to-cart product (from the cart-add Referer), checkout product. Do not expect an email or phone from the log. A lead exists only after checkout is submitted, which is already an order.
+
+## G. Explicitly out of scope for tonight
 
 - CRM (`feature/crm-schema`) — do not merge for cutover
 - Mail DNS (MX / SPF / DKIM / DMARC) — do not touch
