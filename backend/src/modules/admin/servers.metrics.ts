@@ -185,6 +185,8 @@ export type StorefrontVisit = {
   lastAt: string;
   products: string[];
   productCount: number;
+  /** Page areas from the log: Home, Store, Product, and the rest. Not product names. */
+  pages: string[];
   /** Product pages they were on when Add to cart succeeded. */
   cartProducts: string[];
   addedToCart: boolean;
@@ -258,6 +260,24 @@ function productSlug(path: string): string | null {
   return slug;
 }
 
+/**
+ * A real product open is the PDP data request the browser sends after View product.
+ * Store and category rows prefetch `/product/{slug}?_rsc=` and those are not opens.
+ */
+function apiProductSlug(path: string): string | null {
+  if (!path.startsWith("/api/products/")) return null;
+  const rest = path.slice("/api/products/".length);
+  if (!rest || rest.includes("/")) return null;
+  let slug = rest;
+  try {
+    slug = decodeURIComponent(rest);
+  } catch {
+    slug = rest;
+  }
+  if (!slug || slug.length > 180 || slug === "sitemap") return null;
+  return slug;
+}
+
 /** Product page named in the Referer of a cart add. The add itself does not record the item. */
 function refererProduct(referer: string): string | null {
   if (!referer || referer === "-") return null;
@@ -277,7 +297,8 @@ function isCrawlerBrowser(ua: string): boolean {
 
 /**
  * A purchase is a person. Otherwise a bot is an address that sprinted through
- * many products, or did most of its browsing with a crawler browser name.
+ * many real product opens, or did most of its browsing with a crawler browser name.
+ * Store prefetches are not opens, so a fast walk through the store is not a sprint.
  */
 export function classifyAudience(visit: {
   products: number;
@@ -324,7 +345,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
   type Visit = {
     utm: string | null;
     pages: Set<string>;
-    products: Set<string>;
+    products: string[];
     cartProducts: Set<string>;
     first: number;
     last: number;
@@ -375,7 +396,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
       visit = {
         utm: null,
         pages: new Set(),
-        products: new Set(),
+        products: [],
         cartProducts: new Set(),
         first: at,
         last: at,
@@ -406,9 +427,9 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
       if (isCrawlerBrowser(ua)) visit.crawlerPages += 1;
       else visit.browserPages += 1;
     }
-    const slug = productSlug(path);
-    if (slug && (method === "GET" || method === "HEAD") && status < 400) {
-      visit.products.add(slug);
+    const slug = method === "GET" && status < 400 ? apiProductSlug(path) : null;
+    if (slug) {
+      visit.products.push(slug);
       if (visit.lastProductAt != null) {
         visit.productGaps += 1;
         if (at - visit.lastProductAt < 8_000) visit.fastProductGaps += 1;
@@ -440,7 +461,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
   const storefront: StorefrontVisit[] = [...visits.entries()]
     .filter(([, visit]) => visit.storefront)
     .map(([ip, visit]) => {
-      const names = [...visit.products].sort();
+      const names = visit.products;
       const judged = classifyAudience({
         products: names.length,
         productGaps: visit.productGaps,
@@ -458,6 +479,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
         lastAt: new Date(to).toISOString(),
         products: names.slice(0, 12),
         productCount: names.length,
+        pages: [...visit.pages].sort(),
         cartProducts: [...visit.cartProducts].sort(),
         addedToCart: visit.cart,
         checkout: visit.checkout,

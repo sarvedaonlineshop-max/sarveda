@@ -214,6 +214,7 @@ function StorefrontPanel({
             <th style={th}>Place</th>
             <th style={th}>Source UTM</th>
             <th style={th}>Timing</th>
+            <th style={th}>Pages loaded</th>
             <th style={th}>Product checked</th>
             <th style={th}>Added to cart</th>
             <th style={th}>Checkout</th>
@@ -231,6 +232,7 @@ function StorefrontPanel({
                 {formatWhen(row.firstAt)}
                 {row.lastAt !== row.firstAt ? ` – ${formatWhen(row.lastAt)}` : ""}
               </td>
+              <td style={td}>{(row.pages ?? []).length > 0 ? row.pages!.join(", ") : "—"}</td>
               <td style={td}>
                 {row.productCount === 0
                   ? "—"

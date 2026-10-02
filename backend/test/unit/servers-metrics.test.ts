@@ -87,7 +87,8 @@ describe("servers access summary", () => {
           path: "/store?utm_source=google&utm_medium=cpc",
           cf: "9.9.9.9"
         }),
-        line({ time: "01/Oct/2026:12:05:00 +0000", path: "/product/ocean-drums", cf: "9.9.9.9" }),
+        line({ time: "01/Oct/2026:12:04:00 +0000", path: "/product/ocean-drums", cf: "9.9.9.9" }),
+        line({ time: "01/Oct/2026:12:05:00 +0000", path: "/api/products/ocean-drums", cf: "9.9.9.9" }),
         line({
           time: "01/Oct/2026:12:06:00 +0000",
           method: "POST",
@@ -109,6 +110,7 @@ describe("servers access summary", () => {
     const buyer = detail.storefront.find((row) => row.ip === "9.9.9.9");
     expect(buyer?.utm).toBe("google / cpc");
     expect(buyer?.products).toEqual(["ocean-drums"]);
+    expect(buyer?.pages).toEqual(["Checkout", "Other page", "Product", "Store"]);
     expect(buyer?.addedToCart).toBe(true);
     expect(buyer?.cartProducts).toEqual(["ocean-drums"]);
     expect(buyer?.checkout).toBe(true);
@@ -155,6 +157,81 @@ describe("servers access summary", () => {
         bought: true
       }).audience
     ).toBe("human");
+  });
+
+  it("counts a real product open and ignores store prefetches", () => {
+    const shopper = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0";
+    const prefetches = Array.from({ length: 17 }, (_, index) =>
+      line({
+        time: `01/Oct/2026:14:00:${String(index).padStart(2, "0")} +0000`,
+        path: `/product/prefetch-${index}?_rsc=1`,
+        cf: "49.204.161.219",
+        ua: shopper
+      })
+    );
+    const detail = detailAccessLines(
+      [
+        line({ time: "01/Oct/2026:14:00:30 +0000", path: "/store", cf: "49.204.161.219", ua: shopper }),
+        ...prefetches,
+        line({
+          time: "01/Oct/2026:14:01:10 +0000",
+          path: "/product/crystal-bowls-set-of-7?_rsc=1",
+          cf: "49.204.161.219",
+          ua: shopper
+        }),
+        line({
+          time: "01/Oct/2026:14:01:11 +0000",
+          path: "/api/products/crystal-bowls-set-of-7",
+          cf: "49.204.161.219",
+          ua: shopper
+        }),
+        line({
+          time: "01/Oct/2026:14:02:00 +0000",
+          path: "/api/products/crystal-bowls-set-of-7/related",
+          cf: "49.204.161.219",
+          ua: shopper
+        })
+      ],
+      start
+    );
+    const visit = detail.storefront.find((row) => row.ip === "49.204.161.219");
+    expect(visit?.products).toEqual(["crystal-bowls-set-of-7"]);
+    expect(visit?.productCount).toBe(1);
+    expect(visit?.pages).toEqual(["Product", "Store"]);
+    expect(visit?.audience).toBe("human");
+  });
+
+  it("keeps each real open when the shopper goes back to a product", () => {
+    const detail = detailAccessLines(
+      [
+        line({ time: "01/Oct/2026:15:00:00 +0000", path: "/api/products/ocean-drums", cf: "5.5.5.5" }),
+        line({ time: "01/Oct/2026:15:01:00 +0000", path: "/store", cf: "5.5.5.5" }),
+        line({ time: "01/Oct/2026:15:02:00 +0000", path: "/api/products/ocean-drums", cf: "5.5.5.5" })
+      ],
+      start
+    );
+    const visit = detail.storefront.find((row) => row.ip === "5.5.5.5");
+    expect(visit?.products).toEqual(["ocean-drums", "ocean-drums"]);
+    expect(visit?.productCount).toBe(2);
+    expect(visit?.audience).toBe("human");
+  });
+
+  it("still treats a fast walk through real product opens as a bot", () => {
+    const opens = Array.from({ length: 13 }, (_, index) =>
+      line({
+        time: `01/Oct/2026:16:00:${String(index).padStart(2, "0")} +0000`,
+        path: `/api/products/bowl-${index}`,
+        cf: "4.4.4.4"
+      })
+    );
+    const detail = detailAccessLines(
+      [line({ time: "01/Oct/2026:16:00:00 +0000", path: "/store", cf: "4.4.4.4" }), ...opens],
+      start
+    );
+    const visit = detail.storefront.find((row) => row.ip === "4.4.4.4");
+    expect(visit?.productCount).toBe(13);
+    expect(visit?.audience).toBe("bot");
+    expect(visit?.note).toContain("13 products");
   });
 
   it("leaves people empty when the log has no client address", () => {

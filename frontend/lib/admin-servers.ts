@@ -50,6 +50,7 @@ export type ServersDetail =
         lastAt: string;
         products: string[];
         productCount: number;
+        pages?: string[];
         cartProducts?: string[];
         addedToCart: boolean;
         checkout: boolean;
