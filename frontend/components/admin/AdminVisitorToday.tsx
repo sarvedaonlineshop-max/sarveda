@@ -47,9 +47,60 @@ function yesNo(value: boolean): string {
   return value ? "Yes" : "No";
 }
 
+function CountryBars({ rows }: { rows: Array<{ country: string }> }) {
+  const counts = new Map<string, number>();
+  for (const row of rows) counts.set(row.country || "Unknown", (counts.get(row.country || "Unknown") ?? 0) + 1);
+  const bars = Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const max = bars[0]?.[1] ?? 1;
+  return (
+    <div style={{ display: "grid", gap: "8px", marginBottom: "16px" }}>
+      {bars.map(([country, count]) => (
+        <div key={country} style={{ display: "grid", gridTemplateColumns: "140px 1fr 48px", gap: "8px", alignItems: "center" }}>
+          <span style={{ fontSize: "13px", color: "#3d342c" }}>{country}</span>
+          <span style={{ display: "block", height: "14px", background: "#f3efe8", borderRadius: "7px" }}>
+            <span
+              style={{
+                display: "block",
+                height: "14px",
+                width: `${Math.max(4, Math.round((count / max) * 100))}%`,
+                background: "#1e3a2f",
+                borderRadius: "7px"
+              }}
+            />
+          </span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e3a2f" }}>{count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: "1px solid #e4d9c8",
+        background: active ? "#1e3a2f" : "#fff",
+        color: active ? "#fffdf8" : "#1e3a2f",
+        borderRadius: "999px",
+        padding: "6px 12px",
+        cursor: "pointer",
+        fontSize: "13px"
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 function PeopleTable({ rows }: { rows: Extract<ServersDetail, { view: "people" }>["people"] }) {
   return (
-    <div style={{ overflow: "auto", maxHeight: 520 }}>
+    <>
+      <p style={{ margin: "0 0 12px", fontWeight: 700, color: "#1e3a2f" }}>People today, by country</p>
+      {rows.length === 0 ? <p style={{ margin: 0 }}>No visitor addresses recorded yet today.</p> : <CountryBars rows={rows} />}
+      <div style={{ overflow: "auto", maxHeight: 520 }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
         <thead>
           <tr>
@@ -71,11 +122,45 @@ function PeopleTable({ rows }: { rows: Extract<ServersDetail, { view: "people" }
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
 function StorefrontTable({ rows }: { rows: Extract<ServersDetail, { view: "storefront" }>["storefront"] }) {
+  const [audience, setAudience] = useState<"human" | "bot">("human");
+  const [stage, setStage] = useState<"all" | "cart" | "checkout" | "bought">("all");
+  const humans = rows.filter((row) => row.audience === "human");
+  const bots = rows.filter((row) => row.audience === "bot");
+  const group = audience === "human" ? humans : bots;
+  const stageCount = {
+    all: group.length,
+    cart: group.filter((row) => row.addedToCart).length,
+    checkout: group.filter((row) => row.checkout).length,
+    bought: group.filter((row) => row.bought).length
+  };
+  const shown = group.filter((row) => {
+    if (stage === "cart") return row.addedToCart;
+    if (stage === "checkout") return row.checkout;
+    if (stage === "bought") return row.bought;
+    return true;
+  });
+
   return (
+    <>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+        <Pill label={`Humans (${humans.length})`} active={audience === "human"} onClick={() => setAudience("human")} />
+        <Pill label={`Bots (${bots.length})`} active={audience === "bot"} onClick={() => setAudience("bot")} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+        <Pill label={`All (${stageCount.all})`} active={stage === "all"} onClick={() => setStage("all")} />
+        <Pill label={`Added to cart (${stageCount.cart})`} active={stage === "cart"} onClick={() => setStage("cart")} />
+        <Pill label={`Till checkout (${stageCount.checkout})`} active={stage === "checkout"} onClick={() => setStage("checkout")} />
+        <Pill label={`Bought (${stageCount.bought})`} active={stage === "bought"} onClick={() => setStage("bought")} />
+      </div>
+      <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#6b6258" }}>
+        A bot opened many products a few seconds apart, or browsed with a browser name catalog crawlers use. Someone who
+        completed an order stays under Humans.
+      </p>
     <div style={{ overflow: "auto", maxHeight: 520 }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
         <thead>
@@ -88,10 +173,11 @@ function StorefrontTable({ rows }: { rows: Extract<ServersDetail, { view: "store
             <th style={th}>Added to cart</th>
             <th style={th}>Checkout</th>
             <th style={th}>Bought</th>
+            <th style={th}>Note</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {shown.map((row) => (
             <tr key={row.ip}>
               <td style={td}>{row.ip}</td>
               <td style={td}>{row.place || row.country}</td>
@@ -110,11 +196,13 @@ function StorefrontTable({ rows }: { rows: Extract<ServersDetail, { view: "store
                 {row.checkout ? ((row.cartProducts ?? []).length > 0 ? (row.cartProducts ?? []).join(", ") : "Opened checkout") : "No"}
               </td>
               <td style={td}>{yesNo(row.bought)}</td>
+              <td style={td}>{row.note ?? "—"}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
