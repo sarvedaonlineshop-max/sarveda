@@ -185,6 +185,8 @@ export type StorefrontVisit = {
   lastAt: string;
   products: string[];
   productCount: number;
+  /** Product pages they were on when Add to cart succeeded. */
+  cartProducts: string[];
   addedToCart: boolean;
   checkout: boolean;
   bought: boolean;
@@ -256,6 +258,13 @@ function productSlug(path: string): string | null {
   return slug;
 }
 
+/** Product page named in the Referer of a cart add. The add itself does not record the item. */
+function refererProduct(referer: string): string | null {
+  if (!referer || referer === "-") return null;
+  const path = referer.replace(/^https?:\/\/[^/]+/i, "").split("?")[0] ?? "";
+  return productSlug(path);
+}
+
 /** Browser names that real shoppers almost never send, and catalog crawlers do. */
 function isCrawlerBrowser(ua: string): boolean {
   const u = ua.toLowerCase();
@@ -316,6 +325,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
     utm: string | null;
     pages: Set<string>;
     products: Set<string>;
+    cartProducts: Set<string>;
     first: number;
     last: number;
     storefrontFirst: number | null;
@@ -343,6 +353,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
     const url = m[4] ?? "";
     const status = Number(m[5]);
     const size = Number(m[6]);
+    const referer = m[7] ?? "";
     const ua = m[8] ?? "";
     const path = url.split("?")[0] ?? url;
     const ip = clientIp(m[9]);
@@ -365,6 +376,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
         utm: null,
         pages: new Set(),
         products: new Set(),
+        cartProducts: new Set(),
         first: at,
         last: at,
         storefrontFirst: null,
@@ -403,7 +415,11 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
       }
       visit.lastProductAt = at;
     }
-    if (method === "POST" && path === "/api/cart/add" && status >= 200 && status < 400) visit.cart = true;
+    if (method === "POST" && path === "/api/cart/add" && status >= 200 && status < 400) {
+      visit.cart = true;
+      const added = refererProduct(referer);
+      if (added) visit.cartProducts.add(added);
+    }
     if ((path === "/checkout" || path.startsWith("/checkout/")) && (method === "GET" || method === "HEAD")) {
       visit.checkout = true;
     }
@@ -442,6 +458,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
         lastAt: new Date(to).toISOString(),
         products: names.slice(0, 12),
         productCount: names.length,
+        cartProducts: [...visit.cartProducts].sort(),
         addedToCart: visit.cart,
         checkout: visit.checkout,
         bought: visit.bought,

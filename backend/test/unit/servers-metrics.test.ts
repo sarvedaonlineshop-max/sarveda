@@ -15,6 +15,7 @@ function line(opts: {
   size?: number;
   ua?: string;
   cf?: string;
+  referer?: string;
 }) {
   const time = opts.time ?? "01/Oct/2026:04:00:00 +0000";
   const method = opts.method ?? "GET";
@@ -22,8 +23,9 @@ function line(opts: {
   const status = opts.status ?? 200;
   const size = opts.size ?? 8000;
   const ua = opts.ua ?? "Mozilla/5.0";
+  const referer = opts.referer ?? "-";
   const cf = opts.cf ? ` cf=${opts.cf}` : "";
-  return `1.2.3.4 - - [${time}] "${method} ${path} HTTP/1.1" ${status} ${size} "-" "${ua}"${cf}`;
+  return `1.2.3.4 - - [${time}] "${method} ${path} HTTP/1.1" ${status} ${size} "${referer}" "${ua}"${cf}`;
 }
 
 describe("servers access summary", () => {
@@ -86,7 +88,14 @@ describe("servers access summary", () => {
           cf: "9.9.9.9"
         }),
         line({ time: "01/Oct/2026:12:05:00 +0000", path: "/product/ocean-drums", cf: "9.9.9.9" }),
-        line({ time: "01/Oct/2026:12:06:00 +0000", method: "POST", path: "/api/cart/add", status: 200, cf: "9.9.9.9" }),
+        line({
+          time: "01/Oct/2026:12:06:00 +0000",
+          method: "POST",
+          path: "/api/cart/add",
+          status: 200,
+          cf: "9.9.9.9",
+          referer: "https://sarveda.com/product/ocean-drums"
+        }),
         line({ time: "01/Oct/2026:12:07:00 +0000", path: "/checkout", cf: "9.9.9.9" }),
         line({ time: "01/Oct/2026:12:08:00 +0000", path: "/order/confirmed", cf: "9.9.9.9" }),
         line({ time: "01/Oct/2026:12:10:00 +0000", path: "/course/yoga", cf: "8.8.8.8" }),
@@ -101,6 +110,7 @@ describe("servers access summary", () => {
     expect(buyer?.utm).toBe("google / cpc");
     expect(buyer?.products).toEqual(["ocean-drums"]);
     expect(buyer?.addedToCart).toBe(true);
+    expect(buyer?.cartProducts).toEqual(["ocean-drums"]);
     expect(buyer?.checkout).toBe(true);
     expect(buyer?.bought).toBe(true);
     expect(buyer?.audience).toBe("human");

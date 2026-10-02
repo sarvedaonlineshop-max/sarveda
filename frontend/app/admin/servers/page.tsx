@@ -211,7 +211,7 @@ function StorefrontPanel({
         <thead>
           <tr>
             <th style={th}>IP address</th>
-            <th style={th}>Country</th>
+            <th style={th}>Place</th>
             <th style={th}>Source UTM</th>
             <th style={th}>Timing</th>
             <th style={th}>Product checked</th>
@@ -225,7 +225,7 @@ function StorefrontPanel({
           {shown.map((row) => (
             <tr key={row.ip}>
               <td style={td}>{row.ip}</td>
-              <td style={td}>{row.country}</td>
+              <td style={td}>{row.place || row.country}</td>
               <td style={td}>{row.utm ?? "—"}</td>
               <td style={td}>
                 {formatWhen(row.firstAt)}
@@ -236,8 +236,14 @@ function StorefrontPanel({
                   ? "—"
                   : `${row.products.join(", ")}${row.productCount > row.products.length ? ` +${row.productCount - row.products.length} more` : ""}`}
               </td>
-              <td style={td}>{yesNo(row.addedToCart)}</td>
-              <td style={td}>{yesNo(row.checkout)}</td>
+              <td style={td}>{(row.cartProducts ?? []).length > 0 ? row.cartProducts!.join(", ") : yesNo(row.addedToCart)}</td>
+              <td style={td}>
+                {row.checkout
+                  ? (row.cartProducts ?? []).length > 0
+                    ? row.cartProducts!.join(", ")
+                    : "Opened checkout"
+                  : "No"}
+              </td>
               <td style={td}>{yesNo(row.bought)}</td>
               <td style={td}>{row.note ?? "—"}</td>
             </tr>

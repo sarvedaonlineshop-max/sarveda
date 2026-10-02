@@ -50,12 +50,14 @@ export type ServersDetail =
         lastAt: string;
         products: string[];
         productCount: number;
+        cartProducts?: string[];
         addedToCart: boolean;
         checkout: boolean;
         bought: boolean;
         audience: "human" | "bot";
         note: string | null;
         country: string;
+        place?: string;
       }>;
     }
   | { view: "missing"; missing: Array<{ path: string; utm: string | null; at: string }> }

@@ -193,32 +193,56 @@ async function buildSnapshot(): Promise<Snapshot> {
 }
 
 const detailViewSchema = z.enum(["people", "storefront", "missing", "outages"]);
-const countryByIp = new Map<string, string>();
+type VisitorPlace = { country: string; place: string };
+const placeByIp = new Map<string, VisitorPlace>();
 let detailCache: { at: number; data: AccessDetail } | null = null;
 
+function formatPlace(row: {
+  status?: string;
+  country?: string;
+  regionName?: string;
+  city?: string;
+}): VisitorPlace {
+  const country = row.status === "success" && row.country ? row.country : "Unknown";
+  const city = row.city?.trim() ?? "";
+  const region = row.regionName?.trim() ?? "";
+  let place = country;
+  if (city && region && city.toLowerCase() !== region.toLowerCase()) place = `${city}, ${region}`;
+  else if (city) place = city;
+  else if (region) place = region;
+  if (place !== country && country !== "Unknown" && country !== "India") place = `${place}, ${country}`;
+  return { country, place };
+}
+
 async function lookupCountries(ips: string[]): Promise<void> {
-  const pending = ips.filter((ip) => !countryByIp.has(ip));
+  const pending = ips.filter((ip) => !placeByIp.has(ip));
   for (let i = 0; i < pending.length; i += 100) {
     const batch = pending.slice(i, i + 100);
     try {
-      const res = await fetch("http://ip-api.com/batch?fields=status,country,query", {
+      const res = await fetch("http://ip-api.com/batch?fields=status,country,regionName,city,query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(batch),
         signal: AbortSignal.timeout(8000)
       });
       if (!res.ok) continue;
-      const rows = (await res.json()) as Array<{ status?: string; country?: string; query?: string }>;
+      const rows = (await res.json()) as Array<{
+        status?: string;
+        country?: string;
+        regionName?: string;
+        city?: string;
+        query?: string;
+      }>;
       for (const row of rows) {
         if (!row.query) continue;
-        countryByIp.set(row.query, row.status === "success" && row.country ? row.country : "Unknown");
+        placeByIp.set(row.query, formatPlace(row));
       }
     } catch (err) {
       logger.warn("servers country lookup failed", { err });
     }
   }
   for (const ip of pending) {
-    if (!countryByIp.has(ip)) countryByIp.set(ip, "Unknown");
+    if (!placeByIp.has(ip)) placeByIp.set(ip, { country: "Unknown", place: "Unknown" });
   }
 }
 
@@ -245,7 +269,7 @@ export async function serversDetail(req: Request, res: Response) {
         success: true,
         data: {
           view: "people",
-          people: data.people.map((row) => ({ ...row, country: countryByIp.get(row.ip) ?? "Unknown" }))
+          people: data.people.map((row) => ({ ...row, country: placeByIp.get(row.ip)?.country ?? "Unknown" }))
         }
       });
       return;
@@ -258,7 +282,8 @@ export async function serversDetail(req: Request, res: Response) {
           view: "storefront",
           storefront: data.storefront.map((row) => ({
             ...row,
-            country: countryByIp.get(row.ip) ?? "Unknown"
+            country: placeByIp.get(row.ip)?.country ?? "Unknown",
+            place: placeByIp.get(row.ip)?.place ?? "Unknown"
           }))
         }
       });
