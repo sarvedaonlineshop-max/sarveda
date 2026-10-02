@@ -12,6 +12,7 @@ import { logger } from "../../config/logger";
 import {
   assertFulfillmentAllowed,
   getVariantFulfillmentAvailability,
+  isCustomerSellable,
   variantFulfillmentInputFromVariant
 } from "../inventory/variant-fulfillment-availability";
 import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
@@ -1085,13 +1086,12 @@ export async function loadAdjustmentOptionsForOrderItem(opts: {
       const attrs = v.attributeValues
         .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
         .join(", ");
-      const available = v.inventory ? v.inventory.onHand - v.inventory.reserved : 0;
       return {
         id: v.id,
         sku: v.sku,
         label: attrs || v.sku,
         saleInPaise: v.saleInPaise,
-        inStock: available > 0,
+        inStock: isCustomerSellable(variantFulfillmentInputFromVariant(v)),
         isCurrent: v.id === orderItem.variantId
       };
     })

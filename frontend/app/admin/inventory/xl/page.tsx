@@ -28,6 +28,7 @@ type EditRow = {
   reserved: number;
   available: number;
   lowStockThreshold: string;
+  dropShipEnabled: boolean;
   stockStatus: InventoryXlSheetRow["stockStatus"];
   productStatus: string;
 };
@@ -43,6 +44,7 @@ function apiToEdit(r: InventoryXlSheetRow): EditRow {
     reserved: r.reserved,
     available: r.available,
     lowStockThreshold: String(r.lowStockThreshold ?? 0),
+    dropShipEnabled: Boolean(r.dropShipEnabled),
     stockStatus: r.stockStatus,
     productStatus: r.productStatus
   };
@@ -113,8 +115,14 @@ function statusBadge(status: EditRow["stockStatus"]): { label: string; bg: strin
   return { label: "In stock", bg: "#ecfdf5", color: "#047857" };
 }
 
-function liveStockStatus(onHand: number, threshold: number): EditRow["stockStatus"] {
-  if (onHand === 0) return "out_of_stock";
+function liveStockStatus(
+  onHand: number,
+  reserved: number,
+  threshold: number,
+  dropShipEnabled: boolean
+): EditRow["stockStatus"] {
+  const available = Math.max(0, onHand - reserved);
+  if (available === 0) return dropShipEnabled ? "in_stock" : "out_of_stock";
   if (onHand > threshold) return "in_stock";
   return "low_stock";
 }
@@ -251,7 +259,7 @@ export default function InventoryXlSheetPage() {
         return {
           ...next,
           available: Math.max(0, oh - next.reserved),
-          stockStatus: liveStockStatus(oh, th)
+          stockStatus: liveStockStatus(oh, next.reserved, th, next.dropShipEnabled)
         };
       })
     );

@@ -20,12 +20,19 @@ export type InventoryXlSheetRow = {
   reserved: number;
   available: number;
   lowStockThreshold: number;
+  dropShipEnabled: boolean;
   stockStatus: "in_stock" | "low_stock" | "out_of_stock";
   productStatus: string;
 };
 
-function stockStatusOf(onHand: number, lowStockThreshold: number): InventoryXlSheetRow["stockStatus"] {
-  if (onHand === 0) return "out_of_stock";
+function stockStatusOf(
+  onHand: number,
+  reserved: number,
+  lowStockThreshold: number,
+  dropShipEnabled: boolean
+): InventoryXlSheetRow["stockStatus"] {
+  const available = Math.max(0, onHand - reserved);
+  if (available === 0) return dropShipEnabled ? "in_stock" : "out_of_stock";
   if (onHand > lowStockThreshold) return "in_stock";
   return "low_stock";
 }
@@ -74,7 +81,8 @@ export async function listInventoryXlSheetRows(
       .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
       .join(" · ");
     const available = Math.max(0, inv.onHand - inv.reserved);
-    const stockStatus = stockStatusOf(inv.onHand, inv.lowStockThreshold);
+    const dropShipEnabled = inv.variant.dropShipEnabled;
+    const stockStatus = stockStatusOf(inv.onHand, inv.reserved, inv.lowStockThreshold, dropShipEnabled);
     return {
       inventoryId: inv.id,
       variantId: inv.variantId,
@@ -86,6 +94,7 @@ export async function listInventoryXlSheetRows(
       reserved: inv.reserved,
       available,
       lowStockThreshold: inv.lowStockThreshold,
+      dropShipEnabled,
       stockStatus,
       productStatus: inv.variant.productRel.status
     };

@@ -1861,6 +1861,7 @@ export type InventoryXlSheetRow = {
   reserved: number;
   available: number;
   lowStockThreshold: number;
+  dropShipEnabled?: boolean;
   stockStatus: "in_stock" | "low_stock" | "out_of_stock";
   productStatus: string;
 };

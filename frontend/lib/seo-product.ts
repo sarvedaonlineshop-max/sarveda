@@ -1,25 +1,35 @@
-import type { ProductDetail } from "./types";
+import type { ProductDetail, ProductVariantDetail } from "./types";
 import { absoluteUrl } from "./site";
+import { isVariantCustomerSellable } from "./variant-utils";
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Same offer id the Merchant feed puts on the product link. */
+function merchantOfferParam(variant: ProductVariantDetail): string {
+  const woo = variant.wooCommerceVariationId;
+  if (typeof woo === "number" && Number.isInteger(woo) && woo > 0) return String(woo);
+  return `sv_${variant.id}`;
+}
+
+function variantOffer(product: ProductDetail, variant: ProductVariantDetail) {
+  return {
+    "@type": "Offer",
+    priceCurrency: "INR",
+    price: (variant.saleInPaise / 100).toFixed(2),
+    availability: isVariantCustomerSellable(variant)
+      ? "https://schema.org/InStock"
+      : "https://schema.org/OutOfStock",
+    sku: variant.sku,
+    url: absoluteUrl(`/product/${product.slug}?offer=${encodeURIComponent(merchantOfferParam(variant))}`)
+  };
+}
+
 export function productJsonLd(product: ProductDetail) {
   const images = product.images.map((i) => i.url).filter(Boolean);
   const price = product.variants.find((v) => v.isDefault) ?? product.variants[0];
-  const offer = price
-    ? {
-        "@type": "Offer",
-        priceCurrency: "INR",
-        price: (price.saleInPaise / 100).toFixed(2),
-        availability:
-          price.inventory && price.inventory.onHand - price.inventory.reserved <= 0
-            ? "https://schema.org/OutOfStock"
-            : "https://schema.org/InStock",
-        url: absoluteUrl(`/product/${product.slug}`)
-      }
-    : undefined;
+  const offers = product.variants.map((variant) => variantOffer(product, variant));
 
   return {
     "@context": "https://schema.org",
@@ -34,7 +44,7 @@ export function productJsonLd(product: ProductDetail) {
       "@type": "Place",
       name: "India"
     },
-    offers: offer
+    offers: offers.length === 1 ? offers[0] : offers
   };
 }
 
