@@ -34,7 +34,7 @@ import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
 import { purchasesAdminRoutes } from "../purchases/purchases.routes";
 import { accountingAdminRoutes } from "../accounting/accounting.routes";
 import { isAccountingEmailAllowed } from "../accounting/accounting-access";
-import { isServersDashboardEmail, serversDashboard, serversDetail } from "./servers.handlers";
+import { isServersDashboardEmail, serversDashboard, serversDetail, visitorCounts } from "./servers.handlers";
 import { generateDeliveryChallanBodySchema } from "../delivery-challans/challan.schemas";
 import {
   ewayCancelBodySchema,
@@ -82,6 +82,7 @@ router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
+router.get("/visitors/today", visitorCounts);
 router.get("/servers", (req, res, next) => {
   if (!isServersDashboardEmail(req.authUser?.email)) {
     return res.status(403).json({

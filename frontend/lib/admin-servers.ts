@@ -83,6 +83,32 @@ export async function fetchServersDetail(view: ServersDetail["view"]): Promise<S
   return json.data;
 }
 
+export type VisitorToday = {
+  people: number | null;
+  storefrontPeople: number | null;
+  storefrontPageLoads: number;
+};
+
+export async function fetchVisitorToday(): Promise<VisitorToday> {
+  const res = await fetch(`${getApiBase()}/api/admin/visitors/today`, {
+    credentials: "include",
+    headers: { Accept: "application/json" }
+  });
+  const json = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    data?: VisitorToday;
+    error?: string;
+    code?: string;
+  };
+  if (!res.ok || json.success === false || !json.data) {
+    throw new AdminApiError(json.error?.trim() || `Request failed (${res.status})`, {
+      status: res.status,
+      code: json.code
+    });
+  }
+  return json.data;
+}
+
 export async function fetchServersSnapshot(): Promise<ServersSnapshot> {
   const res = await fetch(`${getApiBase()}/api/admin/servers`, {
     credentials: "include",

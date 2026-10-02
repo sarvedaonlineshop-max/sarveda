@@ -300,6 +300,52 @@ export async function serversDetail(req: Request, res: Response) {
   }
 }
 
+let trafficCache: { at: number; people: number | null; storefrontPeople: number | null; storefrontPageLoads: number } | null = null;
+
+async function todayVisitorCounts() {
+  if (cache && Date.now() - cache.at < CACHE_MS) {
+    const traffic = cache.data.traffic;
+    return {
+      people: traffic.people,
+      storefrontPeople: traffic.storefrontPeople,
+      storefrontPageLoads: traffic.storefrontPageLoads
+    };
+  }
+  if (trafficCache && Date.now() - trafficCache.at < CACHE_MS) {
+    return {
+      people: trafficCache.people,
+      storefrontPeople: trafficCache.storefrontPeople,
+      storefrontPageLoads: trafficCache.storefrontPageLoads
+    };
+  }
+  const start = startOfTodayIstUtc();
+  const chunks = await Promise.all(LOG_FILES.map((path) => readLines(path)));
+  const traffic = summarizeAccessLines(chunks.flat(), start);
+  const row = {
+    at: Date.now(),
+    people: traffic.people,
+    storefrontPeople: traffic.storefrontPeople,
+    storefrontPageLoads: traffic.storefrontPageLoads
+  };
+  trafficCache = row;
+  return {
+    people: row.people,
+    storefrontPeople: row.storefrontPeople,
+    storefrontPageLoads: row.storefrontPageLoads
+  };
+}
+
+/** Two public-to-admins counts. No addresses, no machine details. */
+export async function visitorCounts(_req: Request, res: Response) {
+  try {
+    const counts = await todayVisitorCounts();
+    res.json({ success: true, data: counts });
+  } catch (err) {
+    logger.error("visitor counts failed", { err });
+    res.status(500).json({ success: false, error: "Could not read visitor counts", code: "VISITOR_COUNTS_FAILED" });
+  }
+}
+
 export async function serversDashboard(_req: Request, res: Response) {
   try {
     if (cache && Date.now() - cache.at < CACHE_MS) {

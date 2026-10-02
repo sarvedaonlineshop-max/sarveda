@@ -12,6 +12,7 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
+  BarChart3,
   LayoutDashboard,
   MapPinHouse,
   PackageSearch,
@@ -70,7 +71,8 @@ const icon = {
   purchases: <ShoppingCart {...iconProps} />,
   content: <FileText {...iconProps} />,
   activity: <Activity {...iconProps} />,
-  servers: <Server {...iconProps} />
+  servers: <Server {...iconProps} />,
+  analytics: <BarChart3 {...iconProps} />
 };
 
 const purchasesEnabled =
@@ -83,6 +85,7 @@ const accountingFlagOn =
 
 const primaryNav: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: icon.dashboard, match: "exact" },
+  { href: "/admin/analytics", label: "Analytics", icon: icon.analytics },
   // Returns is rendered via AdminReturnsSidebarLink (pending-approval badge).
   { href: "/admin/products", label: "Products", icon: icon.products },
   { href: "/admin/inventory", label: "Inventory", icon: icon.inventory },

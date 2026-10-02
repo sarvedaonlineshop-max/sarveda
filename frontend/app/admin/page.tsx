@@ -12,7 +12,7 @@ import {
   ShoppingCart,
   Timer
 } from "lucide-react";
-import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalytics";
+import { AdminVisitorToday } from "@/components/admin/AdminVisitorToday";
 import { AdminOrderFlowChart } from "@/components/admin/AdminOrderFlowChart";
 import { AdminSkeleton, AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
@@ -315,10 +315,7 @@ export default function AdminDashboardPage() {
 
       <AdminOrderFlowChart points={data.ordersByDayLast30 ?? []} />
 
-      <div>
-        <h3 style={{ fontSize: "20px", fontWeight: 800, color: "var(--admin-text, #2c2420)", marginBottom: "12px", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>Analytics</h3>
-        <AdminDashboardAnalytics />
-      </div>
+      <AdminVisitorToday />
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "24px" }}>
         <motion.div
