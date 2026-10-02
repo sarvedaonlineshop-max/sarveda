@@ -6,8 +6,26 @@ import Link from "next/link";
 import { siteSearchHref, type SiteSearchSuggestion } from "@/lib/api";
 import { usePricingZone } from "@/hooks/usePricingZone";
 import { resolveMediaUrl } from "@/lib/media-cdn";
-import { zoneToCurrency } from "@/lib/currency";
+import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { formatMinorFromPaise } from "@/lib/money";
+
+function suggestionPrice(
+  item: SiteSearchSuggestion,
+  zone: ReturnType<typeof usePricingZone>
+): string | null {
+  if (item.priceInPaise == null && item.saleUsdCents == null && item.saleGbpPence == null) return null;
+  if (item.priceInPaise === 0) return "Free";
+  const minor = unitSaleMinor(
+    {
+      saleInPaise: item.priceInPaise ?? 0,
+      mrpInPaise: item.priceInPaise ?? 0,
+      saleUsdCents: item.saleUsdCents,
+      saleGbpPence: item.saleGbpPence
+    },
+    zone
+  );
+  return formatMinorFromPaise(minor, zoneToCurrency(zone));
+}
 
 type Props = {
   item: SiteSearchSuggestion;
@@ -18,12 +36,7 @@ type Props = {
 export function SearchSuggestionRow({ item, onNavigate, className = "" }: Props) {
   const zone = usePricingZone();
   const href = siteSearchHref(item);
-  const priceLabel =
-    item.priceInPaise != null
-      ? item.priceInPaise === 0
-        ? "Free"
-        : formatMinorFromPaise(item.priceInPaise, zoneToCurrency(zone))
-      : null;
+  const priceLabel = suggestionPrice(item, zone);
 
   return (
     <Link

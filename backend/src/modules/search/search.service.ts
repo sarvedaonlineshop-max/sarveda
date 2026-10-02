@@ -17,6 +17,8 @@ export type SiteSearchSuggestion = {
   title: string;
   imageUrl: string | null;
   priceInPaise: number | null;
+  saleUsdCents?: number | null;
+  saleGbpPence?: number | null;
   /** Short label for UI, e.g. "Course · Upcoming" */
   label: string;
 };
@@ -85,6 +87,8 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
             sku: true,
             isDefault: true,
             saleInPaise: true,
+            saleUsdCents: true,
+            saleGbpPence: true,
             attributeValues: {
               select: { attributeValue: { select: { value: true, slug: true } } }
             }
@@ -166,6 +170,8 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
       title: p.name,
       imageUrl: p.images[0]?.url ?? null,
       priceInPaise: priced?.saleInPaise ?? null,
+      saleUsdCents: priced?.saleUsdCents ?? null,
+      saleGbpPence: priced?.saleGbpPence ?? null,
       label: "Product"
     });
   }

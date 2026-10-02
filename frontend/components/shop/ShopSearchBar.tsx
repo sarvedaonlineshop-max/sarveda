@@ -15,6 +15,8 @@ function toSuggestion(item: {
   name: string;
   primaryImageUrl: string | null;
   fromPriceInPaise: number | null;
+  fromSaleUsdCents?: number | null;
+  fromSaleGbpPence?: number | null;
 }): SiteSearchSuggestion {
   return {
     type: "product",
@@ -22,6 +24,8 @@ function toSuggestion(item: {
     title: item.name,
     imageUrl: item.primaryImageUrl,
     priceInPaise: item.fromPriceInPaise,
+    saleUsdCents: item.fromSaleUsdCents,
+    saleGbpPence: item.fromSaleGbpPence,
     label: "Product"
   };
 }

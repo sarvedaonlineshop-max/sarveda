@@ -255,6 +255,44 @@ async function loadDetail(): Promise<AccessDetail> {
   return data;
 }
 
+const visitorViewSchema = z.enum(["people", "storefront"]);
+
+async function visitorList(view: "people" | "storefront") {
+  const data = await loadDetail();
+  if (view === "people") {
+    await lookupCountries(data.people.map((row) => row.ip));
+    return {
+      view: "people" as const,
+      people: data.people.map((row) => ({ ...row, country: placeByIp.get(row.ip)?.country ?? "Unknown" }))
+    };
+  }
+  await lookupCountries(data.storefront.map((row) => row.ip));
+  return {
+    view: "storefront" as const,
+    storefront: data.storefront.map((row) => ({
+      ...row,
+      country: placeByIp.get(row.ip)?.country ?? "Unknown",
+      place: placeByIp.get(row.ip)?.place ?? "Unknown"
+    }))
+  };
+}
+
+/** People and storefront lists for every admin. Addresses stay out of the public shop. */
+export async function visitorDetail(req: Request, res: Response) {
+  const parsed = visitorViewSchema.safeParse(req.query.view);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: "Unknown detail", code: "BAD_REQUEST" });
+    return;
+  }
+  try {
+    const data = await visitorList(parsed.data);
+    res.json({ success: true, data });
+  } catch (err) {
+    logger.error("visitor detail failed", { err });
+    res.status(500).json({ success: false, error: "Could not read visitor detail", code: "VISITOR_DETAIL_FAILED" });
+  }
+}
+
 export async function serversDetail(req: Request, res: Response) {
   const parsed = detailViewSchema.safeParse(req.query.view);
   if (!parsed.success) {
@@ -262,33 +300,12 @@ export async function serversDetail(req: Request, res: Response) {
     return;
   }
   try {
+    if (parsed.data === "people" || parsed.data === "storefront") {
+      const data = await visitorList(parsed.data);
+      res.json({ success: true, data });
+      return;
+    }
     const data = await loadDetail();
-    if (parsed.data === "people") {
-      await lookupCountries(data.people.map((row) => row.ip));
-      res.json({
-        success: true,
-        data: {
-          view: "people",
-          people: data.people.map((row) => ({ ...row, country: placeByIp.get(row.ip)?.country ?? "Unknown" }))
-        }
-      });
-      return;
-    }
-    if (parsed.data === "storefront") {
-      await lookupCountries(data.storefront.map((row) => row.ip));
-      res.json({
-        success: true,
-        data: {
-          view: "storefront",
-          storefront: data.storefront.map((row) => ({
-            ...row,
-            country: placeByIp.get(row.ip)?.country ?? "Unknown",
-            place: placeByIp.get(row.ip)?.place ?? "Unknown"
-          }))
-        }
-      });
-      return;
-    }
     if (parsed.data === "missing") {
       res.json({ success: true, data: { view: "missing", missing: data.missing } });
       return;

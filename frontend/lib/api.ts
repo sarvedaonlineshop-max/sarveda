@@ -220,6 +220,8 @@ export type SiteSearchSuggestion = {
   title: string;
   imageUrl: string | null;
   priceInPaise: number | null;
+  saleUsdCents?: number | null;
+  saleGbpPence?: number | null;
   label: string;
 };
 
