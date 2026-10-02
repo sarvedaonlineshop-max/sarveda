@@ -110,6 +110,7 @@ Evidence from the crystal-bowl test on `49.204.161.219`: one real open (`GET /ap
 - [ ] **Pages loaded** is a new storefront column from the page areas already known in the log: Home, Store, Product, Cart, Checkout, Course, Event, Retreat, Admin. It does not list product names.
 - [ ] **Bot sprint rule** uses only those real product opens. A fast walk through store prefetches is not a bot. A fast walk through many real PDPs can still be a bot. A completed order stays under Humans.
 - [ ] Keep the columns already shipped: place (city, state), added-to-cart product (from the cart-add Referer), checkout product. Do not expect an email or phone from the log. A lead exists only after checkout is submitted, which is already an order.
+- [ ] **Dashboard cards must open the same results.** People today and Checked the storefront are on the dashboard as labels only (shipped 2 Oct 2026). On the next build, each card is a button. People today opens the people list. Checked the storefront opens the storefront list. Same tables as Servers. Every admin who can open the dashboard can open those two results. The rest of Servers stays owner-only.
 
 ## G. Explicitly out of scope for tonight
 
