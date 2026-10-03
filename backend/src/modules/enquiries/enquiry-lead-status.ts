@@ -42,7 +42,7 @@ export function enquiryLeadStatusWhere(
   const noOpenFollowUp = { followUps: { none: { status: "OPEN" as const } } };
 
   if (leadStatus === "CLOSED") return { status: "CLOSED" };
-  if (leadStatus === "NEW") return { status: "OPEN", ...unattended };
+  if (leadStatus === "NEW") return { status: "OPEN", ...unattended, ...noOpenFollowUp };
   if (leadStatus === "FOLLOW_UP") return { status: "OPEN", ...hasOpenFollowUp };
   return { status: "OPEN", ...attended, ...noOpenFollowUp };
 }
