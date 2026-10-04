@@ -10,7 +10,7 @@
  * Do NOT change Product.slug values; this map preserves old landing leaves only.
  *
  * Yoast product-sitemap leaves still MANUAL_REVIEW (no single proven native target):
- * natural-bamboo-xylophone-with-5-keys, crystal-bowl-o-rings-support-rings.
+ * crystal-bowl-o-rings-support-rings.
  * overtone-flute and overtone-flute-2 are live products at those slugs.
  */
 
@@ -122,6 +122,15 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   // 4 Oct 2026: repeated browser 404s with a live page already in the catalog.
   "sarveda-lavender-scented-eye-pillows-for-yoga-meditation-and-relaxation-made-with-cotton-filled-with-flaxseed":
     "eye-shaped-eye-pillows",
+  "koshi-chimes": "elemental-chimes-new",
+  "handmade-anahata-heart-bowl": "heart-chakra-singing-bowl",
+  "kalimba-made-from-coconut-shell-painted-7-key": "8-key-kalimba",
+  "natural-cotton-yoga-mat-with-superior-grip": "plain-yoga-mats",
+  "sarveda-ishana-or-black-gold-bowl": "singing-bowls-flower-of-life-with-sacred-symbols",
+  "natural-bamboo-xylophone-with-5-keys": "teak-wood-stainless-steel-xylophone",
+  "caxixi": "coconut-rattle",
+  "wooden-slide-whistle": "bird-flute",
+  "mini-bamboo-slide-whistle": "bird-flute",
 };
 
 /**
@@ -154,7 +163,6 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "bendo-shaker",
   "bird-flute",
   "c-g-tuning-forks",
-  "caxixi",
   "chau-gongs",
   "classic-morchang",
   "clay-ocarinas",
@@ -291,8 +299,7 @@ export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set();
  * (split parents, missing wooCommerceId, or catalog gap). Do not 301-guess.
  */
 export const LEGACY_WOO_MANUAL_REVIEW_LEAVES: ReadonlySet<string> = new Set([
-  "natural-bamboo-xylophone-with-5-keys", // SKU MI-XP-B-5 unmatched on Sarveda
-  "crystal-bowl-o-rings-support-rings" // Woo 49760 absent — add tonight
+  "crystal-bowl-o-rings-support-rings" // Woo 49760 absent — no nearest page
 ]);
 
 const SLUG_SAFE = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;

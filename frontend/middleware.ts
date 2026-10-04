@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { ZONE_COOKIE, countryToZone, isValidZone } from "@/lib/currency";
 import { detectCountryFromHeaders } from "@/lib/geo-zone";
 import { resolveNestedCategoryRedirect } from "@/lib/legacy-woo-category-url";
+import { resolveCoursePathToRedirect } from "@/lib/legacy-course-url";
 import {
   resolveProductPathToRedirect,
   resolveStorePathToProductRedirect
@@ -259,6 +260,16 @@ export async function middleware(request: NextRequest) {
   // Only audited pairs with verified native leaf slugs (see legacy-woo-category-url.ts).
   if (pathname.startsWith("/product-category/")) {
     const redirectPath = resolveNestedCategoryRedirect(pathname, searchParams);
+    if (redirectPath) {
+      const target = new URL(redirectPath, publicOrigin(request));
+      const redirect = NextResponse.redirect(target, 301);
+      ensurePricingZoneCookie(request, redirect);
+      return redirect;
+    }
+  }
+
+  if (pathname.startsWith("/course/")) {
+    const redirectPath = resolveCoursePathToRedirect(pathname, searchParams);
     if (redirectPath) {
       const target = new URL(redirectPath, publicOrigin(request));
       const redirect = NextResponse.redirect(target, 301);

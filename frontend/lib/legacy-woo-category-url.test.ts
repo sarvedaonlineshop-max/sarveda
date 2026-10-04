@@ -14,7 +14,7 @@ import {
 
 describe("legacy nested category redirects", () => {
   it("covers the audited nested paths", () => {
-    assert.equal(Object.keys(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS).length, 24);
+    assert.equal(Object.keys(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS).length, 33);
   });
 
   it("sends the old musical-instruments rattles path to the live category", () => {
@@ -64,6 +64,28 @@ describe("legacy nested category redirects", () => {
     assert.equal(normalizeNestedCategoryPath("/product-category/crystal-bowls"), null);
     assert.equal(normalizeNestedCategoryPath("/product-category/crystal-bowls/"), null);
     assert.equal(resolveNestedCategoryRedirect("/product-category/crystal-bowls"), null);
+    assert.equal(resolveNestedCategoryRedirect("/product-category/yoga-and-meditation"), null);
+  });
+
+  it("sends old category names to the nearest live category", () => {
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/yoga"),
+      "/product-category/yoga-and-meditation"
+    );
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/music-therapy"),
+      "/product-category/sound-musical-instruments"
+    );
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/musical-instruments/xylophones"),
+      "/product-category/xylophones"
+    );
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/yoga-and-meditation/bottles"),
+      "/product-category/bottles-accessories"
+    );
+    assert.equal(resolveNestedCategoryRedirect("/product-category/ayurveda"), null);
+    assert.equal(resolveNestedCategoryRedirect("/product-category/nutrition"), null);
   });
 
   it("does not touch product/store/api paths", () => {

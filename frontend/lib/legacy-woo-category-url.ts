@@ -30,6 +30,15 @@ export const LEGACY_WOO_NESTED_CATEGORY_REDIRECTS: Readonly<
     "gongs-musical-instruments",
   "/product-category/sound-musical-instruments/rattles-shakers": "rattles-shakers",
   "/product-category/musical-instruments/rattles-shakers": "rattles-shakers",
+  "/product-category/musical-instruments/xylophones": "xylophones",
+  "/product-category/musical-instruments/wind": "wind",
+  "/product-category/musical-instruments/singing-bowls": "singing-bowls-bells",
+  "/product-category/musical-instruments/tibetan-singing-bowls-bells": "singing-bowls-bells",
+  "/product-category/handpans-tonguedrum/all-handpans-tonguedrum": "all-handpans-tonguedrum",
+  "/product-category/yoga-and-meditation/props-supports": "yoga-mats-props",
+  "/product-category/yoga-and-meditation/blankets-bolsters": "yoga-mats-props",
+  "/product-category/yoga-and-meditation/accessories": "bottles-accessories",
+  "/product-category/yoga-and-meditation/bottles": "bottles-accessories",
   "/product-category/sound-musical-instruments/crystal-bowls": "crystal-bowls",
   "/product-category/sound-musical-instruments/chimes": "chimes",
   "/product-category/sound-musical-instruments/kids": "kids",
@@ -53,10 +62,30 @@ export const LEGACY_WOO_NESTED_CATEGORY_REDIRECTS: Readonly<
   "/product-category/eco-living-sustainable/personal-care": "personal-care"
 };
 
-/** Native category leaves that audited nested redirects may target. */
-export const LEGACY_WOO_KNOWN_CATEGORY_SLUGS: ReadonlySet<string> = new Set(
-  Object.values(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS)
-);
+/**
+ * Old one-segment category names → a live category.
+ * Destinations must be in LEGACY_WOO_KNOWN_CATEGORY_SLUGS.
+ */
+export const LEGACY_WOO_CATEGORY_LEAF_ALIASES: Readonly<Record<string, string>> = {
+  yoga: "yoga-and-meditation",
+  "singing-bowls": "singing-bowls-bells",
+  "handpans-tonguedrum": "handpans-tongue-drum",
+  "musical-instruments": "sound-musical-instruments",
+  "sound-healing-instrument": "sound-musical-instruments",
+  "sound-healing-instruments": "sound-musical-instruments",
+  "music-therapy": "sound-musical-instruments",
+  "music_-therapy": "sound-musical-instruments",
+  "healing-instruments": "sound-musical-instruments",
+  "copper-bottles": "bottles",
+  "eco-friendly-products": "eco-living-sustainable",
+  mindfulness: "yoga-and-meditation"
+};
+
+/** Native category slugs that legacy redirects may target. */
+export const LEGACY_WOO_KNOWN_CATEGORY_SLUGS: ReadonlySet<string> = new Set([
+  ...Object.values(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS),
+  ...Object.values(LEGACY_WOO_CATEGORY_LEAF_ALIASES)
+]);
 
 const SLUG_SAFE = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
 
@@ -105,17 +134,37 @@ export function buildLegacyCategoryRedirectTarget(
   return s ? `${path}?${s}` : path;
 }
 
-/** High-level: nested category pathname → internal redirect path, or null. */
+function singleCategorySlug(pathname: string): string | null {
+  if (!pathname) return null;
+  const raw = pathname.split("?")[0] ?? "";
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  const normalized = decoded.replace(/\/+$/, "") || "/";
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length !== 2 || parts[0] !== "product-category") return null;
+  const leaf = parts[1] ?? "";
+  if (!SLUG_SAFE.test(leaf) || leaf.includes("..")) return null;
+  return leaf;
+}
+
+/** High-level: old category pathname → internal redirect path, or null. */
 export function resolveNestedCategoryRedirect(
   pathname: string,
   searchParams?: URLSearchParams | Iterable<[string, string]> | null
 ): string | null {
   const key = normalizeNestedCategoryPath(pathname);
-  if (!key) return null;
-  const leaf = LEGACY_WOO_NESTED_CATEGORY_REDIRECTS[key];
-  if (!leaf) return null;
-  if (!LEGACY_WOO_KNOWN_CATEGORY_SLUGS.has(leaf)) return null;
-  // Guard: never redirect a path whose leaf equals the nested path's own leaf
-  // into a loop via identity — destination is always single-segment.
-  return buildLegacyCategoryRedirectTarget(leaf, searchParams ?? null);
+  if (key) {
+    const leaf = LEGACY_WOO_NESTED_CATEGORY_REDIRECTS[key];
+    if (!leaf || !LEGACY_WOO_KNOWN_CATEGORY_SLUGS.has(leaf)) return null;
+    return buildLegacyCategoryRedirectTarget(leaf, searchParams ?? null);
+  }
+  const single = singleCategorySlug(pathname);
+  if (!single) return null;
+  const aliased = LEGACY_WOO_CATEGORY_LEAF_ALIASES[single];
+  if (!aliased || aliased === single || !LEGACY_WOO_KNOWN_CATEGORY_SLUGS.has(aliased)) return null;
+  return buildLegacyCategoryRedirectTarget(aliased, searchParams ?? null);
 }

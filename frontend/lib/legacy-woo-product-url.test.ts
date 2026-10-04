@@ -186,7 +186,15 @@ describe("resolveLegacyWooProductSlug", () => {
       resolveProductPathToRedirect("/product/32-bar-rod-chime"),
       "/product/25-bar-rod-chime"
     );
-    assert.equal(resolveProductPathToRedirect("/product/caxixi"), null);
+    assert.equal(resolveProductPathToRedirect("/product/caxixi"), "/product/coconut-rattle");
+    assert.equal(
+      resolveProductPathToRedirect("/product/koshi-chimes"),
+      "/product/elemental-chimes-new"
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/natural-bamboo-xylophone-with-5-keys"),
+      "/product/teak-wood-stainless-steel-xylophone"
+    );
     assert.equal(resolveProductPathToRedirect("/product/box-tanpura"), null);
     assert.equal(
       resolveProductPathToRedirect("/product/bamboo-rainstick"),
