@@ -33,8 +33,10 @@ async function syncActiveShipments(): Promise<void> {
     take: 200
   });
 
+  const seen = new Set<string>();
   for (const row of rows) {
-    if (!row.awb || row.awb.startsWith("STUB-")) continue;
+    if (!row.awb || row.awb.startsWith("STUB-") || seen.has(row.awb)) continue;
+    seen.add(row.awb);
     const r = await syncTrackingByWaybill(row.awb);
     if (!r.success) {
       logger.warn("tracking_sync_poll_failed", { awb: row.awb, error: r.error });

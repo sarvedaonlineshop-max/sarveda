@@ -109,6 +109,118 @@ export async function onOrderEnteredProcessing(orderId: string): Promise<void> {
   logger.info("order_ready_to_ship_manual_label", { orderId });
 }
 
+type WaybillShipment = Awaited<ReturnType<typeof loadWaybillShipments>>[number];
+
+type TrackingSyncResult =
+  | {
+      success: true;
+      data: {
+        waybill: string;
+        courier: string;
+        shipmentStatus: ShipmentStatus;
+        orderStatus: OrderStatus;
+        fulfillmentStatus: string;
+      };
+    }
+  | { success: false; error: string; code: string };
+
+function loadWaybillShipments(wb: string) {
+  return prisma.shipment.findMany({
+    where: { awb: wb },
+    include: {
+      order: {
+        include: { payments: { select: { provider: true }, orderBy: { createdAt: "desc" }, take: 3 } }
+      }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+}
+
+/** One waybill can be saved on more than one order. Skip a row instead of blocking the others. */
+function waybillSkipReason(shipment: WaybillShipment): { error: string; code: string } | null {
+  if (orderBlocksCarrierSync(shipment.order.status)) {
+    return {
+      error: "Tracking cannot be updated for cancelled, unpaid, or refunded orders.",
+      code: "ORDER_STATE"
+    };
+  }
+  const payOk = assertOrderEligibleForTrackingSync(shipment.order);
+  if (!payOk.ok) return { error: payOk.error, code: payOk.code };
+  return null;
+}
+
+/**
+ * Write one carrier status onto every order that carries this waybill.
+ * A row that is cancelled, unpaid, or a stub is left as it is.
+ */
+async function applyStatusToWaybillShipments(
+  wb: string,
+  shipments: WaybillShipment[],
+  shipmentStatus: ShipmentStatus,
+  statusLabel: string
+): Promise<TrackingSyncResult> {
+  const eligible = shipments.filter((shipment) => waybillSkipReason(shipment) == null);
+  if (eligible.length === 0) {
+    const reason = shipments[0] ? waybillSkipReason(shipments[0]) : null;
+    if (reason) return { success: false, error: reason.error, code: reason.code };
+    return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
+  }
+
+  let last: TrackingSyncResult | null = null;
+  for (const shipment of eligible) {
+    if (shipmentStatus === "RTO") {
+      if (shipment.status === "RTO") {
+        last = {
+          success: true,
+          data: {
+            waybill: wb,
+            courier: shipment.courier,
+            shipmentStatus: "RTO",
+            orderStatus: shipment.order.status,
+            fulfillmentStatus: shipment.order.fulfillmentStatus
+          }
+        };
+        continue;
+      }
+      const rolled = await handleRtoShipment(shipment.orderId, wb, statusLabel);
+      last = {
+        success: true,
+        data: {
+          waybill: wb,
+          courier: shipment.courier,
+          shipmentStatus: "RTO",
+          orderStatus: rolled?.orderStatus ?? shipment.order.status,
+          fulfillmentStatus: rolled?.fulfillmentStatus ?? shipment.order.fulfillmentStatus
+        }
+      };
+      continue;
+    }
+
+    const prevOrderStatus = shipment.order.status;
+    const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
+    notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus, wb);
+    last = {
+      success: true,
+      data: {
+        waybill: wb,
+        courier: shipment.courier,
+        shipmentStatus,
+        orderStatus: out.orderStatus,
+        fulfillmentStatus: out.fulfillmentStatus
+      }
+    };
+  }
+
+  if (eligible.length > 1) {
+    logger.info("waybill_status_applied_to_orders", {
+      waybill: wb,
+      shipmentStatus,
+      orders: eligible.length
+    });
+  }
+  return last!;
+}
+
 /**
  * Apply a carrier-reported status (e.g. Shiprocket webhook) without calling tracking APIs again.
  */
@@ -133,71 +245,24 @@ export async function applyCarrierWebhookTracking(
     return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   }
 
-  const shipment = await prisma.shipment.findFirst({
-    where: { awb: wb },
-    include: {
-      order: {
-        include: { payments: { select: { provider: true }, orderBy: { createdAt: "desc" }, take: 3 } }
-      }
-    }
-  });
-  if (!shipment) {
+  const shipments = await loadWaybillShipments(wb);
+  if (shipments.length === 0) {
     return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
   }
-
-  const courierLower = shipment.courier.toLowerCase();
-  if (courierLower.includes("stub")) {
+  if (shipments.every((shipment) => shipment.courier.toLowerCase().includes("stub"))) {
     return { success: false, error: "Stub shipments ignore carrier webhooks", code: "STUB_SHIPMENT" };
   }
 
-  if (orderBlocksCarrierSync(shipment.order.status)) {
-    return {
-      success: false,
-      error: "Tracking cannot be updated for cancelled, unpaid, or refunded orders.",
-      code: "ORDER_STATE"
-    };
-  }
-
-  const payOk = assertOrderEligibleForTrackingSync(shipment.order);
-  if (!payOk.ok) {
-    return { success: false, error: payOk.error, code: payOk.code };
-  }
-
   const shipmentStatus = mapCourierStatusToShipment(statusLabel);
-  if (shipmentStatus === "RTO") {
-    const rolled = await handleRtoShipment(shipment.orderId, wb, statusLabel);
-    return {
-      success: true,
-      data: {
-        waybill: wb,
-        courier: shipment.courier,
-        shipmentStatus: "RTO" as ShipmentStatus,
-        orderStatus: rolled?.orderStatus ?? shipment.order.status,
-        fulfillmentStatus: rolled?.fulfillmentStatus ?? shipment.order.fulfillmentStatus
-      }
-    };
-  }
-
-  const prevOrderStatus = shipment.order.status;
-  const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
-  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus, wb);
-
-  logger.info("shiprocket_webhook_tracking_applied", {
-    waybill: wb,
-    shipmentStatus,
-    orderStatus: out.orderStatus
-  });
-
-  return {
-    success: true,
-    data: {
+  const applied = await applyStatusToWaybillShipments(wb, shipments, shipmentStatus, statusLabel);
+  if (applied.success) {
+    logger.info("shiprocket_webhook_tracking_applied", {
       waybill: wb,
-      courier: shipment.courier,
       shipmentStatus,
-      orderStatus: out.orderStatus,
-      fulfillmentStatus: out.fulfillmentStatus
-    }
-  };
+      orderStatus: applied.data.orderStatus
+    });
+  }
+  return applied;
 }
 
 export async function syncTrackingByWaybill(waybill: string): Promise<
@@ -218,32 +283,14 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
     return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   }
 
-  const shipment = await prisma.shipment.findFirst({
-    where: { awb: wb },
-    include: {
-      order: {
-        include: { payments: { select: { provider: true }, orderBy: { createdAt: "desc" }, take: 3 } }
-      }
-    }
-  });
-  if (!shipment) {
+  const shipments = await loadWaybillShipments(wb);
+  if (shipments.length === 0) {
     return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
   }
 
-  if (orderBlocksCarrierSync(shipment.order.status)) {
-    return {
-      success: false,
-      error: "Tracking cannot be updated for cancelled, unpaid, or refunded orders.",
-      code: "ORDER_STATE"
-    };
-  }
-
-  const payOk = assertOrderEligibleForTrackingSync(shipment.order);
-  if (!payOk.ok) {
-    return { success: false, error: payOk.error, code: payOk.code };
-  }
-
-  const courierLower = shipment.courier.toLowerCase();
+  const trackFrom =
+    shipments.find((shipment) => !shipment.courier.toLowerCase().includes("stub")) ?? shipments[0]!;
+  const courierLower = trackFrom.courier.toLowerCase();
   const tracked =
     courierLower.includes("delhivery") && !courierLower.includes("stub")
       ? await delhivery.trackShipment(wb)
@@ -256,32 +303,5 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
   }
 
   const shipmentStatus = mapCourierStatusToShipment(tracked.data.status);
-  if (shipmentStatus === "RTO") {
-    const rolled = await handleRtoShipment(shipment.orderId, wb, tracked.data.status);
-    return {
-      success: true,
-      data: {
-        waybill: wb,
-        courier: shipment.courier,
-        shipmentStatus: "RTO",
-        orderStatus: rolled?.orderStatus ?? shipment.order.status,
-        fulfillmentStatus: rolled?.fulfillmentStatus ?? shipment.order.fulfillmentStatus
-      }
-    };
-  }
-
-  const prevOrderStatus = shipment.order.status;
-  const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
-  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus, wb);
-
-  return {
-    success: true,
-    data: {
-      waybill: wb,
-      courier: shipment.courier,
-      shipmentStatus,
-      orderStatus: out.orderStatus,
-      fulfillmentStatus: out.fulfillmentStatus
-    }
-  };
+  return applyStatusToWaybillShipments(wb, shipments, shipmentStatus, tracked.data.status);
 }
