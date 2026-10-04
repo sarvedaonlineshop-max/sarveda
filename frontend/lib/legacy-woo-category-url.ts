@@ -29,6 +29,7 @@ export const LEGACY_WOO_NESTED_CATEGORY_REDIRECTS: Readonly<
   "/product-category/sound-musical-instruments/gongs-musical-instruments":
     "gongs-musical-instruments",
   "/product-category/sound-musical-instruments/rattles-shakers": "rattles-shakers",
+  "/product-category/musical-instruments/rattles-shakers": "rattles-shakers",
   "/product-category/sound-musical-instruments/crystal-bowls": "crystal-bowls",
   "/product-category/sound-musical-instruments/chimes": "chimes",
   "/product-category/sound-musical-instruments/kids": "kids",

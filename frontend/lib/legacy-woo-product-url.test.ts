@@ -99,13 +99,12 @@ describe("resolveLegacyWooProductSlug", () => {
     }
   });
 
-  it("leaves box-tanpura unresolved and sends elemental-chimes to the live page", () => {
-    assert.ok(LEGACY_WOO_UNRESOLVED_LEAVES.has("box-tanpura"));
+  it("sends box-tanpura and elemental-chimes to the live pages", () => {
+    assert.equal(LEGACY_WOO_UNRESOLVED_LEAVES.has("box-tanpura"), false);
     assert.equal(LEGACY_WOO_UNRESOLVED_LEAVES.has("elemental-chimes"), false);
-    assert.deepEqual(resolveLegacyWooProductSlug("box-tanpura"), {
-      ok: false,
-      reason: "unresolved_audit"
-    });
+    const tanpura = resolveLegacyWooProductSlug("box-tanpura");
+    assert.equal(tanpura.ok, true);
+    if (tanpura.ok) assert.equal(tanpura.slug, "box-tanpura");
     const chimes = resolveLegacyWooProductSlug("elemental-chimes");
     assert.equal(chimes.ok, true);
     if (chimes.ok) assert.equal(chimes.slug, "elemental-chimes-new");
@@ -189,6 +188,18 @@ describe("resolveLegacyWooProductSlug", () => {
     );
     assert.equal(resolveProductPathToRedirect("/product/caxixi"), null);
     assert.equal(resolveProductPathToRedirect("/product/box-tanpura"), null);
+    assert.equal(
+      resolveProductPathToRedirect("/product/bamboo-rainstick"),
+      "/product/bamboo-rainstick-wide-80cm"
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/wooden-tambourine-half-moon"),
+      "/product/wooden-tambourines"
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/copper-bottle-plain-curved"),
+      "/product/copper-bottle-vintage-plain-curved"
+    );
   });
 
   it("rejects unsafe leaf input", () => {
@@ -343,7 +354,7 @@ describe("resolveStorePathToProductRedirect", () => {
     assert.equal(resolveStorePathToProductRedirect("/store/"), null);
   });
 
-  it("elemental-chimes redirects and box-tanpura does not", () => {
+  it("redirects the October 404 leaves onto live products", () => {
     assert.equal(
       resolveStorePathToProductRedirect(
         "/store/sound-musical-instruments/chimes/elemental-chimes/"
@@ -354,7 +365,23 @@ describe("resolveStorePathToProductRedirect", () => {
       resolveStorePathToProductRedirect(
         "/store/sound-musical-instruments/indian-classical/box-tanpura/"
       ),
-      null
+      "/product/box-tanpura"
+    );
+    assert.equal(
+      resolveStorePathToProductRedirect("/store/sound-healing-instruments/bamboo-rainstick"),
+      "/product/bamboo-rainstick-wide-80cm"
+    );
+    assert.equal(
+      resolveStorePathToProductRedirect(
+        "/store/sound-musical-instruments/tuning-forks/sarveda-lavender-scented-eye-pillows-for-yoga-meditation-and-relaxation-made-with-cotton-filled-with-flaxseed"
+      ),
+      "/product/eye-shaped-eye-pillows"
+    );
+    assert.equal(
+      resolveStorePathToProductRedirect(
+        "/store/yoga-and-meditation/yoga-mats-props/plain-yoga-mats"
+      ),
+      "/product/plain-yoga-mats"
     );
   });
 

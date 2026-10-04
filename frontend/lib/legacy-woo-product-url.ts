@@ -9,8 +9,6 @@
  * Evidence: docs/audit/merchant_woo_sarveda_mapping.tsv (NEEDS 301 rows).
  * Do NOT change Product.slug values; this map preserves old landing leaves only.
  *
- * Unresolved audited leaves (no redirect): box-tanpura.
- *
  * Yoast product-sitemap leaves still MANUAL_REVIEW (no single proven native target):
  * natural-bamboo-xylophone-with-5-keys, crystal-bowl-o-rings-support-rings.
  * overtone-flute and overtone-flute-2 are live products at those slugs.
@@ -24,6 +22,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "ankh-sound-healing-instrument": "ankh",
   "artistic-egg-shakers": "painted-egg-shakers", // Woo parent 7404
   "aslatau-or-asalato": "asalato-kashaka-shaker",
+  "bamboo-rainstick": "bamboo-rainstick-wide-80cm",
   "bamboo-rainstick-2": "bamboo-rainstick-wide-80cm",
   "ceg-crystal-singing-bowl-set": "triad-crystal-bowl-set",
   "cg-tuning-forks": "c-g-tuning-forks",
@@ -98,6 +97,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "tuning-forks-gem-foot": "tuning-forks-gem-feet",
   "wooden-maracas-shaker": "coconut-maracas-shakers",
   "wooden-maracas-shaker-handheld-shaker": "wooden-maracas-shakers-plain-dot-painted",
+  "wooden-tambourine-half-moon": "wooden-tambourines",
   "wooden-tambourine-half-moon-2": "wooden-tambourines",
   "yoga-bolster": "round-yoga-bolster",
   "yoga-strap": "yoga-belt-strap",
@@ -115,9 +115,13 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "engraved-copper-water-bottles": "7-chakras-vintage-copper-bottles",
   "harmonic-flute": "overtone-flute-2",
   "copper-bottle-curved-copper-diamond-groove": "copper-bottle-curved-vintage-hammered",
+  "copper-bottle-plain-curved": "copper-bottle-vintage-plain-curved",
   "elemental-chimes": "elemental-chimes-new",
   "wooden-maracas-shaker-with-dot-painting": "wooden-maracas-shakers-plain-dot-painted",
   "9-10-notes-handpan-drum-handcrafted-to-precision": "handpan",
+  // 4 Oct 2026: repeated browser 404s with a live page already in the catalog.
+  "sarveda-lavender-scented-eye-pillows-for-yoga-meditation-and-relaxation-made-with-cotton-filled-with-flaxseed":
+    "eye-shaped-eye-pillows",
 };
 
 /**
@@ -144,6 +148,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "ayurvedic-copper-bedroom-jar",
   "bamboo-castanet",
   "bamboo-rainstick-wide-80cm",
+  "box-tanpura",
   "belly-bowls",
   "bendo-chimes",
   "bendo-shaker",
@@ -211,6 +216,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "overtone-flute-2",
   "painted-egg-shakers",
   "pangi-seed-shell-rattle",
+  "plain-yoga-mats",
   "pulse-tubes",
   "rectangle-wooden-maracas-shaker",
   "rectangular-yoga-bolster",
@@ -277,10 +283,8 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "zen-meditation-bench",
 ]);
 
-/** Explicit no-target leaves from the Merchant audit — never invent a destination. */
-export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set([
-  "box-tanpura"
-]);
+/** Explicit no-target leaves. Box tanpura now has a live page, so it is not listed. */
+export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set();
 
 /**
  * Yoast product-sitemap leaves with no single proven native Product

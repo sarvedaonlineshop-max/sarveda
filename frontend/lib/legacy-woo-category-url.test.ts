@@ -13,8 +13,15 @@ import {
 } from "./legacy-woo-category-url";
 
 describe("legacy nested category redirects", () => {
-  it("covers exactly 23 audited nested paths", () => {
-    assert.equal(Object.keys(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS).length, 23);
+  it("covers the audited nested paths", () => {
+    assert.equal(Object.keys(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS).length, 24);
+  });
+
+  it("sends the old musical-instruments rattles path to the live category", () => {
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/musical-instruments/rattles-shakers"),
+      "/product-category/rattles-shakers"
+    );
   });
 
   it("maps nested singing-bowls path to leaf", () => {
