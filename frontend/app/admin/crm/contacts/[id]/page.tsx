@@ -1,0 +1,1 @@
+"use client";import{useParams}from"next/navigation";import{Customer360Page}from"@/components/admin/crm/Customer360Page";export default function Page(){const{id}=useParams<{id:string}>();return <Customer360Page id={id} kind="contact"/>}

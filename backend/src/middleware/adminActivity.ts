@@ -111,6 +111,7 @@ function inferResource(path: string): string {
   if (p.includes("/reports")) return "reports";
   if (p.includes("/seo-suggest")) return "seo";
   if (p.includes("/catalog")) return "catalog";
+  if (p.includes("/crm")) return "crm";
   return "admin";
 }
 

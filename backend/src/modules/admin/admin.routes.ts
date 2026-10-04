@@ -33,6 +33,7 @@ import { enquiriesAdminRoutes } from "../enquiries/enquiries.admin.routes";
 import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
 import { purchasesAdminRoutes } from "../purchases/purchases.routes";
 import { accountingAdminRoutes } from "../accounting/accounting.routes";
+import { crmAdminRoutes } from "../crm/crm.routes";
 import { isAccountingEmailAllowed } from "../accounting/accounting-access";
 import { isServersDashboardEmail, serversDashboard, serversDetail, visitorCounts, visitorDetail } from "./servers.handlers";
 import { generateDeliveryChallanBodySchema } from "../delivery-challans/challan.schemas";
@@ -607,6 +608,7 @@ router.put(
 router.get("/inventory/reserved-summary", admin.inventoryReservedSummary);
 router.post("/inventory/reconcile-reserved", admin.inventoryReconcileReserved);
 router.use("/purchases", purchasesAdminRoutes);
+router.use("/crm", crmAdminRoutes);
 router.use("/accounting", requireAccountingAccess, accountingAdminRoutes);
 router.use("/marketplaces", marketplaceAdminRoutes);
 router.post(

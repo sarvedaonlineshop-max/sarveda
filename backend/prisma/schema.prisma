@@ -48,6 +48,14 @@ model User {
   blogComments              BlogComment[]
   accountClosureRequests    AccountClosureRequest[]
   accountClosureApprovals   AccountClosureApproval[]
+  crmOwnedAccounts          CrmAccount[]             @relation("CrmAccountOwner")
+  crmLinkedContact          CrmContact?              @relation("CrmContactLinkedUser")
+  crmOwnedContacts          CrmContact[]             @relation("CrmContactOwner")
+  crmOwnedLeads             CrmLead[]                @relation("CrmLeadOwner")
+  crmOwnedDeals             CrmDeal[]                @relation("CrmDealOwner")
+  crmActivitiesAsActor      CrmActivity[]            @relation("CrmActivityActor")
+  crmAssignedTasks          CrmTask[]                @relation("CrmTaskAssignee")
+  crmCreatedTasks           CrmTask[]                @relation("CrmTaskCreator")
 }
 
 model AccountClosureRequest {
@@ -253,6 +261,7 @@ model ProductVariant {
   purchaseOrderLines         PurchaseOrderLine[]
   vendorBillLines            VendorBillLine[]
   merchantCtxOffer           MerchantCtxOffer?
+  crmDealProducts            CrmDealProduct[]
   createdAt                  DateTime                              @default(now())
   updatedAt                  DateTime                              @updatedAt
 }
@@ -849,6 +858,8 @@ model Order {
   replacementFulfillments  OrderReplacementFulfillment[]
   attribution              OrderAttribution?
   convertedFromQuotations  Quotation[]                  @relation("QuotationConvertedOrder")
+  crmDeals                 CrmDeal[]
+  crmActivities            CrmActivity[]
 }
 
 /// Pre-sale commercial quotation — NEVER creates accounting, GST ledgers, stock, or payments.
@@ -900,6 +911,8 @@ model Quotation {
   customer          User?           @relation(fields: [customerId], references: [id])
   convertedOrder    Order?          @relation("QuotationConvertedOrder", fields: [convertedOrderId], references: [id])
   items             QuotationItem[]
+  crmDeals          CrmDeal[]
+  crmActivities     CrmActivity[]
 
   @@index([status])
   @@index([createdAt])
@@ -2481,6 +2494,8 @@ model EnquiryThread {
   messages              EnquiryMessage[]
   whatsappAgentSessions WhatsAppAgentSession[]
   followUps             EnquiryFollowUp[]
+  crmLead               CrmLead?
+  crmActivities         CrmActivity[]
 
   @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
   @@index([customerEmail])
@@ -3989,4 +4004,370 @@ model StorageDay {
   diskTotalBytes BigInt
   databaseBytes  BigInt
   recordedAt     DateTime @default(now())
+}
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  UNQUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum CrmLeadSource {
+  WEBSITE
+  WHATSAPP
+  PHONE
+  EMAIL
+  REFERRAL
+  GOOGLE
+  META
+  MARKETPLACE
+  EVENT
+  OFFLINE
+  IMPORT
+  OTHER
+}
+
+enum CrmDealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum CrmStageType {
+  OPEN
+  WON
+  LOST
+}
+
+enum CrmActivityType {
+  NOTE
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  TASK
+  QUOTATION
+  STATUS_CHANGE
+  SYSTEM
+}
+
+enum CrmTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CrmTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum CrmAccountKind {
+  ORGANIZATION
+  INDIVIDUAL
+}
+
+model CrmAccount {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountNumber   String?        @unique
+  kind            CrmAccountKind @default(ORGANIZATION)
+  name            String
+  displayName     String?
+  industry        String?
+  website         String?
+  email           String?
+  phone           String?
+  whatsappPhone   String?
+  gstin           String?
+  billingAddress  Json?
+  shippingAddress Json?
+  ownerUserId     String?        @db.Uuid
+  source          CrmLeadSource?
+  notes           String?
+  customFields    Json?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  owner           User?          @relation("CrmAccountOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  contacts        CrmContact[]
+  convertedLeads  CrmLead[]      @relation("CrmLeadConvertedAccount")
+  deals           CrmDeal[]
+  activities      CrmActivity[]
+  tasks           CrmTask[]
+
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+  @@index([ownerUserId])
+  @@index([isActive])
+}
+
+model CrmContact {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactNumber     String?        @unique
+  accountId         String?        @db.Uuid
+  linkedUserId      String?        @unique @db.Uuid
+  firstName         String?
+  lastName          String?
+  displayName       String
+  email             String?
+  phone             String?
+  whatsappPhone     String?
+  designation       String?
+  department        String?
+  preferredLanguage String?
+  ownerUserId       String?        @db.Uuid
+  source            CrmLeadSource?
+  notes             String?
+  customFields      Json?
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  account           CrmAccount?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  linkedUser        User?          @relation("CrmContactLinkedUser", fields: [linkedUserId], references: [id], onDelete: SetNull)
+  owner             User?          @relation("CrmContactOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  convertedLeads    CrmLead[]      @relation("CrmLeadConvertedContact")
+  deals             CrmDeal[]
+  activities        CrmActivity[]
+  tasks             CrmTask[]
+
+  @@index([accountId])
+  @@index([email])
+  @@index([phone])
+  @@index([whatsappPhone])
+  @@index([ownerUserId])
+}
+
+model CrmPipeline {
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String             @unique
+  description String?
+  isDefault   Boolean            @default(false)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  stages      CrmPipelineStage[]
+  deals       CrmDeal[]
+
+  @@index([isActive])
+}
+
+model CrmPipelineStage {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pipelineId         String       @db.Uuid
+  name               String
+  stageType          CrmStageType @default(OPEN)
+  position           Int          @default(0)
+  probabilityPercent Int          @default(0)
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  pipeline           CrmPipeline  @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals              CrmDeal[]
+
+  @@unique([pipelineId, name])
+  @@index([pipelineId, position])
+}
+
+model CrmLead {
+  id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadNumber            String?        @unique
+  status                CrmLeadStatus  @default(NEW)
+  source                CrmLeadSource  @default(OTHER)
+  name                  String
+  companyName           String?
+  email                 String?
+  phone                 String?
+  whatsappPhone         String?
+  designation           String?
+  city                  String?
+  state                 String?
+  country               String?        @default("IN")
+  ownerUserId           String?        @db.Uuid
+  estimatedValueInPaise Int?
+  currency              String         @default("INR")
+  expectedCloseDate     DateTime?      @db.Date
+  interestSummary       String?
+  attributionJson       Json?
+  customFields          Json?
+  enquiryThreadId       String?        @unique @db.Uuid
+  convertedAccountId    String?        @db.Uuid
+  convertedContactId    String?        @db.Uuid
+  convertedDealId       String?        @unique @db.Uuid
+  convertedAt           DateTime?
+  lostReason            String?
+  lastContactedAt       DateTime?
+  nextFollowUpAt        DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  owner                 User?          @relation("CrmLeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  enquiryThread         EnquiryThread? @relation(fields: [enquiryThreadId], references: [id], onDelete: SetNull)
+  convertedAccount      CrmAccount?    @relation("CrmLeadConvertedAccount", fields: [convertedAccountId], references: [id], onDelete: SetNull)
+  convertedContact      CrmContact?    @relation("CrmLeadConvertedContact", fields: [convertedContactId], references: [id], onDelete: SetNull)
+  convertedDeal         CrmDeal?       @relation("CrmLeadConvertedDeal", fields: [convertedDealId], references: [id], onDelete: SetNull)
+  sourceDeals           CrmDeal[]      @relation("CrmDealSourceLead")
+  activities            CrmActivity[]
+  tasks                 CrmTask[]
+
+  @@index([status])
+  @@index([source])
+  @@index([ownerUserId, status])
+  @@index([email])
+  @@index([phone])
+  @@index([nextFollowUpAt])
+  @@index([createdAt])
+}
+
+model CrmDeal {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealNumber         String?          @unique
+  name               String
+  status             CrmDealStatus    @default(OPEN)
+  pipelineId         String           @db.Uuid
+  stageId            String           @db.Uuid
+  accountId          String?          @db.Uuid
+  contactId          String?          @db.Uuid
+  sourceLeadId       String?          @db.Uuid
+  ownerUserId        String?          @db.Uuid
+  amountInPaise      Int              @default(0)
+  currency           String           @default("INR")
+  probabilityPercent Int?
+  expectedCloseDate  DateTime?        @db.Date
+  closedAt           DateTime?
+  wonAt              DateTime?
+  lostAt             DateTime?
+  lostReason         String?
+  quotationId        String?          @db.Uuid
+  orderId            String?          @db.Uuid
+  notes              String?
+  customFields       Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  pipeline           CrmPipeline      @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
+  stage              CrmPipelineStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  account            CrmAccount?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact            CrmContact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  sourceLead         CrmLead?         @relation("CrmDealSourceLead", fields: [sourceLeadId], references: [id], onDelete: SetNull)
+  owner              User?            @relation("CrmDealOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  quotation          Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  order              Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  convertedFromLead  CrmLead?         @relation("CrmLeadConvertedDeal")
+  products           CrmDealProduct[]
+  activities         CrmActivity[]
+  tasks              CrmTask[]
+
+  @@index([pipelineId, stageId])
+  @@index([ownerUserId, status])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([sourceLeadId])
+  @@index([expectedCloseDate])
+  @@index([quotationId])
+  @@index([orderId])
+}
+
+model CrmDealProduct {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealId           String          @db.Uuid
+  variantId        String?         @db.Uuid
+  productName      String
+  sku              String?
+  quantity         Int             @default(1)
+  unitPriceInPaise Int             @default(0)
+  discountInPaise  Int             @default(0)
+  lineTotalInPaise Int             @default(0)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deal             CrmDeal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([dealId, sortOrder])
+  @@index([variantId])
+}
+
+model CrmActivity {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type             CrmActivityType
+  subject          String?
+  body             String?
+  occurredAt       DateTime        @default(now())
+  actorUserId      String?         @db.Uuid
+  accountId        String?         @db.Uuid
+  contactId        String?         @db.Uuid
+  leadId           String?         @db.Uuid
+  dealId           String?         @db.Uuid
+  enquiryThreadId  String?         @db.Uuid
+  quotationId      String?         @db.Uuid
+  orderId          String?         @db.Uuid
+  externalProvider String?
+  externalRef      String?
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  actor            User?           @relation("CrmActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  account          CrmAccount?     @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact          CrmContact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead             CrmLead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal             CrmDeal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  enquiryThread    EnquiryThread?  @relation(fields: [enquiryThreadId], references: [id], onDelete: SetNull)
+  quotation        Quotation?      @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  order            Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, occurredAt])
+  @@index([contactId, occurredAt])
+  @@index([leadId, occurredAt])
+  @@index([dealId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([enquiryThreadId])
+  @@index([quotationId])
+  @@index([orderId])
+}
+
+model CrmTask {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  description      String?
+  status           CrmTaskStatus   @default(OPEN)
+  priority         CrmTaskPriority @default(MEDIUM)
+  dueAt            DateTime?
+  reminderAt       DateTime?
+  completedAt      DateTime?
+  assignedToUserId String?         @db.Uuid
+  createdByUserId  String?         @db.Uuid
+  accountId        String?         @db.Uuid
+  contactId        String?         @db.Uuid
+  leadId           String?         @db.Uuid
+  dealId           String?         @db.Uuid
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  assignedTo       User?           @relation("CrmTaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  createdBy        User?           @relation("CrmTaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  account          CrmAccount?     @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contact          CrmContact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead             CrmLead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal             CrmDeal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([assignedToUserId, status, dueAt])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([accountId])
+}
+
+model CrmSequence {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sequenceType String
+  prefix       String   @default("")
+  yearMonth    String
+  lastSeq      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sequenceType, yearMonth])
 }
