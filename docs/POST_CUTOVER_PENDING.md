@@ -112,9 +112,12 @@ Evidence from the crystal-bowl test on `49.204.161.219`: one real open (`GET /ap
 - [ ] Keep the columns already shipped: place (city, state), added-to-cart product (from the cart-add Referer), checkout product. Do not expect an email or phone from the log. A lead exists only after checkout is submitted, which is already an order.
 - [x] **Dashboard cards open the same results** (2 Oct 2026). People today and Checked the storefront are buttons. Each opens its list for every admin. The rest of Servers stays owner-only.
 
-## G. Explicitly out of scope for tonight
+## G. Tonight — 4 Oct 2026
 
-- CRM (`feature/crm-schema`) — do not merge for cutover
+- [ ] Merge CRM (`feature/crm-schema`) onto the current shop, apply the CRM tables on the live database, and deploy. Branch last moved 11 Sep and is well behind `main`. Live database has no CRM tables. Local `sarveda_crm_dev` already has the tables and one test pipeline.
+
+## H. Still out of scope
+
 - Mail DNS (MX / SPF / DKIM / DMARC) — do not touch
 - Cloudflare full cutover polish (optional later)
 
