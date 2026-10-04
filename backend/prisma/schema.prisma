@@ -3943,3 +3943,50 @@ model AccountingOpeningEquityLine {
   @@unique([batchId, accountCode])
   @@index([batchId])
 }
+
+/// One row per IST day. Totals only — not every web request.
+model TrafficDay {
+  day                 DateTime @id @db.Date
+  people              Int
+  storefrontPageLoads Int
+  missingPages        Int
+  checkoutPeople      Int
+  checkoutOpens       Int
+  cartAdds            Int
+  ordersConfirmed     Int
+  updatedAt           DateTime @updatedAt
+}
+
+/// A shopper who opened checkout that day. Everyone else stays in TrafficDay totals.
+model CheckoutVisit {
+  id       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  day      DateTime            @db.Date
+  clientIp String              @db.VarChar(64)
+  firstAt  DateTime
+  lastAt   DateTime
+  utm      String?             @db.VarChar(240)
+  bought   Boolean             @default(false)
+  items    CheckoutVisitItem[]
+
+  @@unique([day, clientIp], name: "day_clientIp")
+  @@index([day])
+}
+
+model CheckoutVisitItem {
+  id      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visitId String        @db.Uuid
+  visit   CheckoutVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  slug    String        @db.VarChar(180)
+  inCart  Boolean       @default(false)
+
+  @@unique([visitId, slug])
+}
+
+/// First disk and database sample of each IST day, so growth can be read later.
+model StorageDay {
+  day            DateTime @id @db.Date
+  diskUsedBytes  BigInt
+  diskTotalBytes BigInt
+  databaseBytes  BigInt
+  recordedAt     DateTime @default(now())
+}

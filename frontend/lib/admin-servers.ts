@@ -34,6 +34,19 @@ export type ServersSnapshot = {
     memoryUsedMb: number;
     memoryTotalMb: number;
   };
+  storage?: {
+    diskUsedBytes: number;
+    diskTotalBytes: number;
+    diskFreeBytes: number;
+    diskUsedPercent: number;
+    databaseBytes: number | null;
+    historyDays: number;
+    oldestDay: string | null;
+    newestDay: string | null;
+    checkoutVisitsKept: number;
+    databaseGrowthPerDayBytes: number | null;
+    note: string;
+  };
 };
 
 export type ServersDetail =

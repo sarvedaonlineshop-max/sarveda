@@ -511,3 +511,183 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
 
   return { people, storefront, missing: missing.slice(0, 400), outages };
 }
+
+export function istDayKey(when: Date): string {
+  const ist = new Date(when.getTime() + 5.5 * 60 * 60 * 1000);
+  const y = ist.getUTCFullYear();
+  const m = String(ist.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(ist.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export type CheckoutItemKeep = { slug: string; inCart: boolean };
+
+export type CheckoutVisitKeep = {
+  clientIp: string;
+  firstAt: Date;
+  lastAt: Date;
+  utm: string | null;
+  bought: boolean;
+  items: CheckoutItemKeep[];
+};
+
+export type TrafficDayKeep = {
+  day: string;
+  people: number;
+  storefrontPageLoads: number;
+  missingPages: number;
+  checkoutPeople: number;
+  checkoutOpens: number;
+  cartAdds: number;
+  ordersConfirmed: number;
+  visits: CheckoutVisitKeep[];
+};
+
+type ItemAcc = Map<string, boolean>;
+
+type VisitAcc = {
+  first: number;
+  last: number;
+  utm: string | null;
+  checkout: boolean;
+  bought: boolean;
+  items: ItemAcc;
+};
+
+type DayAcc = {
+  people: Set<string>;
+  storefrontPageLoads: number;
+  missingPages: number;
+  checkoutOpens: number;
+  cartAdds: number;
+  confirmed: Set<string>;
+  checkout: Map<string, VisitAcc>;
+};
+
+const ITEM_CAP = 24;
+
+function dayAcc(): DayAcc {
+  return {
+    people: new Set(),
+    storefrontPageLoads: 0,
+    missingPages: 0,
+    checkoutOpens: 0,
+    cartAdds: 0,
+    confirmed: new Set(),
+    checkout: new Map()
+  };
+}
+
+function rememberItem(items: ItemAcc, slug: string, inCart: boolean) {
+  const prev = items.get(slug);
+  if (prev === true) return;
+  if (prev === false && !inCart) return;
+  items.set(slug, inCart);
+}
+
+/**
+ * Daily totals for every shopper, plus a visit row only for people who opened checkout.
+ * The same address in a later file is merged, so a day split across two logs is not counted twice.
+ */
+export async function accumulateRetention(
+  lines: Iterable<string> | AsyncIterable<string>,
+  into: Map<string, DayAcc> = new Map()
+): Promise<Map<string, DayAcc>> {
+  for await (const line of lines) {
+    const m = LINE.exec(line);
+    if (!m) continue;
+    const when = parseNginxTime(m[2] ?? "");
+    if (!when) continue;
+    const method = m[3] ?? "";
+    const url = m[4] ?? "";
+    const status = Number(m[5]);
+    const size = Number(m[6]);
+    const referer = m[7] ?? "";
+    const ua = m[8] ?? "";
+    const path = url.split("?")[0] ?? url;
+    const ip = clientIp(m[9]);
+    const scanner = isScanner(ua, path);
+    const browser = ua.toLowerCase().includes("mozilla") && !scanner;
+    if (!browser) continue;
+
+    const key = istDayKey(when);
+    let day = into.get(key);
+    if (!day) {
+      day = dayAcc();
+      into.set(key, day);
+    }
+    if (ip) day.people.add(ip);
+    if (isStorefrontPage(method, path)) day.storefrontPageLoads += 1;
+    if (status === 404 && Number.isFinite(size) && size >= 2000) day.missingPages += 1;
+
+    const checkoutHit =
+      ((path === "/checkout" || path.startsWith("/checkout/")) && (method === "GET" || method === "HEAD")) ||
+      (method === "POST" && (path === "/api/checkout" || path.startsWith("/api/checkout/")) && status < 500);
+    if (checkoutHit) day.checkoutOpens += 1;
+    const cartAdd = method === "POST" && path === "/api/cart/add" && status >= 200 && status < 400;
+    if (cartAdd) day.cartAdds += 1;
+    if (ip && path.startsWith("/order/confirmed")) day.confirmed.add(ip);
+    if (!ip) continue;
+
+    const useful = checkoutHit || cartAdd || path.startsWith("/order/confirmed") || (method === "GET" && status < 400 && apiProductSlug(path));
+    let visit = day.checkout.get(ip);
+    if (!visit && !useful) continue;
+    if (!visit) {
+      visit = {
+        first: when.getTime(),
+        last: when.getTime(),
+        utm: utmLabel(url),
+        checkout: false,
+        bought: false,
+        items: new Map()
+      };
+      day.checkout.set(ip, visit);
+    }
+    const at = when.getTime();
+    if (at < visit.first) visit.first = at;
+    if (at > visit.last) visit.last = at;
+    if (!visit.utm) visit.utm = utmLabel(url);
+    if (checkoutHit) visit.checkout = true;
+    if (path.startsWith("/order/confirmed")) visit.bought = true;
+    if (cartAdd) {
+      const added = refererProduct(referer);
+      if (added) rememberItem(visit.items, added, true);
+    }
+    const slug = method === "GET" && status < 400 ? apiProductSlug(path) : null;
+    if (slug) rememberItem(visit.items, slug, false);
+  }
+  return into;
+}
+
+function cappedItems(items: ItemAcc): CheckoutItemKeep[] {
+  return [...items.entries()]
+    .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]))
+    .slice(0, ITEM_CAP)
+    .map(([slug, inCart]) => ({ slug, inCart }));
+}
+
+export function retentionFromAccum(into: Map<string, DayAcc>): TrafficDayKeep[] {
+  return [...into.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([day, row]) => ({
+      day,
+      people: row.people.size,
+      storefrontPageLoads: row.storefrontPageLoads,
+      missingPages: row.missingPages,
+      checkoutPeople: [...row.checkout.values()].filter((visit) => visit.checkout).length,
+      checkoutOpens: row.checkoutOpens,
+      cartAdds: row.cartAdds,
+      ordersConfirmed: row.confirmed.size,
+      visits: [...row.checkout.entries()]
+        .filter(([, visit]) => visit.checkout)
+        .map(([clientIp, visit]) => ({
+          clientIp,
+          firstAt: new Date(visit.first),
+          lastAt: new Date(visit.last),
+          utm: visit.utm,
+          bought: visit.bought,
+          items: cappedItems(visit.items)
+        }))
+        .sort((a, b) => a.clientIp.localeCompare(b.clientIp))
+    }));
+}

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  accumulateRetention,
   classifyAudience,
   detailAccessLines,
+  retentionFromAccum,
   startOfTodayIstUtc,
   summarizeAccessLines
 } from "../../src/modules/admin/servers.metrics";
@@ -238,5 +240,55 @@ describe("servers access summary", () => {
     const summary = summarizeAccessLines([line({ path: "/store", status: 404, size: 3000 })], start);
     expect(summary.people).toBeNull();
     expect(summary.shopperHtml404).toBe(1);
+  });
+});
+
+describe("traffic retention", () => {
+  it("keeps daily totals for everyone and item rows only after checkout", async () => {
+    const days = retentionFromAccum(
+      await accumulateRetention([
+        line({ path: "/store", cf: "1.1.1.1" }),
+        line({ path: "/api/products/heart-bowl", cf: "2.2.2.2" }),
+        line({ path: "/checkout", cf: "2.2.2.2" }),
+        line({
+          method: "POST",
+          path: "/api/cart/add",
+          status: 200,
+          referer: "https://sarveda.com/product/koshi-chimes",
+          cf: "2.2.2.2"
+        }),
+        line({ path: "/order/confirmed/SRV-1", cf: "2.2.2.2" }),
+        line({ path: "/wp-login.php", status: 404, size: 150, cf: "9.9.9.9" }),
+        line({ path: "/product/missing", status: 404, size: 4000, cf: "3.3.3.3" })
+      ])
+    );
+    expect(days).toHaveLength(1);
+    expect(days[0]).toMatchObject({
+      day: "2026-10-01",
+      people: 3,
+      missingPages: 1,
+      checkoutPeople: 1,
+      checkoutOpens: 1,
+      cartAdds: 1,
+      ordersConfirmed: 1
+    });
+    expect(days[0]?.visits).toEqual([
+      expect.objectContaining({
+        clientIp: "2.2.2.2",
+        bought: true,
+        items: [
+          { slug: "koshi-chimes", inCart: true },
+          { slug: "heart-bowl", inCart: false }
+        ]
+      })
+    ]);
+  });
+
+  it("counts one person once when the same day arrives in two files", async () => {
+    const acc = await accumulateRetention([line({ path: "/store", cf: "8.8.8.8" })]);
+    await accumulateRetention([line({ path: "/checkout", cf: "8.8.8.8" })], acc);
+    const days = retentionFromAccum(acc);
+    expect(days[0]?.people).toBe(1);
+    expect(days[0]?.checkoutPeople).toBe(1);
   });
 });

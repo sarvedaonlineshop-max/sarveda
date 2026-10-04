@@ -26,6 +26,16 @@ function formatUptime(seconds: number | null): string {
   return `${m}m`;
 }
 
+function formatGb(bytes: number): string {
+  return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+}
+
+function formatMb(bytes: number): string {
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 100) return `${Math.round(mb)} MB`;
+  return `${Math.round(mb * 10) / 10} MB`;
+}
+
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -496,6 +506,31 @@ export default function AdminServersPage() {
               Memory {data.machine.memoryUsedMb} / {data.machine.memoryTotalMb} MB
             </p>
           </div>
+          {data.storage ? (
+            <div style={card}>
+              <p style={{ margin: 0, fontWeight: 700, color: "#1e3a2f" }}>Storage</p>
+              <p style={{ margin: "8px 0 0", fontSize: "14px" }}>
+                Disk <strong>{data.storage.diskUsedPercent}% full</strong>
+                {" · "}
+                {formatGb(data.storage.diskUsedBytes)} of {formatGb(data.storage.diskTotalBytes)} used
+                {" · "}
+                {formatGb(data.storage.diskFreeBytes)} free
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: "#5c5348" }}>
+                Database {data.storage.databaseBytes == null ? "—" : formatMb(data.storage.databaseBytes)}
+                {data.storage.databaseGrowthPerDayBytes == null
+                  ? ""
+                  : ` · about ${formatMb(Math.abs(data.storage.databaseGrowthPerDayBytes))} per day`}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: "14px", color: "#5c5348" }}>
+                Checkout history {data.storage.historyDays} day{data.storage.historyDays === 1 ? "" : "s"}
+                {data.storage.oldestDay ? ` from ${data.storage.oldestDay}` : ""}
+                {" · "}
+                {data.storage.checkoutVisitsKept.toLocaleString("en-IN")} checkout visits kept
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#5c5348" }}>{data.storage.note}</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

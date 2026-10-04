@@ -15,6 +15,7 @@ import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
 import { startEnquiryFollowUpWorker } from "./jobs/enquiryFollowUpJob";
 import { logger } from "./config/logger";
 import { ensureCanonicalStoreAdmins } from "./modules/complaints/whitelist-auth";
+import { startTrafficRetention } from "./modules/admin/traffic-retention";
 
 void initSentry();
 
@@ -38,4 +39,5 @@ app.listen(port, () => {
   void startTrackingSyncWorker();
   void startCartCleanupWorker();
   void startEnquiryFollowUpWorker();
+  startTrafficRetention();
 });

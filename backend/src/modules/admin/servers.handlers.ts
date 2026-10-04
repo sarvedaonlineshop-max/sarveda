@@ -11,6 +11,7 @@ import { getRedisConnection } from "../../config/redisConnection";
 import { z } from "zod";
 
 import { detailAccessLines, startOfTodayIstUtc, summarizeAccessLines, type AccessDetail } from "./servers.metrics";
+import { persistRecentTraffic, readStorageStatus, type StorageStatus } from "./traffic-retention";
 
 const execFileAsync = promisify(execFile);
 
@@ -43,6 +44,7 @@ type Snapshot = {
     memoryUsedMb: number;
     memoryTotalMb: number;
   };
+  storage: StorageStatus;
 };
 
 let cache: { at: number; data: Snapshot } | null = null;
@@ -165,8 +167,15 @@ async function health(): Promise<Snapshot["health"]> {
 async function buildSnapshot(): Promise<Snapshot> {
   const start = startOfTodayIstUtc();
   const chunks = await Promise.all(LOG_FILES.map((path) => readLines(path)));
-  const traffic = summarizeAccessLines(chunks.flat(), start);
-  const [processes, healthRow, cpu] = await Promise.all([processRows(), health(), cpuPercent()]);
+  const lines = chunks.flat();
+  const traffic = summarizeAccessLines(lines, start);
+  void persistRecentTraffic(lines);
+  const [processes, healthRow, cpu, storage] = await Promise.all([
+    processRows(),
+    health(),
+    cpuPercent(),
+    readStorageStatus()
+  ]);
   const total = os.totalmem();
   const free = os.freemem();
   const [load1, load5] = os.loadavg();
@@ -188,7 +197,8 @@ async function buildSnapshot(): Promise<Snapshot> {
       load5: Math.round(load5 * 100) / 100,
       memoryUsedMb: Math.round((total - free) / (1024 * 1024)),
       memoryTotalMb: Math.round(total / (1024 * 1024))
-    }
+    },
+    storage
   };
 }
 
