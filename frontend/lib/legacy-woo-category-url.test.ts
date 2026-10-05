@@ -14,7 +14,7 @@ import {
 
 describe("legacy nested category redirects", () => {
   it("covers the audited nested paths", () => {
-    assert.equal(Object.keys(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS).length, 33);
+    assert.equal(Object.keys(LEGACY_WOO_NESTED_CATEGORY_REDIRECTS).length, 36);
   });
 
   it("sends the old musical-instruments rattles path to the live category", () => {
@@ -79,6 +79,18 @@ describe("legacy nested category redirects", () => {
     assert.equal(
       resolveNestedCategoryRedirect("/product-category/musical-instruments/xylophones"),
       "/product-category/xylophones"
+    );
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/musical-instruments/all-musical-instruments"),
+      "/product-category/all-musical-instruments"
+    );
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/musical-instruments/percussion"),
+      "/product-category/percussion"
+    );
+    assert.equal(
+      resolveNestedCategoryRedirect("/product-category/musical-instruments/gongs"),
+      "/product-category/gongs-musical-instruments"
     );
     assert.equal(
       resolveNestedCategoryRedirect("/product-category/yoga-and-meditation/bottles"),

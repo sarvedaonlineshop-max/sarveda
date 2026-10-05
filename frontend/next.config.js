@@ -329,7 +329,13 @@ const nextConfig = {
         source: "/product/sunshine-within-me-artistic-design/",
         destination: "/product/copper-bottle-orange-light",
         permanent: true
-      }
+      },
+      { source: "/contact-us", destination: "/contact", permanent: true },
+      { source: "/contact-us/", destination: "/contact", permanent: true },
+      { source: "/contactus", destination: "/contact", permanent: true },
+      { source: "/contactus/", destination: "/contact", permanent: true },
+      { source: "/pages/contact", destination: "/contact", permanent: true },
+      { source: "/pages/contact/", destination: "/contact", permanent: true }
     ];
   },
   images: {

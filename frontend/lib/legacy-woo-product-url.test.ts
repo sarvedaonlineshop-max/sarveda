@@ -358,6 +358,12 @@ describe("resolveStorePathToProductRedirect", () => {
   });
 
   it("/store root does not redirect to a product", () => {
+    assert.equal(
+      resolveStorePathToProductRedirect(
+        "/store/musical-instruments/tibetan-singing-bowls-bells/koshi-chimes/embed"
+      ),
+      "/product/elemental-chimes-new"
+    );
     assert.equal(resolveStorePathToProductRedirect("/store"), null);
     assert.equal(resolveStorePathToProductRedirect("/store/"), null);
   });

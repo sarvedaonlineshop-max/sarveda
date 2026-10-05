@@ -5,6 +5,8 @@ import { crmBadRequest, crmConflict, crmNotFound } from "./crm-errors";
 import { DEFAULT_SALES_STAGES } from "./crm.utils";
 
 export async function listPipelines(opts?: { includeInactive?: boolean }) {
+  const existingCount = await prisma.crmPipeline.count();
+  if (existingCount === 0) await ensureDefaultSalesPipeline();
   return prisma.crmPipeline.findMany({
     where: opts?.includeInactive ? undefined : { isActive: true },
     include: {

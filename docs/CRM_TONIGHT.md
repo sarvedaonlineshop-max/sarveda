@@ -1,24 +1,22 @@
 # CRM — tonight’s build list
 
-Noted 5 Oct 2026. Do not treat this as done. The live CRM is empty and does not email or WhatsApp anyone.
+Noted 5 Oct 2026. Built the same day. CRM still does not email or WhatsApp anyone. The 64 signup leads were not imported.
 
-## Gaps still to build
+## Gaps
 
-1. **Sales pipeline must exist before Convert.** There is no button to create it. The first Convert lead fails until the default pipeline is seeded: New Opportunity, Qualified, Proposal / Quotation, Negotiation, Won, Lost.
-2. **Lead follow-up on the lead screen.** No buttons to set Contacted, Qualified, Unqualified, or Lost, and no place to type a call, email, or WhatsApp note. The API can do this. The screen cannot.
-3. **Add a task from the lead.** Tasks can only be marked complete on the Tasks page. There is no “add follow-up” button.
-4. **Link the CRM contact to the website account** on convert, so Customer 360 can show that person’s orders. Convert today creates a contact and does not set `linkedUserId`.
-5. **Show chats on Customer 360.** The contact API already finds enquiry threads by email or linked user. The page does not show them.
-6. **Do not send messages from CRM yet.** Email and WhatsApp stay in the tools the team already uses. CRM only keeps the record.
+1. **Sales pipeline.** The first time an admin opens CRM pipelines, the empty Sales Pipeline is created: New Opportunity, Qualified, Proposal / Quotation, Negotiation, Won, Lost. Convert uses that pipeline.
+2. **Lead follow-up.** The lead screen can set Contacted, Qualified, Unqualified, or Lost, and can save a call, email, WhatsApp, or note. Saving a note does not send a message.
+3. **Follow-up task.** The lead screen can add a task. The Tasks page can still mark it complete.
+4. **Website account.** Convert links the new contact to the shopper account when the email matches a customer and that account is not already linked.
+5. **Chats on Customer 360.** Contact and company pages list matching chats and open them.
+6. **Messages stay in Chats.** CRM does not send email or WhatsApp.
 
 ## Chats and CRM — link them, do not merge them
 
 Chats stay the inbox. CRM stays the sales list. A chat already has name, email, phone, and sometimes a WhatsApp number and a website user. A lead already has a slot for one chat (`enquiryThreadId`, one lead per thread).
 
-Build this, not a second copy of the inbox:
-
-- On a chat: **Create lead**, copying name, email, and phone, and storing that chat on the lead. If a lead already exists for that chat, open it.
-- On the lead: **Open chat**, back to the same thread.
+- On a chat: **Create lead** opens the CRM form with name, mobile, email, WhatsApp, source, and the chat subject already filled. Saving stores that chat on the lead. If a lead already exists, the button is **Open lead**.
+- On the lead: **Open chat** returns to the same thread.
 - Do not create a lead for every chat. Order and payment threads are support. Product, course, corporate, and WhatsApp sales threads are the ones to turn into leads.
 - The 64 website signups who never paid are a separate list. They are not chats. Creating those leads does not depend on this link.
 

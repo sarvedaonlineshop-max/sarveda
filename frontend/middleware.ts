@@ -256,6 +256,21 @@ export async function middleware(request: NextRequest) {
     // Unresolved deep /store paths: pass through (rewrite may 404). Do not send to /.
   }
 
+  // Old blog and category pagers have no page route. Send them to the live index.
+  if (/^\/insights\/page\/\d+\/?$/.test(pathname)) {
+    const target = new URL("/insights", publicOrigin(request));
+    const redirect = NextResponse.redirect(target, 301);
+    ensurePricingZoneCookie(request, redirect);
+    return redirect;
+  }
+  const categoryPager = /^\/product-category\/([a-z0-9-]+)\/page\/\d+\/?$/.exec(pathname);
+  if (categoryPager?.[1]) {
+    const target = new URL(`/product-category/${categoryPager[1]}`, publicOrigin(request));
+    const redirect = NextResponse.redirect(target, 301);
+    ensurePricingZoneCookie(request, redirect);
+    return redirect;
+  }
+
   // Historical Woo nested categories: /product-category/{parent}/{child}/ → 301 /product-category/{child}
   // Only audited pairs with verified native leaf slugs (see legacy-woo-category-url.ts).
   if (pathname.startsWith("/product-category/")) {

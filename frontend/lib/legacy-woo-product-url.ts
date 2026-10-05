@@ -329,7 +329,8 @@ export function extractLegacyStoreProductLeaf(pathname: string): string | null {
   // ["store", ...segments]; need at least one product leaf after store
   if (parts.length < 2 || parts[0] !== "store") return null;
 
-  const leaf = parts[parts.length - 1] ?? "";
+  let leaf = parts[parts.length - 1] ?? "";
+  if (leaf === "embed" && parts.length >= 3) leaf = parts[parts.length - 2] ?? "";
   if (!leaf || !SLUG_SAFE.test(leaf)) return null;
   if (leaf.includes("..") || leaf.includes(":") || leaf.includes("%")) return null;
   return leaf;

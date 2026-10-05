@@ -114,7 +114,8 @@ export const leadListQuerySchema = paginationQuerySchema.extend({
   createdFrom: dateTimeOpt,
   createdTo: dateTimeOpt,
   nextFollowUpFrom: dateTimeOpt,
-  nextFollowUpTo: dateTimeOpt
+  nextFollowUpTo: dateTimeOpt,
+  enquiryThreadId: z.string().uuid().optional()
 });
 
 export const createAccountSchema = z.object({

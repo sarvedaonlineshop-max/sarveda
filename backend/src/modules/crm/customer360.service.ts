@@ -250,6 +250,26 @@ export async function getAccount360(accountId: string) {
   const openDeals = account.deals.filter((d) => d.status === "OPEN");
   const wonDeals = account.deals.filter((d) => d.status === "WON");
   const lostDeals = account.deals.filter((d) => d.status === "LOST");
+  const enquiryThreads = emails.length
+    ? await prisma.enquiryThread.findMany({
+        where: {
+          OR: emails.map((email) => ({
+            customerEmail: { equals: email, mode: "insensitive" as const }
+          }))
+        },
+        orderBy: { lastMessageAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          source: true,
+          status: true,
+          customerName: true,
+          customerEmail: true,
+          lastMessageAt: true,
+          waPhone: true
+        }
+      })
+    : [];
 
   return {
     account,
@@ -262,6 +282,7 @@ export async function getAccount360(accountId: string) {
     activities: account.activities,
     leads: account.convertedLeads,
     sales: commercial,
+    communication: { enquiryThreads },
     accounting: {
       note: "Read-only commercial estimates matched by email — not authoritative accounting/GL data",
       estimate: true,

@@ -38,6 +38,7 @@ import {
   type EnquiryMessageRow,
   type EnquiryThreadDetail
 } from "@/lib/admin-api";
+import { AdminChatCreateLead } from "@/components/admin/AdminChatCreateLead";
 import { getApiBase } from "@/lib/api";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import {
@@ -1475,6 +1476,21 @@ function AdminChatDetailInner() {
               >
                 View details
               </button>
+              <AdminChatCreateLead
+                menu
+                seed={{
+                  threadId: thread.id,
+                  customerName: thread.customerName,
+                  customerEmail: thread.customerEmail,
+                  customerPhone: thread.customerPhone,
+                  waPhone: thread.waPhone,
+                  source: thread.source,
+                  subject: thread.customSubject || thread.subjectCategory,
+                  orderNumber: thread.orderNumber,
+                  contextTitle: thread.contextTitle
+                }}
+                onBeforeOpen={() => setMenuOpen(false)}
+              />
               <button
                 type="button"
                 role="menuitem"
@@ -1558,6 +1574,20 @@ function AdminChatDetailInner() {
           threadId={thread.id}
           lightHeader
           onFollowUpDone={() => void load()}
+        />
+        <AdminChatCreateLead
+          light
+          seed={{
+            threadId: thread.id,
+            customerName: thread.customerName,
+            customerEmail: thread.customerEmail,
+            customerPhone: thread.customerPhone,
+            waPhone: thread.waPhone,
+            source: thread.source,
+            subject: thread.customSubject || thread.subjectCategory,
+            orderNumber: thread.orderNumber,
+            contextTitle: thread.contextTitle
+          }}
         />
         <button
           type="button"

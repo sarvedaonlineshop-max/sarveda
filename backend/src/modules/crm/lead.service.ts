@@ -13,7 +13,7 @@ import {
   toJson,
   userSummarySelect
 } from "./crm.utils";
-import { requireDefaultPipelineStage } from "./pipeline.service";
+import { ensureDefaultSalesPipeline, requireDefaultPipelineStage } from "./pipeline.service";
 
 function leadSearchWhere(search?: string): Prisma.CrmLeadWhereInput | undefined {
   const q = search?.trim();
@@ -42,6 +42,7 @@ export async function listLeads(query: {
   createdTo?: string | null;
   nextFollowUpFrom?: string | null;
   nextFollowUpTo?: string | null;
+  enquiryThreadId?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }) {
@@ -51,6 +52,7 @@ export async function listLeads(query: {
       query.status ? { status: query.status } : {},
       query.source ? { source: query.source } : {},
       query.ownerUserId ? { ownerUserId: query.ownerUserId } : {},
+      query.enquiryThreadId ? { enquiryThreadId: query.enquiryThreadId } : {},
       query.createdFrom || query.createdTo
         ? {
             createdAt: {
@@ -337,6 +339,7 @@ export async function convertLead(
   input: ConvertLeadInput,
   actor: { id: string; email: string; name?: string | null }
 ) {
+  await ensureDefaultSalesPipeline();
   const result = await prisma.$transaction(async (tx) => {
     // Authoritative lock + re-check inside the transaction (prevents concurrent double convert).
     const locked = await tx.$queryRaw<Array<{ id: string; status: string; convertedAt: Date | null }>>`
@@ -383,11 +386,31 @@ export async function convertLead(
     }
 
     if (input.createContact !== false && !contactId) {
+      const contactEmail = (input.contact?.email ?? lead.email)?.trim().toLowerCase() || null;
+      let linkedUserId: string | null = null;
+      if (contactEmail) {
+        const shopper = await tx.user.findFirst({
+          where: {
+            email: { equals: contactEmail, mode: "insensitive" },
+            deletedAt: null,
+            role: "CUSTOMER"
+          },
+          select: { id: true }
+        });
+        if (shopper) {
+          const alreadyLinked = await tx.crmContact.findUnique({
+            where: { linkedUserId: shopper.id },
+            select: { id: true }
+          });
+          if (!alreadyLinked) linkedUserId = shopper.id;
+        }
+      }
       const contactNumber = await nextCrmNumberInTx(tx, "CON");
       const contact = await tx.crmContact.create({
         data: {
           contactNumber,
           accountId,
+          linkedUserId,
           displayName:
             input.contact?.displayName ??
             ([input.contact?.firstName, input.contact?.lastName].filter(Boolean).join(" ") ||
