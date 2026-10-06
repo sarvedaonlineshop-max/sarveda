@@ -10,6 +10,7 @@ import {
   paginationMeta,
   parseDateOnly,
   parseDateTime,
+  phoneLast10,
   toJson,
   userSummarySelect
 } from "./crm.utils";
@@ -134,6 +135,25 @@ export async function getLead(id: string) {
   return lead;
 }
 
+export async function findOpenLeadByContact(email?: string | null, phone?: string | null) {
+  const emailNorm = email?.trim().toLowerCase() || "";
+  const last10 = phoneLast10(phone);
+  const or: Prisma.CrmLeadWhereInput[] = [];
+  if (emailNorm) or.push({ email: { equals: emailNorm, mode: "insensitive" } });
+  if (last10) {
+    or.push({ phone: { contains: last10 } });
+    or.push({ whatsappPhone: { contains: last10 } });
+  }
+  if (!or.length) return null;
+  return prisma.crmLead.findFirst({
+    where: {
+      status: { notIn: ["CONVERTED", "LOST", "UNQUALIFIED"] },
+      OR: or
+    },
+    orderBy: { createdAt: "desc" }
+  });
+}
+
 export async function createLead(
   input: CreateLeadInput,
   actor: { id: string; email: string; name?: string | null }
@@ -146,6 +166,23 @@ export async function createLead(
       where: { enquiryThreadId: input.enquiryThreadId }
     });
     if (existing) throw crmConflict("Enquiry thread already linked to a lead", "ENQUIRY_LINKED");
+  }
+  const duplicate = await findOpenLeadByContact(
+    input.email,
+    input.phone || input.whatsappPhone
+  );
+  if (duplicate) {
+    if (input.enquiryThreadId && !duplicate.enquiryThreadId) {
+      return prisma.crmLead.update({
+        where: { id: duplicate.id },
+        data: { enquiryThreadId: input.enquiryThreadId },
+        include: { owner: { select: userSummarySelect } }
+      });
+    }
+    throw crmConflict(
+      `A lead already exists for this email or phone (${duplicate.leadNumber ?? duplicate.name})`,
+      "LEAD_EXISTS"
+    );
   }
 
   const lead = await prisma.$transaction(async (tx) => {

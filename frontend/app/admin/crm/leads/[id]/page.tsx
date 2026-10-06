@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, BadgeIndianRupee, Building2, CalendarClock, Mail, Phone, Sparkles } from "lucide-react";
-import { crmApi, type CrmLead } from "@/lib/crm-api";
+import { crmApi, type CrmAssignee, type CrmLead } from "@/lib/crm-api";
 import {
   DateText,
   Empty,
@@ -19,7 +19,13 @@ import {
 } from "@/components/admin/crm/CrmPrimitives";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
-const STATUSES = ["NEW", "CONTACTED", "QUALIFIED", "UNQUALIFIED", "LOST"] as const;
+const STATUSES = [
+  ["NEW", "New"],
+  ["CONTACTED", "Contacted"],
+  ["QUALIFIED", "Qualified"],
+  ["UNQUALIFIED", "Unqualified"],
+  ["LOST", "Lost"]
+] as const;
 const NOTE_TYPES = [
   { id: "CALL", label: "Call" },
   { id: "EMAIL", label: "Email" },
@@ -37,11 +43,23 @@ export default function LeadDetail() {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDue, setTaskDue] = useState("");
   const [lostReason, setLostReason] = useState("");
+  const [assignees, setAssignees] = useState<CrmAssignee[]>([]);
+  const [edit, setEdit] = useState({ name: "", email: "", phone: "", ownerUserId: "" });
 
   const load = () => crmApi.lead(id).then(setLead).catch((e: Error) => setError(e.message));
   useEffect(() => {
     void load();
+    crmApi.assignees().then(setAssignees).catch(() => undefined);
   }, [id]);
+  useEffect(() => {
+    if (!lead) return;
+    setEdit({
+      name: lead.name,
+      email: lead.email ?? "",
+      phone: lead.phone ?? "",
+      ownerUserId: lead.ownerUserId ?? ""
+    });
+  }, [lead]);
 
   useAdminPageHeader(
     () => ({
@@ -68,6 +86,24 @@ export default function LeadDetail() {
       await load();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Could not convert");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveDetails = async () => {
+    if (!edit.name.trim()) return;
+    setBusy(true);
+    try {
+      await crmApi.updateLead(lead.id, {
+        name: edit.name.trim(),
+        email: edit.email.trim() || null,
+        phone: edit.phone.trim() || null,
+        ownerUserId: edit.ownerUserId || null
+      });
+      await load();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Could not save the lead");
     } finally {
       setBusy(false);
     }
@@ -196,13 +232,28 @@ export default function LeadDetail() {
           ) : null}
         </aside>
         <main style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ ...crmCard, padding: 16 }}>
+            <SectionTitle>Details</SectionTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+              <input value={edit.name} onChange={(e) => setEdit((f) => ({ ...f, name: e.target.value }))} placeholder="Name" style={crmInput} />
+              <input value={edit.email} onChange={(e) => setEdit((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={crmInput} />
+              <input value={edit.phone} onChange={(e) => setEdit((f) => ({ ...f, phone: e.target.value }))} placeholder="Phone" style={crmInput} />
+              <select value={edit.ownerUserId} onChange={(e) => setEdit((f) => ({ ...f, ownerUserId: e.target.value }))} style={crmInput}>
+                <option value="">Unassigned</option>
+                {assignees.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name || a.email}</option>
+                ))}
+              </select>
+            </div>
+            <button disabled={busy} onClick={() => void saveDetails()} style={{ ...crmButton, marginTop: 10 }}>Save details</button>
+          </div>
           {lead.status !== "CONVERTED" ? (
             <div style={{ ...crmCard, padding: 16 }}>
               <SectionTitle>Status</SectionTitle>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {STATUSES.map((status) => (
+                {STATUSES.map(([status, label]) => (
                   <button key={status} disabled={busy || lead.status === status} onClick={() => void setStatus(status)} style={lead.status === status ? crmButton : crmGhostButton}>
-                    {status.replaceAll("_", " ")}
+                    {label}
                   </button>
                 ))}
               </div>

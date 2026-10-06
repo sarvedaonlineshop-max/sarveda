@@ -35,6 +35,9 @@ import {
 const router = Router();
 router.use(requireAdmin);
 
+router.get("/summary", h.crmSummary);
+router.get("/report", h.crmReport);
+router.get("/assignees", h.crmAssignees);
 router.get("/pipelines", h.listPipelines);
 router.post("/pipelines/seed-default", h.seedDefaultPipeline);
 router.post("/pipelines", validateBody(createPipelineSchema), h.createPipeline);

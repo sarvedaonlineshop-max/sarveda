@@ -9,6 +9,7 @@ import { expireOutstandingStripeSessionsForOrder } from "../payments/stripe.sess
 import { orderIsDispatched } from "./cancellation-eligibility";
 import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
 import { recomputeReservedForOrder } from "./inventory-reserved-reconcile.service";
+import { captureAbandonedOrderLead } from "../crm/auto-lead";
 
 /** Reserve stock when checkout creates an order (increment `reserved` per line qty). */
 export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
@@ -216,6 +217,7 @@ export async function cancelUnpaidOrderWithRelease(
         err: err instanceof Error ? err.message : String(err)
       });
     }
+    captureAbandonedOrderLead(orderId);
   }
 
   return changed;

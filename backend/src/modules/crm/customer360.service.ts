@@ -204,8 +204,8 @@ export async function getContact360(contactId: string) {
     communication: { enquiryThreads },
     support: { complaints },
     accounting: {
-      note: "Read-only commercial estimates matched by email — not authoritative accounting/GL data",
-      estimate: true,
+      note: "Unpaid balance on shop orders: order total minus captured payments. This is not the accounts ledger.",
+      estimate: false,
       invoicedAmountInPaise: commercial.totalSalesInPaise,
       paidAmountInPaise: commercial.paidAmountInPaise,
       outstandingAmountInPaise: commercial.outstandingAmountInPaise
@@ -284,8 +284,8 @@ export async function getAccount360(accountId: string) {
     sales: commercial,
     communication: { enquiryThreads },
     accounting: {
-      note: "Read-only commercial estimates matched by email — not authoritative accounting/GL data",
-      estimate: true,
+      note: "Unpaid balance on shop orders: order total minus captured payments. This is not the accounts ledger.",
+      estimate: false,
       invoicedAmountInPaise: commercial.totalSalesInPaise,
       paidAmountInPaise: commercial.paidAmountInPaise,
       outstandingAmountInPaise: commercial.outstandingAmountInPaise

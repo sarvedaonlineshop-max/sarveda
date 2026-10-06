@@ -19,6 +19,7 @@ import {
   serializePrimaryAddress,
   upsertPrimaryAddress
 } from "./primary-address.service";
+import { captureSignupLead } from "../crm/auto-lead";
 
 function httpError(status: number, message: string, code: string): Error {
   const e = new Error(message) as Error & { statusCode: number; code: string };
@@ -219,6 +220,7 @@ export async function registerUser(body: RegisterBody) {
   void sendWelcomeEmail(user.email, user.name ?? "there").catch((err) => {
     logger.error("welcome_email_failed", { email: user.email, err });
   });
+  captureSignupLead(user);
 
   return publicUser(user);
 }
@@ -567,6 +569,7 @@ export async function upsertGoogleUser(profile: GoogleLikeProfile) {
       }
     });
     const effective = await applyAdminBootstrapIfNeeded(user);
+    captureSignupLead(effective);
     return publicUser(effective);
   }
 

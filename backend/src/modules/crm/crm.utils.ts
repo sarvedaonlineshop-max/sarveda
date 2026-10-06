@@ -27,6 +27,11 @@ export function toJson(
   return value as PrismaTypes.InputJsonValue;
 }
 
+export function phoneLast10(value: string | null | undefined): string {
+  const digits = (value ?? "").replace(/\D/g, "");
+  return digits.length >= 10 ? digits.slice(-10) : "";
+}
+
 export function paginationMeta(page: number, limit: number, total: number) {
   return {
     page,

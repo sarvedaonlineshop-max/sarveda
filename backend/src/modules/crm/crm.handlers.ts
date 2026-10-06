@@ -10,6 +10,7 @@ import * as dealService from "./deal.service";
 import * as leadService from "./lead.service";
 import * as pipelineService from "./pipeline.service";
 import * as taskService from "./task.service";
+import * as summaryService from "./crm-summary.service";
 import {
   accountListQuerySchema,
   activityListQuerySchema,
@@ -376,7 +377,12 @@ export async function deleteDealProduct(req: Request, res: Response, next: NextF
 export async function linkQuotation(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(linkQuotationSchema, req.body);
-    const data = await dealService.linkQuotation(requireUuidParam(req.params.dealId, "dealId"), body.quotationId, actor(req));
+    const quotationId =
+      body.quotationId ??
+      (
+        await prismaQuoteId(body.quoteNumber)
+      );
+    const data = await dealService.linkQuotation(requireUuidParam(req.params.dealId, "dealId"), quotationId, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -386,8 +392,55 @@ export async function linkQuotation(req: Request, res: Response, next: NextFunct
 export async function linkOrder(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(linkOrderSchema, req.body);
-    const data = await dealService.linkOrder(requireUuidParam(req.params.dealId, "dealId"), body.orderId, actor(req));
+    const orderId = body.orderId ?? (await prismaOrderId(body.orderNumber));
+    const data = await dealService.linkOrder(requireUuidParam(req.params.dealId, "dealId"), orderId, actor(req));
     res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function prismaQuoteId(quoteNumber: string | undefined): Promise<string> {
+  const { prisma } = await import("../../config/db");
+  const { crmNotFound } = await import("./crm-errors");
+  const row = await prisma.quotation.findFirst({
+    where: { quoteNumber: { equals: quoteNumber ?? "", mode: "insensitive" } },
+    select: { id: true }
+  });
+  if (!row) throw crmNotFound("Quotation");
+  return row.id;
+}
+
+async function prismaOrderId(orderNumber: string | undefined): Promise<string> {
+  const { prisma } = await import("../../config/db");
+  const { crmNotFound } = await import("./crm-errors");
+  const row = await prisma.order.findFirst({
+    where: { orderNumber: { equals: orderNumber ?? "", mode: "insensitive" }, deletedAt: null },
+    select: { id: true }
+  });
+  if (!row) throw crmNotFound("Order");
+  return row.id;
+}
+
+export async function crmSummary(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await summaryService.crmSummary() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function crmReport(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await summaryService.crmReport() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function crmAssignees(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await summaryService.crmAssignees() });
   } catch (err) {
     next(err);
   }

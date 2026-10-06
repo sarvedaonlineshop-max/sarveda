@@ -324,13 +324,19 @@ export const taskListQuerySchema = paginationQuerySchema.extend({
     .transform((v) => (v === undefined ? undefined : v === true || v === "true"))
 });
 
-export const linkQuotationSchema = z.object({
-  quotationId: z.string().uuid()
-});
+export const linkQuotationSchema = z
+  .object({
+    quotationId: z.string().uuid().optional(),
+    quoteNumber: z.string().trim().min(2).max(40).optional()
+  })
+  .refine((o) => Boolean(o.quotationId || o.quoteNumber), { message: "Quote id or number is required" });
 
-export const linkOrderSchema = z.object({
-  orderId: z.string().uuid()
-});
+export const linkOrderSchema = z
+  .object({
+    orderId: z.string().uuid().optional(),
+    orderNumber: z.string().trim().min(3).max(40).optional()
+  })
+  .refine((o) => Boolean(o.orderId || o.orderNumber), { message: "Order id or number is required" });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
