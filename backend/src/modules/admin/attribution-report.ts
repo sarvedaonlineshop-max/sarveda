@@ -30,6 +30,7 @@ export type AttributionLineInput = {
   skuSnapshot: string;
   nameSnapshot: string;
   qtyOrdered: number;
+  unitPriceInPaise?: number | null;
   placedAt: Date;
   productName?: string | null;
   variantSku?: string | null;
@@ -43,6 +44,7 @@ export type AttributionReportRow = {
   variant: string;
   sku: string;
   qty: number;
+  unitPrice: string;
   date: string;
   time: string;
   origin: string;
@@ -74,6 +76,7 @@ export const ATTRIBUTION_REPORT_COLUMNS: Array<{ header: string; key: keyof Attr
   { header: "Variant", key: "variant", width: 28 },
   { header: "SKU", key: "sku", width: 18 },
   { header: "Qty", key: "qty", width: 8 },
+  { header: "Price", key: "unitPrice", width: 14 },
   { header: "Date", key: "date", width: 12 },
   { header: "Time", key: "time", width: 12 },
   { header: "Origin", key: "origin", width: 22 },
@@ -216,6 +219,13 @@ export function toAttributionReportRow(input: AttributionLineInput): Attribution
     variant: formatVariantLabel(input.nameSnapshot, input.variantAttributes),
     sku: text(input.variantSku) || text(input.skuSnapshot),
     qty: input.qtyOrdered,
+    unitPrice:
+      input.unitPriceInPaise == null
+        ? ""
+        : (input.unitPriceInPaise / 100).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
     date: dateKeyKolkata(placedAt),
     time: timeKeyKolkata(placedAt),
     origin: attr ? humanizeOrigin(attr.referringDomain, attr.sourceType) : "",

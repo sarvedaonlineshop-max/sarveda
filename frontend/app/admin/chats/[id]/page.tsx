@@ -55,6 +55,7 @@ import {
 } from "@/components/admin/AdminChatsInbox";
 import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
 import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
+import { linkifiedText } from "@/lib/linkify-text";
 import {
   buildChatLeadHistory,
   formatLeadWhen
@@ -838,7 +839,7 @@ function MessageBubble({
           </div>
         ) : showText ? (
           <p className="whitespace-pre-wrap text-[15px] leading-[1.35] text-[#1a2e1a] md:text-[14px] md:leading-relaxed">
-            {parsed.text}
+            {linkifiedText(parsed.text || "")}
           </p>
         ) : null}
         {hasAttachments ? (

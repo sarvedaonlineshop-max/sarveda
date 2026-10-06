@@ -5,9 +5,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
-  BadgeIndianRupee,
   Box,
-  Layers3,
   PackageCheck,
   ShoppingCart,
   Timer
@@ -99,6 +97,7 @@ type StatCard = {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [orderWindow, setOrderWindow] = useState<"today" | "last7Days" | "thisMonth" | "lastMonth">("today");
 
   useEffect(() => {
     let cancelled = false;
@@ -182,28 +181,19 @@ export default function AdminDashboardPage() {
   const reservedUnits = reserved?.totalStoredReservedUnits ?? 0;
   const orphanUnits = reserved?.orphanUnits ?? 0;
 
-  const statCards: StatCard[] = [
-    {
-      label: "Orders today",
-      value: String(data.ordersCount.today),
-      tone: "#1c352a",
-      icon: <ShoppingCart size={18} />,
-      note: "Live order flow"
-    },
-    {
-      label: "Orders (7 days)",
-      value: String(data.ordersCount.thisWeek),
-      tone: "#2d5040",
-      icon: <Layers3 size={18} />,
-      note: "Weekly volume"
-    },
-    {
-      label: "Orders (month)",
-      value: String(data.ordersCount.thisMonth),
-      tone: "#b98a3e",
-      icon: <BadgeIndianRupee size={18} />,
-      note: "Month momentum"
-    },
+  const flow = data.orderFlow?.[orderWindow] ?? {
+    total: orderWindow === "today" ? data.ordersCount.today : orderWindow === "last7Days" ? data.ordersCount.thisWeek : orderWindow === "thisMonth" ? data.ordersCount.thisMonth : 0,
+    confirmed: 0,
+    abandoned: 0,
+    cancelled: 0
+  };
+  const orderCards: StatCard[] = [
+    { label: "Total orders", value: String(flow.total), tone: "#1c352a", icon: <ShoppingCart size={18} />, note: "All shop orders" },
+    { label: "Confirmed", value: String(flow.confirmed), tone: "#166534", icon: <PackageCheck size={18} />, note: "Paid and moving" },
+    { label: "Abandoned", value: String(flow.abandoned), tone: "#c2410c", icon: <Timer size={18} />, note: "Checkout still unpaid" },
+    { label: "Cancelled", value: String(flow.cancelled), tone: "#b91c1c", icon: <AlertTriangle size={18} />, note: "Cancelled orders" }
+  ];
+  const fixedCards: StatCard[] = [
     {
       label: "Active products",
       value: String(data.productsByStatus.active),
@@ -217,13 +207,6 @@ export default function AdminDashboardPage() {
       tone: "#f59e0b",
       icon: <Box size={18} />,
       note: "Needs review"
-    },
-    {
-      label: "Archived",
-      value: String(data.productsByStatus.archived),
-      tone: "#94a3b8",
-      icon: <Layers3 size={18} />,
-      note: "Off catalog"
     },
     {
       label: "Low stock SKUs",
@@ -246,14 +229,37 @@ export default function AdminDashboardPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "16px"
-        }}
-      >
-        {statCards.map((item) => (
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {(
+          [
+            ["today", "Today"],
+            ["last7Days", "Last 7 days"],
+            ["thisMonth", "This month"],
+            ["lastMonth", "Last month"]
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setOrderWindow(id)}
+            style={{
+              height: 36,
+              borderRadius: 999,
+              border: "1px solid var(--admin-card-border, #e8e2d9)",
+              padding: "0 14px",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+              background: orderWindow === id ? "#1c352a" : "var(--admin-card-bg, #fff)",
+              color: orderWindow === id ? "#fffaf1" : "var(--admin-text, #2c2420)"
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="admin-dash-cards">
+        {orderCards.map((item) => (
           <motion.div
             key={item.label}
             initial={{ opacity: 0 }}
@@ -312,6 +318,33 @@ export default function AdminDashboardPage() {
           </motion.div>
         ))}
       </div>
+      <div className="admin-dash-cards">
+        {fixedCards.map((item) => (
+          <motion.div
+            key={item.label}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: adminMotionSec.fast, ease: adminMotionEase }}
+            style={{
+              ...cardStyle,
+              padding: "18px",
+              borderBottom: `3px solid ${item.tone}20`,
+              borderBottomLeftRadius: "0px",
+              borderBottomRightRadius: "0px"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+              <div>
+                <p style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--admin-text-muted, #8a7060)" }}>{item.label}</p>
+                <p style={{ fontSize: "28px", lineHeight: 1.1, fontWeight: 800, color: "var(--admin-text, #2c2420)", marginTop: "12px" }}>{item.value}</p>
+                <p style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)", marginTop: "8px" }}>{item.note}</p>
+              </div>
+              <span style={{ width: 40, height: 40, borderRadius: "12px", display: "inline-flex", alignItems: "center", justifyContent: "center", color: item.tone, background: `${item.tone}18`, flexShrink: 0 }}>{item.icon}</span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+      <style>{`@media (min-width: 900px){.admin-dash-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}}@media (max-width: 899px){.admin-dash-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}`}</style>
 
       <AdminOrderFlowChart points={data.ordersByDayLast30 ?? []} />
 

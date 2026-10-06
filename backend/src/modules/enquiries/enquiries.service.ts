@@ -1045,15 +1045,54 @@ ${attachmentLinesHtml(uploaded)}
     `— ${adminName}, Sarveda Support (${sentAt} IST)`
   ].join("\n");
 
-  await sendMail(
-    thread.customerEmail,
-    `Re: ${subjectLine} — Sarveda`,
-    html,
-    text,
-    CARE_INBOX_EMAIL
-  );
+  const phone = thread.waPhone || toWhatsAppE164(thread.customerPhone);
+  const emailOk = Boolean(thread.customerEmail?.includes("@"));
+  let emailSent = false;
+  let whatsappSent = false;
 
-  logger.info("enquiry_replied", { threadId, adminId: admin.id });
+  if (emailOk) {
+    try {
+      await sendMail(
+        thread.customerEmail,
+        `Re: ${subjectLine} — Sarveda`,
+        html,
+        text,
+        CARE_INBOX_EMAIL
+      );
+      emailSent = true;
+    } catch (error) {
+      logger.error("enquiry_reply_email_failed", {
+        threadId,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  if (phone && trimmed) {
+    try {
+      const last = thread.lastCustomerMessageAt;
+      if (last && Date.now() - last.getTime() <= WA_SESSION_WINDOW_MS) {
+        await sendWhatsAppSessionText(phone, trimmed);
+      } else {
+        const templateName =
+          process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+        const name = (thread.customerName || "there").slice(0, 60);
+        await sendWhatsAppNamedTemplate(phone, templateName, [name, trimmed.slice(0, 1024)]);
+      }
+      whatsappSent = true;
+    } catch (error) {
+      logger.error("enquiry_reply_whatsapp_failed", {
+        threadId,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  if (!emailSent && !whatsappSent) {
+    throw new Error("Could not send the reply by email or WhatsApp.");
+  }
+
+  logger.info("enquiry_replied", { threadId, adminId: admin.id, emailSent, whatsappSent });
   publishEnquiryEvent({ type: "message_changed", threadId });
 
   return message;

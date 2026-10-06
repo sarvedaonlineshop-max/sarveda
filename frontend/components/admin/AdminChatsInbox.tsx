@@ -18,6 +18,7 @@ import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subject
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 import {
   CHAT_LEAD_BLUE,
+  LEAD_STATUS_COLORS,
   buildAllInboxRowMeta,
   compareThreadsForAllInbox,
   resolveThreadLeadStatus
@@ -509,6 +510,10 @@ export function AdminChatsInbox() {
         <div className="admin-mobile-pill-row flex flex-wrap gap-1.5 py-3.5 md:mt-2.5 md:py-0">
           {LEAD_STATUS_FILTERS.map((f) => {
             const active = leadStatus === f.value;
+            const tone =
+              f.value && f.value in LEAD_STATUS_COLORS
+                ? LEAD_STATUS_COLORS[f.value as keyof typeof LEAD_STATUS_COLORS]
+                : "#3d8b4f";
             const count =
               f.value === ""
                 ? leadStatusCounts.ALL
@@ -519,10 +524,12 @@ export function AdminChatsInbox() {
                 type="button"
                 onClick={() => setLeadStatus(f.value)}
                 className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
-                  active
-                    ? "bg-[#3d8b4f] text-white shadow-[0_1px_2px_rgba(28,53,42,0.18)]"
-                    : "bg-[#f0ebe3] text-stone-600 hover:bg-[#e9e3d8] md:bg-white md:ring-1 md:ring-[#d9d1c4] md:hover:bg-[#faf5ec]"
+                  active ? "shadow-[0_1px_2px_rgba(28,53,42,0.18)]" : "ring-1 ring-[#d9d1c4]"
                 }`}
+                style={{
+                  background: active ? tone : "#fff",
+                  color: active ? (f.value === "ONGOING" ? "#0c4a6e" : "#fff") : tone
+                }}
               >
                 {f.label} ({count})
               </button>

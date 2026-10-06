@@ -28,7 +28,7 @@ import {
 import { logoutSession } from "@/lib/auth-client";
 import { isAccountingEmailAllowed } from "@/lib/accounting-access";
 import { isServersDashboardEmail } from "@/lib/servers-access";
-import { AdminAccountingSidebarTree } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingSidebarTree, isAccountingWorkspacePath } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
 import { AdminReturnsSidebarLink } from "@/components/admin/AdminReturnsSidebarLink";
@@ -220,6 +220,18 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const activePath = nav?.activePath ?? pathname;
   const pendingHref = nav?.pendingHref ?? null;
   const beginNavigation = nav?.beginNavigation;
+  const accountingDesk = accountingEnabled && isAccountingWorkspacePath(pathname);
+
+  if (accountingDesk) {
+    return (
+      <>
+        <Link href="/admin" onClick={onNavigate} style={{ ...sidebarLinkStyle(false), marginBottom: 10 }}>
+          ← Store admin
+        </Link>
+        <AdminAccountingSidebarTree onNavigate={onNavigate} beginNavigation={beginNavigation} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -274,7 +286,13 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
       <NavGroup label="Ops">
         {accountingEnabled ? (
-          <AdminAccountingSidebarTree onNavigate={onNavigate} beginNavigation={beginNavigation} />
+          <NavLink
+            item={{ href: "/admin/accounting", label: "Accounting", icon: icon.purchases }}
+            activePath={activePath}
+            pendingHref={pendingHref}
+            onNavigate={onNavigate}
+            beginNavigation={beginNavigation}
+          />
         ) : null}
         {opsNav.map((item) => (
           <NavLink

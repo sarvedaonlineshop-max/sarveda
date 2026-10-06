@@ -13,6 +13,7 @@ import {
   type ChatTurn
 } from "@/lib/chat-api";
 import { formatINRFromPaise } from "@/lib/money";
+import { linkifiedText } from "@/lib/linkify-text";
 
 type ChatMessage = {
   id: string;
@@ -145,7 +146,7 @@ export function ChatClient() {
                 : "ml-auto bg-stone-900 text-amber-100"
             }`}
           >
-            <p className="whitespace-pre-wrap">{message.text}</p>
+            <p className="whitespace-pre-wrap">{linkifiedText(message.text)}</p>
             {message.role === "assistant" && message.products ? (
               <ProductSuggestions products={message.products} />
             ) : null}

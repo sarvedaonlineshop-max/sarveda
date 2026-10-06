@@ -418,6 +418,7 @@ async function attributionRows(from: Date, to: Date) {
       skuSnapshot: true,
       nameSnapshot: true,
       qtyOrdered: true,
+      unitPriceInPaise: true,
       variant: {
         select: {
           sku: true,
@@ -452,6 +453,7 @@ async function attributionRows(from: Date, to: Date) {
       skuSnapshot: it.skuSnapshot,
       nameSnapshot: it.nameSnapshot,
       qtyOrdered: it.qtyOrdered,
+      unitPriceInPaise: it.unitPriceInPaise,
       placedAt: it.order.placedAt ?? it.order.createdAt,
       productName: it.variant?.productRel.name,
       variantSku: it.variant?.sku,

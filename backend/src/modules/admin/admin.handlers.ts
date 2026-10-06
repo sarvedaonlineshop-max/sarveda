@@ -334,6 +334,46 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       if (row.status === "ARCHIVED") productsByStatus.archived = row._count.id;
     }
 
+    const lastMonthStart = startOfMonthKolkata(new Date(monthStart.getTime() - 86_400_000));
+    const confirmedStatuses: OrderStatus[] = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"];
+    const windowWhere = (from: Date, to: Date) => ({
+      AND: [
+        shopOrders,
+        {
+          OR: [
+            { placedAt: { gte: from, lt: to } },
+            { AND: [{ placedAt: null }, { createdAt: { gte: from, lt: to } }] }
+          ]
+        }
+      ]
+    });
+    const summarizeOrders = (rows: Array<{ status: OrderStatus; _count: { id: number } }>) => {
+      let total = 0;
+      let confirmed = 0;
+      let abandoned = 0;
+      let cancelled = 0;
+      for (const row of rows) {
+        const n = row._count.id;
+        total += n;
+        if (confirmedStatuses.includes(row.status)) confirmed += n;
+        else if (row.status === "PENDING_PAYMENT") abandoned += n;
+        else if (row.status === "CANCELLED") cancelled += n;
+      }
+      return { total, confirmed, abandoned, cancelled };
+    };
+    const [todayRows, weekRows, monthRows, lastMonthRows] = await Promise.all([
+      prisma.order.groupBy({ by: ["status"], where: windowWhere(today, tomorrow), _count: { id: true } }),
+      prisma.order.groupBy({ by: ["status"], where: windowWhere(weekStart, tomorrow), _count: { id: true } }),
+      prisma.order.groupBy({ by: ["status"], where: windowWhere(monthStart, tomorrow), _count: { id: true } }),
+      prisma.order.groupBy({ by: ["status"], where: windowWhere(lastMonthStart, monthStart), _count: { id: true } })
+    ]);
+    const orderFlow = {
+      today: summarizeOrders(todayRows),
+      last7Days: summarizeOrders(weekRows),
+      thisMonth: summarizeOrders(monthRows),
+      lastMonth: summarizeOrders(lastMonthRows)
+    };
+
     res.json({
       success: true,
       data: {
@@ -348,6 +388,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
           thisWeek: countsWeek,
           thisMonth: countsMonth
         },
+        orderFlow,
         productsByStatus,
         recentOrders,
         lowStockAlerts: lowStock.map((inv) => ({

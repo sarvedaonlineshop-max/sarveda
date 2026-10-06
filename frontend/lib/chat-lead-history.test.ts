@@ -19,7 +19,7 @@ describe("buildAllInboxRowMeta", () => {
     assert.equal(meta.status, "NEW");
     assert.equal(meta.statusLabel, "New");
     assert.equal(meta.attendingName, null);
-    assert.equal(meta.sourceLabel, "WhatsApp");
+    assert.equal(meta.sourceLabel, "Others");
   });
 
   it("shows Ongoing, attending, and source on All", () => {
@@ -33,7 +33,7 @@ describe("buildAllInboxRowMeta", () => {
     );
     assert.equal(meta.statusLabel, "Ongoing");
     assert.equal(meta.attendingName, "Sowmya");
-    assert.equal(meta.sourceLabel, "Contact");
+    assert.equal(meta.sourceLabel, "Others");
   });
 
   it("shows Follow-up, attending, and source on All", () => {
@@ -48,7 +48,7 @@ describe("buildAllInboxRowMeta", () => {
     );
     assert.equal(meta.statusLabel, "Follow-up");
     assert.equal(meta.attendingName, "Prem");
-    assert.equal(meta.sourceLabel, "Insights");
+    assert.equal(meta.sourceLabel, "Others");
   });
 
   it("shows Closed on All with attending and source", () => {
@@ -63,7 +63,22 @@ describe("buildAllInboxRowMeta", () => {
     assert.equal(meta.status, "CLOSED");
     assert.equal(meta.statusLabel, "Closed");
     assert.equal(meta.attendingName, "Arjun");
-    assert.equal(meta.sourceLabel, "WhatsApp");
+    assert.equal(meta.sourceLabel, "Others");
+  });
+
+  it("labels the left list by topic instead of channel", () => {
+    assert.equal(
+      buildAllInboxRowMeta({ source: "WHATSAPP", subjectCategory: "COURSE" }).sourceLabel,
+      "Courses"
+    );
+    assert.equal(
+      buildAllInboxRowMeta({ source: "CONTACT", customSubject: "Where is my shipment AWB?" }).sourceLabel,
+      "Delivery"
+    );
+    assert.equal(
+      buildAllInboxRowMeta({ source: "CONTACT", subjectCategory: "PRODUCT" }).sourceLabel,
+      "Products"
+    );
   });
 
   it("omits status on filtered sections because the pill already names it", () => {
@@ -74,7 +89,7 @@ describe("buildAllInboxRowMeta", () => {
     });
     assert.equal(meta.statusLabel, null);
     assert.equal(meta.attendingName, "Sowmya");
-    assert.equal(meta.sourceLabel, "Contact");
+    assert.equal(meta.sourceLabel, "Others");
   });
 });
 

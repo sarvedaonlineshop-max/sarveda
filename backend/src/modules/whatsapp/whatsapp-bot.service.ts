@@ -9,6 +9,7 @@
  * `botShouldStayQuiet` — so it can't talk over an agent mid-conversation.
  */
 import { prisma } from "../../config/db";
+import { addDaysInstant, startOfDayKolkata } from "../../utils/reporting-time";
 import { logger } from "../../config/logger";
 import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
 import { customerParcels } from "../shipping/customerParcels";
@@ -93,15 +94,32 @@ async function recordBotMessage(threadId: string, body: string, sid: string | nu
 }
 
 /**
+ * Live-agent handoff stays quiet until the end of that Indian day.
+ * A greeting (Hi, Hello, menu, …) is the only way to bring the menu back.
+ */
+async function liveAgentOpenToday(threadId: string): Promise<boolean> {
+  const start = startOfDayKolkata(new Date());
+  const end = addDaysInstant(start, 1);
+  const [thread, session] = await Promise.all([
+    prisma.enquiryThread.findUnique({
+      where: { id: threadId },
+      select: { contextTitle: true, updatedAt: true }
+    }),
+    prisma.whatsAppAgentSession.findFirst({
+      where: { threadId, endedAt: null, startedAt: { gte: start, lt: end } },
+      select: { id: true }
+    })
+  ]);
+  if (session) return true;
+  return thread?.contextTitle === AGENT_FLAG && thread.updatedAt >= start && thread.updatedAt < end;
+}
+
+/**
  * True when the bot must not auto-reply: a human agent has spoken recently, or
  * the customer explicitly asked for one. A greeting clears the agent flag.
  */
 async function botShouldStayQuiet(threadId: string): Promise<boolean> {
-  const thread = await prisma.enquiryThread.findUnique({
-    where: { id: threadId },
-    select: { contextTitle: true }
-  });
-  if (thread?.contextTitle === AGENT_FLAG) return true;
+  if (await liveAgentOpenToday(threadId)) return true;
 
   const humanReply = await prisma.enquiryMessage.findFirst({
     where: {
@@ -574,15 +592,18 @@ async function handleReplyId(turn: BotTurn, replyId: string): Promise<boolean> {
  */
 export async function handleBotTurn(turn: BotTurn): Promise<void> {
   try {
-    if (turn.replyId) {
-      const handled = await handleReplyId(turn, turn.replyId);
-      if (handled) return;
-    }
-
     if (isGreeting(turn.text)) {
       await clearAgentFlag(turn.threadId);
       await sendMainMenu(turn.threadId, turn.phone);
       return;
+    }
+
+    // Live chat for the rest of the Indian day: no menu, including leftover buttons.
+    if (await liveAgentOpenToday(turn.threadId)) return;
+
+    if (turn.replyId) {
+      const handled = await handleReplyId(turn, turn.replyId);
+      if (handled) return;
     }
 
     // Free text: stay out of the way if a human is handling this conversation.

@@ -1,5 +1,3 @@
-import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "./enquiry-subjects";
-
 export const CHAT_LEAD_BLUE = "#53bdeb";
 
 export type ChatLeadStatus = "NEW" | "ONGOING" | "FOLLOW_UP" | "CLOSED";
@@ -13,10 +11,38 @@ export const LEAD_STATUS_LABELS: Record<ChatLeadStatus, string> = {
 
 export const LEAD_STATUS_COLORS: Record<ChatLeadStatus, string> = {
   NEW: "#2563eb",
-  ONGOING: "#d97706",
-  FOLLOW_UP: CHAT_LEAD_BLUE,
-  CLOSED: "#78716c"
+  ONGOING: "#7dd3fc",
+  FOLLOW_UP: "#dc2626",
+  CLOSED: "#b91c1c"
 };
+
+export type ChatTopic = "Courses" | "Products" | "Delivery" | "Others";
+
+export function chatTopicLabel(thread: {
+  subjectCategory?: string | null;
+  customSubject?: string | null;
+  contextTitle?: string | null;
+  orderNumber?: string | null;
+  messages?: Array<{ body?: string | null }>;
+}): ChatTopic {
+  const cat = (thread.subjectCategory || "").toUpperCase();
+  if (cat === "COURSE") return "Courses";
+  if (cat === "PRODUCT") return "Products";
+  const blob = [
+    thread.customSubject,
+    thread.contextTitle,
+    thread.orderNumber,
+    ...(thread.messages ?? []).map((m) => m.body)
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (/\b(deliver\w*|shipping|courier|tracking|awb|dispatch|shipment)\b/.test(blob)) return "Delivery";
+  if (/\b(course|enroll\w*|class|training|practitioner|lesson|workshop)\b/.test(blob)) return "Courses";
+  if (/\b(product|bowl|price|instrument|sku)\b/.test(blob)) return "Products";
+  if (cat === "ORDER" || cat === "PAYMENT") return "Delivery";
+  return "Others";
+}
 
 const ALL_INBOX_STATUS_RANK: Record<ChatLeadStatus, number> = {
   NEW: 0,
@@ -61,6 +87,11 @@ export function buildAllInboxRowMeta(
     leadStatus?: string | null;
     lastAdminName?: string | null;
     hasOpenFollowUp?: boolean | null;
+    subjectCategory?: string | null;
+    customSubject?: string | null;
+    contextTitle?: string | null;
+    orderNumber?: string | null;
+    messages?: Array<{ body?: string | null }>;
   },
   options?: { showStatus?: boolean }
 ): InboxRowMeta {
@@ -71,7 +102,7 @@ export function buildAllInboxRowMeta(
     statusLabel: showStatus ? LEAD_STATUS_LABELS[status] : null,
     statusColor: showStatus ? LEAD_STATUS_COLORS[status] : null,
     attendingName: status !== "NEW" ? thread.lastAdminName?.trim() || null : null,
-    sourceLabel: ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source
+    sourceLabel: chatTopicLabel(thread)
   };
 }
 

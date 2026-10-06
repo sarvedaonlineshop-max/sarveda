@@ -52,6 +52,12 @@ export type DashboardData = {
     thisMonth: number;
   };
   ordersCount: { today: number; thisWeek: number; thisMonth: number };
+  orderFlow?: {
+    today: { total: number; confirmed: number; abandoned: number; cancelled: number };
+    last7Days: { total: number; confirmed: number; abandoned: number; cancelled: number };
+    thisMonth: { total: number; confirmed: number; abandoned: number; cancelled: number };
+    lastMonth: { total: number; confirmed: number; abandoned: number; cancelled: number };
+  };
   productsByStatus: { active: number; draft: number; archived: number };
   recentOrders: Array<{
     id: string;
