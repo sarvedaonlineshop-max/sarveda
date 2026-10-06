@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   accumulateRetention,
   classifyAudience,
+  countShopperFunnel,
   detailAccessLines,
   retentionFromAccum,
   startOfTodayIstUtc,
@@ -290,5 +291,16 @@ describe("traffic retention", () => {
     const days = retentionFromAccum(acc);
     expect(days[0]?.people).toBe(1);
     expect(days[0]?.checkoutPeople).toBe(1);
+  });
+
+  it("counts a shopper in only the furthest step", () => {
+    expect(
+      countShopperFunnel([
+        { audience: "human", addedToCart: true, checkout: false, bought: false },
+        { audience: "human", addedToCart: true, checkout: true, bought: false },
+        { audience: "human", addedToCart: true, checkout: true, bought: true },
+        { audience: "bot", addedToCart: true, checkout: false, bought: false }
+      ])
+    ).toEqual({ addedToCart: 1, tillCheckout: 1 });
   });
 });

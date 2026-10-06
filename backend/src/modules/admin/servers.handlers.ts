@@ -10,7 +10,7 @@ import { logger } from "../../config/logger";
 import { getRedisConnection } from "../../config/redisConnection";
 import { z } from "zod";
 
-import { detailAccessLines, startOfTodayIstUtc, summarizeAccessLines, type AccessDetail } from "./servers.metrics";
+import { countShopperFunnel, detailAccessLines, startOfTodayIstUtc, summarizeAccessLines, type AccessDetail } from "./servers.metrics";
 import { persistRecentTraffic, readStorageStatus, type StorageStatus } from "./traffic-retention";
 
 const execFileAsync = promisify(execFile);
@@ -206,6 +206,29 @@ const detailViewSchema = z.enum(["people", "storefront", "missing", "outages"]);
 type VisitorPlace = { country: string; place: string };
 const placeByIp = new Map<string, VisitorPlace>();
 let detailCache: { at: number; data: AccessDetail } | null = null;
+let lineCache: { at: number; lines: string[] } | null = null;
+
+async function cachedLogLines(): Promise<string[]> {
+  if (lineCache && Date.now() - lineCache.at < 60_000) return lineCache.lines;
+  const chunks = await Promise.all(LOG_FILES.map((path) => readLines(path)));
+  const lines = chunks.flat();
+  lineCache = { at: Date.now(), lines };
+  return lines;
+}
+
+/** Added-to-cart and till-checkout counts, using the same log rows as the visitor list. */
+export async function shopperFunnels(
+  ranges: Array<{ from: Date; to: Date }>
+): Promise<Array<{ addedToCart: number; tillCheckout: number }>> {
+  const empty = { addedToCart: 0, tillCheckout: 0 };
+  try {
+    const lines = await cachedLogLines();
+    return ranges.map(({ from, to }) => countShopperFunnel(detailAccessLines(lines, from, to).storefront));
+  } catch (err) {
+    logger.error("shopper funnel count failed", { err });
+    return ranges.map(() => empty);
+  }
+}
 
 function formatPlace(row: {
   status?: string;
@@ -259,8 +282,7 @@ async function lookupCountries(ips: string[]): Promise<void> {
 async function loadDetail(): Promise<AccessDetail> {
   if (detailCache && Date.now() - detailCache.at < 60_000) return detailCache.data;
   const start = startOfTodayIstUtc();
-  const chunks = await Promise.all(LOG_FILES.map((path) => readLines(path)));
-  const data = detailAccessLines(chunks.flat(), start);
+  const data = detailAccessLines(await cachedLogLines(), start);
   detailCache = { at: Date.now(), data };
   return data;
 }

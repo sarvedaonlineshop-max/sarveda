@@ -56,6 +56,7 @@ import {
   unpaidCheckoutAttemptWhere
 } from "../orders/abandoned-checkout";
 import { buildZohoDashboardAnalytics, dashboardInsightsFromZoho } from "../zoho/zoho-dashboard-analytics.service";
+import { shopperFunnels } from "./servers.handlers";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -356,38 +357,50 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       prisma.order.count({
         where: extra ? { AND: [windowWhere(from, to), extra] } : windowWhere(from, to)
       });
-    const flowFor = async (from: Date, to: Date) => {
-      const [total, confirmed, abandoned, cancelled, addedToCart, tillCheckout, newMembers, courseRegs] =
-        await Promise.all([
-          countWindow(from, to),
-          countWindow(from, to, confirmedWhere),
-          countWindow(from, to, unpaidCheckoutAttemptWhere),
-          countWindow(from, to, genuineCancelledWhere),
-          prisma.shopperJourney.count({
-            where: { purchasedAt: null, checkoutAt: null, cartAt: { gte: from, lt: to } }
-          }),
-          prisma.shopperJourney.count({
-            where: { purchasedAt: null, checkoutAt: { gte: from, lt: to } }
-          }),
-          prisma.user.count({
-            where: {
-              deletedAt: null,
-              role: "CUSTOMER",
-              wooCommerceId: null,
-              createdAt: { gte: from, lt: to }
-            }
-          }),
-          prisma.enrollment.count({
-            where: { createdAt: { gte: from, lt: to } }
-          })
-        ]);
-      return { total, confirmed, abandoned, cancelled, addedToCart, tillCheckout, newMembers, courseRegs };
+    const [todayFunnel, weekFunnel, monthFunnel, lastMonthFunnel] = await shopperFunnels([
+      { from: today, to: tomorrow },
+      { from: weekStart, to: tomorrow },
+      { from: monthStart, to: tomorrow },
+      { from: lastMonthStart, to: monthStart }
+    ]);
+    const flowFor = async (
+      from: Date,
+      to: Date,
+      funnel: { addedToCart: number; tillCheckout: number }
+    ) => {
+      const [total, confirmed, abandoned, cancelled, newMembers, courseRegs] = await Promise.all([
+        countWindow(from, to),
+        countWindow(from, to, confirmedWhere),
+        countWindow(from, to, unpaidCheckoutAttemptWhere),
+        countWindow(from, to, genuineCancelledWhere),
+        prisma.user.count({
+          where: {
+            deletedAt: null,
+            role: "CUSTOMER",
+            wooCommerceId: null,
+            createdAt: { gte: from, lt: to }
+          }
+        }),
+        prisma.enrollment.count({
+          where: { createdAt: { gte: from, lt: to } }
+        })
+      ]);
+      return {
+        total,
+        confirmed,
+        abandoned,
+        cancelled,
+        addedToCart: funnel.addedToCart,
+        tillCheckout: funnel.tillCheckout,
+        newMembers,
+        courseRegs
+      };
     };
     const [todayFlow, weekFlow, monthFlow, lastMonthFlow] = await Promise.all([
-      flowFor(today, tomorrow),
-      flowFor(weekStart, tomorrow),
-      flowFor(monthStart, tomorrow),
-      flowFor(lastMonthStart, monthStart)
+      flowFor(today, tomorrow, todayFunnel),
+      flowFor(weekStart, tomorrow, weekFunnel),
+      flowFor(monthStart, tomorrow, monthFunnel),
+      flowFor(lastMonthStart, monthStart, lastMonthFunnel)
     ]);
     const orderFlow = {
       today: todayFlow,

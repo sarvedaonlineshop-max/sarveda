@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { fetchVisitorDetail, fetchVisitorToday, type ServersDetail, type VisitorToday } from "@/lib/admin-servers";
+import { fetchVisitorDetail, fetchVisitorToday, storefrontStage, type ServersDetail, type VisitorToday } from "@/lib/admin-servers";
 
 const card: React.CSSProperties = {
   background: "var(--admin-card-bg, #fff)",
@@ -134,14 +134,14 @@ function StorefrontTable({ rows }: { rows: Extract<ServersDetail, { view: "store
   const group = audience === "human" ? humans : bots;
   const stageCount = {
     all: group.length,
-    cart: group.filter((row) => row.addedToCart).length,
-    checkout: group.filter((row) => row.checkout).length,
-    bought: group.filter((row) => row.bought).length
+    cart: group.filter((row) => storefrontStage(row) === "cart").length,
+    checkout: group.filter((row) => storefrontStage(row) === "checkout").length,
+    bought: group.filter((row) => storefrontStage(row) === "bought").length
   };
   const shown = group.filter((row) => {
-    if (stage === "cart") return row.addedToCart;
-    if (stage === "checkout") return row.checkout;
-    if (stage === "bought") return row.bought;
+    if (stage === "cart") return storefrontStage(row) === "cart";
+    if (stage === "checkout") return storefrontStage(row) === "checkout";
+    if (stage === "bought") return storefrontStage(row) === "bought";
     return true;
   });
 

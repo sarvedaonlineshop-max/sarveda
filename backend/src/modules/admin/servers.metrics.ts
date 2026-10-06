@@ -341,7 +341,31 @@ function outageReason(group: Array<{ status: number; api: boolean }>): string {
  * One pass over today's log for the Servers detail tables.
  * People and storefront rows exist only when the log has a shopper address.
  */
-export function detailAccessLines(lines: Iterable<string>, start: Date): AccessDetail {
+/** Added to cart, opened checkout, or bought — a person is only in the furthest step. */
+export function shopperStage(row: { bought: boolean; checkout: boolean; addedToCart: boolean }): "bought" | "checkout" | "cart" | "other" {
+  if (row.bought) return "bought";
+  if (row.checkout) return "checkout";
+  if (row.addedToCart) return "cart";
+  return "other";
+}
+
+/** Same buckets as the visitor list. Shoppers only — catalog crawlers stay in the bot tab. */
+export function countShopperFunnel(rows: Array<{ audience: "human" | "bot"; bought: boolean; checkout: boolean; addedToCart: boolean }>): {
+  addedToCart: number;
+  tillCheckout: number;
+} {
+  let addedToCart = 0;
+  let tillCheckout = 0;
+  for (const row of rows) {
+    if (row.audience !== "human") continue;
+    const stage = shopperStage(row);
+    if (stage === "cart") addedToCart += 1;
+    else if (stage === "checkout") tillCheckout += 1;
+  }
+  return { addedToCart, tillCheckout };
+}
+
+export function detailAccessLines(lines: Iterable<string>, start: Date, end?: Date): AccessDetail {
   type Visit = {
     utm: string | null;
     pages: Set<string>;
@@ -369,7 +393,7 @@ export function detailAccessLines(lines: Iterable<string>, start: Date): AccessD
     const m = LINE.exec(line);
     if (!m) continue;
     const when = parseNginxTime(m[2] ?? "");
-    if (!when || when < start) continue;
+    if (!when || when < start || (end != null && when >= end)) continue;
     const method = m[3] ?? "";
     const url = m[4] ?? "";
     const status = Number(m[5]);

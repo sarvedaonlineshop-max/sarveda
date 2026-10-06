@@ -77,6 +77,14 @@ export type ServersDetail =
   | { view: "missing"; missing: Array<{ path: string; utm: string | null; at: string }> }
   | { view: "outages"; outages: Array<{ from: string; to: string; requests: number; reason: string }> };
 
+/** Furthest step only, so a buyer is not also counted as cart or checkout. */
+export function storefrontStage(row: { bought: boolean; checkout: boolean; addedToCart: boolean }): "bought" | "checkout" | "cart" | "other" {
+  if (row.bought) return "bought";
+  if (row.checkout) return "checkout";
+  if (row.addedToCart) return "cart";
+  return "other";
+}
+
 export async function fetchServersDetail(view: ServersDetail["view"]): Promise<ServersDetail> {
   const res = await fetch(`${getApiBase()}/api/admin/servers/detail?view=${view}`, {
     credentials: "include",

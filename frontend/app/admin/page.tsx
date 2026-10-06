@@ -201,8 +201,8 @@ export default function AdminDashboardPage() {
     { label: "Cancelled", value: String(flow.cancelled), tone: "#b91c1c", icon: <AlertTriangle size={18} />, note: "Paid or COD, then cancelled" }
   ];
   const funnelCards: StatCard[] = [
-    { label: "Added to cart", value: String(flow.addedToCart ?? 0), tone: "#1d4ed8", icon: <ShoppingBag size={18} />, note: "No further action" },
-    { label: "Till checkout", value: String(flow.tillCheckout ?? 0), tone: "#7c3aed", icon: <Timer size={18} />, note: "Reached checkout, not bought" },
+    { label: "Added to cart", value: String(flow.addedToCart ?? 0), tone: "#1d4ed8", icon: <ShoppingBag size={18} />, note: "Shoppers who stopped there" },
+    { label: "Till checkout", value: String(flow.tillCheckout ?? 0), tone: "#7c3aed", icon: <Timer size={18} />, note: "Opened checkout, not bought" },
     { label: "New Members", value: String(flow.newMembers ?? 0), tone: "#0f766e", icon: <UserPlus size={18} />, note: "New accounts" },
     { label: "Course Regs", value: String(flow.courseRegs ?? 0), tone: "#b45309", icon: <GraduationCap size={18} />, note: "Course enrollments" }
   ];
