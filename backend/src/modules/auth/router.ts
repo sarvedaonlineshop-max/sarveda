@@ -30,6 +30,7 @@ import {
   sendOtp,
   upsertGoogleUser,
   updateProfile,
+  updateStaffProfile,
   verifyOtpAndLogin,
   changePassword,
   setPassword,
@@ -46,6 +47,7 @@ import {
   registerSchema,
   sendOtpSchema,
   updateProfileSchema,
+  updateStaffProfileSchema,
   verifyOtpSchema,
   changePasswordSchema,
   setPasswordSchema,
@@ -282,10 +284,42 @@ authRouter.get(
 authRouter.patch(
   "/me",
   requireAuth,
-  validateBody(updateProfileSchema),
   asyncHandler(async (req, res) => {
-    const user = await updateProfile(req.authUser!.id, req.body);
-    const primaryRow = await getOrSeedPrimaryAddress(req.authUser!.id, user.email);
+    const auth = req.authUser!;
+    const account = await prisma.user.findUnique({
+      where: { id: auth.id },
+      select: { role: true, deletedAt: true }
+    });
+    if (!account || account.deletedAt) {
+      res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+      return;
+    }
+
+    const isStaff = account.role === "ADMIN" || account.role === "SUPER_ADMIN";
+    if (isStaff) {
+      const parsed = updateStaffProfileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        const message = parsed.error.issues
+          .map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`)
+          .join("; ");
+        res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
+        return;
+      }
+      const user = await updateStaffProfile(auth.id, parsed.data);
+      res.json({ success: true, data: { user, primaryAddress: null } });
+      return;
+    }
+
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const message = parsed.error.issues
+        .map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`)
+        .join("; ");
+      res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
+      return;
+    }
+    const user = await updateProfile(auth.id, parsed.data);
+    const primaryRow = await getOrSeedPrimaryAddress(auth.id, user.email);
     res.json({
       success: true,
       data: {

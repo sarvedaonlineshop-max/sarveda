@@ -525,6 +525,7 @@ export async function searchQuoteCustomers(q: string) {
   const users = await prisma.user.findMany({
     where: {
       deletedAt: null,
+      role: "CUSTOMER",
       OR: [
         { email: { contains: term, mode: "insensitive" } },
         { name: { contains: term, mode: "insensitive" } },

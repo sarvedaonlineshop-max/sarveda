@@ -2890,10 +2890,11 @@ export default function TasksApp({
     try {
       const r = await fetch(`${API}/auth/me`,{
         method:"PATCH",headers:ah(),
-        body:JSON.stringify({
-          name:pName.trim(),
-          phone:pPhone.trim()||null
-        }),
+        body:JSON.stringify(
+          embedInAdmin
+            ? { name: pName.trim() }
+            : { name: pName.trim(), phone: pPhone.trim() || null }
+        ),
       });
       const d = await r.json() as any;
       if (!r.ok) throw new Error(d.error??"Failed");
@@ -6509,9 +6510,21 @@ export default function TasksApp({
                       ?"Your full name"
                       :"+91 9550948778"}
                     value={i===0?pName:pPhone}
+                    readOnly={embedInAdmin && i===1}
+                    aria-readonly={embedInAdmin && i===1 ? true : undefined}
                     onChange={e=>i===0
                       ?setPName(e.target.value)
-                      :setPPhone(e.target.value)}/>
+                      : embedInAdmin
+                        ? undefined
+                        : setPPhone(e.target.value)}
+                    style={embedInAdmin && i===1
+                      ? { background:"#f3efe8", color:"#6b5c50", cursor:"not-allowed" }
+                      : undefined}/>
+                  {embedInAdmin && i===1 ? (
+                    <p style={{ fontSize:"11px", color:"#8a7060", marginTop:"4px" }}>
+                      Mobile number is locked for admin accounts.
+                    </p>
+                  ) : null}
                 </div>
               ))}
               {pMsg&&(

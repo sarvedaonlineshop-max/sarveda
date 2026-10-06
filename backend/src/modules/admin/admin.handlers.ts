@@ -899,16 +899,19 @@ export async function customersList(req: Request, res: Response, next: NextFunct
     const skip = (page - 1) * limit;
     const q = String(req.query.q ?? "").trim().toLowerCase();
 
-    const where =
-      q ?
-        {
-          OR: [
-            { email: { contains: q, mode: "insensitive" as const } },
-            { name: { contains: q, mode: "insensitive" as const } },
-            { phone: { contains: q } }
-          ]
-        }
-      : {};
+    const where = {
+      role: "CUSTOMER" as const,
+      deletedAt: null,
+      ...(q
+        ? {
+            OR: [
+              { email: { contains: q, mode: "insensitive" as const } },
+              { name: { contains: q, mode: "insensitive" as const } },
+              { phone: { contains: q } }
+            ]
+          }
+        : {})
+    };
 
     const [total, rows] = await prisma.$transaction([
       prisma.user.count({ where }),
@@ -980,6 +983,8 @@ export async function customerOrders(req: Request, res: Response, next: NextFunc
         email: true,
         name: true,
         phone: true,
+        role: true,
+        deletedAt: true,
         addresses: {
           orderBy: [{ isDefault: "desc" }],
           take: 1,
@@ -987,7 +992,7 @@ export async function customerOrders(req: Request, res: Response, next: NextFunc
         }
       }
     });
-    if (!user) {
+    if (!user || user.deletedAt || user.role !== "CUSTOMER") {
       res.status(404).json({ success: false, error: "Customer not found", code: "NOT_FOUND" });
       return;
     }

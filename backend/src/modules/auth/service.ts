@@ -420,6 +420,14 @@ function normalizePhoneInput(raw: string | null | undefined): string | null {
   return digits;
 }
 
+export async function updateStaffProfile(userId: string, body: { name: string }) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { name: body.name.trim() }
+  });
+  return publicUser(user);
+}
+
 export async function updateProfile(
   userId: string,
   body: {

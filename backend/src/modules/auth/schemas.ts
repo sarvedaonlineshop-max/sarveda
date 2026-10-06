@@ -53,6 +53,11 @@ export const updateProfileSchema = z.object({
   address: primaryAddressSchema
 });
 
+/** Admin profile: name only. Mobile stays as stored. No delivery address. */
+export const updateStaffProfileSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters.").max(200)
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(128),
   newPassword: z.string().min(8).max(128)
