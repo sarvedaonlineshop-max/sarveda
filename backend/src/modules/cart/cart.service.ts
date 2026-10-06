@@ -19,6 +19,7 @@ import {
 } from "../../utils/digital-checkout-offer";
 import { couponUserMessage, resolveCartCouponDiscount } from "../coupons/coupon.service";
 import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
+import { rekeyGuestJourney, syncCartPresence } from "../shopper/shopper-journey";
 
 const CART_HEADER = "x-sarveda-cart-session";
 
@@ -29,6 +30,7 @@ async function markCartMutated(cartId: string): Promise<void> {
     where: { id: cartId },
     data: { abandonedEmailSentAt: null }
   });
+  await syncCartPresence(cartId);
 }
 
 export type CartContext = {
@@ -126,6 +128,11 @@ export async function mergeGuestCartIntoUser(
     data: { couponCode: null }
   });
   await prisma.cart.delete({ where: { id: guestCart.id } });
+  const userCart = await prisma.cart.findUnique({
+    where: { id: userCartId },
+    select: { userId: true }
+  });
+  if (userCart?.userId) await rekeyGuestJourney(userCart.userId, guestSessionId);
   await markCartMutated(userCartId);
 }
 

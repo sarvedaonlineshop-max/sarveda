@@ -9,6 +9,7 @@ import { isDigitalSku } from "../../utils/digitalCart";
 import { isAccountingSalesPostingEnabled } from "../accounting/accounting-flag";
 import { postOrderPaidByIdentifier } from "../accounting/order-paid-posting.service";
 import { fulfillDigitalPurchases } from "./fulfillDigitalPurchases";
+import { noteJourneyPurchased } from "../shopper/shopper-journey";
 import { sendPushToAdmins } from "../../config/firebase";
 
 function autoFulfillmentEnabled(): boolean {
@@ -58,6 +59,8 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
     },
     data: { afterPaidRanAt: new Date() }
   });
+
+  await noteJourneyPurchased(orderId);
 
   if (claimed.count === 0) {
     logger.info("after_paid_already_ran", { orderId });

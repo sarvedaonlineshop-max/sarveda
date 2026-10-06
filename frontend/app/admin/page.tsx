@@ -6,9 +6,12 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Box,
+  GraduationCap,
   PackageCheck,
+  ShoppingBag,
   ShoppingCart,
-  Timer
+  Timer,
+  UserPlus
 } from "lucide-react";
 import { AdminVisitorToday } from "@/components/admin/AdminVisitorToday";
 import { AdminOrderFlowChart } from "@/components/admin/AdminOrderFlowChart";
@@ -185,13 +188,23 @@ export default function AdminDashboardPage() {
     total: orderWindow === "today" ? data.ordersCount.today : orderWindow === "last7Days" ? data.ordersCount.thisWeek : orderWindow === "thisMonth" ? data.ordersCount.thisMonth : 0,
     confirmed: 0,
     abandoned: 0,
-    cancelled: 0
+    cancelled: 0,
+    addedToCart: 0,
+    tillCheckout: 0,
+    newMembers: 0,
+    courseRegs: 0
   };
   const orderCards: StatCard[] = [
     { label: "Total orders", value: String(flow.total), tone: "#1c352a", icon: <ShoppingCart size={18} />, note: "All shop orders" },
     { label: "Confirmed", value: String(flow.confirmed), tone: "#166534", icon: <PackageCheck size={18} />, note: "Paid and moving" },
     { label: "Abandoned", value: String(flow.abandoned), tone: "#c2410c", icon: <Timer size={18} />, note: "Checkout left unpaid" },
     { label: "Cancelled", value: String(flow.cancelled), tone: "#b91c1c", icon: <AlertTriangle size={18} />, note: "Paid or COD, then cancelled" }
+  ];
+  const funnelCards: StatCard[] = [
+    { label: "Added to cart", value: String(flow.addedToCart ?? 0), tone: "#1d4ed8", icon: <ShoppingBag size={18} />, note: "No further action" },
+    { label: "Till checkout", value: String(flow.tillCheckout ?? 0), tone: "#7c3aed", icon: <Timer size={18} />, note: "Reached checkout, not bought" },
+    { label: "New Members", value: String(flow.newMembers ?? 0), tone: "#0f766e", icon: <UserPlus size={18} />, note: "New accounts" },
+    { label: "Course Regs", value: String(flow.courseRegs ?? 0), tone: "#b45309", icon: <GraduationCap size={18} />, note: "Course enrollments" }
   ];
   const fixedCards: StatCard[] = [
     {
@@ -314,6 +327,32 @@ export default function AdminDashboardPage() {
               >
                 {item.icon}
               </span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+      <div className="admin-dash-cards">
+        {funnelCards.map((item) => (
+          <motion.div
+            key={item.label}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: adminMotionSec.fast, ease: adminMotionEase }}
+            style={{
+              ...cardStyle,
+              padding: "18px",
+              borderBottom: `3px solid ${item.tone}20`,
+              borderBottomLeftRadius: "0px",
+              borderBottomRightRadius: "0px"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+              <div>
+                <p style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--admin-text-muted, #8a7060)" }}>{item.label}</p>
+                <p style={{ fontSize: "28px", lineHeight: 1.1, fontWeight: 800, color: "var(--admin-text, #2c2420)", marginTop: "12px" }}>{item.value}</p>
+                <p style={{ fontSize: "14px", color: "var(--admin-text-muted, #8a7060)", marginTop: "8px" }}>{item.note}</p>
+              </div>
+              <span style={{ width: 40, height: 40, borderRadius: "12px", display: "inline-flex", alignItems: "center", justifyContent: "center", color: item.tone, background: `${item.tone}18`, flexShrink: 0 }}>{item.icon}</span>
             </div>
           </motion.div>
         ))}

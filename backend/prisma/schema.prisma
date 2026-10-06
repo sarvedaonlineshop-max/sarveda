@@ -4005,6 +4005,22 @@ model StorageDay {
   databaseBytes  BigInt
   recordedAt     DateTime @default(now())
 }
+
+/// One shopping attempt. Checkout moves it out of "added to cart". A purchase closes it.
+model ShopperJourney {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorKey    String    @db.VarChar(160)
+  cartAt      DateTime
+  checkoutAt  DateTime?
+  purchasedAt DateTime?
+  orderId     String?   @unique @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([actorKey, purchasedAt])
+  @@index([cartAt])
+  @@index([checkoutAt])
+}
 enum CrmLeadStatus {
   NEW
   CONTACTED

@@ -44,6 +44,17 @@ async function adminFetch<T>(
   return json.data as T;
 }
 
+export type DashboardWindow = {
+  total: number;
+  confirmed: number;
+  abandoned: number;
+  cancelled: number;
+  addedToCart?: number;
+  tillCheckout?: number;
+  newMembers?: number;
+  courseRegs?: number;
+};
+
 export type DashboardData = {
   totalRevenueInPaise: number;
   revenueInPaise: {
@@ -53,10 +64,10 @@ export type DashboardData = {
   };
   ordersCount: { today: number; thisWeek: number; thisMonth: number };
   orderFlow?: {
-    today: { total: number; confirmed: number; abandoned: number; cancelled: number };
-    last7Days: { total: number; confirmed: number; abandoned: number; cancelled: number };
-    thisMonth: { total: number; confirmed: number; abandoned: number; cancelled: number };
-    lastMonth: { total: number; confirmed: number; abandoned: number; cancelled: number };
+    today: DashboardWindow;
+    last7Days: DashboardWindow;
+    thisMonth: DashboardWindow;
+    lastMonth: DashboardWindow;
   };
   productsByStatus: { active: number; draft: number; archived: number };
   recentOrders: Array<{

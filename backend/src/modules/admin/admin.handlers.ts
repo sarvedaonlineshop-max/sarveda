@@ -357,13 +357,31 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         where: extra ? { AND: [windowWhere(from, to), extra] } : windowWhere(from, to)
       });
     const flowFor = async (from: Date, to: Date) => {
-      const [total, confirmed, abandoned, cancelled] = await Promise.all([
-        countWindow(from, to),
-        countWindow(from, to, confirmedWhere),
-        countWindow(from, to, unpaidCheckoutAttemptWhere),
-        countWindow(from, to, genuineCancelledWhere)
-      ]);
-      return { total, confirmed, abandoned, cancelled };
+      const [total, confirmed, abandoned, cancelled, addedToCart, tillCheckout, newMembers, courseRegs] =
+        await Promise.all([
+          countWindow(from, to),
+          countWindow(from, to, confirmedWhere),
+          countWindow(from, to, unpaidCheckoutAttemptWhere),
+          countWindow(from, to, genuineCancelledWhere),
+          prisma.shopperJourney.count({
+            where: { purchasedAt: null, checkoutAt: null, cartAt: { gte: from, lt: to } }
+          }),
+          prisma.shopperJourney.count({
+            where: { purchasedAt: null, checkoutAt: { gte: from, lt: to } }
+          }),
+          prisma.user.count({
+            where: {
+              deletedAt: null,
+              role: "CUSTOMER",
+              wooCommerceId: null,
+              createdAt: { gte: from, lt: to }
+            }
+          }),
+          prisma.enrollment.count({
+            where: { createdAt: { gte: from, lt: to } }
+          })
+        ]);
+      return { total, confirmed, abandoned, cancelled, addedToCart, tillCheckout, newMembers, courseRegs };
     };
     const [todayFlow, weekFlow, monthFlow, lastMonthFlow] = await Promise.all([
       flowFor(today, tomorrow),

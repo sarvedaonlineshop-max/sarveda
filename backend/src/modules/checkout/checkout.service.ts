@@ -21,6 +21,7 @@ import {
 } from "../inventory/variant-fulfillment-availability";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
+import { noteCheckoutReached } from "../shopper/shopper-journey";
 import {
   assertAccountCouponAvailable,
   couponError,
@@ -320,7 +321,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     }
   }
 
-  const { cartId, userId } = await resolveCartContext(req, "read");
+  const { cartId, userId, sessionId } = await resolveCartContext(req, "read");
   if (!cartId) {
     const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
     e.statusCode = 400;
@@ -810,6 +811,13 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   if (!result!) {
     throw new Error("Failed to create checkout order after 3 attempts");
   }
+
+  await noteCheckoutReached({
+    userId,
+    sessionId,
+    email: body.email,
+    orderId: result.order.id
+  });
 
   if ("cod" in result && result.cod) {
     await afterOrderPaid(result.order.id);
