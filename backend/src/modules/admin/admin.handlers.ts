@@ -335,8 +335,10 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     }
 
     const lastMonthStart = startOfMonthKolkata(new Date(monthStart.getTime() - 86_400_000));
-    const confirmedStatuses: OrderStatus[] = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"];
-    const windowWhere = (from: Date, to: Date) => ({
+    const confirmedWhere: Prisma.OrderWhereInput = {
+      status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+    };
+    const windowWhere = (from: Date, to: Date): Prisma.OrderWhereInput => ({
       AND: [
         shopOrders,
         {
@@ -347,31 +349,33 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         }
       ]
     });
-    const summarizeOrders = (rows: Array<{ status: OrderStatus; _count: { id: number } }>) => {
-      let total = 0;
-      let confirmed = 0;
-      let abandoned = 0;
-      let cancelled = 0;
-      for (const row of rows) {
-        const n = row._count.id;
-        total += n;
-        if (confirmedStatuses.includes(row.status)) confirmed += n;
-        else if (row.status === "PENDING_PAYMENT") abandoned += n;
-        else if (row.status === "CANCELLED") cancelled += n;
-      }
+    // Same split as the orders desk: unpaid checkout (including the 15-minute
+    // timeout, which stores CANCELLED + failed payment) is Abandoned.
+    // Cancelled is a paid or COD order that was then cancelled.
+    const countWindow = (from: Date, to: Date, extra?: Prisma.OrderWhereInput) =>
+      prisma.order.count({
+        where: extra ? { AND: [windowWhere(from, to), extra] } : windowWhere(from, to)
+      });
+    const flowFor = async (from: Date, to: Date) => {
+      const [total, confirmed, abandoned, cancelled] = await Promise.all([
+        countWindow(from, to),
+        countWindow(from, to, confirmedWhere),
+        countWindow(from, to, unpaidCheckoutAttemptWhere),
+        countWindow(from, to, genuineCancelledWhere)
+      ]);
       return { total, confirmed, abandoned, cancelled };
     };
-    const [todayRows, weekRows, monthRows, lastMonthRows] = await Promise.all([
-      prisma.order.groupBy({ by: ["status"], where: windowWhere(today, tomorrow), _count: { id: true } }),
-      prisma.order.groupBy({ by: ["status"], where: windowWhere(weekStart, tomorrow), _count: { id: true } }),
-      prisma.order.groupBy({ by: ["status"], where: windowWhere(monthStart, tomorrow), _count: { id: true } }),
-      prisma.order.groupBy({ by: ["status"], where: windowWhere(lastMonthStart, monthStart), _count: { id: true } })
+    const [todayFlow, weekFlow, monthFlow, lastMonthFlow] = await Promise.all([
+      flowFor(today, tomorrow),
+      flowFor(weekStart, tomorrow),
+      flowFor(monthStart, tomorrow),
+      flowFor(lastMonthStart, monthStart)
     ]);
     const orderFlow = {
-      today: summarizeOrders(todayRows),
-      last7Days: summarizeOrders(weekRows),
-      thisMonth: summarizeOrders(monthRows),
-      lastMonth: summarizeOrders(lastMonthRows)
+      today: todayFlow,
+      last7Days: weekFlow,
+      thisMonth: monthFlow,
+      lastMonth: lastMonthFlow
     };
 
     res.json({

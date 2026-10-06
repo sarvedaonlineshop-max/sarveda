@@ -190,8 +190,8 @@ export default function AdminDashboardPage() {
   const orderCards: StatCard[] = [
     { label: "Total orders", value: String(flow.total), tone: "#1c352a", icon: <ShoppingCart size={18} />, note: "All shop orders" },
     { label: "Confirmed", value: String(flow.confirmed), tone: "#166534", icon: <PackageCheck size={18} />, note: "Paid and moving" },
-    { label: "Abandoned", value: String(flow.abandoned), tone: "#c2410c", icon: <Timer size={18} />, note: "Checkout still unpaid" },
-    { label: "Cancelled", value: String(flow.cancelled), tone: "#b91c1c", icon: <AlertTriangle size={18} />, note: "Cancelled orders" }
+    { label: "Abandoned", value: String(flow.abandoned), tone: "#c2410c", icon: <Timer size={18} />, note: "Checkout left unpaid" },
+    { label: "Cancelled", value: String(flow.cancelled), tone: "#b91c1c", icon: <AlertTriangle size={18} />, note: "Paid or COD, then cancelled" }
   ];
   const fixedCards: StatCard[] = [
     {
