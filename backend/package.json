@@ -92,7 +92,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.821.0",
+    "@aws-sdk/client-s3": "^3.1146.0",
     "@aws-sdk/s3-request-presigner": "^3.821.0",
     "@prisma/client": "^5.16.2",
     "axios": "^1.7.2",
