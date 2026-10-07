@@ -357,17 +357,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       prisma.order.count({
         where: extra ? { AND: [windowWhere(from, to), extra] } : windowWhere(from, to)
       });
-    const [todayFunnel, weekFunnel, monthFunnel, lastMonthFunnel] = await shopperFunnels([
-      { from: today, to: tomorrow },
-      { from: weekStart, to: tomorrow },
-      { from: monthStart, to: tomorrow },
-      { from: lastMonthStart, to: monthStart }
-    ]);
-    const flowFor = async (
-      from: Date,
-      to: Date,
-      funnel: { addedToCart: number; tillCheckout: number }
-    ) => {
+    const flowFor = async (from: Date, to: Date) => {
       const [total, confirmed, abandoned, cancelled, newMembers, courseRegs] = await Promise.all([
         countWindow(from, to),
         countWindow(from, to, confirmedWhere),
@@ -390,17 +380,15 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         confirmed,
         abandoned,
         cancelled,
-        addedToCart: funnel.addedToCart,
-        tillCheckout: funnel.tillCheckout,
         newMembers,
         courseRegs
       };
     };
     const [todayFlow, weekFlow, monthFlow, lastMonthFlow] = await Promise.all([
-      flowFor(today, tomorrow, todayFunnel),
-      flowFor(weekStart, tomorrow, weekFunnel),
-      flowFor(monthStart, tomorrow, monthFunnel),
-      flowFor(lastMonthStart, monthStart, lastMonthFunnel)
+      flowFor(today, tomorrow),
+      flowFor(weekStart, tomorrow),
+      flowFor(monthStart, tomorrow),
+      flowFor(lastMonthStart, monthStart)
     ]);
     const orderFlow = {
       today: todayFlow,
@@ -452,6 +440,35 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         revenueByDayLast30,
         revenueByMonthLast12,
         insights: wooInsights
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Cart and checkout counts. Separate from the dashboard so the log scan does not block the page. */
+export async function dashboardShopperFunnel(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const now = new Date();
+    const today = startOfDayKolkata(now);
+    const tomorrow = addDaysInstant(today, 1);
+    const weekStart = addDaysInstant(today, -6);
+    const monthStart = startOfMonthKolkata(now);
+    const lastMonthStart = startOfMonthKolkata(new Date(monthStart.getTime() - 86_400_000));
+    const [todayFunnel, weekFunnel, monthFunnel, lastMonthFunnel] = await shopperFunnels([
+      { from: today, to: tomorrow },
+      { from: weekStart, to: tomorrow },
+      { from: monthStart, to: tomorrow },
+      { from: lastMonthStart, to: monthStart }
+    ]);
+    res.json({
+      success: true,
+      data: {
+        today: todayFunnel,
+        last7Days: weekFunnel,
+        thisMonth: monthFunnel,
+        lastMonth: lastMonthFunnel
       }
     });
   } catch (err) {

@@ -16,9 +16,10 @@ import {
 import { AdminVisitorToday } from "@/components/admin/AdminVisitorToday";
 import { AdminOrderFlowChart } from "@/components/admin/AdminOrderFlowChart";
 import { AdminSkeleton, AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
+import { AdminSpinner } from "@/components/admin/AdminSpinner";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
-import type { DashboardData } from "@/lib/admin-api";
-import { fetchAdminDashboard } from "@/lib/admin-api";
+import type { DashboardData, DashboardShopperFunnel } from "@/lib/admin-api";
+import { fetchAdminDashboard, fetchDashboardShopperFunnel } from "@/lib/admin-api";
 import { adminMotionSec, adminMotionEase } from "@/lib/admin-motion";
 import { formatMinorFromPaise } from "@/lib/money";
 import { adminTheme as t } from "@/lib/admin-theme";
@@ -91,7 +92,7 @@ function StatusBadge({ status }: { status: string }) {
 
 type StatCard = {
   label: string;
-  value: string;
+  value: React.ReactNode;
   tone: string;
   icon: React.ReactNode;
   note: string;
@@ -101,6 +102,8 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [orderWindow, setOrderWindow] = useState<"today" | "last7Days" | "thisMonth" | "lastMonth">("today");
+  const [shopperFunnel, setShopperFunnel] = useState<DashboardShopperFunnel | null>(null);
+  const [shopperFunnelState, setShopperFunnelState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +113,16 @@ export default function AdminDashboardPage() {
       })
       .catch((e: unknown) => {
         if (!cancelled) setErr(e instanceof Error ? e.message : "Dashboard failed");
+      });
+    fetchDashboardShopperFunnel()
+      .then((funnel) => {
+        if (!cancelled) {
+          setShopperFunnel(funnel);
+          setShopperFunnelState("ready");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setShopperFunnelState("error");
       });
     return () => {
       cancelled = true;
@@ -200,9 +213,15 @@ export default function AdminDashboardPage() {
     { label: "Abandoned", value: String(flow.abandoned), tone: "#c2410c", icon: <Timer size={18} />, note: "Checkout left unpaid" },
     { label: "Cancelled", value: String(flow.cancelled), tone: "#b91c1c", icon: <AlertTriangle size={18} />, note: "Paid or COD, then cancelled" }
   ];
+  const funnelSlice = shopperFunnel?.[orderWindow];
+  const shopperCount = (value: number | undefined): React.ReactNode => {
+    if (shopperFunnelState === "loading") return <AdminSpinner size={22} label="Loading shopper counts" />;
+    if (shopperFunnelState === "error" || value == null) return "—";
+    return String(value);
+  };
   const funnelCards: StatCard[] = [
-    { label: "Added to cart", value: String(flow.addedToCart ?? 0), tone: "#1d4ed8", icon: <ShoppingBag size={18} />, note: "Shoppers who stopped there" },
-    { label: "Till checkout", value: String(flow.tillCheckout ?? 0), tone: "#7c3aed", icon: <Timer size={18} />, note: "Opened checkout, not bought" },
+    { label: "Added to cart", value: shopperCount(funnelSlice?.addedToCart), tone: "#1d4ed8", icon: <ShoppingBag size={18} />, note: shopperFunnelState === "error" ? "Could not load visitor counts" : "Shoppers who stopped there" },
+    { label: "Till checkout", value: shopperCount(funnelSlice?.tillCheckout), tone: "#7c3aed", icon: <Timer size={18} />, note: shopperFunnelState === "error" ? "Could not load visitor counts" : "Opened checkout, not bought" },
     { label: "New Members", value: String(flow.newMembers ?? 0), tone: "#0f766e", icon: <UserPlus size={18} />, note: "New accounts" },
     { label: "Course Regs", value: String(flow.courseRegs ?? 0), tone: "#b45309", icon: <GraduationCap size={18} />, note: "Course enrollments" }
   ];

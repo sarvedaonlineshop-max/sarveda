@@ -83,6 +83,7 @@ router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
+router.get("/dashboard/shopper-funnel", admin.dashboardShopperFunnel);
 router.get("/visitors/today", visitorCounts);
 router.get("/visitors/today/detail", visitorDetail);
 router.get("/servers", (req, res, next) => {

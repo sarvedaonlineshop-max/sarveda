@@ -129,6 +129,17 @@ export function fetchAdminDashboard() {
   return adminFetch<DashboardData>("/api/admin/dashboard");
 }
 
+export type DashboardShopperFunnel = {
+  today: { addedToCart: number; tillCheckout: number };
+  last7Days: { addedToCart: number; tillCheckout: number };
+  thisMonth: { addedToCart: number; tillCheckout: number };
+  lastMonth: { addedToCart: number; tillCheckout: number };
+};
+
+export function fetchDashboardShopperFunnel() {
+  return adminFetch<DashboardShopperFunnel>("/api/admin/dashboard/shopper-funnel");
+}
+
 export type WooDumpProductRow = {
   sku: string;
   productName: string;
