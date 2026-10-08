@@ -18,6 +18,7 @@ import {
 } from "@/lib/order-status-display";
 
 const deskBuckets = [
+  { value: "all", label: "All" },
   { value: "new", label: "New" },
   { value: "processed", label: "Processed" },
   { value: "abandoned", label: "Abandoned" },
@@ -224,10 +225,10 @@ export default function AdminOrdersPage() {
 
   const ordersLegend =
     channel === "cod"
-      ? "COD · New = confirmed (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = N/A for COD · Cancelled = stopped · Refunded = cash/manual return if collected · Status Confirmed until delivered + cash collected"
+      ? "COD · All = new + processed + abandoned + cancelled + refunded · New = confirmed (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = N/A for COD · Cancelled = stopped · Refunded = cash/manual return if collected"
       : channel === "online"
-        ? "Online paid · New = just paid (awaiting Mark Processing) · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
-        : "All channels · New = just paid / COD confirmed · Processed = processing through delivered · Abandoned = never paid (online) · Cancelled = stopped · Refunded = returned";
+        ? "Online paid · All = new + processed + abandoned + cancelled + refunded · New = just paid · Processed = processing through delivered · Abandoned = never paid · Cancelled = stopped · Refunded = money returned"
+        : "All channels · All = new + processed + abandoned + cancelled + refunded · New = just paid / COD confirmed · Processed = processing through delivered · Abandoned = never paid (online) · Cancelled = stopped · Refunded = returned";
 
   useRegisterAdminHeaderSlot(
     () => ({

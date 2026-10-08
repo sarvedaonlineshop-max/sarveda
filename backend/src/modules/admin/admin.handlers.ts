@@ -620,7 +620,7 @@ const ORDER_BUCKETS: OrderBucket[] = [
   "delivered"
 ];
 
-/** Desk pills (no separate All pill — All is a top-level channel tab). */
+/** Status pills under each channel. "all" is their combination, counted separately. */
 const DESK_COUNT_BUCKETS = ["new", "processed", "abandoned", "cancelled", "refunded"] as const;
 
 function channelWhere(channel: OrderChannel): Prisma.OrderWhereInput {
@@ -804,7 +804,11 @@ function ordersSearchWhere(f: OrdersListFilters): Prisma.OrderWhereInput {
 
 function ordersListWhere(f: OrdersListFilters): Prisma.OrderWhereInput {
   const search = ordersSearchWhere(f);
-  if (f.bucket === "all") return search;
+  if (f.bucket === "all") {
+    return {
+      AND: [search, { OR: DESK_COUNT_BUCKETS.map((b) => bucketWhere(b, f.now)) }]
+    };
+  }
   return { AND: [search, bucketWhere(f.bucket, f.now)] };
 }
 
@@ -1234,6 +1238,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const counts = Object.fromEntries(
       countBuckets.map((b, i) => [b, bucketCounts[i] as number])
     ) as Record<string, number>;
+    counts.all = countBuckets.reduce((sum, b) => sum + (counts[b] ?? 0), 0);
 
     res.json({
       success: true,

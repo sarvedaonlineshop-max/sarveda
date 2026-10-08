@@ -545,7 +545,7 @@ export type AdminOrdersQuery = {
 function buildAdminOrdersQuery(params: AdminOrdersQuery): URLSearchParams {
   const q = new URLSearchParams();
   if (params.channel) q.set("channel", params.channel);
-  if (params.bucket && params.bucket !== "all") q.set("bucket", params.bucket);
+  if (params.bucket) q.set("bucket", params.bucket);
   if (params.page) q.set("page", String(params.page));
   if (params.limit) q.set("limit", String(params.limit));
   if (params.orderNumber?.trim()) q.set("orderNumber", params.orderNumber.trim());
