@@ -88,6 +88,69 @@ export function deriveOptionAxes(
   });
 }
 
+function axisSlug(axis: { slug: string; name: string }): string {
+  return axis.slug || slugifyAttribute(axis.name);
+}
+
+/**
+ * Keep each variant's choices on the levels that remain.
+ * A removed level is dropped. A renamed level (same position, new name) keeps its choice.
+ * Matching is by level slug, so removing a middle level does not slide values onto the wrong level.
+ */
+export function realignAttributesToAxes(
+  attributes: VariantAttributeForm[],
+  prevAxes: OptionAxisForm[],
+  nextAxes: OptionAxisForm[]
+): VariantAttributeForm[] {
+  const slugMap = new Map<string, string>();
+  if (prevAxes.length === nextAxes.length) {
+    const nextSlugs = new Set(nextAxes.map(axisSlug));
+    for (let i = 0; i < prevAxes.length; i++) {
+      const oldSlug = axisSlug(prevAxes[i]!);
+      const newSlug = axisSlug(nextAxes[i]!);
+      if (oldSlug !== newSlug && !nextSlugs.has(oldSlug)) slugMap.set(oldSlug, newSlug);
+    }
+  }
+
+  const nextBySlug = new Map(nextAxes.map((axis) => [axisSlug(axis), axis]));
+  const prevBySlug = new Map(prevAxes.map((axis) => [axisSlug(axis), axis]));
+  const valueBySlug = new Map<string, string>();
+
+  for (const attr of attributes) {
+    const slug = attr.slug || slugifyAttribute(attr.name);
+    const targetSlug = slugMap.get(slug) ?? slug;
+    const axis = nextBySlug.get(targetSlug);
+    if (!axis) continue;
+    const prevAxis = prevBySlug.get(slug);
+    const removed = (prevAxis?.values ?? []).filter(
+      (v) => !axis.values.some((n) => n.toLowerCase() === v.toLowerCase())
+    );
+    const added = axis.values.filter(
+      (v) => !(prevAxis?.values ?? []).some((o) => o.toLowerCase() === v.toLowerCase())
+    );
+    let value = attr.value;
+    if (removed.length === 1 && added.length === 1 && value === removed[0]) {
+      value = added[0]!;
+    }
+    if (!valueBySlug.has(targetSlug)) valueBySlug.set(targetSlug, value);
+  }
+
+  return nextAxes.map((axis) => ({
+    name: axis.name,
+    slug: axisSlug(axis),
+    value: valueBySlug.get(axisSlug(axis)) ?? ""
+  }));
+}
+
+/** Attributes that belong to the levels still on the product. Other levels are omitted. */
+export function attributesForRemainingAxes(
+  attributes: VariantAttributeForm[],
+  axes: OptionAxisForm[]
+): VariantAttributeForm[] {
+  const allowed = new Set(axes.map(axisSlug));
+  return attributes.filter((attr) => allowed.has(attr.slug || slugifyAttribute(attr.name)));
+}
+
 export function syncVariantAttributesToAxes(
   attributes: VariantAttributeForm[],
   axes: OptionAxisForm[]
@@ -187,8 +250,11 @@ export function pruneVariantRows<
       kept.push({
         ...row,
         optionMismatch: !ok,
-        // Keep original attrs when mismatched so the operator can still see them.
-        attributes: ok ? syncVariantAttributesToAxes(row.attributes, axes) : row.attributes
+        // Keep a mismatched choice on a level that still exists so it can be reviewed.
+        // A level that was removed is not kept — otherwise Save writes it back.
+        attributes: ok
+          ? syncVariantAttributesToAxes(row.attributes, axes)
+          : attributesForRemainingAxes(row.attributes, axes)
       });
       continue;
     }
@@ -209,7 +275,7 @@ export function pruneVariantRows<
         isDefault: true,
         optionMismatch: Boolean(keep.id),
         attributes: keep.id
-          ? keep.attributes
+          ? attributesForRemainingAxes(keep.attributes, axes)
           : axes.map((axis) => ({ name: axis.name, slug: axis.slug, value: "" }))
       }
     ];

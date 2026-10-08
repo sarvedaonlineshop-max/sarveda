@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   pruneVariantRows,
+  realignAttributesToAxes,
   type OptionAxisForm,
   type VariantAttributeForm
 } from "./variant-admin";
@@ -84,5 +85,57 @@ describe("VSB-007 pruneVariantRows preserves persisted variants", () => {
     const next = pruneVariantRows(rows, emptyAxes, emptyRow);
     expect(next).toHaveLength(2);
     expect(next.every((r) => r.optionMismatch)).toBe(true);
+  });
+
+  it("drops a removed level from a persisted variant and keeps the other choice", () => {
+    const rows: Row[] = [
+      {
+        id: "persisted",
+        sku: "SKU-1",
+        isDefault: true,
+        attributes: [
+          { name: "Color", slug: "color", value: "Blue" },
+          { name: "Size", slug: "size", value: "Large" }
+        ]
+      }
+    ];
+    const colorOnly: OptionAxisForm[] = [{ name: "Color", slug: "color", values: ["Red", "Blue"] }];
+    const next = pruneVariantRows(rows, colorOnly, emptyRow);
+    expect(next).toHaveLength(1);
+    expect(next[0]?.attributes.map((a) => a.slug)).toEqual(["color"]);
+    expect(next[0]?.attributes[0]?.value).toBe("Blue");
+    expect(next[0]?.optionMismatch).toBe(false);
+  });
+});
+
+describe("realignAttributesToAxes", () => {
+  const color: OptionAxisForm = { name: "Color", slug: "color", values: ["Blue", "Green"] };
+  const size: OptionAxisForm = { name: "Size", slug: "size", values: ["Small", "Large"] };
+  const grip: OptionAxisForm = { name: "Grip", slug: "grip", values: ["Soft"] };
+
+  it("removes a middle level without moving the next level's value", () => {
+    const next = realignAttributesToAxes(
+      [
+        { name: "Color", slug: "color", value: "Blue" },
+        { name: "Size", slug: "size", value: "Large" },
+        { name: "Grip", slug: "grip", value: "Soft" }
+      ],
+      [color, size, grip],
+      [color, grip]
+    );
+    expect(next).toEqual([
+      { name: "Color", slug: "color", value: "Blue" },
+      { name: "Grip", slug: "grip", value: "Soft" }
+    ]);
+  });
+
+  it("keeps the choice when a level is renamed", () => {
+    const renamed: OptionAxisForm = { name: "Colour", slug: "colour", values: ["Blue", "Green"] };
+    const next = realignAttributesToAxes(
+      [{ name: "Color", slug: "color", value: "Blue" }],
+      [color],
+      [renamed]
+    );
+    expect(next).toEqual([{ name: "Colour", slug: "colour", value: "Blue" }]);
   });
 });

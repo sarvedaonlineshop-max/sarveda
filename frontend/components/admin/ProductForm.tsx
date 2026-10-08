@@ -43,6 +43,7 @@ import {
   deriveOptionAxes,
   optionsForAxis,
   pruneVariantRows,
+  realignAttributesToAxes,
   slugifyAttribute,
   syncVariantAttributesToAxes,
   type OptionAxisForm,
@@ -699,25 +700,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       setVariants((rows) =>
         rows.map((row) => ({
           ...row,
-          attributes: row.attributes.map((attr, ai) => {
-            const oldAxis = prev[ai];
-            const newAxis = axes[ai];
-            if (!oldAxis || !newAxis) return attr;
-            const removed = oldAxis.values.filter(
-              (v) => !newAxis.values.some((n) => n.toLowerCase() === v.toLowerCase())
-            );
-            const added = newAxis.values.filter(
-              (v) => !oldAxis.values.some((o) => o.toLowerCase() === v.toLowerCase())
-            );
-            if (removed.length === 1 && added.length === 1 && attr.value === removed[0]) {
-              return { ...attr, name: newAxis.name, slug: newAxis.slug, value: added[0]! };
-            }
-            return {
-              ...attr,
-              name: newAxis.name || attr.name,
-              slug: newAxis.slug || attr.slug
-            };
-          })
+          attributes: realignAttributesToAxes(row.attributes, prev, axes)
         }))
       );
       return axes;
