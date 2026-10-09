@@ -130,6 +130,7 @@ const accountLinks = [
 const exploreLinks = [
   { href: "/store", label: "Store", icon: "store" },
   { href: "/courses", label: "Courses", icon: "courses" },
+  { href: "/events", label: "Events", icon: "events" },
   { href: "/insights", label: "Insights", icon: "insights" },
   { href: "/corporate-wellness", label: "Corporate Wellness", icon: "corporate" },
   { href: "/contact", label: "Contact Us", icon: "contact" }
