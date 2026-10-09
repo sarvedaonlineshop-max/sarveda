@@ -5,18 +5,23 @@ import { usePathname } from "next/navigation";
 import { Contact } from "lucide-react";
 
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
+import { useAdminUser } from "@/components/admin/AdminUserContext";
 import {
   applySidebarHover,
   clearSidebarHover,
   sidebarLinkStyle,
   sidebarNavStyles
 } from "@/components/admin/sidebarNavStyles";
+import { isCrmSidebarEmail } from "@/lib/crm-access";
 
 export function AdminCrmSidebarLink({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const nav = useAdminNavOptional();
+  const adminUser = useAdminUser();
   const activePath = nav?.activePath ?? pathname;
   const active = activePath === "/admin/crm" || activePath.startsWith("/admin/crm/");
+
+  if (!isCrmSidebarEmail(adminUser?.email)) return null;
 
   return (
     <Link
