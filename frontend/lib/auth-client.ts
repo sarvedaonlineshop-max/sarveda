@@ -2,6 +2,7 @@ import { getApiBase } from "@/lib/api";
 import { mergeGuestCartSession, setAccountCartOnly } from "@/lib/cart-api";
 import { syncPricingZoneFromGeo } from "@/lib/pricing-zone";
 import { parseApiResponse } from "@/lib/parse-api-response";
+import { isReportsOnlyAdmin, reportsOnlyAdminHome } from "@/lib/reports-only-access";
 
 export type PublicUser = {
   id: string;
@@ -68,6 +69,7 @@ export function resolvePostLoginPath(
   const target = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
 
   if (isAdminRole(user.role)) {
+    if (isReportsOnlyAdmin(user.email)) return reportsOnlyAdminHome();
     if (target?.startsWith("/admin")) return target;
     return "/admin";
   }
