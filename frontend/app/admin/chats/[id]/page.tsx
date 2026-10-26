@@ -48,6 +48,7 @@ import {
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 import { ChatAssignControl } from "@/components/admin/ChatAssignControl";
+import { canAssignChatOwner } from "@/lib/crm-team-access";
 import { ChatCrmRail } from "@/components/admin/ChatCrmRail";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
@@ -982,6 +983,8 @@ function AdminChatDetailInner() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [saleOpen, setSaleOpen] = useState(false);
   const [railTick, setRailTick] = useState(0);
+  const assignOpenRef = useRef<(() => void) | null>(null);
+  const canAssign = canAssignChatOwner(adminUser?.email);
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1511,6 +1514,7 @@ function AdminChatDetailInner() {
         </button>
         <div className="relative shrink-0" ref={menuRef}>
           <div className="flex items-center gap-0.5">
+          <span id="chat-assign-header-slot" className="flex shrink-0" />
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -1527,6 +1531,19 @@ function AdminChatDetailInner() {
               role="menu"
               className="absolute right-1 top-12 z-30 min-w-[11.5rem] overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10"
             >
+              {canAssign ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    assignOpenRef.current?.();
+                  }}
+                  className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
+                >
+                  Assign member
+                </button>
+              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -1673,6 +1690,7 @@ function AdminChatDetailInner() {
       </div>
       <ChatAssignControl
         threadId={thread.id}
+        openRef={assignOpenRef}
         onAssigned={() => {
           setRailTick((n) => n + 1);
           void load();

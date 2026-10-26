@@ -1,7 +1,7 @@
 "use client";
 
 import { UserPlus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { useAdminUser } from "@/components/admin/AdminUserContext";
@@ -14,14 +14,17 @@ function displayName(person: { name?: string | null; email?: string | null } | n
 
 export function ChatAssignControl({
   threadId,
-  onAssigned
+  onAssigned,
+  openRef
 }: {
   threadId: string;
   onAssigned?: () => void;
+  openRef?: MutableRefObject<(() => void) | null>;
 }) {
   const me = useAdminUser();
   const allowed = canAssignChatOwner(me?.email);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [people, setPeople] = useState<CrmAssignee[]>([]);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -30,12 +33,17 @@ export function ChatAssignControl({
   const [currentOwnerId, setCurrentOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 2800);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
   async function openModal() {
+    if (!allowed) return;
     setError(null);
     setQuery("");
     setOpen(true);
@@ -47,6 +55,14 @@ export function ChatAssignControl({
       setError(err instanceof Error ? err.message : "Could not load admins");
     }
   }
+
+  useEffect(() => {
+    if (!openRef) return;
+    openRef.current = () => void openModal();
+    return () => {
+      openRef.current = null;
+    };
+  });
 
   async function assign(person: CrmAssignee) {
     setBusyId(person.id);
@@ -72,10 +88,10 @@ export function ChatAssignControl({
     });
   }, [people, query]);
 
-  if (!allowed) return toast ? <AssignToast text={toast} /> : null;
+  if (!mounted) return null;
 
   const modal =
-    open && typeof document !== "undefined"
+    open && allowed
       ? createPortal(
           <div
             className="fixed inset-0 z-[220] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
@@ -148,17 +164,47 @@ export function ChatAssignControl({
         )
       : null;
 
+  const headerSlot = typeof document !== "undefined" ? document.getElementById("chat-assign-header-slot") : null;
+  const headerButton =
+    allowed && headerSlot
+      ? createPortal(
+          <button
+            type="button"
+            onClick={() => void openModal()}
+            className="inline-flex h-11 w-11 items-center justify-center text-[#faf5ec] hover:bg-white/10"
+            aria-label="Assign chat"
+            title="Assign member"
+          >
+            <UserPlus size={20} />
+          </button>,
+          headerSlot
+        )
+      : null;
+
+  const fab =
+    allowed
+      ? createPortal(
+          <button
+            type="button"
+            onClick={() => void openModal()}
+            className="fixed z-[80] inline-flex items-center gap-1.5 rounded-full bg-[#1c352a] px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(28,53,42,0.35)] ring-1 ring-black/10 hover:bg-[#244536]"
+            style={{
+              right: 12,
+              bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))"
+            }}
+            aria-label="Assign chat"
+          >
+            <UserPlus size={16} />
+            Assign
+          </button>,
+          document.body
+        )
+      : null;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => void openModal()}
-        className="absolute bottom-[5.75rem] right-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-[#1c352a] px-3.5 py-2 text-[13px] font-semibold text-white shadow-lg ring-1 ring-black/10 hover:bg-[#244536] md:bottom-24"
-        aria-label="Assign chat"
-      >
-        <UserPlus size={16} />
-        Assign
-      </button>
+      {headerButton}
+      {fab}
       {modal}
       {toast ? <AssignToast text={toast} /> : null}
     </>
