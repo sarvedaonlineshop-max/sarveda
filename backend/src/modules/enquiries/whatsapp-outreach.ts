@@ -27,7 +27,10 @@ export function outreachMediaKind(mimeType: string, fileName = ""): OutreachMedi
   return "document";
 }
 
-/** Approved Meta template names for closed-window media (header + {{1}} name + {{2}} message). */
+/**
+ * Closed-window media template names.
+ * Image uses a Utility follow-up template (name + enquiry/order ref — not a free sales caption).
+ */
 export function outreachMediaTemplateName(kind: OutreachMediaKind): string {
   const fromEnv =
     kind === "image"
@@ -36,7 +39,19 @@ export function outreachMediaTemplateName(kind: OutreachMediaKind): string {
         ? process.env.WHATSAPP_ADMIN_OUTREACH_VIDEO_TEMPLATE
         : process.env.WHATSAPP_ADMIN_OUTREACH_DOCUMENT_TEMPLATE;
   if (fromEnv?.trim()) return fromEnv.trim();
-  if (kind === "image") return "sarveda_support_outreach_image";
+  if (kind === "image") return "enquiry_followup_image";
   if (kind === "video") return "sarveda_support_outreach_video";
   return "sarveda_support_outreach_document";
+}
+
+/** {{2}} for the utility image template — keep this a reference, not a promo pitch. */
+export function enquiryFollowUpRef(thread: {
+  orderNumber?: string | null;
+  customSubject?: string | null;
+}): string {
+  const order = thread.orderNumber?.trim();
+  if (order) return `order ${order}`.slice(0, 60);
+  const subject = thread.customSubject?.trim();
+  if (subject) return subject.slice(0, 60);
+  return "your enquiry";
 }

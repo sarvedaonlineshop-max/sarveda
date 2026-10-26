@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  enquiryFollowUpRef,
   outreachCustomerFirstName,
   outreachMediaKind,
   outreachMediaTemplateName
@@ -31,8 +32,18 @@ describe("outreachMediaKind", () => {
 
 describe("outreachMediaTemplateName", () => {
   it("uses the default Meta template names", () => {
-    expect(outreachMediaTemplateName("image")).toBe("sarveda_support_outreach_image");
+    expect(outreachMediaTemplateName("image")).toBe("enquiry_followup_image");
     expect(outreachMediaTemplateName("video")).toBe("sarveda_support_outreach_video");
     expect(outreachMediaTemplateName("document")).toBe("sarveda_support_outreach_document");
+  });
+});
+
+describe("enquiryFollowUpRef", () => {
+  it("prefers the order number, else a short enquiry label", () => {
+    expect(enquiryFollowUpRef({ orderNumber: "SRV-2026100001" })).toBe("order SRV-2026100001");
+    expect(enquiryFollowUpRef({ orderNumber: null, customSubject: "Handpan size" })).toBe(
+      "Handpan size"
+    );
+    expect(enquiryFollowUpRef({})).toBe("your enquiry");
   });
 });

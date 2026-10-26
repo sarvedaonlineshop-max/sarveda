@@ -42,6 +42,7 @@ import {
 export type { EnquiryLeadStatus } from "./enquiry-lead-status";
 export { isEnquiryLeadStatus } from "./enquiry-lead-status";
 import {
+  enquiryFollowUpRef,
   outreachCustomerFirstName,
   outreachMediaKind,
   outreachMediaTemplateName
@@ -609,6 +610,8 @@ type OutreachThread = {
   waPhone: string | null;
   customerPhone: string | null;
   customerName: string;
+  orderNumber?: string | null;
+  customSubject?: string | null;
 };
 
 /**
@@ -690,6 +693,8 @@ async function sendAdminOutreachOnThread(opts: {
         0,
         1024
       );
+      const imageRef = enquiryFollowUpRef(opts.thread);
+      const bodyParams = kind === "image" ? [nameParam, imageRef] : [nameParam, caption];
       const header: WhatsAppTemplateHeader =
         kind === "document"
           ? { type: "document", link: file.s3Url, filename: file.fileName }
@@ -698,13 +703,16 @@ async function sendAdminOutreachOnThread(opts: {
         const mediaSid = await sendWhatsAppNamedTemplate(
           to,
           templateName,
-          [nameParam, caption],
+          bodyParams,
           undefined,
           header
         );
         if (i === 0) {
           sid = mediaSid;
-          bodyPreview = `Namaste ${nameParam},\n\n${caption}`;
+          bodyPreview =
+            kind === "image"
+              ? `Namaste ${nameParam},\n\nPlease find the image related to ${imageRef}.`
+              : `Namaste ${nameParam},\n\n${caption}`;
         }
       } catch (err) {
         const raw = err instanceof Error ? err.message : String(err);
