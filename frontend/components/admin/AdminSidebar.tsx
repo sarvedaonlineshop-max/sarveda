@@ -35,7 +35,6 @@ import { AdminReturnsSidebarLink } from "@/components/admin/AdminReturnsSidebarL
 import { AdminShipmentsSidebarLink } from "@/components/admin/AdminShipmentsSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
-import { isReportsOnlyAdmin, reportsOnlyAdminHome } from "@/lib/reports-only-access";
 import { adminTheme as t } from "@/lib/admin-theme";
 import {
   applySidebarHover,
@@ -209,7 +208,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const contentType = searchParams.get("type");
   const isSuper = useIsSuperAdmin();
   const adminUser = useAdminUser();
-  const reportsOnly = isReportsOnlyAdmin(adminUser?.email);
   const accountingEnabled =
     accountingFlagOn && isAccountingEmailAllowed(adminUser?.email);
   const opsNav: NavItem[] = [
@@ -223,20 +221,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pendingHref = nav?.pendingHref ?? null;
   const beginNavigation = nav?.beginNavigation;
   const accountingDesk = accountingEnabled && isAccountingWorkspacePath(pathname);
-
-  if (reportsOnly) {
-    return (
-      <NavGroup label="Reports">
-        <NavLink
-          item={{ href: reportsOnlyAdminHome(), label: "Store Reports", icon: icon.reports }}
-          activePath={activePath}
-          pendingHref={pendingHref}
-          onNavigate={onNavigate}
-          beginNavigation={beginNavigation}
-        />
-      </NavGroup>
-    );
-  }
 
   if (accountingDesk) {
     return (
@@ -392,7 +376,6 @@ export function AdminSidebar({
   preferDarkMain: boolean;
   onToggleMainTheme: () => void;
 }) {
-  const reportsHome = isReportsOnlyAdmin(useAdminUser()?.email);
   return (
     <div
       className="flex h-full flex-col"
@@ -400,7 +383,7 @@ export function AdminSidebar({
     >
       <div style={{ padding: "14px 12px 12px", borderBottom: "1px solid rgba(185,138,62,0.15)" }}>
         <Link
-          href={reportsHome ? reportsOnlyAdminHome() : "/admin"}
+          href="/admin"
           onClick={onNavigate}
           style={{ display: "block", textDecoration: "none", width: "100%" }}
           aria-label="Sarveda admin home"

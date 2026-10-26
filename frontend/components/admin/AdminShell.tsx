@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminNavProvider, useAdminNav } from "@/components/admin/AdminNavContext";
@@ -12,8 +12,6 @@ import {
 import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { adminOverlayTransition } from "@/lib/admin-motion";
 import { adminTheme as t } from "@/lib/admin-theme";
-import { useAdminUser } from "@/components/admin/AdminUserContext";
-import { isReportsOnlyAdmin, reportsOnlyAdminHome } from "@/lib/reports-only-access";
 
 const THEME_KEY = "sarveda-admin-theme";
 
@@ -83,14 +81,6 @@ function AdminShellInner({
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const adminUser = useAdminUser();
-  const reportsOnly = isReportsOnlyAdmin(adminUser?.email);
-  useEffect(() => {
-    if (!reportsOnly) return;
-    if (pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")) return;
-    router.replace(reportsOnlyAdminHome());
-  }, [reportsOnly, pathname, router]);
   const pageTitle = getPageTitle(pathname);
   const { isNavigating, beginNavigation } = useAdminNav();
   const headerSlot = useAdminHeaderSlot()?.slot ?? null;
