@@ -11,11 +11,9 @@ import * as leadService from "./lead.service";
 import * as pipelineService from "./pipeline.service";
 import * as taskService from "./task.service";
 import * as summaryService from "./crm-summary.service";
-import * as chatOwnerService from "./chat-owner.service";
 import {
   accountListQuerySchema,
   activityListQuerySchema,
-  chatOwnerSchema,
   contactListQuerySchema,
   convertLeadSchema,
   createAccountSchema,
@@ -501,30 +499,6 @@ export async function updateTask(req: Request, res: Response, next: NextFunction
   try {
     const body = parseOrThrow(updateTaskSchema, req.body);
     const data = await taskService.updateTask(requireUuidParam(req.params.id), body);
-    res.json({ success: true, data });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function getChatOwner(req: Request, res: Response, next: NextFunction) {
-  try {
-    const data = await chatOwnerService.getChatOwner(requireUuidParam(req.params.threadId, "threadId"));
-    res.json({ success: true, data });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function patchChatOwner(req: Request, res: Response, next: NextFunction) {
-  try {
-    const who = actor(req);
-    const body = parseOrThrow(chatOwnerSchema, req.body);
-    const data = await chatOwnerService.setChatOwner(
-      requireUuidParam(req.params.threadId, "threadId"),
-      body.ownerUserId,
-      { id: who.id, email: who.email }
-    );
     res.json({ success: true, data });
   } catch (err) {
     next(err);

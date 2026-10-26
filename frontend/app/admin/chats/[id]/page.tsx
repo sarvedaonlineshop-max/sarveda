@@ -48,9 +48,7 @@ import {
   MAX_ENQUIRY_ATTACHMENTS
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
-import { ChatAssignControl } from "@/components/admin/ChatAssignControl";
 import { ChatFollowUpControls } from "@/components/admin/ChatFollowUpControls";
-import { canAssignChatOwner } from "@/lib/crm-team-access";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
   splitPhoneForStartForm
@@ -917,8 +915,6 @@ function AdminChatDetailInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [leadHistoryOpen, setLeadHistoryOpen] = useState(false);
-  const assignOpenRef = useRef<(() => void) | null>(null);
-  const canAssign = canAssignChatOwner(adminUser?.email);
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1447,7 +1443,6 @@ function AdminChatDetailInner() {
         </button>
         <div className="relative shrink-0" ref={menuRef}>
           <div className="flex items-center gap-0.5">
-            <span id="chat-assign-header-slot" className="flex shrink-0" />
             <div className="md:hidden">
               <ChatFollowUpControls
                 threadId={thread.id}
@@ -1471,19 +1466,6 @@ function AdminChatDetailInner() {
               role="menu"
               className="absolute right-1 top-12 z-30 min-w-[11.5rem] overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10"
             >
-              {canAssign ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    assignOpenRef.current?.();
-                  }}
-                  className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
-                >
-                  Assign member
-                </button>
-              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -1589,15 +1571,6 @@ function AdminChatDetailInner() {
             </span>
           </p>
         </div>
-        {canAssign ? (
-          <button
-            type="button"
-            onClick={() => assignOpenRef.current?.()}
-            className="rounded-full bg-white/15 px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/20"
-          >
-            Assign
-          </button>
-        ) : null}
         <ChatFollowUpControls
           threadId={thread.id}
           lightHeader
@@ -1692,13 +1665,6 @@ function AdminChatDetailInner() {
         ))}
         <div ref={bottomRef} />
       </div>
-      <ChatAssignControl
-        threadId={thread.id}
-        openRef={assignOpenRef}
-        onAssigned={() => {
-          void load();
-        }}
-      />
 
       {/* Fixed composer — same surface as messages so it feels emerged */}
       <div

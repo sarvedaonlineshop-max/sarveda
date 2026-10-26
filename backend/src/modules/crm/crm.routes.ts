@@ -15,7 +15,6 @@ import {
   createTaskSchema,
   dealProductSchema,
   linkOrderSchema,
-  chatOwnerSchema,
   linkQuotationSchema,
   updateAccountSchema,
   updateContactSchema,
@@ -39,8 +38,6 @@ router.use(requireAdmin);
 router.get("/summary", h.crmSummary);
 router.get("/report", h.crmReport);
 router.get("/assignees", h.crmAssignees);
-router.get("/chat-owner/:threadId", h.getChatOwner);
-router.patch("/chat-owner/:threadId", validateBody(chatOwnerSchema), h.patchChatOwner);
 router.get("/pipelines", h.listPipelines);
 router.post("/pipelines/seed-default", h.seedDefaultPipeline);
 router.post("/pipelines", validateBody(createPipelineSchema), h.createPipeline);
