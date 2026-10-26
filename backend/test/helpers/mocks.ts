@@ -62,7 +62,8 @@ export function registerCommerceMocks() {
   }));
 
   vi.mock("../../src/config/firebase", () => ({
-    sendPushToAdmins: (...args: unknown[]) => mockSendPushToAdmins(...args)
+    sendPushToAdmins: (...args: unknown[]) => mockSendPushToAdmins(...args),
+    sendPushToAdminUser: (...args: unknown[]) => mockSendPushToAdmins(...args)
   }));
 
   vi.mock("../../src/config/s3", () => ({

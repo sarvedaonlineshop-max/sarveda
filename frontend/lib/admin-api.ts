@@ -3027,6 +3027,7 @@ export type EnquiryThreadListItem = {
   crmCategory?: string | null;
   crmCategories?: string[];
   crmOwner?: { id: string; name?: string | null; email?: string | null } | null;
+  crmOwnerAssigned?: boolean;
   messages: Array<{ body: string; authorType: string; createdAt: string }>;
 };
 

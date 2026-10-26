@@ -1,0 +1,2 @@
+ALTER TABLE "EnquiryThread"
+  ADD COLUMN IF NOT EXISTS "crmOwnerAssigned" BOOLEAN NOT NULL DEFAULT false;

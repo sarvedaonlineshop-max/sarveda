@@ -111,7 +111,8 @@ vi.mock("../../src/jobs/paymentTimeoutJob", () => ({
 }));
 
 vi.mock("../../src/config/firebase", () => ({
-  sendPushToAdmins: commerceMocks.sendPushToAdmins
+  sendPushToAdmins: commerceMocks.sendPushToAdmins,
+  sendPushToAdminUser: commerceMocks.sendPushToAdmins
 }));
 
 vi.mock("../../src/config/s3", () => ({

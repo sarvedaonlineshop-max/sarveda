@@ -47,6 +47,7 @@ import {
   MAX_ENQUIRY_ATTACHMENTS
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
+import { ChatAssignControl } from "@/components/admin/ChatAssignControl";
 import { ChatCrmRail } from "@/components/admin/ChatCrmRail";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
@@ -56,6 +57,7 @@ import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
 import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
 import { linkifiedText } from "@/lib/linkify-text";
 import { resolveWaDeliveryState } from "@/lib/wa-delivery-status";
+import { chatAdminSenderLabel } from "@/lib/chat-pipeline";
 
 /** Broad accept — strict MIME-only lists silently drop HEIC / odd desktop picks. */
 const CHAT_FILE_ACCEPT =
@@ -730,8 +732,10 @@ function MessageBubble({
     }
   }
 
+  const senderLabel = chatAdminSenderLabel(message);
+
   return (
-    <div className={`group/msg relative flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+    <div className={`group/msg relative flex flex-col ${isAdmin ? "items-end" : "items-start"}`}>
       <div
         className={`relative max-w-[min(100%,32rem)] rounded-2xl px-3.5 py-2 shadow-sm ${
           isAdmin ? "rounded-br-sm" : "rounded-bl-md"
@@ -945,6 +949,11 @@ function MessageBubble({
           ) : null}
         </p>
       </div>
+      {senderLabel ? (
+        <p className="mt-0.5 max-w-[min(100%,32rem)] px-1 text-[10px] font-medium tracking-wide text-[#5a7a5a]">
+          {senderLabel}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -972,6 +981,7 @@ function AdminChatDetailInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [saleOpen, setSaleOpen] = useState(false);
+  const [railTick, setRailTick] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1661,6 +1671,13 @@ function AdminChatDetailInner() {
         ))}
         <div ref={bottomRef} />
       </div>
+      <ChatAssignControl
+        threadId={thread.id}
+        onAssigned={() => {
+          setRailTick((n) => n + 1);
+          void load();
+        }}
+      />
 
       {/* Fixed composer — same surface as messages so it feels emerged */}
       <div
@@ -1841,6 +1858,7 @@ function AdminChatDetailInner() {
           source={thread.source}
           orderNumber={thread.orderNumber}
           lastOwner={lastOwner}
+          refreshToken={railTick}
           onShared={() => void load()}
         />
       </div>
@@ -1856,6 +1874,7 @@ function AdminChatDetailInner() {
               source={thread.source}
               orderNumber={thread.orderNumber}
               lastOwner={lastOwner}
+              refreshToken={railTick}
               onShared={() => void load()}
             />
           </div>

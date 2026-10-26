@@ -1,6 +1,7 @@
 import type { CrmChatCategory, CrmChatPipeline, Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 
 export const CHAT_PIPELINE_STATUSES = [
   "NEW",
@@ -77,11 +78,20 @@ function present<T extends { crmPipeline: CrmChatPipeline; crmCategory: CrmChatC
   };
 }
 
+/** Keep the current owner. First admin to take charge fills an empty chat. */
+export function nextChatOwner(input: {
+  currentOwnerId: string | null | undefined;
+  claimantId: string | null | undefined;
+}): string | null {
+  if (input.currentOwnerId) return input.currentOwnerId;
+  return input.claimantId ?? null;
+}
+
 export async function claimChatOwnerIfEmpty(threadId: string, ownerUserId?: string | null) {
   if (!ownerUserId) return;
   await prisma.enquiryThread.updateMany({
     where: { id: threadId, crmOwnerUserId: null },
-    data: { crmOwnerUserId: ownerUserId }
+    data: { crmOwnerUserId: ownerUserId, crmOwnerAssigned: false }
   });
 }
 
@@ -121,6 +131,7 @@ const pipelineSelect = {
   crmPipeline: true,
   crmCategory: true,
   crmCategories: true,
+  crmOwnerAssigned: true,
   crmOwner: { select: ownerSelect },
   crmCollaborators: {
     select: { user: { select: ownerSelect } }
@@ -156,11 +167,15 @@ export async function setChatPipeline(threadId: string, status: CrmChatPipeline 
   });
   if (!thread) throw fail("Chat not found", 404);
   const next = normalizeChatPipeline(status);
+  const ownerId = nextChatOwner({
+    currentOwnerId: thread.crmOwnerUserId,
+    claimantId: actorId
+  });
   await prisma.enquiryThread.update({
     where: { id: threadId },
     data: {
       crmPipeline: next,
-      crmOwnerUserId: thread.crmOwnerUserId ?? actorId ?? undefined
+      ...(ownerId ? { crmOwnerUserId: ownerId } : {})
     }
   });
   return getChatPipeline(threadId);
@@ -236,19 +251,26 @@ export async function setChatCategory(threadId: string, category: CrmChatCategor
   return setChatCategories(threadId, next);
 }
 
-export async function setChatOwner(threadId: string, ownerUserId: string | null) {
+export async function setChatOwner(
+  threadId: string,
+  ownerUserId: string | null,
+  actor?: { id: string; name?: string | null; email?: string | null }
+) {
   if (ownerUserId) {
     const owner = await prisma.user.findFirst({
       where: { id: ownerUserId, role: { in: ["ADMIN", "SUPER_ADMIN"] }, deletedAt: null },
-      select: { id: true }
+      select: { id: true, name: true, email: true }
     });
     if (!owner) throw fail("Select a valid admin", 400);
   }
   const updated = await prisma.enquiryThread
     .update({
       where: { id: threadId },
-      data: { crmOwnerUserId: ownerUserId },
-      select: { id: true }
+      data: {
+        crmOwnerUserId: ownerUserId,
+        crmOwnerAssigned: Boolean(ownerUserId)
+      },
+      select: { id: true, customerName: true }
     })
     .catch(() => null);
   if (!updated) throw fail("Chat not found", 404);
@@ -257,7 +279,39 @@ export async function setChatOwner(threadId: string, ownerUserId: string | null)
       where: { threadId, userId: ownerUserId }
     });
   }
-  return getChatPipeline(threadId);
+  const card = await getChatPipeline(threadId);
+  if (ownerUserId && ownerUserId !== actor?.id) {
+    const assignee =
+      card?.crmOwner?.name?.trim() ||
+      card?.crmOwner?.email?.split("@")[0] ||
+      "you";
+    const customer = updated.customerName.trim() || "a customer";
+    const by =
+      actor?.name?.trim() ||
+      actor?.email?.split("@")[0] ||
+      "Admin";
+    void import("../../config/firebase")
+      .then(({ sendPushToAdminUser }) =>
+        sendPushToAdminUser(
+          ownerUserId,
+          "Chat assigned to you",
+          `${customer} — assigned by ${by}`,
+          {
+            type: "chat_assigned",
+            chatId: threadId,
+            link: `/admin/chats/${threadId}`
+          }
+        )
+      )
+      .catch((err: unknown) =>
+        logger.warn("chat_assign_push_failed", {
+          threadId,
+          assignee,
+          error: err instanceof Error ? err.message : String(err)
+        })
+      );
+  }
+  return card;
 }
 
 export async function setChatCollaborators(threadId: string, userIds: string[]) {

@@ -2504,6 +2504,8 @@ model EnquiryThread {
   crmCategories         CrmChatCategory[]       @default([])
   crmOwnerUserId        String?                 @db.Uuid
   crmOwner              User?                   @relation("CrmChatOwner", fields: [crmOwnerUserId], references: [id], onDelete: SetNull)
+  /// True when Partha/Arjun assigned the owner. False if empty or first-reply claim.
+  crmOwnerAssigned      Boolean                 @default(false)
   crmCollaborators      CrmChatCollaborator[]
   crmNotes              CrmChatNote[]
   createdAt             DateTime                @default(now())

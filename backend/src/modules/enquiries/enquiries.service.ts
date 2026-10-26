@@ -552,6 +552,7 @@ export async function getEnquiryThread(id: string) {
   const thread = await prisma.enquiryThread.findUnique({
     where: { id },
     include: {
+      crmOwner: { select: { id: true, name: true, email: true } },
       messages: {
         orderBy: { createdAt: "asc" },
         include: {

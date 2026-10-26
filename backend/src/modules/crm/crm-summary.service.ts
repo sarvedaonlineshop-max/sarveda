@@ -1,4 +1,6 @@
 import { prisma } from "../../config/db";
+import { isReportsOnlyAdminEmail } from "../../middleware/admin";
+import { isStaffLoginBlocked } from "../auth/staff-access";
 import { userSummarySelect } from "./crm.utils";
 
 export async function crmSummary() {
@@ -132,10 +134,13 @@ export async function crmReport() {
 }
 
 export async function crmAssignees() {
-  return prisma.user.findMany({
+  const rows = await prisma.user.findMany({
     where: { deletedAt: null, role: { in: ["ADMIN", "SUPER_ADMIN"] } },
     select: { id: true, name: true, email: true },
     orderBy: { name: "asc" },
     take: 80
   });
+  return rows.filter(
+    (row) => !isReportsOnlyAdminEmail(row.email) && !isStaffLoginBlocked(row.email)
+  );
 }

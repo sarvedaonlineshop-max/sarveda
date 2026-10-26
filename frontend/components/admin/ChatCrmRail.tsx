@@ -34,6 +34,7 @@ type Props = {
   source?: string | null;
   orderNumber?: string | null;
   lastOwner?: { id: string; name: string } | null;
+  refreshToken?: number;
   onShared?: () => void;
 };
 
@@ -52,6 +53,7 @@ export function ChatCrmRail({
   phone,
   orderNumber,
   lastOwner,
+  refreshToken = 0,
   onShared
 }: Props) {
   const me = useAdminUser();
@@ -84,7 +86,7 @@ export function ChatCrmRail({
 
   useEffect(() => {
     void load().catch((err: Error) => setError(err.message));
-  }, [load]);
+  }, [load, refreshToken]);
 
   async function run(work: () => Promise<void>) {
     setBusy(true);
@@ -213,6 +215,15 @@ export function ChatCrmRail({
                 >
                   {ownerName}
                 </span>
+                {card?.crmOwnerAssigned ? (
+                  <span className="rounded-full bg-[#0f766e]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#0f766e]">
+                    Assigned
+                  </span>
+                ) : owner ? (
+                  <span className="rounded-full bg-[#1c352a]/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#4a6b58]">
+                    From chat
+                  </span>
+                ) : null}
                 {(card?.crmCollaborators ?? []).map((person) => (
                   <span
                     key={person.id}
@@ -223,21 +234,6 @@ export function ChatCrmRail({
                   </span>
                 ))}
               </div>
-              <select
-                disabled={busy}
-                value={owner?.id ?? ""}
-                onChange={(event) =>
-                  void run(() => crmApi.setChatOwner(threadId, event.target.value || null).then(() => undefined))
-                }
-                className="mt-2 w-full rounded-lg border border-[#1c352a]/15 bg-white px-2 py-1.5 text-[12px]"
-              >
-                <option value="">Unassigned</option>
-                {assignees.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.name || person.email}
-                  </option>
-                ))}
-              </select>
               <label className="mt-2 block text-[11px] font-semibold text-[#4a6b58]">Collaborators</label>
               <select
                 disabled={busy || !assignees.length}

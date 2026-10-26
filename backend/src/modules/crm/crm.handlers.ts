@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { CrmError } from "./crm-errors";
+import { CrmError, crmForbidden } from "./crm-errors";
 import { requireUuidParam } from "./crm-params";
 import * as accountService from "./account.service";
 import * as activityService from "./activity.service";
@@ -11,7 +11,7 @@ import * as leadService from "./lead.service";
 import * as pipelineService from "./pipeline.service";
 import * as taskService from "./task.service";
 import * as summaryService from "./crm-summary.service";
-import { canSeeAllCrm } from "./crm-team-access";
+import { canAssignChatOwner, canSeeAllCrm } from "./crm-team-access";
 import * as salesQuote from "./sales-quote.service";
 import * as chatPipeline from "./chat-pipeline.service";
 import { prisma } from "../../config/db";
@@ -729,8 +729,16 @@ export async function patchChatCategory(req: Request, res: Response, next: NextF
 
 export async function patchChatOwner(req: Request, res: Response, next: NextFunction) {
   try {
+    const who = actor(req);
+    if (!canAssignChatOwner(who.email)) {
+      throw crmForbidden("Only Partha and Arjun can assign chats");
+    }
     const body = parseOrThrow(chatPipelineOwnerSchema, req.body);
-    const data = await chatPipeline.setChatOwner(requireUuidParam(req.params.threadId), body.ownerUserId);
+    const data = await chatPipeline.setChatOwner(
+      requireUuidParam(req.params.threadId),
+      body.ownerUserId,
+      { id: who.id, name: who.name, email: who.email }
+    );
     res.json({ success: true, data });
   } catch (err) {
     next(err);

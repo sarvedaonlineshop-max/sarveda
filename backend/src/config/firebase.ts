@@ -187,6 +187,66 @@ export async function sendPushNotification(
   }
 }
 
+/** Push a directed alert to one admin: Android app token first, then web/PWA. */
+export async function sendPushToAdminUser(
+  userId: string,
+  title: string,
+  body: string,
+  data: Record<string, string> = {}
+): Promise<number> {
+  try {
+    if (!isFirebaseConfigured()) {
+      logger.warn("fcm_admin_user_skip_not_configured", { title, userId });
+      return 0;
+    }
+    const user = await prisma.user.findFirst({
+      where: { id: userId, deletedAt: null, pushNotificationsEnabled: true },
+      select: { email: true, fcmToken: true, fcmWebToken: true }
+    });
+    if (!user) {
+      logger.warn("fcm_admin_user_no_push", { userId, title });
+      return 0;
+    }
+    const mobile = user.fcmToken?.trim() || "";
+    const web = user.fcmWebToken?.trim() || "";
+    if (!mobile && !web) {
+      logger.warn("fcm_admin_user_no_tokens", { userId, email: user.email, title });
+      return 0;
+    }
+    let sent = 0;
+    if (mobile) {
+      const ok = await sendPushNotification(mobile, title, body, data, { platform: "android" });
+      if (ok) sent += 1;
+    }
+    if (web && web !== mobile) {
+      const ok = await sendPushNotification(
+        web,
+        title,
+        body,
+        { ...data, audience: "admin" },
+        { platform: "web" }
+      );
+      if (ok) sent += 1;
+    }
+    logger.info("fcm_admin_user_push_done", {
+      title,
+      userId,
+      email: user.email,
+      sent,
+      mobile: Boolean(mobile),
+      web: Boolean(web)
+    });
+    return sent;
+  } catch (err) {
+    logger.error("fcm_admin_user_push_failed", {
+      title,
+      userId,
+      error: err instanceof Error ? err.message : String(err)
+    });
+    return 0;
+  }
+}
+
 export async function sendPushToEmails(
   emails: Iterable<string>,
   title: string,
@@ -247,7 +307,12 @@ export async function sendPushToAdmins(
         pushNotificationsEnabled: true,
         fcmWebToken: { not: null }
       },
-      select: { email: true, fcmWebToken: true }
+      select: {
+        email: true,
+        fcmWebToken: true,
+        adminOrderNotificationsEnabled: true,
+        adminChatNotificationsEnabled: true
+      }
     });
     if (users.length === 0) {
       logger.warn("fcm_no_admin_web_tokens", {
@@ -256,10 +321,25 @@ export async function sendPushToAdmins(
       });
       return 0;
     }
-    let sent = 0;
+    const kind = data.type === "order" ? "order" : data.type === "chat" ? "chat" : null;
+    // Several admin accounts can hold the same browser token. One opt-out blocks
+    // that browser, and the token is sent only once.
+    const allowByToken = new Map<string, boolean>();
     for (const user of users) {
       const web = user.fcmWebToken?.trim();
       if (!web) continue;
+      const blocked =
+        (kind === "order" && !user.adminOrderNotificationsEnabled) ||
+        (kind === "chat" && !user.adminChatNotificationsEnabled);
+      if (blocked) {
+        allowByToken.set(web, false);
+        continue;
+      }
+      if (!allowByToken.has(web)) allowByToken.set(web, true);
+    }
+    let sent = 0;
+    for (const [web, allow] of allowByToken) {
+      if (!allow) continue;
       const ok = await sendPushNotification(
         web,
         title,

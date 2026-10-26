@@ -91,6 +91,23 @@ export function defaultFollowUpLocalValue(): string {
   return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`;
 }
 
+const BOT_AUTHOR = "Sarveda Assistant";
+
+export function chatAdminSenderLabel(message: {
+  authorType?: string | null;
+  authorName?: string | null;
+  adminUser?: { name?: string | null; email?: string | null } | null;
+}): string | null {
+  if ((message.authorType ?? "").toUpperCase() !== "ADMIN") return null;
+  const name =
+    message.adminUser?.name?.trim() ||
+    message.authorName?.trim() ||
+    message.adminUser?.email?.split("@")[0] ||
+    "";
+  if (!name || name === BOT_AUTHOR) return null;
+  return name;
+}
+
 export function detectCountryLabel(phone?: string | null): string | null {
   const digits = (phone ?? "").replace(/\D/g, "");
   if (!digits) return null;
