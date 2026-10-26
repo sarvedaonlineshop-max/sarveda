@@ -1622,6 +1622,15 @@ function AdminChatDetailInner() {
             </span>
           </p>
         </div>
+        {canAssign ? (
+          <button
+            type="button"
+            onClick={() => assignOpenRef.current?.()}
+            className="rounded-full bg-white/15 px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/20"
+          >
+            Assign
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => setSaleOpen(true)}
