@@ -61,7 +61,6 @@ export const contentCreateSchema = z.object({
   courseStartDate: nullableString,
   courseEndDate: nullableString,
   videoUrl: nullableString,
-  posterUrl: nullableString,
   mode: nullableString,
   venue: nullableString,
   timings: nullableString,

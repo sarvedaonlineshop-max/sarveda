@@ -81,7 +81,6 @@ export type ContentFormValues = {
   courseStartDate: string;
   courseEndDate: string;
   videoUrl: string;
-  posterUrl: string;
   courseMode: string;
   courseVenue: string;
   courseTimings: string;
@@ -117,7 +116,6 @@ export const emptyContentForm: ContentFormValues = {
   courseStartDate: "",
   courseEndDate: "",
   videoUrl: "",
-  posterUrl: "",
   courseMode: "",
   courseVenue: "",
   courseTimings: "",
@@ -178,7 +176,6 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
     courseStartDate: "",
     courseEndDate: "",
     videoUrl: "",
-    posterUrl: "",
     courseMode: "",
     courseVenue: "",
     courseTimings: "",
@@ -260,7 +257,6 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
     courseStartDate: isoDateToInput(extra.startDate),
     courseEndDate: isoDateToInput(extra.endDate),
     videoUrl: (item.videoUrl as string) ?? extra.videoLink ?? "",
-    posterUrl: extra.posterUrl ?? "",
     courseMode: extra.mode ?? "",
     courseVenue: extra.venue ?? "",
     courseTimings: extra.timings ?? "",
@@ -374,7 +370,6 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
     base.courseStartDate = values.courseStartDate.trim() || null;
     base.courseEndDate = values.courseEndDate.trim() || null;
     base.videoUrl = values.videoUrl.trim() || null;
-    base.posterUrl = values.posterUrl.trim() || null;
     base.mode = values.courseMode.trim() || null;
     base.venue = values.courseVenue.trim() || null;
     base.timings = values.courseTimings.trim() || null;

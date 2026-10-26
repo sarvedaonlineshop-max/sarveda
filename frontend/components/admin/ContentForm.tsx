@@ -6,7 +6,6 @@ import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
-import { ContentVideoUpload } from "@/components/admin/ContentVideoUpload";
 import { CourseCurriculumFields } from "@/components/admin/CourseCurriculumFields";
 import { CourseFaqFields } from "@/components/admin/CourseFaqFields";
 import { CourseMentorPicker } from "@/components/admin/CourseMentorPicker";
@@ -330,20 +329,9 @@ export function ContentForm({ type, itemId }: Props) {
         {type === "courses" ? (
           <>
             <ContentImageUpload
-              label="Page background"
               url={values.imageUrl}
               onUrlChange={(imageUrl) => setValues((v) => ({ ...v, imageUrl }))}
               folder="courses"
-              preview="wide"
-              hint="Wide banner at the top of the course page · JPEG, PNG or WebP · max 10MB"
-            />
-            <ContentImageUpload
-              label="Poster"
-              url={values.posterUrl}
-              onUrlChange={(posterUrl) => setValues((v) => ({ ...v, posterUrl }))}
-              folder="courses"
-              preview="square"
-              hint="Square card on the courses list and when sharing the link · JPEG, PNG or WebP · max 10MB"
             />
 
             <Field label="Short description">
@@ -419,11 +407,14 @@ export function ContentForm({ type, itemId }: Props) {
               </Field>
             </div>
 
-            <ContentVideoUpload
-              url={values.videoUrl}
-              onUrlChange={(videoUrl) => setValues((v) => ({ ...v, videoUrl }))}
-              posterUrl={values.posterUrl || values.imageUrl}
-            />
+            <Field label="Video URL (YouTube / Vimeo embed)">
+              <input
+                value={values.videoUrl}
+                onChange={(e) => setValues((v) => ({ ...v, videoUrl: e.target.value }))}
+                placeholder="https://www.youtube.com/embed/..."
+                className={inputClass}
+              />
+            </Field>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Mode">

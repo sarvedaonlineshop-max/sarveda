@@ -9,14 +9,6 @@ import {
 /** Rank the whole match set before trimming, so exact name hits are never cut off. */
 const PRODUCT_CANDIDATE_POOL = 200;
 
-function courseSearchImage(imageUrl: string | null, extra: unknown): string | null {
-  if (extra && typeof extra === "object" && !Array.isArray(extra)) {
-    const poster = (extra as { posterUrl?: unknown }).posterUrl;
-    if (typeof poster === "string" && poster.trim()) return poster.trim();
-  }
-  return imageUrl;
-}
-
 export type SiteSearchType = "product" | "course" | "event" | "insight";
 
 export type SiteSearchSuggestion = {
@@ -192,7 +184,7 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
       type: "course",
       slug: c.slug,
       title: c.title,
-      imageUrl: courseSearchImage(c.imageUrl, c.extra),
+      imageUrl: c.imageUrl,
       priceInPaise: canPay ? c.priceInPaise : c.isFree ? 0 : null,
       label: upcoming ? "Course · Registration open" : "Course"
     });

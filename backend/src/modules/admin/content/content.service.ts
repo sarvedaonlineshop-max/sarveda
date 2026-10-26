@@ -214,7 +214,6 @@ function buildCourseExtra(
     | "faqs"
     | "schedule"
     | "videoUrl"
-    | "posterUrl"
   >,
   existing?: Prisma.JsonValue | null,
   resolvedTeachers?: Array<{
@@ -335,9 +334,6 @@ function buildCourseExtra(
     const v = body.videoUrl?.trim();
     extra.videoLink = v || null;
   }
-  if (body.posterUrl !== undefined) {
-    extra.posterUrl = body.posterUrl?.trim() || null;
-  }
 
   if (!extra.startDate && !extra.endDate) {
     const schedule = extra.schedule;
@@ -372,8 +368,7 @@ function courseExtraFieldsPresent(
     body.aboutTheCourse !== undefined ||
     body.faqs !== undefined ||
     body.schedule !== undefined ||
-    body.videoUrl !== undefined ||
-    body.posterUrl !== undefined
+    body.videoUrl !== undefined
   );
 }
 

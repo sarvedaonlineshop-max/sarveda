@@ -61,7 +61,6 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url?: string }>) {
   };
 }
 
-import { coursePosterUrl } from "./content-meta";
 import type { CourseDetail } from "./course-types";
 import type { EventDetail } from "./event-types";
 
@@ -76,14 +75,13 @@ export function courseJsonLd(course: CourseDetail) {
           availability: "https://schema.org/InStock"
         }
       : undefined;
-  const poster = coursePosterUrl(course);
 
   return {
     "@context": "https://schema.org",
     "@type": "Course",
     name: course.title,
     description: course.seoDescription || course.shortDescription || undefined,
-    image: poster ? [poster] : undefined,
+    image: course.imageUrl ? [course.imageUrl] : undefined,
     provider: { "@type": "Organization", name: "Sarveda", url: absoluteUrl("/") },
     offers: offer
   };
