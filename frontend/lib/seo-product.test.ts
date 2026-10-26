@@ -6,7 +6,8 @@ import { describe, it } from "node:test";
 
 process.env.NEXT_PUBLIC_SITE_URL = "https://sarveda.com";
 
-import { productJsonLd } from "./seo-product";
+import { courseJsonLd, productJsonLd } from "./seo-product";
+import type { CourseDetail } from "./course-types";
 import type { ProductDetail, ProductVariantDetail } from "./types";
 
 function variant(partial: Partial<ProductVariantDetail> & Pick<ProductVariantDetail, "id" | "sku">): ProductVariantDetail {
@@ -98,5 +99,28 @@ describe("productJsonLd availability", () => {
       offer.url,
       "https://sarveda.com/product/wind-gong-plain?offer=sv_901332ea-005b-45c0-aaaa-bbbbbbbbbbbb"
     );
+  });
+});
+
+describe("courseJsonLd image", () => {
+  it("prefers the poster over the page background", () => {
+    const ld = courseJsonLd({
+      id: "c1",
+      slug: "sound-healing",
+      title: "Sound Healing",
+      shortDescription: null,
+      imageUrl: "https://cdn.example/hero.jpg",
+      priceInPaise: 0,
+      priceUsdCents: null,
+      isFree: true,
+      enrollmentMode: "ENQUIRY",
+      checkoutVariantId: null,
+      extra: { posterUrl: "https://cdn.example/poster.jpg" },
+      description: null,
+      videoUrl: null,
+      seoTitle: null,
+      seoDescription: null
+    } satisfies CourseDetail);
+    assert.deepEqual(ld.image, ["https://cdn.example/poster.jpg"]);
   });
 });
