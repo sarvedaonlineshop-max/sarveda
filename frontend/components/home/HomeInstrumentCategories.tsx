@@ -17,6 +17,8 @@ type Category = {
   href: string;
   image: string;
   Icon: () => React.ReactNode;
+  /** Keep a face in frame when the tile crops a tall photo. */
+  imagePosition?: string;
 };
 
 function IconBowl() {
@@ -150,6 +152,7 @@ const CATEGORIES: Category[] = [
     name: "Singing Bowls & Bells",
     href: "/product-category/singing-bowls-bells",
     image: "/images/home/instruments/singing-bowls.png",
+    imagePosition: "object-[center_12%]",
     Icon: IconBowl
   },
   {
@@ -170,7 +173,7 @@ const CATEGORIES: Category[] = [
     key: "rattles",
     name: "Rattles & Shakers",
     href: "/product-category/rattles-shakers",
-    image: "/images/home/instruments/rattles-shakers.jpg",
+    image: "/images/home/instruments/rattles-shakers.jpeg",
     Icon: IconRattle
   },
   {
@@ -192,7 +195,7 @@ const CATEGORIES: Category[] = [
     key: "shamanic",
     name: "Shamanic Instruments",
     href: "/shop?q=shamanic",
-    image: "/images/home/instruments/shamanic.png",
+    image: "/images/home/instruments/shamanic.jpg",
     Icon: IconShamanic
   },
   {
@@ -206,7 +209,7 @@ const CATEGORIES: Category[] = [
     key: "wind",
     name: "Wind Instruments",
     href: "/product-category/wind",
-    image: "/images/home/instruments/wind.png",
+    image: "/images/home/instruments/wind.jpeg",
     Icon: IconWind
   },
   {
@@ -214,13 +217,14 @@ const CATEGORIES: Category[] = [
     name: "Indian Classical",
     href: "/product-category/indian-classical",
     image: "/images/home/instruments/indian-classical.png",
+    imagePosition: "object-[center_18%]",
     Icon: IconClassical
   },
   {
     key: "kids",
     name: "Kids Instruments",
     href: "/product-category/kids",
-    image: "/images/home/instruments/kids.png",
+    image: "/images/home/instruments/kids.jpeg",
     Icon: IconKids
   },
   {
@@ -268,7 +272,7 @@ export function HomeInstrumentCategories() {
         </div>
 
         <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:mt-12 md:grid-cols-3 lg:grid-cols-6 lg:gap-5">
-          {CATEGORIES.map(({ key, name, href, image, Icon }, index) => (
+          {CATEGORIES.map(({ key, name, href, image, Icon, imagePosition }, index) => (
             <li
               key={key}
               className={`transition-transform duration-700 ease-out ${
@@ -288,8 +292,14 @@ export function HomeInstrumentCategories() {
                     alt={name}
                     fill
                     sizes="(max-width: 768px) 45vw, (max-width: 1024px) 30vw, 13vw"
-                    className={`object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.12] ${
-                      inView ? "scale-[1.06]" : "scale-100"
+                    className={`object-cover transition-transform duration-700 ease-out ${
+                      imagePosition ?? "object-center"
+                    } ${
+                      imagePosition
+                        ? "scale-100 group-hover:scale-[1.03]"
+                        : inView
+                          ? "scale-[1.06] group-hover:scale-[1.12]"
+                          : "scale-100 group-hover:scale-[1.12]"
                     }`}
                   />
                 </div>

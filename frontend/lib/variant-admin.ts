@@ -310,6 +310,89 @@ export function comboKey(values: string[]): string {
   return values.map((v) => v.trim().toLowerCase()).join("\u0001");
 }
 
+type RebuildRow = {
+  id?: string;
+  isDefault: boolean;
+  status?: "ACTIVE" | "INACTIVE";
+  attributes: VariantAttributeForm[];
+};
+
+function axisValuesForRow(row: RebuildRow, axes: OptionAxisForm[]): string[] {
+  return axes.map((axis) => {
+    const hit = row.attributes.find((a) => (a.slug || slugifyAttribute(a.name)) === axis.slug);
+    return hit?.value?.trim() ?? "";
+  });
+}
+
+/**
+ * Rebuild the grid from the current option levels.
+ * Every saved SKU stays. A saved SKU that is not in the new grid is marked INACTIVE
+ * (Not for sale) instead of being omitted. Two saved SKUs that share one combination
+ * are both kept. Unsaved rows that do not match are dropped.
+ */
+export function rebuildVariantCombinations<T extends RebuildRow>(
+  rows: T[],
+  axes: OptionAxisForm[],
+  emptyRow: () => T
+): { rows: T[]; stopSellingIds: string[] } {
+  const combos = cartesianCombos(axes);
+  if (!combos.length) return { rows, stopSellingIds: [] };
+
+  const comboKeys = new Set(combos.map((combo) => comboKey(combo)));
+  const groups = new Map<string, T[]>();
+  const unmatchedSaved: T[] = [];
+  const stopSellingIds: string[] = [];
+
+  for (const row of rows) {
+    const key = comboKey(axisValuesForRow(row, axes));
+    if (comboKeys.has(key)) {
+      const list = groups.get(key) ?? [];
+      list.push(row);
+      groups.set(key, list);
+      continue;
+    }
+    if (row.id) {
+      unmatchedSaved.push({ ...row, status: "INACTIVE", isDefault: false });
+      stopSellingIds.push(row.id);
+    }
+  }
+
+  const next: T[] = [];
+  for (const combo of combos) {
+    const key = comboKey(combo);
+    const existing = groups.get(key) ?? [];
+    const attributes = axes.map((axis, ai) => ({
+      name: axis.name,
+      slug: axis.slug,
+      value: combo[ai] ?? ""
+    }));
+    if (existing.length) {
+      for (const row of existing) next.push({ ...row, attributes });
+    } else {
+      next.push({
+        ...emptyRow(),
+        isDefault: false,
+        status: "ACTIVE",
+        attributes
+      });
+    }
+  }
+  next.push(...unmatchedSaved);
+
+  if (!next.some((row) => row.isDefault && (row.status ?? "ACTIVE") === "ACTIVE")) {
+    const activeIndex = next.findIndex((row) => (row.status ?? "ACTIVE") === "ACTIVE");
+    if (activeIndex >= 0) {
+      for (let i = 0; i < next.length; i++) {
+        const row = next[i];
+        if (!row) continue;
+        next[i] = { ...row, isDefault: i === activeIndex };
+      }
+    }
+  }
+
+  return { rows: next, stopSellingIds };
+}
+
 /** All combinations of option-level values, in axis order. Empty if any level has no options. */
 export function cartesianCombos(axes: OptionAxisForm[]): string[][] {
   const lists = axes.map((a) => a.values.map((v) => v.trim()).filter(Boolean));

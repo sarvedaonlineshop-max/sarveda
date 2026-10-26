@@ -7,6 +7,7 @@ import {
   Download,
   FileText,
   MoreVertical,
+  Landmark,
   Paperclip,
   Pencil,
   Play,
@@ -38,7 +39,6 @@ import {
   type EnquiryMessageRow,
   type EnquiryThreadDetail
 } from "@/lib/admin-api";
-import { AdminChatCreateLead } from "@/components/admin/AdminChatCreateLead";
 import { getApiBase } from "@/lib/api";
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import {
@@ -48,7 +48,7 @@ import {
   MAX_ENQUIRY_ATTACHMENTS
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
-import { ChatFollowUpControls } from "@/components/admin/ChatFollowUpControls";
+import { ChatCrmRail } from "@/components/admin/ChatCrmRail";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
   splitPhoneForStartForm
@@ -56,10 +56,7 @@ import {
 import { MaskedPhoneReveal } from "@/components/admin/MaskedPhoneReveal";
 import { parseWhatsAppMessageBody } from "@/lib/whatsapp-message-body";
 import { linkifiedText } from "@/lib/linkify-text";
-import {
-  buildChatLeadHistory,
-  formatLeadWhen
-} from "@/lib/chat-lead-history";
+import { resolveWaDeliveryState } from "@/lib/wa-delivery-status";
 
 /** Broad accept — strict MIME-only lists silently drop HEIC / odd desktop picks. */
 const CHAT_FILE_ACCEPT =
@@ -197,20 +194,67 @@ function notifyInboxRefresh() {
   }
 }
 
-/** WhatsApp-style double tick (blue when read/delivered, gray when sent). */
-function WaTicks({ status }: { status?: string | null }) {
-  if (status === "failed") {
+/** WhatsApp-style ticks + explicit labels when delivery never completes. */
+function WaTicks({
+  status,
+  createdAt,
+  detail
+}: {
+  status?: string | null;
+  createdAt: string;
+  detail?: string | null;
+}) {
+  // Re-render as pending/undelivered thresholds pass without waiting for SSE.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const s = String(status || "").toLowerCase();
+    if (s === "delivered" || s === "read" || s === "failed") return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [status, createdAt]);
+
+  const state = resolveWaDeliveryState(status, createdAt);
+  const reason =
+    (detail || "").trim() ||
+    "WhatsApp accepted the send, but the customer phone never confirmed delivery.";
+
+  if (state === "failed" || state === "undelivered") {
     return (
       <span
-        className="ml-1 text-[10px] font-bold uppercase tracking-wide text-red-600"
-        title="WhatsApp could not deliver this message (unsupported media or provider error)"
+        className="ml-1 max-w-[16rem] text-right text-[10px] font-bold uppercase tracking-wide text-red-600"
+        title={reason}
       >
-        Not delivered
+        {/30043|message limit/i.test(reason)
+          ? "Not delivered · ask them to reply"
+          : /30024|does not exist/i.test(reason)
+            ? "Not delivered · file template missing"
+            : "Not delivered"}
       </span>
     );
   }
-  if (!status) return null;
-  const readOrDelivered = status === "read" || status === "delivered";
+  if (state === "sending") {
+    return (
+      <span
+        className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-[#7a8a7a]"
+        title="Handed to WhatsApp — waiting for delivery confirmation"
+      >
+        Sending…
+      </span>
+    );
+  }
+  if (state === "pending") {
+    return (
+      <span
+        className="ml-1 text-[10px] font-bold uppercase tracking-wide text-amber-700"
+        title={`${reason} If this stays amber, ask the customer to reply “Hi” or resend via outreach.`}
+      >
+        Not on phone yet
+      </span>
+    );
+  }
+  if (state === "unknown") return null;
+
+  const readOrDelivered = state === "read" || state === "delivered";
   const color = readOrDelivered ? "#53bdeb" : "#9aa5a0";
   return (
     <svg
@@ -218,8 +262,15 @@ function WaTicks({ status }: { status?: string | null }) {
       width="16"
       height="11"
       viewBox="0 0 16 11"
-      aria-label={status}
+      aria-label={state}
     >
+      <title>
+        {state === "read"
+          ? "Read"
+          : state === "delivered"
+            ? "Delivered to phone"
+            : "Sent to WhatsApp"}
+      </title>
       <path
         d="M11.07 1.14 5.4 8.05 2.2 5.05"
         fill="none"
@@ -886,7 +937,13 @@ function MessageBubble({
         <p className="mt-1 flex items-center justify-end gap-1 text-[10px] text-[#5a7a5a]">
           {message.editedAt ? <span className="italic">Edited</span> : null}
           <span>{formatMsgTime(message.createdAt)}</span>
-          {isAdmin && isWhatsApp ? <WaTicks status={message.waStatus} /> : null}
+          {isAdmin && isWhatsApp ? (
+            <WaTicks
+              status={message.waStatus}
+              createdAt={message.createdAt}
+              detail={message.waStatusDetail}
+            />
+          ) : null}
         </p>
       </div>
     </div>
@@ -904,6 +961,7 @@ function AdminChatDetailInner() {
   const [banner, setBanner] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [bankOpen, setBankOpen] = useState(false);
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
@@ -914,7 +972,7 @@ function AdminChatDetailInner() {
   const [deleteNotifyCustomer, setDeleteNotifyCustomer] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [leadHistoryOpen, setLeadHistoryOpen] = useState(false);
+  const [saleOpen, setSaleOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -991,7 +1049,9 @@ function AdminChatDetailInner() {
       return;
     }
     if (notice === "outreach") {
-      setBanner("Outreach template sent. Free chat unlocks after they reply.");
+      setBanner(
+        "Outreach template accepted by WhatsApp. Watch the ticks — gray/amber means not on their phone yet; red “Not delivered” means it failed."
+      );
     } else {
       setBanner(notice);
     }
@@ -1103,7 +1163,10 @@ function AdminChatDetailInner() {
     }
   }
 
-  const canSend = Boolean(reply.trim() || files.length > 0) && !sending;
+  const canSend =
+    Boolean(reply.trim() || files.length > 0) &&
+    !sending &&
+    !(thread?.source === "INSTAGRAM" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt));
 
   async function sendReply() {
     if (!canSend || !id || !thread) return;
@@ -1111,6 +1174,11 @@ function AdminChatDetailInner() {
     setError(null);
     const closedWindow =
       thread.source === "WHATSAPP" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
+    if (thread.source === "INSTAGRAM" && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt)) {
+      setError("Instagram only allows a reply within 24 hours of their last message.");
+      setSending(false);
+      return;
+    }
     if (closedWindow && !reply.trim() && files.length === 0) {
       setError("Write a message or attach a file.");
       setSending(false);
@@ -1131,7 +1199,7 @@ function AdminChatDetailInner() {
         });
         setBanner(
           result.warning ||
-            "Outreach template sent. Free chat unlocks after they reply."
+            "Outreach template accepted. Free chat unlocks after they reply — confirm ticks turn blue."
         );
       } else {
         await replyAdminEnquiryThread(
@@ -1141,7 +1209,9 @@ function AdminChatDetailInner() {
           hasMedia ? { onUploadProgress: (pct) => setUploadPercent(pct) } : undefined
         );
         if (closedWindow) {
-          setBanner("Outreach template sent. Free chat unlocks after they reply.");
+          setBanner(
+            "Outreach template accepted by WhatsApp. Watch ticks: blue = on phone; amber/red = not delivered."
+          );
         }
       }
       setReply("");
@@ -1154,6 +1224,45 @@ function AdminChatDetailInner() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send reply");
       setUploadPercent(null);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function sendCompanyPayment(kind: "qr" | "details") {
+    if (!id || !thread || sending) return;
+    setBankOpen(false);
+    setSending(true);
+    setError(null);
+    const details = [
+      "Sarveda Life Pvt. Ltd.",
+      "Bank name - ICICI Bank Ltd",
+      "Ac No - 233105001569",
+      "UPI ID - 9845751678@icici",
+      "IFSC Code - ICIC0002331",
+      "SWIFT CODE - ICICINBBNRI",
+      "UPI QR - https://sarveda.com/images/payments/sarveda-upi-qr.jpg"
+    ].join("\n");
+    const windowOpen =
+      thread.source === "WHATSAPP" && isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
+    try {
+      if (kind === "qr" && windowOpen) {
+        const res = await fetch("/images/payments/sarveda-upi-qr.jpg");
+        if (!res.ok) throw new Error("QR image is missing");
+        const blob = await res.blob();
+        const file = new File([blob], "sarveda-upi-qr.jpg", { type: "image/jpeg" });
+        await replyAdminEnquiryThread(id, "Sarveda UPI QR. UPI ID: 9845751678@icici", [file]);
+      } else {
+        await replyAdminEnquiryThread(id, details, []);
+        if (!windowOpen && thread.source === "WHATSAPP") {
+          setBanner("Sent as a WhatsApp template. If it stays not delivered, the customer needs to reply once before another message can go out.");
+        }
+      }
+      await load();
+      notifyInboxRefresh();
+      requestAnimationFrame(() => scrollToBottom());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send payment details");
     } finally {
       setSending(false);
     }
@@ -1240,12 +1349,31 @@ function AdminChatDetailInner() {
   }
 
   const isWhatsApp = thread.source === "WHATSAPP";
+  const isInstagram = thread.source === "INSTAGRAM";
+  const instagramWindowClosed =
+    isInstagram && !isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
+  const headerBg = isWhatsApp ? "#075e54" : isInstagram ? "#5b2a86" : "#1c352a";
+  const avatarBg = isWhatsApp
+    ? "linear-gradient(135deg, #25d366, #128c7e)"
+    : isInstagram
+      ? "linear-gradient(135deg, #833ab4, #e1306c)"
+      : "linear-gradient(135deg, #1c352a, #2d5040)";
   const isOpen = thread.status === "OPEN";
   const displayName =
     thread.customerName?.trim() || thread.customerEmail?.trim() || "Customer";
   const initial = (displayName[0] || "?").toUpperCase();
   const sourceLabel = ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source;
-  const leadHistory = buildChatLeadHistory(thread.messages);
+  const lastAdminMessage = [...thread.messages].reverse().find((message) => {
+    if (message.authorType !== "ADMIN" || !message.adminUser?.id) return false;
+    const name = message.adminUser.name?.trim() || message.authorName?.trim() || "";
+    return Boolean(name) && name !== "Sarveda Assistant";
+  });
+  const lastOwner = lastAdminMessage?.adminUser
+    ? {
+        id: lastAdminMessage.adminUser.id,
+        name: lastAdminMessage.adminUser.name?.trim() || lastAdminMessage.authorName?.trim() || "Admin"
+      }
+    : null;
 
   const detailsModal =
     detailsOpen && typeof document !== "undefined"
@@ -1276,11 +1404,7 @@ function AdminChatDetailInner() {
               <div className="flex flex-col items-center gap-2 px-4 pb-2 pt-5">
                 <div
                   className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white"
-                  style={{
-                    background: isWhatsApp
-                      ? "linear-gradient(135deg, #25d366, #128c7e)"
-                      : "linear-gradient(135deg, #1c352a, #2d5040)"
-                  }}
+                  style={{ background: avatarBg }}
                   aria-hidden
                 >
                   {initial}
@@ -1294,7 +1418,12 @@ function AdminChatDetailInner() {
               <dl className="divide-y divide-[#e8e2d9] px-2 pb-6">
                 {[
                   { label: "Name", value: thread.customerName?.trim() || "—" },
-                  { label: "Email", value: thread.customerEmail?.trim() || "—" },
+                  {
+                    label: "Email",
+                    value: thread.customerEmail?.includes("@instagram.invalid")
+                      ? "—"
+                      : thread.customerEmail?.trim() || "—"
+                  },
                   {
                     label: "Mobile",
                     value: (thread.customerPhone || thread.waPhone || "").trim() || "—"
@@ -1321,64 +1450,10 @@ function AdminChatDetailInner() {
         )
       : null;
 
-  const leadHistoryModal =
-    leadHistoryOpen && typeof document !== "undefined"
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[230] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="lead-history-title"
-            onClick={(ev) => {
-              if (ev.target === ev.currentTarget) setLeadHistoryOpen(false);
-            }}
-          >
-            <div className="max-h-[85dvh] w-full overflow-y-auto rounded-t-2xl bg-[#f7f3eb] shadow-xl sm:max-w-md sm:rounded-2xl">
-              <div className="sticky top-0 flex items-center justify-between border-b border-[#e8e2d9] bg-[#f7f3eb] px-4 py-3">
-                <h2 id="lead-history-title" className="text-[17px] font-semibold text-[#1c352a]">
-                  Lead history
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setLeadHistoryOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-black/5"
-                  aria-label="Close"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              {leadHistory.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm text-stone-500">
-                  No admin has replied on this chat yet.
-                </p>
-              ) : (
-                <ul className="divide-y divide-[#e8e2d9] px-2 pb-6">
-                  {leadHistory.map((row) => (
-                    <li key={row.key} className="flex items-start justify-between gap-3 px-3 py-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-semibold text-[#1c352a]">{row.name}</p>
-                        <p className="mt-0.5 text-[12px] text-stone-500">
-                          First {formatLeadWhen(row.firstAt)}
-                          {row.firstAt !== row.lastAt ? ` · Last ${formatLeadWhen(row.lastAt)}` : ""}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-[12px] text-stone-400">
-                        {row.count} {row.count === 1 ? "reply" : "replies"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>,
-          document.body
-        )
-      : null;
-
   return (
-    <div className="admin-chat-thread-root relative flex h-full min-h-0 flex-col bg-[#efe8dc]">
+    <div className="admin-chat-thread-root relative flex h-full min-h-0 bg-[#efe8dc]">
+      <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
       {detailsModal}
-      {leadHistoryModal}
       {viewer ? (
         <MediaViewerOverlay
           viewer={viewer}
@@ -1410,7 +1485,7 @@ function AdminChatDetailInner() {
       <div
         className="admin-chat-thread-header relative flex h-14 shrink-0 items-center gap-1 px-1 md:hidden"
         style={{
-          background: isWhatsApp ? "#075e54" : "#1c352a"
+          background: headerBg
         }}
       >
         <Link
@@ -1423,9 +1498,7 @@ function AdminChatDetailInner() {
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white"
           style={{
-            background: isWhatsApp
-              ? "linear-gradient(135deg, #25d366, #128c7e)"
-              : "rgba(255,255,255,0.15)"
+            background: isWhatsApp || isInstagram ? avatarBg : "rgba(255,255,255,0.15)"
           }}
           aria-hidden
         >
@@ -1443,13 +1516,6 @@ function AdminChatDetailInner() {
         </button>
         <div className="relative shrink-0" ref={menuRef}>
           <div className="flex items-center gap-0.5">
-            <div className="md:hidden">
-              <ChatFollowUpControls
-                threadId={thread.id}
-                lightHeader
-                onFollowUpDone={() => void load()}
-              />
-            </div>
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -1477,31 +1543,16 @@ function AdminChatDetailInner() {
               >
                 View details
               </button>
-              <AdminChatCreateLead
-                menu
-                seed={{
-                  threadId: thread.id,
-                  customerName: thread.customerName,
-                  customerEmail: thread.customerEmail,
-                  customerPhone: thread.customerPhone,
-                  waPhone: thread.waPhone,
-                  source: thread.source,
-                  subject: thread.customSubject || thread.subjectCategory,
-                  orderNumber: thread.orderNumber,
-                  contextTitle: thread.contextTitle
-                }}
-                onBeforeOpen={() => setMenuOpen(false)}
-              />
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
                   setMenuOpen(false);
-                  setLeadHistoryOpen(true);
+                  setSaleOpen(true);
                 }}
-                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
+                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100 lg:hidden"
               >
-                Lead history
+                Sale
               </button>
               {isOpen ? (
                 <button
@@ -1523,7 +1574,7 @@ function AdminChatDetailInner() {
         className="hidden shrink-0 items-center gap-3 border-b px-3 py-2.5 md:flex"
         style={{
           borderColor: "rgba(44,36,32,0.12)",
-          background: isWhatsApp ? "#075e54" : "#1c352a"
+          background: headerBg
         }}
       >
         <Link
@@ -1536,9 +1587,7 @@ function AdminChatDetailInner() {
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
           style={{
-            background: isWhatsApp
-              ? "linear-gradient(135deg, #25d366, #128c7e)"
-              : "rgba(255,255,255,0.15)"
+            background: isWhatsApp || isInstagram ? avatarBg : "rgba(255,255,255,0.15)"
           }}
           aria-hidden
         >
@@ -1571,31 +1620,12 @@ function AdminChatDetailInner() {
             </span>
           </p>
         </div>
-        <ChatFollowUpControls
-          threadId={thread.id}
-          lightHeader
-          onFollowUpDone={() => void load()}
-        />
-        <AdminChatCreateLead
-          light
-          seed={{
-            threadId: thread.id,
-            customerName: thread.customerName,
-            customerEmail: thread.customerEmail,
-            customerPhone: thread.customerPhone,
-            waPhone: thread.waPhone,
-            source: thread.source,
-            subject: thread.customSubject || thread.subjectCategory,
-            orderNumber: thread.orderNumber,
-            contextTitle: thread.contextTitle
-          }}
-        />
         <button
           type="button"
-          onClick={() => setLeadHistoryOpen(true)}
-          className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/10"
+          onClick={() => setSaleOpen(true)}
+          className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/10 lg:hidden"
         >
-          Lead history
+          Sale
         </button>
         {isOpen ? (
           <button
@@ -1671,6 +1701,12 @@ function AdminChatDetailInner() {
         className="admin-chat-thread-composer relative shrink-0 px-2 py-2 md:border-t md:border-[#2c2420]/20 md:px-3"
         style={{ background: "#efe8dc" }}
       >
+        {instagramWindowClosed ? (
+          <p className="mb-2 rounded-lg bg-white px-3 py-2 text-xs font-medium text-[#5b2a86] ring-1 ring-[#833ab4]/30">
+            Instagram only allows a reply within 24 hours of their last message. This chat will open again when they write.
+          </p>
+        ) : null}
+
         {Object.keys(typingAdmins).length > 0 ? (
           <div className="mb-1.5 text-xs font-medium text-green-700">
             {Object.values(typingAdmins).join(", ")} typing…
@@ -1760,6 +1796,36 @@ function AdminChatDetailInner() {
           >
             <Paperclip size={20} strokeWidth={2} />
           </button>
+          <div className="relative">
+            <button
+              type="button"
+              disabled={sending}
+              onClick={() => setBankOpen((open) => !open)}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a] disabled:opacity-40"
+              title="Send QR or bank details"
+              aria-label="Send QR or bank details"
+            >
+              <Landmark size={20} strokeWidth={2} />
+            </button>
+            {bankOpen ? (
+              <div className="absolute bottom-12 left-0 z-20 w-44 rounded-xl border border-[#1c352a]/10 bg-white p-1 shadow-lg">
+                <button
+                  type="button"
+                  className="block w-full rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-[#1c352a] hover:bg-[#f7f3ea]"
+                  onClick={() => void sendCompanyPayment("qr")}
+                >
+                  QR code
+                </button>
+                <button
+                  type="button"
+                  className="block w-full rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-[#1c352a] hover:bg-[#f7f3ea]"
+                  onClick={() => void sendCompanyPayment("details")}
+                >
+                  Banking details
+                </button>
+              </div>
+            ) : null}
+          </div>
 
           <textarea
             ref={inputRef}
@@ -1799,6 +1865,34 @@ function AdminChatDetailInner() {
           </p>
         ) : null}
       </div>
+      </div>
+      <div className="hidden h-full lg:flex">
+        <ChatCrmRail
+          threadId={thread.id}
+          customerName={displayName}
+          email={thread.customerEmail}
+          phone={thread.customerPhone ?? thread.waPhone}
+          source={thread.source}
+          lastOwner={lastOwner}
+          onShared={() => void load()}
+        />
+      </div>
+      {saleOpen ? (
+        <div className="absolute inset-0 z-40 lg:hidden">
+          <button type="button" className="absolute inset-0 bg-black/30" aria-label="Close sale panel" onClick={() => setSaleOpen(false)} />
+          <div className="absolute bottom-0 right-0 top-0">
+            <ChatCrmRail
+              threadId={thread.id}
+              customerName={displayName}
+              email={thread.customerEmail}
+              phone={thread.customerPhone ?? thread.waPhone}
+              source={thread.source}
+              lastOwner={lastOwner}
+              onShared={() => void load()}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

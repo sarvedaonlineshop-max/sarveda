@@ -59,11 +59,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className={pdpCartRail ? cartSidebarContentPadClass : ""}>
         <Header />
         {chromeReady ? <RouteLoadingSpinner /> : null}
-        <main
-          className={`bg-brand-cream ${
-            isHomePage ? "pb-0" : "pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
-          }`}
-        >
+        <main className="bg-brand-cream">
           <PageTransition>{children}</PageTransition>
         </main>
         <a
@@ -71,7 +67,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           target="_blank"
           rel="noreferrer"
           aria-label="Chat on WhatsApp"
-          className={`fixed z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 bottom-24 md:bottom-6 ${
+          className={`fixed z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 bottom-6 ${
             hideWhatsAppOnMobile ? "hidden md:flex" : ""
           } ${pdpCartRail ? `right-4 ${cartSidebarWhatsAppRightClass}` : "right-4"}`}
         >

@@ -22,6 +22,8 @@ export type VariantFormSlice = {
   saleUsd: string;
   mrpGbp: string;
   saleGbp: string;
+  mrpAed: string;
+  saleAed: string;
   weightGrams: string;
   onHand: string;
   shippingRates: ShippingRateForm[];
@@ -181,6 +183,36 @@ export function VariantPricingShippingTables({
                     }
                     className={inputCls}
                     placeholder="Optional"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td className={tdClass}>
+                  <span className="font-medium">United Arab Emirates</span>
+                  <span className="ml-1 text-stone-500">AED د.إ</span>
+                </td>
+                <td className={tdClass}>
+                  <input
+                    inputMode="decimal"
+                    min={0}
+                    value={variant.mrpAed}
+                    onChange={(e) =>
+                      onChange({ ...variant, mrpAed: sanitizeNonNegativeInput(e.target.value) })
+                    }
+                    className={inputCls}
+                    aria-label="UAE MRP in dirhams"
+                  />
+                </td>
+                <td className={tdClass}>
+                  <input
+                    inputMode="decimal"
+                    min={0}
+                    value={variant.saleAed}
+                    onChange={(e) =>
+                      onChange({ ...variant, saleAed: sanitizeNonNegativeInput(e.target.value) })
+                    }
+                    className={inputCls}
+                    aria-label="UAE sale price in dirhams"
                   />
                 </td>
               </tr>

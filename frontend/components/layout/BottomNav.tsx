@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
@@ -9,7 +9,6 @@ import { signOutToLogin } from "@/components/auth/signOutToLogin";
 import { isAdminRole } from "@/lib/auth-client";
 import { isMainNavActive } from "@/lib/main-nav";
 import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
-import { isShopBrowsePath } from "@/lib/shop-navigation";
 
 import { OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
 import { CLOSE_MOBILE_MENU_EVENT, OPEN_MOBILE_MENU_EVENT } from "./mobile-menu-events";
@@ -80,6 +79,12 @@ function MenuRowIcon({ kind }: { kind: string }) {
           <path strokeWidth={1.8} strokeLinecap="round" d="M14 2v6h6M8 13h8M8 17h5" />
         </svg>
       );
+    case "home":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" />
+        </svg>
+      );
     case "store":
       return (
         <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
@@ -127,23 +132,19 @@ const accountLinks = [
   { href: "/profile?tab=details", label: "My profile", tab: "details" }
 ] as const;
 
-const exploreLinks = [
+const primaryMenuLinks = [
+  { href: "/", label: "Home", icon: "home" },
   { href: "/store", label: "Store", icon: "store" },
-  { href: "/courses", label: "Courses", icon: "courses" },
-  { href: "/insights", label: "Insights", icon: "insights" },
-  { href: "/corporate-wellness", label: "Corporate Wellness", icon: "corporate" },
-  { href: "/contact", label: "Contact Us", icon: "contact" }
+  { href: "/courses", label: "Courses", icon: "courses" }
 ] as const;
 
-type NavItem = {
-  key: string;
-  label: string;
-  href?: string;
-  isActive: boolean;
-  badge?: number;
-  onClick?: () => void;
-  icon: (active: boolean) => React.ReactNode;
-};
+const exploreLinks = [
+  { href: "/events", label: "Events", icon: "events" },
+  { href: "/insights", label: "Insights", icon: "insights" },
+  { href: "/corporate-wellness", label: "Corporate Wellness", icon: "corporate" }
+] as const;
+
+const contactMenuLink = { href: "/contact", label: "Contact Us", icon: "contact" } as const;
 
 function menuItemClass(active: boolean) {
   return `flex w-full items-center px-4 py-3 text-sm font-medium transition-colors ${
@@ -153,19 +154,16 @@ function menuItemClass(active: boolean) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const { itemCount } = useCartData();
   const sessionUser = useStorefrontSession();
   const isAdminSession = isAdminRole(sessionUser?.role);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [showMoreHint, setShowMoreHint] = useState(false);
   const [profileTab, setProfileTab] = useState("details");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMenuOpen(false);
-    setPendingHref(null);
     window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
   }, [pathname]);
 
@@ -218,126 +216,13 @@ export function BottomNav() {
     };
   }, [menuOpen, sessionUser]);
 
-  const activePath = pendingHref ?? pathname;
-
 
   const profileHref = sessionUser ? "/profile" : "/login?next=/profile";
-  const profileActive = pathname?.startsWith("/profile") ?? false;
-
-  function navTargetPath(href: string): string {
-    if (typeof window === "undefined") return href.split("?")[0] ?? href;
-    return new URL(href, window.location.origin).pathname;
-  }
-
-  function isSameNavTarget(href: string): boolean {
-    const targetPath = navTargetPath(href);
-    if (pathname === targetPath) return true;
-    if (href === "/shop" && isShopBrowsePath(pathname)) return false;
-    return false;
-  }
-
-  function go(href: string) {
-    if (isSameNavTarget(href)) {
-      setMenuOpen(false);
-      setPendingHref(null);
-      return;
-    }
-    setPendingHref(href);
-    setMenuOpen(false);
-    dispatchNavStart();
-  }
-
-  function onBottomLinkClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
-    if (isSameNavTarget(href)) {
-      e.preventDefault();
-      setPendingHref(null);
-      return;
-    }
-    go(href);
-    // From Home, soft-nav was getting starved by homepage work — push outside a transition.
-    // Still allow <Link> default as backup; preventDefault only when we own the push.
-    if (pathname === "/") {
-      e.preventDefault();
-      router.push(href);
-    }
-  }
 
   async function handleSignOut() {
     setMenuOpen(false);
     await signOutToLogin();
   }
-
-  const items: NavItem[] = [
-    {
-      key: "home",
-      label: "Home",
-      href: "/",
-      isActive: activePath === "/",
-      icon: (active) => (
-        <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
-            d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"
-          />
-        </svg>
-      )
-    },
-    {
-      key: "courses",
-      label: "Courses",
-      href: "/courses",
-      isActive: isMainNavActive(activePath, "/courses"),
-      icon: (active) => (
-        <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
-            d="M4 19.5A2.5 2.5 0 006.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
-          />
-        </svg>
-      )
-    },
-    {
-      key: "store",
-      label: "Store",
-      href: "/store",
-      isActive: isShopBrowsePath(activePath),
-      icon: (active) => (
-        <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
-            d="M3 9.5L5 4h14l2 5.5M3 9.5h18M3 9.5l2 11h14l2-11M9 13.5v5M15 13.5v5"
-          />
-        </svg>
-      )
-    },
-    {
-      key: "cart",
-      label: "Cart",
-      href: "/cart",
-      isActive: activePath === "/cart",
-      badge: itemCount,
-      icon: (active) => (
-        <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
-            d="M6 6h15l-1.5 9h-12L6 6zm0 0L5 3H2M9 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm9 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
-          />
-        </svg>
-      )
-    },
-    {
-      key: "profile",
-      label: "Profile",
-      href: profileHref,
-      isActive: profileActive,
-      icon: (active) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={active ? 2 : 1.75}
-            d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
-          />
-        </svg>
-      )
-    }
-  ];
 
   return (
     <>
@@ -398,6 +283,24 @@ export function BottomNav() {
                         </Link>
                       </li>
                     ) : null}
+                    {primaryMenuLinks.map((link) => {
+                      const active = isMainNavActive(pathname, link.href);
+                      return (
+                        <li key={link.href}>
+                          <Link
+                            href={link.href}
+                            className={menuItemClass(active)}
+                            onClick={() => {
+                              setMenuOpen(false);
+                              dispatchNavStart();
+                            }}
+                          >
+                            <MenuRowIcon kind={link.icon} />
+                            {link.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
                     {exploreLinks.map((link) => {
                       const active = isMainNavActive(pathname, link.href);
                       return (
@@ -416,6 +319,32 @@ export function BottomNav() {
                         </li>
                       );
                     })}
+                    <li>
+                      <Link
+                        href={profileHref}
+                        className={menuItemClass(pathname?.startsWith("/profile") ?? false)}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          dispatchNavStart();
+                        }}
+                      >
+                        <MenuRowIcon kind="details" />
+                        Profile
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href={contactMenuLink.href}
+                        className={menuItemClass(isMainNavActive(pathname, contactMenuLink.href))}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          dispatchNavStart();
+                        }}
+                      >
+                        <MenuRowIcon kind={contactMenuLink.icon} />
+                        {contactMenuLink.label}
+                      </Link>
+                    </li>
                   </ul>
 
                   <div className="mx-4 border-t border-white/25" />
@@ -507,71 +436,29 @@ export function BottomNav() {
         </div>
       ) : null}
 
-      <nav
-        className="fixed inset-x-0 bottom-0 z-[65] border-t border-white/10 safe-area-pb md:hidden"
-        style={{ background: NAV_GREEN }}
-        aria-label="Primary"
-      >
-        <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-5 items-stretch">
-          {items.map((item) => {
-            const active = item.isActive;
-            const inner = (
-              <>
-                {active && !item.onClick ? (
-                  <span className="absolute top-0 h-0.5 w-8 rounded-full bg-amber-300" />
-                ) : null}
-                <span
-                  className={`relative inline-flex items-center justify-center transition-colors ${
-                    active ? "text-amber-300" : "text-white"
-                  }`}
-                >
-                  {item.icon(active)}
-                  {item.badge && item.badge > 0 ? (
-                    <span className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[#c9a227] px-1 text-[9px] font-bold leading-none text-[#1c352a] ring-[1.5px] ring-[#166D46]">
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </span>
-                  ) : null}
-                </span>
-                <span
-                  className={`text-[10px] font-semibold tracking-wide transition-colors ${
-                    active ? "text-amber-200" : "text-white"
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </>
-            );
-
-            if (item.onClick) {
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={item.onClick}
-                  aria-expanded={menuOpen}
-                  aria-label={menuOpen ? "Close menu" : "Open menu"}
-                  className="relative flex flex-col items-center justify-center gap-1 transition-opacity active:opacity-70"
-                >
-                  {inner}
-                </button>
-              );
-            }
-
-            return (
-              <Link
-                key={item.key}
-                href={item.href!}
-                prefetch
-                aria-current={active ? "page" : undefined}
-                onClick={(e) => onBottomLinkClick(e, item.href!)}
-                className="relative flex flex-col items-center justify-center gap-1 transition-opacity active:opacity-70"
-              >
-                {inner}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {pathname === "/cart" || pathname?.startsWith("/checkout") ? null : (
+        <Link
+          href="/cart"
+          aria-label={`Open cart, ${itemCount} items`}
+          className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(22,109,70,0.35)] md:hidden"
+          style={{ background: NAV_GREEN }}
+          onClick={() => dispatchNavStart()}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.75}
+              d="M6 6h15l-1.5 9h-12L6 6zm0 0L5 3H2M9 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm9 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
+            />
+          </svg>
+          {itemCount > 0 ? (
+            <span className="pointer-events-none absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#c9a227] px-1 text-[10px] font-bold leading-none text-[#1c352a] ring-2 ring-white">
+              {itemCount > 99 ? "99+" : itemCount}
+            </span>
+          ) : null}
+        </Link>
+      )}
     </>
   );
 }

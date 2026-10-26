@@ -8,6 +8,7 @@ const SOURCES = ["WEBSITE", "WHATSAPP", "PHONE", "EMAIL", "REFERRAL", "GOOGLE", 
 
 function sourceForChat(source: string): (typeof SOURCES)[number] {
   if (source === "WHATSAPP") return "WHATSAPP";
+  if (source === "INSTAGRAM") return "META";
   if (source === "EVENT") return "EVENT";
   if (source === "CORPORATE") return "OFFLINE";
   return "WEBSITE";

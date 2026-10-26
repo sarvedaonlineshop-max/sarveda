@@ -5,6 +5,8 @@ import { variantLabelFromAttributes } from "@/lib/variant-admin";
 
 type VariantRow = {
   attributes: VariantAttributeForm[];
+  sku?: string;
+  notForSale?: boolean;
 };
 
 type Props = {
@@ -18,6 +20,7 @@ type Branch = {
   label: string;
   children: Map<string, Branch>;
   variantIndex?: number;
+  notForSale?: boolean;
 };
 
 function ensureBranch(parent: Map<string, Branch>, label: string): Branch {
@@ -28,23 +31,50 @@ function ensureBranch(parent: Map<string, Branch>, label: string): Branch {
   return created;
 }
 
+function claimLeaf(
+  level: Map<string, Branch>,
+  baseLabel: string,
+  index: number,
+  sku: string | undefined,
+  notForSale: boolean
+) {
+  let label = baseLabel;
+  const existing = level.get(label);
+  if (existing?.variantIndex != null) {
+    const skuLabel = sku?.trim();
+    label = skuLabel ? `${baseLabel} · ${skuLabel}` : `${baseLabel} (${index + 1})`;
+  }
+  const node = ensureBranch(level, label);
+  node.variantIndex = index;
+  node.notForSale = notForSale;
+}
+
 function buildRoot(axes: OptionAxisForm[], variants: VariantRow[]): Map<string, Branch> {
   const root = new Map<string, Branch>();
   variants.forEach((v, index) => {
     const path = axes.map((axis, i) => v.attributes[i]?.value.trim() || "");
     if (path.every((p) => !p)) {
-      ensureBranch(root, `Unassigned ${index + 1}`).variantIndex = index;
+      claimLeaf(root, `Unassigned ${index + 1}`, index, v.sku, Boolean(v.notForSale));
       return;
     }
     let level = root;
     path.forEach((part, depth) => {
       const label = part || `(pick ${axes[depth]?.name || `level ${depth + 1}`})`;
-      const node = ensureBranch(level, label);
-      if (depth === path.length - 1) node.variantIndex = index;
-      level = node.children;
+      if (depth === path.length - 1) {
+        claimLeaf(level, label, index, v.sku, Boolean(v.notForSale));
+        return;
+      }
+      level = ensureBranch(level, label).children;
     });
   });
   return root;
+}
+
+function leafClass(selected: boolean, notForSale: boolean) {
+  if (selected && notForSale) return "bg-stone-400 font-semibold text-white";
+  if (selected) return "bg-[#1c352a] font-semibold text-white";
+  if (notForSale) return "text-stone-400 opacity-70 hover:bg-stone-100 dark:hover:bg-stone-800";
+  return "text-[var(--admin-text,#2c2420)] hover:bg-amber-50 dark:hover:bg-stone-800";
 }
 
 function TreeNodes({
@@ -69,11 +99,7 @@ function TreeNodes({
               <button
                 type="button"
                 onClick={() => onSelect(node.variantIndex!)}
-                className={`w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-                  selected
-                    ? "bg-[#1c352a] font-semibold text-white"
-                    : "text-[var(--admin-text,#2c2420)] hover:bg-amber-50 dark:hover:bg-stone-800"
-                }`}
+                className={`w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors ${leafClass(selected, Boolean(node.notForSale))}`}
               >
                 {node.label}
               </button>
@@ -93,11 +119,10 @@ function TreeNodes({
                   <button
                     type="button"
                     onClick={() => onSelect(node.variantIndex!)}
-                    className={`ml-2 w-[calc(100%-0.5rem)] rounded-md px-2 py-1.5 text-left text-sm ${
-                      node.variantIndex === selectedIndex
-                        ? "bg-[#1c352a] font-semibold text-white"
-                        : "hover:bg-amber-50"
-                    }`}
+                    className={`ml-2 w-[calc(100%-0.5rem)] rounded-md px-2 py-1.5 text-left text-sm ${leafClass(
+                      node.variantIndex === selectedIndex,
+                      Boolean(node.notForSale)
+                    )}`}
                   >
                     Open
                   </button>

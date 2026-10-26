@@ -39,37 +39,40 @@ function StatusBadge({
 }) {
   const label = adminOrderStageLabel(status, paymentStatus, paymentProvider, shipmentStatuses);
   const s = label.toUpperCase().replace(/\s/g, "");
-  let bg = "#f3f4f6",
-    color = "#374151";
-  if (s === "READYTOSHIP" || s === "LABELCREATED" || s === "PACKED") {
-    // Still on the desk — amber matches the Shipments queue.
-    bg = "#fef3c7";
-    color = "#92400e";
-  } else if (s.includes("CONFIRMED") || s.includes("PAID") || s.includes("PROCESSING")) {
-    bg = "#dcfce7";
-    color = "#166534";
-  } else if (s.includes("SHIPPED") || s === "PICKED" || s === "INTRANSIT" || s === "OUTFORDELIVERY") {
-    bg = "#dbeafe";
-    color = "#1e40af";
-  } else if (s.includes("DELIVERED")) {
-    bg = "#f0fdf4";
-    color = "#15803d";
-  } else if (s === "RTO") {
-    bg = "#fee2e2";
-    color = "#991b1b";
-  } else if (s === "ABANDONED" || s === "ATTEMPTED") {
-    bg = "#fef3c7";
-    color = "#92400e";
-  } else if (s.includes("CANCEL")) {
-    bg = "#fee2e2";
-    color = "#991b1b";
-  } else if (s.includes("REFUND")) {
-    bg = "#fef3c7";
-    color = "#92400e";
-  } else if (s.includes("PENDING")) {
-    bg = "#f3f4f6";
-    color = "#374151";
-  }
+  const stageColors: Record<string, { bg: string; color: string }> = {
+    PAID: { bg: "#dcfce7", color: "#166534" },
+    CONFIRMED: { bg: "#ccfbf1", color: "#0f766e" },
+    PROCESSING: { bg: "#e0e7ff", color: "#3730a3" },
+    READYTOSHIP: { bg: "#ffedd5", color: "#c2410c" },
+    LABELCREATED: { bg: "#fef9c3", color: "#a16207" },
+    PACKED: { bg: "#fde68a", color: "#92400e" },
+    PICKED: { bg: "#e0f2fe", color: "#0369a1" },
+    SHIPPED: { bg: "#dbeafe", color: "#1d4ed8" },
+    INTRANSIT: { bg: "#dbeafe", color: "#1e3a8a" },
+    OUTFORDELIVERY: { bg: "#ede9fe", color: "#6d28d9" },
+    DELIVERED: { bg: "#d1fae5", color: "#047857" },
+    ABANDONED: { bg: "#f3e8ff", color: "#7e22ce" },
+    ATTEMPTED: { bg: "#fae8ff", color: "#a21caf" },
+    CANCELLED: { bg: "#fee2e2", color: "#b91c1c" },
+    REFUNDED: { bg: "#ffe4e6", color: "#be123c" },
+    PARTIALLYREFUNDED: { bg: "#fff7ed", color: "#9a3412" },
+    RTO: { bg: "#fecaca", color: "#991b1b" },
+    PENDING: { bg: "#f3f4f6", color: "#4b5563" },
+    PENDINGPAYMENT: { bg: "#f4f4f5", color: "#52525b" }
+  };
+  const tone =
+    stageColors[s] ??
+    (s.includes("REFUND")
+      ? stageColors.REFUNDED
+      : s.includes("CANCEL")
+        ? stageColors.CANCELLED
+        : s.includes("DELIVER")
+          ? stageColors.DELIVERED
+          : s.includes("PENDING")
+            ? stageColors.PENDING
+            : { bg: "#f3f4f6", color: "#374151" });
+  const bg = tone.bg;
+  const color = tone.color;
   return (
     <span
       style={{
