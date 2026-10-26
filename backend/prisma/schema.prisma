@@ -56,6 +56,7 @@ model User {
   crmActivitiesAsActor      CrmActivity[]            @relation("CrmActivityActor")
   crmAssignedTasks          CrmTask[]                @relation("CrmTaskAssignee")
   crmCreatedTasks           CrmTask[]                @relation("CrmTaskCreator")
+  crmOwnedChats             EnquiryThread[]          @relation("CrmChatOwner")
 }
 
 model AccountClosureRequest {
@@ -2488,6 +2489,10 @@ model EnquiryThread {
   waPhone               String?
   /// Last inbound customer message time — enforces the WhatsApp 24h reply window.
   lastCustomerMessageAt DateTime?
+  crmOwnerUserId        String?                 @db.Uuid
+  crmOwner              User?                   @relation("CrmChatOwner", fields: [crmOwnerUserId], references: [id], onDelete: SetNull)
+  /// True when Partha/Arjun assigned the owner.
+  crmOwnerAssigned      Boolean                 @default(false)
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -2501,6 +2506,7 @@ model EnquiryThread {
   @@index([customerEmail])
   @@index([source])
   @@index([waPhone])
+  @@index([crmOwnerUserId])
 }
 
 /// One human-support handoff inside a WhatsApp enquiry thread.
