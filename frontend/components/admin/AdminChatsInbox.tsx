@@ -17,19 +17,19 @@ import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoade
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 import {
-  CHAT_LEAD_BLUE,
-  LEAD_STATUS_COLORS,
-  buildAllInboxRowMeta,
-  compareThreadsForAllInbox,
-  resolveThreadLeadStatus
-} from "@/lib/chat-lead-history";
+  CHAT_CATEGORY_COLORS,
+  CHAT_PIPELINE_COLORS,
+  CHAT_PIPELINE_STATUSES,
+  chatCategoryLabel,
+  chatPipelineLabel,
+  normalizeChatPipeline,
+  ownerTagColor,
+  type ChatCategory
+} from "@/lib/chat-pipeline";
 
 const LEAD_STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
-  { value: "NEW", label: "New" },
-  { value: "ONGOING", label: "Ongoing" },
-  { value: "FOLLOW_UP", label: "Follow-up" },
-  { value: "CLOSED", label: "Closed" }
+  ...CHAT_PIPELINE_STATUSES.map((value) => ({ value, label: chatPipelineLabel(value) }))
 ];
 
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
@@ -104,17 +104,10 @@ export function AdminChatsInbox() {
     : null;
 
   const [items, setItems] = useState<EnquiryThreadListItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStatus, setLeadStatus] = useState("");
-  const [leadStatusCounts, setLeadStatusCounts] = useState({
-    ALL: 0,
-    NEW: 0,
-    ONGOING: 0,
-    FOLLOW_UP: 0,
-    CLOSED: 0
-  });
+  const [leadStatusCounts, setLeadStatusCounts] = useState<Record<string, number>>({ ALL: 0 });
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
 
@@ -147,16 +140,13 @@ export function AdminChatsInbox() {
         q: debouncedQ || undefined
       });
       setItems(data.items);
-      setUnreadCount(data.unreadCount);
-      if (data.leadStatusCounts) {
-        setLeadStatusCounts(data.leadStatusCounts);
-      } else {
-        const next = { ALL: data.items.length, NEW: 0, ONGOING: 0, FOLLOW_UP: 0, CLOSED: 0 };
-        for (const thread of data.items) {
-          next[resolveThreadLeadStatus(thread)] += 1;
-        }
-        setLeadStatusCounts(next);
+      const next: Record<string, number> = { ALL: data.items.length };
+      for (const status of CHAT_PIPELINE_STATUSES) next[status] = 0;
+      for (const thread of data.items) {
+        const status = normalizeChatPipeline(thread.crmPipeline);
+        next[status] = (next[status] ?? 0) + 1;
       }
+      setLeadStatusCounts(next);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load chats");
     } finally {
@@ -195,8 +185,8 @@ export function AdminChatsInbox() {
 
   const filtered = useMemo(() => {
     const byStatus = leadStatus
-      ? items.filter((t) => resolveThreadLeadStatus(t) === leadStatus)
-      : [...items].sort(compareThreadsForAllInbox);
+      ? items.filter((t) => normalizeChatPipeline(t.crmPipeline) === leadStatus)
+      : [...items];
     const needle = q.trim().toLowerCase();
     if (!needle) return byStatus;
     const needleDigits = needle.replace(/\D/g, "");
@@ -244,10 +234,7 @@ export function AdminChatsInbox() {
   useAdminPageHeader(
     () => ({
       title: "Chats",
-      subtitle:
-        onListView && unreadCount > 0 ? (
-          <span className="md:hidden">{unreadCount} unread</span>
-        ) : undefined,
+      subtitle: undefined,
       actions: onListView ? (
         <div className="flex items-center gap-1 md:hidden">
           <button
@@ -263,7 +250,7 @@ export function AdminChatsInbox() {
         </div>
       ) : undefined
     }),
-    [onListView, unreadCount, refreshing, load]
+    [onListView, refreshing, load]
   );
 
   function resetStartForm() {
@@ -453,11 +440,7 @@ export function AdminChatsInbox() {
         <div className="mb-3 hidden items-center justify-between gap-2 md:flex">
           <div>
             <h1 className="text-[17px] font-semibold text-[#1c352a]">Chats</h1>
-            {unreadCount > 0 ? (
-              <p className="text-[11px] font-medium text-[#b98a3e]">{unreadCount} unread</p>
-            ) : (
-              <p className="text-[11px] text-stone-500">Customer enquiries</p>
-            )}
+            <p className="text-[11px] text-stone-500">Customer enquiries</p>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -511,13 +494,10 @@ export function AdminChatsInbox() {
           {LEAD_STATUS_FILTERS.map((f) => {
             const active = leadStatus === f.value;
             const tone =
-              f.value && f.value in LEAD_STATUS_COLORS
-                ? LEAD_STATUS_COLORS[f.value as keyof typeof LEAD_STATUS_COLORS]
-                : "#3d8b4f";
-            const count =
-              f.value === ""
-                ? leadStatusCounts.ALL
-                : leadStatusCounts[f.value as keyof typeof leadStatusCounts];
+              f.value && f.value in CHAT_PIPELINE_COLORS
+                ? CHAT_PIPELINE_COLORS[f.value as keyof typeof CHAT_PIPELINE_COLORS]
+                : { bg: "#3d8b4f", text: "#fff" };
+            const count = f.value === "" ? leadStatusCounts.ALL ?? 0 : leadStatusCounts[f.value] ?? 0;
             return (
               <button
                 key={f.value || "all"}
@@ -527,8 +507,8 @@ export function AdminChatsInbox() {
                   active ? "shadow-[0_1px_2px_rgba(28,53,42,0.18)]" : "ring-1 ring-[#d9d1c4]"
                 }`}
                 style={{
-                  background: active ? tone : "#fff",
-                  color: active ? (f.value === "ONGOING" ? "#0c4a6e" : "#fff") : tone
+                  background: active ? tone.bg : "#fff",
+                  color: active ? tone.text : tone.bg
                 }}
               >
                 {f.label} ({count})
@@ -561,10 +541,19 @@ export function AdminChatsInbox() {
         ) : (
           <ul>
             {filtered.map((thread) => {
-              const initial = (thread.customerName?.trim()?.[0] || "?").toUpperCase();
-              const isWa = thread.source === "WHATSAPP";
               const selected = activeId === thread.id;
-              const rowMeta = buildAllInboxRowMeta(thread, { showStatus: !leadStatus });
+              const pipeline = normalizeChatPipeline(thread.crmPipeline);
+              const tone = CHAT_PIPELINE_COLORS[pipeline];
+              const ownerName =
+                thread.crmOwner?.name?.trim() ||
+                thread.crmOwner?.email?.split("@")[0] ||
+                thread.lastAdminName?.trim() ||
+                null;
+              const cats = (thread.crmCategories?.length
+                ? thread.crmCategories
+                : thread.crmCategory
+                  ? [thread.crmCategory]
+                  : []) as ChatCategory[];
               return (
                 <li key={thread.id}>
                   <Link
@@ -572,18 +561,8 @@ export function AdminChatsInbox() {
                     className={`flex gap-3 border-b border-[#e8e2d9] px-3 py-3 transition ${
                       selected ? "bg-[#e7e0d4]" : "hover:bg-[#e9e3d8]/80"
                     } ${thread.unreadByAdmin && !selected ? "bg-[#faf6ee]" : ""}`}
+                    style={{ borderLeft: `3px solid ${tone.bg}` }}
                   >
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
-                      style={{
-                        background: isWa
-                          ? "linear-gradient(135deg, #128c7e, #25d366)"
-                          : "linear-gradient(135deg, #1c352a, #2d5040)"
-                      }}
-                      aria-hidden
-                    >
-                      {initial}
-                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <span
@@ -613,26 +592,33 @@ export function AdminChatsInbox() {
                           <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#25d366]" />
                         ) : null}
                       </div>
-                      <div className="mt-0.5 flex min-w-0 items-center gap-2">
-                        {rowMeta.statusLabel ? (
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+                        <span
+                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                          style={{ background: tone.bg, color: tone.text }}
+                        >
+                          {chatPipelineLabel(pipeline)}
+                        </span>
+                        {ownerName ? (
                           <span
-                            className="shrink-0 text-[11px] font-semibold uppercase tracking-wide"
-                            style={{ color: rowMeta.statusColor ?? "#78716c" }}
+                            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                            style={{
+                              color: ownerTagColor(thread.crmOwner?.id || ownerName),
+                              border: `1px solid ${ownerTagColor(thread.crmOwner?.id || ownerName)}`
+                            }}
                           >
-                            {rowMeta.statusLabel}
+                            {ownerName}
                           </span>
                         ) : null}
-                        {rowMeta.attendingName ? (
-                          <p
-                            className="min-w-0 truncate text-[13px] font-medium leading-snug md:text-[12px]"
-                            style={{ color: CHAT_LEAD_BLUE }}
+                        {cats.map((cat) => (
+                          <span
+                            key={cat}
+                            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                            style={{ background: CHAT_CATEGORY_COLORS[cat] ?? "#57534e" }}
                           >
-                            {rowMeta.attendingName}
-                          </p>
-                        ) : null}
-                        <span className="shrink-0 text-[11px] font-medium text-stone-400">
-                          {rowMeta.sourceLabel}
-                        </span>
+                            {chatCategoryLabel(cat)}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </Link>

@@ -71,7 +71,7 @@ router.get("/admins", async (_req, res, next) => {
 });
 
 const followUpCreateSchema = z.object({
-  notes: z.string().trim().min(1).max(2000),
+  notes: z.string().trim().max(2000).optional().default(""),
   dueAt: z.string().min(10).max(40),
   assignedAdminId: z.string().uuid()
 });
@@ -118,8 +118,6 @@ router.patch("/follow-ups/:followUpId/complete", async (req, res, next) => {
       return;
     }
     const row = await completeThreadFollowUp(req.params.followUpId, adminId);
-    // Done means the follow-up work is finished — close the chat (same as Mark closed).
-    await patchEnquiryThreadStatus(row.threadId, "CLOSED");
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -254,7 +252,7 @@ router.get("/", async (req, res, next) => {
     const limit = Number(req.query.limit) || 50;
     const unreadOnly = req.query.unreadOnly === "true";
     const rawSource = typeof req.query.source === "string" ? req.query.source.trim() : "";
-    const allowed = new Set(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS", "WHATSAPP"]);
+    const allowed = new Set(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS", "WHATSAPP", "INSTAGRAM"]);
     const source = rawSource && allowed.has(rawSource) ? rawSource : undefined;
     const q = typeof req.query.q === "string" ? req.query.q : undefined;
     const rawLead =

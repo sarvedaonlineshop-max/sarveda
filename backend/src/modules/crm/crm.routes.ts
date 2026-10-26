@@ -16,6 +16,13 @@ import {
   dealProductSchema,
   linkOrderSchema,
   linkQuotationSchema,
+  salesQuoteSchema,
+  shareSalesQuoteSchema,
+  chatPipelineStatusSchema,
+  chatPipelineCategorySchema,
+  chatPipelineOwnerSchema,
+  chatPipelineCollaboratorsSchema,
+  chatPipelineNoteSchema,
   updateAccountSchema,
   updateContactSchema,
   updateDealProductSchema,
@@ -36,6 +43,13 @@ const router = Router();
 router.use(requireAdmin);
 
 router.get("/summary", h.crmSummary);
+router.get("/chat-pipeline", h.chatPipelineDesk);
+router.get("/chat-pipeline/:threadId", h.getChatPipeline);
+router.patch("/chat-pipeline/:threadId", validateBody(chatPipelineStatusSchema), h.patchChatPipeline);
+router.patch("/chat-pipeline/:threadId/category", validateBody(chatPipelineCategorySchema), h.patchChatCategory);
+router.patch("/chat-pipeline/:threadId/owner", validateBody(chatPipelineOwnerSchema), h.patchChatOwner);
+router.patch("/chat-pipeline/:threadId/collaborators", validateBody(chatPipelineCollaboratorsSchema), h.patchChatCollaborators);
+router.post("/chat-pipeline/:threadId/notes", validateBody(chatPipelineNoteSchema), h.postChatNote);
 router.get("/report", h.crmReport);
 router.get("/assignees", h.crmAssignees);
 router.get("/pipelines", h.listPipelines);
@@ -69,6 +83,16 @@ router.post("/contacts", validateBody(createContactSchema), h.createContact);
 router.get("/contacts/:id/360", h.getContact360);
 router.get("/contacts/:id", h.getContact);
 router.patch("/contacts/:id", validateBody(updateContactSchema), h.updateContact);
+
+router.get("/desk", h.myDesk);
+router.get("/quote-catalog", h.quoteCatalog);
+router.get("/sales-quotes", h.listSalesQuotes);
+router.post("/sales-quotes", validateBody(salesQuoteSchema), h.createSalesQuote);
+router.get("/sales-quotes/:id/pdf", h.downloadSalesQuote);
+router.post("/sales-quotes/:id/share", validateBody(shareSalesQuoteSchema), h.shareSalesQuote);
+router.get("/sales-quotes/:id", h.getSalesQuote);
+router.put("/sales-quotes/:id", validateBody(salesQuoteSchema), h.updateSalesQuote);
+router.delete("/sales-quotes/:id", h.deleteSalesQuote);
 
 router.get("/deals", h.listDeals);
 router.post("/deals", validateBody(createDealSchema), h.createDeal);

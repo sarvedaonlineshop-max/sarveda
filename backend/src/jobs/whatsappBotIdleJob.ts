@@ -1,11 +1,8 @@
 import { randomBytes } from "crypto";
 import { Queue, Worker, type Job } from "bullmq";
 
-import { prisma } from "../config/db";
 import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
-import { sendWhatsAppText } from "../modules/whatsapp/whatsapp-interactive";
-import { publishEnquiryEvent } from "../modules/enquiries/enquiry-realtime";
 
 export const WHATSAPP_BOT_IDLE_QUEUE = "whatsapp-bot-idle";
 export const WHATSAPP_BOT_OPTION_TTL_MS = 5 * 60 * 1000;
@@ -94,41 +91,11 @@ async function processIdle(job: Job<{ threadId: string; phone: string; token: st
   const connection = getRedisConnection();
   if (!connection) return;
 
-  // Only the still-live, unanswered menu gets the timeout response.
+  // Arjun: stop the automatic five-minute closure message. Still consume the
+  // token so stale bot buttons cannot be tapped after expiry.
   const consumed = await consumeWhatsAppBotOptionToken(threadId, token);
   if (!consumed) return;
-
-  const thread = await prisma.enquiryThread.findUnique({
-    where: { id: threadId },
-    select: { id: true, source: true, status: true }
-  });
-  if (!thread || thread.source !== "WHATSAPP") return;
-
-  const body =
-    "This menu has closed because there was no response for 5 minutes.\n\n" +
-    "Send *Hi* whenever you're ready to start again. 🙏";
-  const sid = await sendWhatsAppText(phone, body);
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.enquiryMessage.create({
-      data: {
-        threadId,
-        authorType: "ADMIN",
-        authorName: "Sarveda Assistant",
-        authorEmail: "bot@sarveda.com",
-        body,
-        waMessageSid: sid,
-        waStatus: sid ? "sent" : null
-      }
-    }),
-    prisma.enquiryThread.update({
-      where: { id: threadId },
-      data: { status: "CLOSED", lastMessageAt: now }
-    })
-  ]);
-  publishEnquiryEvent({ type: "message_changed", threadId });
-  logger.info("whatsapp_bot_menu_timed_out", { threadId });
+  logger.info("whatsapp_bot_menu_expired_silent", { threadId, phone });
 }
 
 export function startWhatsAppBotIdleWorker(): void {

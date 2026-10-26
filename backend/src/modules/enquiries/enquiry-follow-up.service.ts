@@ -3,6 +3,7 @@ import type { EnquiryFollowUpStatus } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { sendPushNotification, isFirebaseConfigured } from "../../config/firebase";
 import { logger } from "../../config/logger";
+import { markChatPipelineFollowup } from "../crm/chat-pipeline.service";
 
 function siteBaseUrl(): string {
   const raw =
@@ -56,12 +57,6 @@ export async function createThreadFollowUp(input: {
   createdByAdminId: string;
 }) {
   const notes = input.notes.trim();
-  if (!notes) {
-    throw Object.assign(new Error("Notes are required"), {
-      statusCode: 400,
-      code: "VALIDATION_ERROR"
-    });
-  }
   if (notes.length > 2000) {
     throw Object.assign(new Error("Notes are too long"), {
       statusCode: 400,
@@ -137,6 +132,7 @@ export async function createThreadFollowUp(input: {
     dueAt: row.dueAt.toISOString(),
     assignedAdminId: row.assignedAdminId
   });
+  await markChatPipelineFollowup(row.threadId);
 
   return row;
 }

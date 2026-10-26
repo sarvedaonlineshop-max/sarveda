@@ -20,12 +20,14 @@ import {
   sendWhatsAppSessionText,
   WA_SESSION_WINDOW_MS
 } from "../whatsapp/whatsapp-inbox.service";
+import { sendInstagramAdminReply } from "../instagram/instagram-inbox.service";
 import {
   claimWhatsAppAgentSession,
   closeWhatsAppAgentSessionAndRequestRating,
   startWhatsAppAgentSession
 } from "../whatsapp/whatsapp-agent-session.service";
 import { CARE_INBOX_EMAIL, ENQUIRY_MEDIA_S3_PREFIX, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENT_MB, MAX_ATTACHMENTS, SOURCE_LABELS, SUBJECT_LABELS } from "./enquiries.constants";
+import { markChatPipelineContacted } from "../crm/chat-pipeline.service";
 import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
 import { publishEnquiryEvent } from "./enquiry-realtime";
 import { antiSpamHttpError, assertEnquiryMessageLooksHuman } from "./enquiry-anti-spam";
@@ -441,6 +443,7 @@ export async function listEnquiryThreads(params: {
         skip: (page - 1) * limit,
         take: limit,
         include: {
+          crmOwner: { select: { id: true, name: true, email: true } },
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -703,7 +706,18 @@ async function sendAdminOutreachOnThread(opts: {
           bodyPreview = `Namaste ${nameParam},\n\n${caption}`;
         }
       } catch (err) {
-        throw rewriteOutreachTemplateError(err, templateName);
+        const raw = err instanceof Error ? err.message : String(err);
+        const missingMediaTemplate = /template name|30024|does not exist|not found/i.test(raw);
+        if (!missingMediaTemplate) throw rewriteOutreachTemplateError(err, templateName);
+        const textTemplate =
+          process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+        const text = `${caption} ${file.s3Url}`.replace(/\s+/g, " ").trim().slice(0, 1024);
+        const textSid = await sendWhatsAppNamedTemplate(to, textTemplate, [nameParam, text]);
+        if (i === 0) {
+          sid = textSid;
+          bodyPreview = `Namaste ${nameParam},\n\n${text}`;
+          templateName = textTemplate;
+        }
       }
     }
   }
@@ -746,6 +760,7 @@ async function sendAdminOutreachOnThread(opts: {
   });
   publishEnquiryEvent({ type: "thread_changed", threadId: opts.thread.id });
   publishEnquiryEvent({ type: "message_changed", threadId: opts.thread.id });
+  await markChatPipelineContacted(opts.thread.id, opts.admin.id);
   return { message, sid, waPhone: to };
 }
 
@@ -981,7 +996,21 @@ export async function replyToEnquiryThread(
       sid,
       attachmentCount: uploaded.length
     });
+    await markChatPipelineContacted(threadId, admin.id);
     return message;
+  }
+
+  if (thread.source === "INSTAGRAM") {
+    const uploaded = await uploadEnquiryFiles(attachments);
+    const igMessage = await sendInstagramAdminReply({
+      thread,
+      admin,
+      adminName,
+      body: trimmed,
+      attachments: uploaded
+    });
+    await markChatPipelineContacted(threadId, admin.id);
+    return igMessage;
   }
 
   const uploaded = await uploadEnquiryFiles(attachments);
@@ -1094,6 +1123,7 @@ ${attachmentLinesHtml(uploaded)}
 
   logger.info("enquiry_replied", { threadId, adminId: admin.id, emailSent, whatsappSent });
   publishEnquiryEvent({ type: "message_changed", threadId });
+  await markChatPipelineContacted(threadId, admin.id);
 
   return message;
 }

@@ -11,6 +11,10 @@ import * as leadService from "./lead.service";
 import * as pipelineService from "./pipeline.service";
 import * as taskService from "./task.service";
 import * as summaryService from "./crm-summary.service";
+import { canSeeAllCrm } from "./crm-team-access";
+import * as salesQuote from "./sales-quote.service";
+import * as chatPipeline from "./chat-pipeline.service";
+import { prisma } from "../../config/db";
 import {
   accountListQuerySchema,
   activityListQuerySchema,
@@ -29,6 +33,13 @@ import {
   leadListQuerySchema,
   linkOrderSchema,
   linkQuotationSchema,
+  salesQuoteSchema,
+  shareSalesQuoteSchema,
+  chatPipelineStatusSchema,
+  chatPipelineCategorySchema,
+  chatPipelineOwnerSchema,
+  chatPipelineCollaboratorsSchema,
+  chatPipelineNoteSchema,
   taskListQuerySchema,
   updateAccountSchema,
   updateContactSchema,
@@ -152,9 +163,17 @@ export async function deleteStage(req: Request, res: Response, next: NextFunctio
   }
 }
 
+function scopedOwnerId(req: Request, requested?: string) {
+  const user = req.authUser;
+  if (!user?.id) return requested;
+  if (canSeeAllCrm(user.email, user.role)) return requested;
+  return user.id;
+}
+
 export async function listLeads(req: Request, res: Response, next: NextFunction) {
   try {
     const query = parseOrThrow(leadListQuerySchema, req.query);
+    if (!query.enquiryThreadId) query.ownerUserId = scopedOwnerId(req, query.ownerUserId);
     const data = await leadService.listLeads(query);
     res.json({ success: true, data });
   } catch (err) {
@@ -309,6 +328,7 @@ export async function getContact360(req: Request, res: Response, next: NextFunct
 export async function listDeals(req: Request, res: Response, next: NextFunction) {
   try {
     const query = parseOrThrow(dealListQuerySchema, req.query);
+    query.ownerUserId = scopedOwnerId(req, query.ownerUserId);
     const data = await dealService.listDeals(query);
     res.json({ success: true, data });
   } catch (err) {
@@ -368,6 +388,136 @@ export async function updateDealProduct(req: Request, res: Response, next: NextF
 export async function deleteDealProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await dealService.deleteDealProduct(requireUuidParam(req.params.id));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function myDesk(req: Request, res: Response, next: NextFunction) {
+  try {
+    const me = actor(req);
+    const seeAll = canSeeAllCrm(me.email, req.authUser?.role);
+    const everyone = seeAll && String(req.query.scope ?? "") === "all";
+    const ownerUserId = everyone ? undefined : me.id;
+    const [deals, leads, followUps] = await Promise.all([
+      dealService.listDeals({ page: 1, limit: 100, ownerUserId, sortBy: "updatedAt", sortOrder: "desc" }),
+      leadService.listLeads({
+        page: 1,
+        limit: 80,
+        ownerUserId,
+        sortBy: "updatedAt",
+        sortOrder: "desc"
+      }),
+      prisma.enquiryFollowUp.findMany({
+        where: {
+          status: "OPEN",
+          ...(ownerUserId ? { assignedAdminId: ownerUserId } : {})
+        },
+        orderBy: { dueAt: "asc" },
+        take: 40,
+        include: {
+          thread: {
+            select: { id: true, customerName: true, customerPhone: true, customerEmail: true }
+          }
+        }
+      })
+    ]);
+    res.json({
+      success: true,
+      data: { canSeeAll: seeAll, deals: deals.items, leads: leads.items, followUps }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(salesQuoteSchema, req.body);
+    const data = await salesQuote.createSalesQuote(body, actor(req));
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await salesQuote.getSalesQuote(requireUuidParam(req.params.id));
+    if (!data) {
+      res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(salesQuoteSchema, req.body);
+    const data = await salesQuote.updateSalesQuote(requireUuidParam(req.params.id), body);
+    if (!data) {
+      res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await salesQuote.deleteSalesQuote(requireUuidParam(req.params.id));
+    if (!data) {
+      res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function shareSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(shareSalesQuoteSchema, req.body);
+    const data = await salesQuote.shareSalesQuote(requireUuidParam(req.params.id), body.threadId, actor(req));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function downloadSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { generateQuotePdfBuffer } = await import("../quotations/quotation.service");
+    const { pdf, quoteNumber } = await generateQuotePdfBuffer(requireUuidParam(req.params.id));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${quoteNumber.replace(/\//g, "-")}.pdf"`);
+    res.send(pdf);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function quoteCatalog(req: Request, res: Response, next: NextFunction) {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q : "";
+    const data = await salesQuote.searchSalesCatalog(q);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listSalesQuotes(req: Request, res: Response, next: NextFunction) {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q : "";
+    const data = await salesQuote.listSalesQuotes(q);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -500,6 +650,115 @@ export async function updateTask(req: Request, res: Response, next: NextFunction
     const body = parseOrThrow(updateTaskSchema, req.body);
     const data = await taskService.updateTask(requireUuidParam(req.params.id), body);
     res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function chatPipelineDesk(req: Request, res: Response, next: NextFunction) {
+  try {
+    const who = actor(req);
+    const role = req.authUser?.role;
+    const statusRaw = typeof req.query.status === "string" ? req.query.status.trim().toUpperCase() : "";
+    const known = new Set([
+      ...chatPipeline.CHAT_PIPELINE_STATUSES,
+      "CONTACTED",
+      "WON",
+      "LOST",
+      "FOLLOW_UP"
+    ]);
+    const status = known.has(statusRaw) ? chatPipeline.normalizeChatPipeline(statusRaw) : null;
+    const from = typeof req.query.from === "string" && req.query.from ? new Date(req.query.from) : null;
+    const to = typeof req.query.to === "string" && req.query.to ? new Date(`${req.query.to}T23:59:59.999`) : null;
+    const ownerId = typeof req.query.ownerId === "string" && req.query.ownerId ? req.query.ownerId : null;
+    res.json({
+      success: true,
+      data: await chatPipeline.chatPipelineBoard({
+        actorId: who.id,
+        seeAll: canSeeAllCrm(who.email, role),
+        status,
+        ownerId,
+        from: from && !Number.isNaN(from.getTime()) ? from : null,
+        to: to && !Number.isNaN(to.getTime()) ? to : null
+      })
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getChatPipeline(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await chatPipeline.getChatPipeline(requireUuidParam(req.params.threadId));
+    if (!data) {
+      res.status(404).json({ success: false, error: "Chat not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchChatPipeline(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(chatPipelineStatusSchema, req.body);
+    const data = await chatPipeline.setChatPipeline(
+      requireUuidParam(req.params.threadId),
+      body.status,
+      actor(req).id
+    );
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchChatCategory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(chatPipelineCategorySchema, req.body);
+    const threadId = requireUuidParam(req.params.threadId);
+    const data = body.categories
+      ? await chatPipeline.setChatCategories(threadId, body.categories)
+      : await chatPipeline.setChatCategory(threadId, body.category ?? null);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchChatOwner(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(chatPipelineOwnerSchema, req.body);
+    const data = await chatPipeline.setChatOwner(requireUuidParam(req.params.threadId), body.ownerUserId);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchChatCollaborators(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(chatPipelineCollaboratorsSchema, req.body);
+    const data = await chatPipeline.setChatCollaborators(
+      requireUuidParam(req.params.threadId),
+      body.userIds
+    );
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postChatNote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(chatPipelineNoteSchema, req.body);
+    const data = await chatPipeline.addChatNote(
+      requireUuidParam(req.params.threadId),
+      body.body,
+      actor(req).id
+    );
+    res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
   }

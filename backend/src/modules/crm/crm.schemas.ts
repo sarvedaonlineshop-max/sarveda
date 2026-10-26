@@ -338,6 +338,94 @@ export const linkOrderSchema = z
   })
   .refine((o) => Boolean(o.orderId || o.orderNumber), { message: "Order id or number is required" });
 
+const quoteAddressSchema = z.object({
+  fullName: z.string().trim().min(1).max(200),
+  phone: z.string().trim().max(30).optional().nullable(),
+  line1: z.string().trim().min(1).max(300),
+  line2: z.string().trim().max(300).optional().nullable(),
+  city: z.string().trim().min(1).max(120),
+  state: z.string().trim().min(1).max(120),
+  postalCode: z.string().trim().min(2).max(20),
+  country: z.string().trim().min(2).max(2).default("IN")
+});
+
+const salesQuoteLineSchema = z.object({
+  productId: z.string().uuid().optional().nullable(),
+  variantId: z.string().uuid().optional().nullable(),
+  productName: z.string().trim().min(1).max(500),
+  sku: z.string().trim().max(120).optional().nullable(),
+  hsnCode: z.string().trim().max(20).optional().nullable(),
+  quantity: z.number().int().min(1).max(100_000),
+  unitPriceInPaise: z.number().int().min(0).max(500_000_000),
+  discountPercent: z.number().min(0).max(100).optional(),
+  taxClass: z.string().trim().max(40).optional().nullable()
+});
+
+export const salesQuoteSchema = z
+  .object({
+    customerName: z.string().trim().min(1).max(200),
+    email: z.string().trim().max(200).optional().nullable(),
+    phone: z.string().trim().max(20).optional().nullable(),
+    itemName: z.string().trim().min(1).max(500).optional(),
+    amountInPaise: z.number().int().min(0).max(500_000_000).optional(),
+    dealId: z.string().uuid().optional().nullable(),
+    lines: z.array(salesQuoteLineSchema).max(40).optional(),
+    billingAddress: quoteAddressSchema.optional(),
+    shippingAddress: quoteAddressSchema.optional(),
+    shippingSameAsBilling: z.boolean().optional()
+  })
+  .refine((body) => (body.lines?.length ?? 0) > 0 || Boolean(body.itemName && (body.amountInPaise ?? 0) >= 100), {
+    message: "Add at least one product"
+  });
+
+export const shareSalesQuoteSchema = z.object({
+  threadId: z.string().uuid()
+});
+
+const chatPipelineStatusEnum = z.enum([
+  "NEW",
+  "CONTACTED",
+  "ONGOING",
+  "QUOTATION_SENT",
+  "FOLLOWUP",
+  "COMPLETED",
+  "NOT_INTERESTED",
+  "UNQUALIFIED",
+  "WON",
+  "LOST"
+]);
+
+const chatCategoryEnum = z.enum([
+  "PRODUCTS",
+  "COURSES",
+  "DELIVERY",
+  "PAYMENT",
+  "REFUND",
+  "B2B",
+  "OTHERS"
+]);
+
+export const chatPipelineStatusSchema = z.object({
+  status: chatPipelineStatusEnum
+});
+
+export const chatPipelineCategorySchema = z.object({
+  category: chatCategoryEnum.nullable().optional(),
+  categories: z.array(chatCategoryEnum).max(7).optional()
+});
+
+export const chatPipelineOwnerSchema = z.object({
+  ownerUserId: z.string().uuid().nullable()
+});
+
+export const chatPipelineCollaboratorsSchema = z.object({
+  userIds: z.array(z.string().uuid()).max(20)
+});
+
+export const chatPipelineNoteSchema = z.object({
+  body: z.string().trim().min(1).max(4000)
+});
+
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 export type ConvertLeadInput = z.infer<typeof convertLeadSchema>;
