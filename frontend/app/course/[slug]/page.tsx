@@ -11,6 +11,8 @@ import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourseBySlug, fetchCourseSlugs, skipBuildTimeStaticParams } from "@/lib/api";
 import {
+  courseBackgroundUrl,
+  coursePosterUrl,
   courseTeachers,
   formatCourseDuration,
   isCourseUpcoming,
@@ -19,9 +21,11 @@ import {
   parseCourseSessions,
   parseCourseTeachers
 } from "@/lib/content-meta";
+import { resolveMediaUrl } from "@/lib/media-cdn";
 import { breadcrumbJsonLd, courseJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
+import { parseVideoSource } from "@/lib/video-embed";
 
 export const dynamicParams = true;
 export const revalidate = 300;
@@ -53,9 +57,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!course) return { title: "Course" };
   const title = course.seoTitle || course.title;
   const description = metaDescription(course.seoDescription || course.shortDescription || course.description);
+  const ogImage = coursePosterUrl(course);
   return {
     title, description,
-    openGraph: { title, description, images: course.imageUrl ? [{ url: course.imageUrl }] : undefined, siteName: "Sarveda" },
+    openGraph: { title, description, images: ogImage ? [{ url: ogImage }] : undefined, siteName: "Sarveda" },
     robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
     alternates: { canonical: canonical(`/course/${params.slug}`) }
   };
@@ -78,7 +83,10 @@ export default async function CourseDetailPage({ params }: Props) {
     { name: course.title, url: absoluteUrl(`/course/${course.slug}`) }
   ];
 
-  const embedUrl = course.videoUrl || extra.videoLink || null;
+  const backgroundUrl = courseBackgroundUrl(course);
+  const posterUrl = extra.posterUrl?.trim() || course.imageUrl || null;
+  const videoUrl = course.videoUrl || extra.videoLink || null;
+  const videoSource = videoUrl ? parseVideoSource(videoUrl) : null;
   const faqs = extra.faqs;
   const scheduleRows = parseCourseSchedule(extra);
   const sessionRows = parseCourseSessions(extra);
@@ -135,9 +143,9 @@ export default async function CourseDetailPage({ params }: Props) {
       <JsonLd data={[courseJsonLd(course), breadcrumbJsonLd(breadcrumbItems)]} />
 
       {/* Hero image — full bleed with forest gradient overlay */}
-      {course.imageUrl && (
+      {backgroundUrl && (
         <div className="relative w-full overflow-hidden" style={{ height: "clamp(280px,45vw,520px)" }}>
-          <Image src={course.imageUrl} alt={course.title} fill className="object-cover" priority unoptimized />
+          <Image src={backgroundUrl} alt={course.title} fill className="object-cover object-center" priority unoptimized />
           <div className="absolute inset-0" style={{
             background: "linear-gradient(to bottom, rgba(15,26,20,0.25) 0%, rgba(15,26,20,0.65) 60%, var(--brand-cream) 100%)"
           }} />
@@ -178,7 +186,7 @@ export default async function CourseDetailPage({ params }: Props) {
       </div>
 
       {/* No image fallback title */}
-      {!course.imageUrl && (
+      {!backgroundUrl && (
         <div style={{ background:"linear-gradient(160deg,var(--brand-forest),var(--brand-night))", borderBottom:"3px solid var(--brand-gold)" }}>
           <div className="page-shell py-14">
             <span style={{ display:"inline-block", background:"var(--brand-gold)", color:"#fff", fontSize:"9px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", padding:"5px 12px", marginBottom:"14px" }}>Course</span>
@@ -193,7 +201,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
           {/* Left */}
           <div className="min-w-0 max-w-full">
-            {!course.imageUrl && course.shortDescription ? (
+            {!backgroundUrl && course.shortDescription ? (
               <p className="break-words" style={{ color:"var(--brand-muted)", fontSize:"1.1rem", lineHeight:1.8, marginBottom:"32px", maxWidth:"620px" }}>
                 {course.shortDescription}
               </p>
@@ -277,13 +285,29 @@ export default async function CourseDetailPage({ params }: Props) {
               </section>
             )}
 
-            {/* Video */}
-            {embedUrl && (
-              <div className="mb-10 overflow-hidden" style={{ aspectRatio:"16/9", border:"1px solid var(--brand-cream-dark)" }}>
-                <iframe src={embedUrl} title={`${course.title} preview`} className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            {/* Video — uploaded file plays natively; YouTube/Vimeo stay as embeds */}
+            {videoSource ? (
+              <div className="mb-10 overflow-hidden bg-black" style={{ aspectRatio:"16/9", border:"1px solid var(--brand-cream-dark)" }}>
+                {videoSource.type === "file" ? (
+                  <video
+                    src={resolveMediaUrl(videoSource.url) ?? videoSource.url}
+                    poster={posterUrl ?? undefined}
+                    className="h-full w-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <iframe
+                    src={videoSource.embedUrl}
+                    title={`${course.title} preview`}
+                    className="h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
               </div>
-            )}
+            ) : null}
 
             {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
             {layout !== "CUSTOM" && showMainDescription && course.description && (

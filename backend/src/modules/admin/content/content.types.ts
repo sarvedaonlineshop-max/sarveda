@@ -75,6 +75,7 @@ export type ContentCreateBody = {
   courseStartDate?: string | null;
   courseEndDate?: string | null;
   videoUrl?: string | null;
+  posterUrl?: string | null;
   mode?: string | null;
   venue?: string | null;
   timings?: string | null;

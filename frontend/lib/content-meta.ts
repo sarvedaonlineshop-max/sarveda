@@ -40,9 +40,37 @@ export type CourseExtra = {
   teachers?: string[] | CourseTeacher[];
   schedule?: CourseScheduleRow[];
   videoLink?: string | null;
+  /** Card / share image. Hero banner stays on Course.imageUrl. */
+  posterUrl?: string | null;
   seoKeyword?: string | null;
   faqs?: Array<{ question: string; answer: string }>;
 };
+
+/** Small card + Open Graph. Falls back to the hero image on older courses. */
+export function coursePosterUrl(course: {
+  imageUrl?: string | null;
+  extra?: CourseListItem["extra"] | CourseExtra | null;
+}): string | null {
+  const extra = parseCourseExtra(course.extra ?? null);
+  return extra.posterUrl?.trim() || course.imageUrl?.trim() || null;
+}
+
+/** Wide banner on the course page. Falls back to the poster if hero is empty. */
+export function courseBackgroundUrl(course: {
+  imageUrl?: string | null;
+  extra?: CourseListItem["extra"] | CourseExtra | null;
+}): string | null {
+  const extra = parseCourseExtra(course.extra ?? null);
+  return course.imageUrl?.trim() || extra.posterUrl?.trim() || null;
+}
+
+/** Uploaded MP4/WebM on S3 vs YouTube/Vimeo embed. */
+export function isDirectCourseVideo(url: string | null | undefined): boolean {
+  const raw = (url ?? "").trim();
+  if (!raw) return false;
+  if (/youtube\.com|youtu\.be|vimeo\.com/i.test(raw)) return false;
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(raw) || /sarveda-media|s3[.-]|cloudfront\.net/i.test(raw);
+}
 
 export function parseCourseSessions(extra: CourseExtra): CourseSession[] {
   if (!Array.isArray(extra.sessions)) return [];
