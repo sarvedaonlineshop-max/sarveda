@@ -44,7 +44,7 @@ export function HomeAboutVideo({ className = "" }: { className?: string }) {
   }, [playing]);
 
   return (
-    <div ref={rootRef} className={`w-full py-6 sm:py-8 md:py-10 ${className}`.trim()}>
+    <div ref={rootRef} className={`w-full ${className}`.trim()}>
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#1a2e26] shadow-[0_12px_40px_rgba(26,46,38,0.12)]">
         {nearView ? (
           <>

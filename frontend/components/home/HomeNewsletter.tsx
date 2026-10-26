@@ -144,37 +144,31 @@ export function HomeNewsletter() {
     }
   }
 
-  return (
-    <section
-      id="newsletter"
-      className="scroll-mt-24 overflow-hidden bg-[#f9f6f1]"
-      aria-labelledby="home-newsletter-heading"
-    >
-      <div className="grid w-full items-stretch lg:grid-cols-2">
-        <div className="min-w-0 px-[5%] pb-14 pt-6 md:px-[10%] md:pb-16 md:pt-10 lg:mx-auto lg:w-full lg:max-w-[720px] lg:pb-20 lg:pt-14 lg:pl-[10%] lg:pr-8 xl:pr-12">
-          <Image
-            src="/images/brand/lotus-bloom.png"
-            alt=""
-            width={56}
-            height={38}
-            className="mb-4 h-8 w-auto object-contain sm:mb-5 sm:h-9"
-            aria-hidden
-          />
-          <h2
-            id="home-newsletter-heading"
-            className="font-serif text-[1.85rem] font-semibold leading-[1.12] tracking-tight sm:text-[2.2rem] md:text-[2.45rem]"
-          >
-            <span style={{ color: "#166D46" }}>A Little Inspiration,</span>
-            <br />
-            <span className="italic text-[#a67c52]">Once in a While.</span>
-          </h2>
+  const copy = (
+    <>
+      <Image
+        src="/images/brand/lotus-bloom.png"
+        alt=""
+        width={56}
+        height={38}
+        className="mb-3 h-8 w-auto object-contain sm:mb-4 sm:h-9"
+        aria-hidden
+      />
+      <h2
+        id="home-newsletter-heading"
+        className="font-serif text-[1.85rem] font-semibold leading-[1.12] tracking-tight sm:text-[2.2rem] md:text-[2.45rem] lg:text-[2.15rem] xl:text-[2.45rem]"
+      >
+        <span style={{ color: "#166D46" }}>A Little Inspiration,</span>
+        <br />
+        <span className="italic text-[#a67c52]">Once in a While.</span>
+      </h2>
 
-          <p className="mt-4 max-w-[26rem] text-[0.92rem] leading-[1.55] text-[#4a453c] sm:text-[0.98rem]">
-            Be the first to hear about new instruments, workshops, retreats and thoughtful articles.
-            No spam. Just meaningful updates.
-          </p>
+      <p className="mt-3 max-w-[26rem] text-[0.92rem] leading-[1.55] text-[#4a453c] sm:text-[0.98rem] lg:mt-3">
+        Be the first to hear about new instruments, workshops, retreats and thoughtful articles.
+        No spam. Just meaningful updates.
+      </p>
 
-          <form className="mt-7 max-w-xl" onSubmit={(e) => void onSubmit(e)} noValidate>
+      <form className="mt-5 max-w-xl lg:mt-5" onSubmit={(e) => void onSubmit(e)} noValidate>
             <label htmlFor="home-newsletter-email" className="sr-only">
               Email address
             </label>
@@ -233,18 +227,27 @@ export function HomeNewsletter() {
             </svg>
             We respect your privacy. Unsubscribe anytime.
           </p>
-        </div>
+    </>
+  );
 
-        {/* Full-bleed to the right edge — avoids dark photo edge reading as a black line. */}
-        <div className="relative min-h-[240px] sm:min-h-[300px] lg:min-h-full lg:self-stretch">
-          <Image
-            src="/images/home/newsletter-lifestyle.jpg"
-            alt="Sarveda notebook, singing bowl and pen arranged for mindful journaling"
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover object-center"
-            priority={false}
-          />
+  return (
+    <section
+      id="newsletter"
+      className="scroll-mt-24 overflow-hidden bg-[#f7f4ee]"
+      aria-labelledby="home-newsletter-heading"
+    >
+      <div className="relative">
+        <Image
+          src="/images/home/newsletter-lakeside.jpg"
+          alt=""
+          width={1024}
+          height={348}
+          sizes="100vw"
+          className="hidden h-auto w-full lg:block"
+          aria-hidden
+        />
+        <div className="px-[5%] pb-14 pt-6 md:px-[10%] md:pb-16 md:pt-10 lg:absolute lg:inset-0 lg:flex lg:items-center lg:px-0 lg:py-0">
+          <div className="lg:w-[42%] lg:max-w-[36rem] lg:pl-[6%] lg:pr-4 xl:pl-[8%]">{copy}</div>
         </div>
       </div>
 

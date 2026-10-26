@@ -62,7 +62,7 @@ export function ContentImageUpload({
         <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-900">
           {url.trim() ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={url.trim()} alt="" className="h-full w-full object-cover" />
+            <img src={url.trim()} alt="" className="h-full w-full object-contain" />
           ) : (
             <span className="px-2 text-center text-[10px] text-stone-400">No image</span>
           )}

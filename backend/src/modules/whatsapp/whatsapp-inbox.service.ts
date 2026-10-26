@@ -720,14 +720,46 @@ async function applyStatusUpdate(update: ParsedStatus): Promise<void> {
   }
   const message = await prisma.enquiryMessage.findUnique({
     where: { waMessageSid: update.sid },
-    select: { threadId: true }
+    select: { threadId: true, waStatus: true }
   });
+  // Never downgrade a terminal success (delivered/read) to an earlier state on out-of-order DLRs.
+  const current = String(message?.waStatus || "").toLowerCase();
+  const next = String(update.status || "").toLowerCase();
+  const rank: Record<string, number> = {
+    queued: 1,
+    sent: 2,
+    delivered: 3,
+    read: 4,
+    failed: 5
+  };
+  if (message && (current === "delivered" || current === "read") && next !== "failed" && (rank[next] || 0) < (rank[current] || 0)) {
+    logger.info("whatsapp_status_ignored_downgrade", {
+      sid: update.sid,
+      current,
+      ignored: next
+    });
+    return;
+  }
+
+  const data: { waStatus: string; waStatusDetail?: string | null } = { waStatus: update.status };
+  if (update.status === "failed") {
+    data.waStatusDetail = (update.detail || "WhatsApp could not deliver this message").slice(0, 500);
+  } else if (update.detail) {
+    data.waStatusDetail = update.detail.slice(0, 500);
+  } else if (update.status === "delivered" || update.status === "read") {
+    data.waStatusDetail = null;
+  }
+
   const result = await prisma.enquiryMessage.updateMany({
     where: { waMessageSid: update.sid },
-    data: { waStatus: update.status }
+    data
   });
   if (result.count > 0) {
-    logger.info("whatsapp_status_updated", { sid: update.sid, status: update.status });
+    logger.info("whatsapp_status_updated", {
+      sid: update.sid,
+      status: update.status,
+      detail: update.detail ?? null
+    });
     if (message) publishEnquiryEvent({ type: "message_changed", threadId: message.threadId });
   }
 }

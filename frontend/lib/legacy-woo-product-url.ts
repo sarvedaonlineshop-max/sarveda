@@ -22,7 +22,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "ankh-sound-healing-instrument": "ankh",
   "artistic-egg-shakers": "painted-egg-shakers", // Woo parent 7404
   "aslatau-or-asalato": "asalato-kashaka-shaker",
-  "bamboo-rainstick": "bamboo-rainstick-wide-80cm",
+  "bamboo-rainstick": "new-bamboo-rainstick",
   "bamboo-rainstick-2": "bamboo-rainstick-wide-80cm",
   "ceg-crystal-singing-bowl-set": "triad-crystal-bowl-set",
   "cg-tuning-forks": "c-g-tuning-forks",
@@ -156,6 +156,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "asalato-kashaka-shaker",
   "ayurvedic-copper-bedroom-jar",
   "bamboo-castanet",
+  "new-bamboo-rainstick",
   "bamboo-rainstick-wide-80cm",
   "box-tanpura",
   "belly-bowls",

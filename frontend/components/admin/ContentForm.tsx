@@ -329,10 +329,14 @@ export function ContentForm({ type, itemId }: Props) {
         {type === "courses" ? (
           <>
             <ContentImageUpload
+              label="Cover image"
               url={values.imageUrl}
               onUrlChange={(imageUrl) => setValues((v) => ({ ...v, imageUrl }))}
               folder="courses"
             />
+            <p className="-mt-2 text-xs text-stone-500">
+              This image is the cover at the top of the course page and on the courses list.
+            </p>
 
             <Field label="Short description">
               <input

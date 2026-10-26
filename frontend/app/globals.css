@@ -237,6 +237,15 @@ body {
   line-height: 1.8;
   color: var(--brand-ink);
 }
+.insight-rich.rich-features h2 {
+  font-size: clamp(1.85rem, 3.2vw, 2.35rem);
+  line-height: 1.2;
+  margin-top: 2.25rem;
+}
+.insight-rich.rich-features h3 {
+  font-size: clamp(1.45rem, 2.4vw, 1.75rem);
+  line-height: 1.25;
+}
 .insight-rich.rich-features p { margin: 0 0 1.15rem; }
 .insight-rich.rich-features ul,
 .insight-rich.rich-features ol { margin: 0 0 1.25rem; }

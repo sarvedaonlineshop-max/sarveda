@@ -298,7 +298,7 @@ export type AdminReportType =
   | "gateways"
   | "attribution";
 
-export type AdminReportPeriod = "daily" | "weekly" | "monthly" | "financial_year";
+export type AdminReportPeriod = "daily" | "weekly" | "monthly" | "financial_year" | "custom";
 
 export type AdminReportsAnalytics = {
   label: string;
@@ -343,8 +343,19 @@ export type AdminReportsAnalytics = {
   }>;
 };
 
-export async function downloadAdminReportExcel(type: AdminReportType, period: AdminReportPeriod) {
-  const q = new URLSearchParams({ type, period });
+export async function downloadAdminReportExcel(
+  type: AdminReportType,
+  period: AdminReportPeriod,
+  range?: { from: string; to: string }
+) {
+  const q = new URLSearchParams({ type });
+  if (period === "custom") {
+    if (!range?.from || !range?.to) throw new Error("Choose a start and end date");
+    q.set("from", range.from);
+    q.set("to", range.to);
+  } else {
+    q.set("period", period);
+  }
   const url = `${getApiBase()}/api/admin/reports/export?${q.toString()}`;
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) {
@@ -3033,8 +3044,10 @@ export type EnquiryMessageRow = {
   editedAt?: string | null;
   attachments: EnquiryAttachmentRow[];
   adminUser?: { id: string; name: string | null; email: string } | null;
-  /** WhatsApp delivery status for outbound messages: sent | delivered | read | failed. */
+  /** WhatsApp delivery status for outbound messages: queued | sent | delivered | read | failed. */
   waStatus?: string | null;
+  /** Exotel/Meta failure or status detail when delivery does not complete. */
+  waStatusDetail?: string | null;
 };
 
 export type EnquiryThreadDetail = Omit<EnquiryThreadListItem, "messages"> & {

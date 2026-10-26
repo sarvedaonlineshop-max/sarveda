@@ -45,6 +45,10 @@ model User {
   fcmWebToken               String?
   emailNotificationsEnabled Boolean                  @default(true)
   pushNotificationsEnabled  Boolean                  @default(true)
+  /// Admin browser alerts for new paid orders and refunds. Per admin, default on.
+  adminOrderNotificationsEnabled Boolean             @default(true)
+  /// Admin browser alerts for new chats and customer replies. Per admin, default on.
+  adminChatNotificationsEnabled  Boolean             @default(true)
   blogComments              BlogComment[]
   accountClosureRequests    AccountClosureRequest[]
   accountClosureApprovals   AccountClosureApproval[]
@@ -56,6 +60,8 @@ model User {
   crmActivitiesAsActor      CrmActivity[]            @relation("CrmActivityActor")
   crmAssignedTasks          CrmTask[]                @relation("CrmTaskAssignee")
   crmCreatedTasks           CrmTask[]                @relation("CrmTaskCreator")
+  crmChatNotes              CrmChatNote[]            @relation("CrmChatNoteAuthor")
+  crmOwnedChats             EnquiryThread[]          @relation("CrmChatOwner")
 }
 
 model AccountClosureRequest {
@@ -2418,6 +2424,7 @@ enum EnquirySource {
   EVENT
   INSIGHTS
   WHATSAPP
+  INSTAGRAM
 }
 
 enum EnquirySubjectCategory {
@@ -2486,8 +2493,16 @@ model EnquiryThread {
   lastMessageAt         DateTime                @default(now())
   /// WhatsApp inbox: customer number in E.164; set only for source WHATSAPP.
   waPhone               String?
-  /// Last inbound customer message time — enforces the WhatsApp 24h reply window.
+  /// Instagram inbox: Instagram-scoped user id; set only for source INSTAGRAM.
+  igUserId              String?
+  /// Last inbound customer message time — 24h reply window for WhatsApp and Instagram.
   lastCustomerMessageAt DateTime?
+  /// Single sales pipeline for this chat. New until an admin writes or sets Contacted.
+  crmPipeline           CrmChatPipeline         @default(NEW)
+  crmCategory           CrmChatCategory?
+  crmOwnerUserId        String?                 @db.Uuid
+  crmOwner              User?                   @relation("CrmChatOwner", fields: [crmOwnerUserId], references: [id], onDelete: SetNull)
+  crmNotes              CrmChatNote[]
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -2501,6 +2516,41 @@ model EnquiryThread {
   @@index([customerEmail])
   @@index([source])
   @@index([waPhone])
+  @@index([igUserId])
+  @@index([crmPipeline])
+  @@index([crmOwnerUserId, crmPipeline])
+}
+
+enum CrmChatPipeline {
+  NEW
+  CONTACTED
+  ONGOING
+  FOLLOWUP
+  WON
+  LOST
+  UNQUALIFIED
+}
+
+enum CrmChatCategory {
+  PRODUCTS
+  COURSES
+  DELIVERY
+  PAYMENT
+  REFUND
+  B2B
+  OTHERS
+}
+
+model CrmChatNote {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId     String         @db.Uuid
+  body         String
+  authorUserId String?        @db.Uuid
+  createdAt    DateTime       @default(now())
+  thread       EnquiryThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author       User?          @relation("CrmChatNoteAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([threadId, createdAt])
 }
 
 /// One human-support handoff inside a WhatsApp enquiry thread.
@@ -2536,8 +2586,12 @@ model EnquiryMessage {
   body         String
   /// Provider (Exotel) message sid — idempotency for inbound, delivery tracking for outbound.
   waMessageSid String?              @unique
-  /// WhatsApp delivery status for outbound: sent | delivered | read | failed.
+  /// WhatsApp delivery status for outbound: queued | sent | delivered | read | failed.
   waStatus     String?
+  /// Provider failure / status detail (Exotel exo_detailed_status, codes, description).
+  waStatusDetail String?
+  /// Instagram message id — idempotency for inbound DMs.
+  igMessageMid String?              @unique
   /// Set when an admin edits their own text message in the inbox.
   editedAt     DateTime?
   createdAt    DateTime             @default(now())

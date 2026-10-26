@@ -17,7 +17,6 @@ import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoade
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 import {
-  CHAT_LEAD_BLUE,
   LEAD_STATUS_COLORS,
   buildAllInboxRowMeta,
   compareThreadsForAllInbox,
@@ -104,7 +103,6 @@ export function AdminChatsInbox() {
     : null;
 
   const [items, setItems] = useState<EnquiryThreadListItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStatus, setLeadStatus] = useState("");
@@ -147,7 +145,6 @@ export function AdminChatsInbox() {
         q: debouncedQ || undefined
       });
       setItems(data.items);
-      setUnreadCount(data.unreadCount);
       if (data.leadStatusCounts) {
         setLeadStatusCounts(data.leadStatusCounts);
       } else {
@@ -244,10 +241,7 @@ export function AdminChatsInbox() {
   useAdminPageHeader(
     () => ({
       title: "Chats",
-      subtitle:
-        onListView && unreadCount > 0 ? (
-          <span className="md:hidden">{unreadCount} unread</span>
-        ) : undefined,
+      subtitle: undefined,
       actions: onListView ? (
         <div className="flex items-center gap-1 md:hidden">
           <button
@@ -263,7 +257,7 @@ export function AdminChatsInbox() {
         </div>
       ) : undefined
     }),
-    [onListView, unreadCount, refreshing, load]
+    [onListView, refreshing, load]
   );
 
   function resetStartForm() {
@@ -453,11 +447,7 @@ export function AdminChatsInbox() {
         <div className="mb-3 hidden items-center justify-between gap-2 md:flex">
           <div>
             <h1 className="text-[17px] font-semibold text-[#1c352a]">Chats</h1>
-            {unreadCount > 0 ? (
-              <p className="text-[11px] font-medium text-[#b98a3e]">{unreadCount} unread</p>
-            ) : (
-              <p className="text-[11px] text-stone-500">Customer enquiries</p>
-            )}
+            <p className="text-[11px] text-stone-500">Customer enquiries</p>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -563,6 +553,7 @@ export function AdminChatsInbox() {
             {filtered.map((thread) => {
               const initial = (thread.customerName?.trim()?.[0] || "?").toUpperCase();
               const isWa = thread.source === "WHATSAPP";
+              const isIg = thread.source === "INSTAGRAM";
               const selected = activeId === thread.id;
               const rowMeta = buildAllInboxRowMeta(thread, { showStatus: !leadStatus });
               return (
@@ -578,7 +569,9 @@ export function AdminChatsInbox() {
                       style={{
                         background: isWa
                           ? "linear-gradient(135deg, #128c7e, #25d366)"
-                          : "linear-gradient(135deg, #1c352a, #2d5040)"
+                          : isIg
+                            ? "linear-gradient(135deg, #833ab4, #e1306c)"
+                            : "linear-gradient(135deg, #1c352a, #2d5040)"
                       }}
                       aria-hidden
                     >
@@ -613,25 +606,40 @@ export function AdminChatsInbox() {
                           <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#25d366]" />
                         ) : null}
                       </div>
-                      <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
                         {rowMeta.statusLabel ? (
                           <span
-                            className="shrink-0 text-[11px] font-semibold uppercase tracking-wide"
-                            style={{ color: rowMeta.statusColor ?? "#78716c" }}
+                            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+                            style={{
+                              background:
+                                rowMeta.status === "ONGOING"
+                                  ? "#0e7490"
+                                  : rowMeta.status === "FOLLOW_UP"
+                                    ? "#b45309"
+                                    : rowMeta.statusColor ?? "#78716c"
+                            }}
                           >
                             {rowMeta.statusLabel}
                           </span>
                         ) : null}
-                        {rowMeta.attendingName ? (
-                          <p
-                            className="min-w-0 truncate text-[13px] font-medium leading-snug md:text-[12px]"
-                            style={{ color: CHAT_LEAD_BLUE }}
-                          >
-                            {rowMeta.attendingName}
-                          </p>
+                        {rowMeta.sourceLabel ? (
+                          <span className="shrink-0 rounded-full bg-[#efe8dc] px-2 py-0.5 text-[10px] font-semibold text-[#1c352a]">
+                            {rowMeta.sourceLabel}
+                          </span>
                         ) : null}
-                        <span className="shrink-0 text-[11px] font-medium text-stone-400">
-                          {rowMeta.sourceLabel}
+                        {rowMeta.attendingName ? (
+                          <span className="shrink-0 rounded-full bg-[#e7f6fd] px-2 py-0.5 text-[10px] font-semibold text-[#0c4a6e]">
+                            {rowMeta.attendingName}
+                          </span>
+                        ) : null}
+                        <span
+                          className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                          style={{
+                            background: isWa ? "#128c7e" : isIg ? "#c13584" : "#1c352a"
+                          }}
+                        >
+                          {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ??
+                            (isWa ? "WhatsApp" : isIg ? "Instagram" : "Contact")}
                         </span>
                       </div>
                     </div>

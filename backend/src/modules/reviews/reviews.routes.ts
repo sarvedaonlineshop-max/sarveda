@@ -95,15 +95,30 @@ function rememberCountry(map: Map<string, string>, userId: string | null | undef
   if (code) map.set(userId, code);
 }
 
+const adminReviewInclude = {
+  product: { select: { name: true, slug: true } },
+  user: { select: { name: true, email: true } }
+} as const;
+
 router.get("/admin/pending", requireAdmin, async (_req, res, next) => {
   try {
     const reviews = await prisma.review.findMany({
       where: { isApproved: false },
       orderBy: { createdAt: "desc" },
-      include: {
-        product: { select: { name: true, slug: true } },
-        user: { select: { name: true, email: true } }
-      }
+      include: adminReviewInclude
+    });
+    res.json({ reviews });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/admin/history", requireAdmin, async (_req, res, next) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { isApproved: true },
+      orderBy: { createdAt: "desc" },
+      include: adminReviewInclude
     });
     res.json({ reviews });
   } catch (err) {

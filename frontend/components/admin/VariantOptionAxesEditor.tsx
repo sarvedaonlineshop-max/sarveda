@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, GripVertical, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, GripVertical, Pencil } from "lucide-react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import type { OptionAxisForm } from "@/lib/variant-admin";
@@ -12,6 +12,7 @@ type Props = {
   open: boolean;
   onToggle: () => void;
   onChange: (axes: OptionAxisForm[], opts?: { prune?: boolean }) => void;
+  onStopSellingValue?: (axisSlug: string, value: string) => void;
 };
 
 const inputCls =
@@ -134,10 +135,12 @@ function EditOptionModal({
 
 function AxisValuesEditor({
   axis,
-  onChange
+  onChange,
+  onStopSellingValue
 }: {
   axis: OptionAxisForm;
   onChange: (values: string[]) => void;
+  onStopSellingValue?: (value: string) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -258,12 +261,11 @@ function AxisValuesEditor({
                 </button>
                 <button
                   type="button"
-                  aria-label={`Delete ${val}`}
+                  aria-label={`Stop selling ${val}`}
                   onClick={() => setDeleteIndex(index)}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40"
                 >
-                  <Trash2 size={13} />
-                  Delete
+                  Stop selling
                 </button>
               </li>
             );
@@ -296,19 +298,20 @@ function AxisValuesEditor({
 
       <AdminConfirmModal
         open={deleteIndex !== null}
-        title="Delete option?"
+        title="Stop selling this option?"
         message={
           deleteIndex !== null
-            ? `Remove “${axis.values[deleteIndex]}” from ${axis.name || "this level"}? Variants using this option may be pruned when you save or rebuild combinations.`
+            ? `Saved variants that use “${axis.values[deleteIndex]}” stay on this product as Not for sale. The shop hides them after you Save. Old orders stay linked. “${axis.values[deleteIndex]}” stays in this list.`
             : undefined
         }
-        confirmLabel="Delete"
+        confirmLabel="Stop selling"
         cancelLabel="Cancel"
         danger
         onClose={() => setDeleteIndex(null)}
         onConfirm={() => {
           if (deleteIndex === null) return;
-          onChange(axis.values.filter((_, i) => i !== deleteIndex));
+          const value = axis.values[deleteIndex];
+          if (value) onStopSellingValue?.(value);
           setDeleteIndex(null);
         }}
       />
@@ -359,7 +362,13 @@ function AxisNameInput({
   );
 }
 
-export function VariantOptionAxesEditor({ axes, open, onToggle, onChange }: Props) {
+export function VariantOptionAxesEditor({
+  axes,
+  open,
+  onToggle,
+  onChange,
+  onStopSellingValue
+}: Props) {
   return (
     <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
       <button
@@ -421,6 +430,7 @@ export function VariantOptionAxesEditor({ axes, open, onToggle, onChange }: Prop
                   onChange={(values) =>
                     onChange(axes.map((a, j) => (j === i ? { ...a, values } : a)))
                   }
+                  onStopSellingValue={(value) => onStopSellingValue?.(axis.slug, value)}
                 />
               </div>
             ))}

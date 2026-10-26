@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminNavProvider, useAdminNav } from "@/components/admin/AdminNavContext";
@@ -12,6 +12,8 @@ import {
 import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { adminOverlayTransition } from "@/lib/admin-motion";
 import { adminTheme as t } from "@/lib/admin-theme";
+import { useAdminUser } from "@/components/admin/AdminUserContext";
+import { isReportsOnlyAdmin, reportsOnlyAdminHome } from "@/lib/reports-only-access";
 
 const THEME_KEY = "sarveda-admin-theme";
 
@@ -81,6 +83,14 @@ function AdminShellInner({
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const adminUser = useAdminUser();
+  const reportsOnly = isReportsOnlyAdmin(adminUser?.email);
+  useEffect(() => {
+    if (!reportsOnly) return;
+    if (pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")) return;
+    router.replace(reportsOnlyAdminHome());
+  }, [reportsOnly, pathname, router]);
   const pageTitle = getPageTitle(pathname);
   const { isNavigating, beginNavigation } = useAdminNav();
   const headerSlot = useAdminHeaderSlot()?.slot ?? null;
@@ -198,7 +208,12 @@ function AdminShellInner({
           />
         </aside>
 
-        <div style={{ paddingLeft: "240px" }} className="md:pl-[240px] pl-0 flex flex-col min-h-screen">
+        <div
+          style={{ paddingLeft: "240px" }}
+          className={`md:pl-[240px] pl-0 flex flex-col ${
+            pathname.startsWith("/admin/crm") ? "h-dvh overflow-hidden" : "min-h-screen"
+          }`}
+        >
           <header
             style={{
               position: "sticky",
@@ -463,7 +478,11 @@ function AdminShellInner({
           </header>
 
           <main
-            className="admin-workspace"
+            className={`admin-workspace${
+              pathname.startsWith("/admin/chats") || pathname.startsWith("/admin/crm")
+                ? " flex min-h-0 flex-col overflow-hidden"
+                : ""
+            }`}
             style={{
               flex: 1,
               padding:
@@ -471,7 +490,9 @@ function AdminShellInner({
                 pathname.startsWith("/admin/tasks") ||
                 pathname.startsWith("/admin/profile")
                   ? "0"
-                  : "24px 30px 48px",
+                  : pathname.startsWith("/admin/crm")
+                    ? "16px 20px 20px"
+                    : "24px 30px 48px",
               position: "relative"
             }}
           >
@@ -486,7 +507,7 @@ function AdminShellInner({
                       ? "/admin/profile"
                       : pathname
               }
-              className="admin-content-enter"
+              className={`admin-content-enter${pathname.startsWith("/admin/crm") ? " flex min-h-0 flex-1 flex-col" : ""}`}
               style={{
                 width: "100%",
                 maxWidth: "none"

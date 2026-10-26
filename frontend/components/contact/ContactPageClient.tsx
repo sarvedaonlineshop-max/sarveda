@@ -252,6 +252,15 @@ function ContactInfoPanel() {
                 WhatsApp chat
               </a>
             </p>
+            <p className="mt-2 text-sm text-brand-muted">
+              Call us at:{" "}
+              <a
+                href="tel:+919535975075"
+                className="font-medium text-brand-forest underline-offset-2 hover:underline"
+              >
+                +91 95359 75075
+              </a>
+            </p>
           </ContactInfoRow>
         </div>
 
