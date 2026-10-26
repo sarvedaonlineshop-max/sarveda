@@ -48,6 +48,7 @@ import {
   MAX_ENQUIRY_ATTACHMENTS
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
+import { ChatAssignControl } from "@/components/admin/ChatAssignControl";
 import { ChatCrmRail } from "@/components/admin/ChatCrmRail";
 import {
   ADMIN_CHATS_REFRESH_EVENT,
@@ -1483,7 +1484,7 @@ function AdminChatDetailInner() {
 
       {/* Mobile: WhatsApp-height header (back · avatar · name · ⋮) — replaces shell "Chats" bar */}
       <div
-        className="admin-chat-thread-header relative flex h-14 shrink-0 items-center gap-1 px-1 md:hidden"
+        className="admin-chat-thread-header relative flex h-16 shrink-0 items-center gap-1 px-1 md:hidden"
         style={{
           background: headerBg
         }}
@@ -1510,9 +1511,12 @@ function AdminChatDetailInner() {
             setMenuOpen(false);
             setDetailsOpen(true);
           }}
-          className="min-w-0 flex-1 truncate px-2 text-left text-[17px] font-medium leading-tight text-[#faf5ec]"
+          className="min-w-0 flex-1 px-2 text-left"
         >
-          {displayName}
+          <span className="block truncate text-[17px] font-medium leading-tight text-[#faf5ec]">
+            {displayName}
+          </span>
+          <span id="chat-assign-owner-mobile" className="mt-0.5 block min-h-[14px]" />
         </button>
         <div className="relative shrink-0" ref={menuRef}>
           <div className="flex items-center gap-0.5">
@@ -1595,6 +1599,7 @@ function AdminChatDetailInner() {
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[16px] font-semibold text-[#faf5ec]">{displayName}</h1>
+          <span id="chat-assign-owner-desktop" className="mt-0.5 block min-h-[14px]" />
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[16px] font-semibold text-[#faf5ec]/90">
             {isWhatsApp ? (
               <MaskedPhoneReveal
@@ -1865,6 +1870,7 @@ function AdminChatDetailInner() {
           </p>
         ) : null}
       </div>
+      <ChatAssignControl threadId={thread.id} onAssigned={() => void load()} />
       </div>
       <div className="hidden h-full lg:flex">
         <ChatCrmRail

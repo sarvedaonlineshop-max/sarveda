@@ -2502,6 +2502,7 @@ model EnquiryThread {
   crmCategory           CrmChatCategory?
   crmOwnerUserId        String?                 @db.Uuid
   crmOwner              User?                   @relation("CrmChatOwner", fields: [crmOwnerUserId], references: [id], onDelete: SetNull)
+  crmOwnerAssigned      Boolean                 @default(false)
   crmNotes              CrmChatNote[]
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt

@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import type { CourseListItem } from "@/lib/course-types";
 import {
   courseCardTypeLabel,
+  coursePosterUrl,
   formatCourseDuration,
   parseCourseExtra,
   parseCourseTeachers
@@ -37,6 +38,7 @@ export function CourseCard({ course, compact = false }: Props) {
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
   const duration = formatCourseDuration(extra);
   const tagLabel = courseCardTypeLabel(extra);
+  const poster = coursePosterUrl(course);
   const subtitle = course.shortDescription?.trim() || null;
   const ref = useRef<HTMLAnchorElement>(null);
 
@@ -73,9 +75,9 @@ export function CourseCard({ course, compact = false }: Props) {
         <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {tagLabel}
         </span>
-        {course.imageUrl ? (
+        {poster ? (
           <Image
-            src={course.imageUrl}
+            src={poster}
             alt=""
             fill
             sizes="(max-width: 768px) 86vw, 340px"

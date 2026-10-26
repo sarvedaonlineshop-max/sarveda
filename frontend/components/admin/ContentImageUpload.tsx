@@ -9,13 +9,17 @@ type Props = {
   onUrlChange: (url: string) => void;
   folder?: "products" | "courses" | "audio" | "mentors" | "vaidyas";
   label?: string;
+  hint?: string;
+  preview?: "square" | "wide";
 };
 
 export function ContentImageUpload({
   url,
   onUrlChange,
   folder = "courses",
-  label = "Course image"
+  label = "Course image",
+  hint,
+  preview = "square"
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -59,10 +63,14 @@ export function ContentImageUpload({
       </p>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-900">
+        <div
+          className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-900 ${
+            preview === "wide" ? "h-24 w-40 sm:w-56" : "h-24 w-24"
+          }`}
+        >
           {url.trim() ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={url.trim()} alt="" className="h-full w-full object-contain" />
+            <img src={url.trim()} alt="" className="h-full w-full object-cover" />
           ) : (
             <span className="px-2 text-center text-[10px] text-stone-400">No image</span>
           )}
@@ -88,7 +96,9 @@ export function ContentImageUpload({
             >
               {uploading ? "Uploading to S3…" : "Upload image"}
             </button>
-            <p className="mt-1 text-xs text-stone-500">JPEG, PNG, WebP or GIF · max 10MB</p>
+            <p className="mt-1 text-xs text-stone-500">
+              {hint || "JPEG, PNG, WebP or GIF · max 10MB"}
+            </p>
             {uploadErr ? <p className="mt-1 text-xs text-red-600">{uploadErr}</p> : null}
           </div>
 

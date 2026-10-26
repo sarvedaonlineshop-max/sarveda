@@ -22,3 +22,7 @@ export function crmConflict(message: string, code = "CONFLICT"): CrmError {
 export function crmBadRequest(message: string, code = "VALIDATION_ERROR"): CrmError {
   return new CrmError(message, code, 400);
 }
+
+export function crmForbidden(message: string, code = "FORBIDDEN"): CrmError {
+  return new CrmError(message, code, 403);
+}
