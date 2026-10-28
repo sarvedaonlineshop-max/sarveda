@@ -58,7 +58,7 @@ function pathsFor(type: string, slug: string | null): string[] {
   } else if (type === "testimonials") {
     paths.add("/");
   }
-  return [...paths];
+  return Array.from(paths);
 }
 
 export async function POST(req: Request) {
