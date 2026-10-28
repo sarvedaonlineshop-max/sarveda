@@ -499,17 +499,16 @@ export function ContentForm({ type, itemId }: Props) {
             )}
 
             {values.layoutTemplate !== "CUSTOM" ? (
-              <Field label="About the course (summary)">
+              <Field label="About the course">
                 <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
                   Narrative overview — what the programme is about. Distinct from &quot;What&apos;s
                   included&quot; (deliverables list).
                 </p>
-                <textarea
+                <AccordionRichEditor
+                  variant="full"
                   value={values.aboutTheCourse}
-                  onChange={(e) => setValues((v) => ({ ...v, aboutTheCourse: e.target.value }))}
-                  rows={4}
-                  placeholder="Short overview block (HTML allowed)"
-                  className={`${inputClass} font-mono text-xs`}
+                  onChange={(aboutTheCourse) => setValues((v) => ({ ...v, aboutTheCourse }))}
+                  placeholder="Overview, headings, lists, links…"
                 />
               </Field>
             ) : null}
