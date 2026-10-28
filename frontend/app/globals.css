@@ -1303,3 +1303,8 @@ select:-webkit-autofill {
     will-change: auto;
   }
 }
+
+.cf-turnstile-host,
+.cf-turnstile-host iframe {
+  max-width: 100% !important;
+}

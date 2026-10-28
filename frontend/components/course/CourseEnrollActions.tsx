@@ -37,7 +37,7 @@ export function CourseEnrollActions({
   const [enquiryMessage, setEnquiryMessage] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+  const { honeypot, turnstile, antiSpamPayload, resetTurnstile, turnstileReady } =
     useEnquiryAntiSpam();
 
   const courseUrl = absoluteUrl(`/${pathPrefix}/${course.slug}`);
@@ -194,8 +194,8 @@ export function CourseEnrollActions({
               {emailSent ? (
                 <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
               ) : (
-                <div className="relative space-y-3">
-                  {antiSpamFields}
+                <div className="relative min-w-0 space-y-3 overflow-x-hidden">
+                  {honeypot}
                   <input
                     type="email"
                     value={email}
@@ -210,6 +210,7 @@ export function CourseEnrollActions({
                     placeholder="Your questions about this course…"
                     className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
                   />
+                  {turnstile}
                   <button
                     type="button"
                     onClick={() => void sendEmailEnquiry()}
@@ -257,16 +258,16 @@ function EventEmailEnquiry({
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+  const { honeypot, turnstile, antiSpamPayload, resetTurnstile, turnstileReady } =
     useEnquiryAntiSpam();
 
   return (
-    <div className="relative mt-4 space-y-3">
+    <div className="relative mt-4 min-w-0 space-y-3 overflow-x-hidden">
       {sent ? (
         <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
       ) : (
         <>
-          {antiSpamFields}
+          {honeypot}
           <input
             type="email"
             value={email}
@@ -280,6 +281,7 @@ function EventEmailEnquiry({
             rows={3}
             className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm"
           />
+          {turnstile}
           {error ? <p className="text-sm text-red-700">{error}</p> : null}
           <button
             type="button"

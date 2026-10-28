@@ -14,6 +14,8 @@ declare global {
           "expired-callback"?: () => void;
           "error-callback"?: () => void;
           theme?: "light" | "dark" | "auto";
+          size?: "normal" | "compact" | "flexible";
+          appearance?: "always" | "execute" | "interaction-only";
         }
       ) => string;
       reset: (widgetId?: string) => void;
@@ -38,7 +40,7 @@ export function useEnquiryAntiSpam() {
   const formOpenedAt = useRef(Date.now());
   const [turnstileToken, setTurnstileToken] = useState("");
   const [scriptReady, setScriptReady] = useState(false);
-  const widgetHostId = useId();
+  const widgetHostId = `cf-turnstile-${useId().replace(/:/g, "")}`;
   const widgetIdRef = useRef<string | null>(null);
 
   const resetTurnstile = useCallback(() => {
@@ -62,7 +64,9 @@ export function useEnquiryAntiSpam() {
         callback: (token) => setTurnstileToken(token),
         "expired-callback": () => setTurnstileToken(""),
         "error-callback": () => setTurnstileToken(""),
-        theme: "light"
+        theme: "light",
+        size: "flexible",
+        appearance: "always"
       });
     } catch {
       /* ignore render races */
@@ -87,36 +91,46 @@ export function useEnquiryAntiSpam() {
     };
   }
 
+  const honeypot = (
+    <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
+      <label>
+        Website
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultValue=""
+        />
+      </label>
+    </div>
+  );
+
+  const turnstile = SITE_KEY ? (
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        strategy="afterInteractive"
+        onLoad={() => setScriptReady(true)}
+      />
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+        Security check
+      </p>
+      <div id={widgetHostId} className="cf-turnstile-host w-full min-w-0 max-w-full overflow-hidden" />
+    </div>
+  ) : null;
+
   const fields = (
     <>
-      {/* Honeypot — hidden from humans; bots that auto-fill trip the backend. */}
-      <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
-        <label>
-          Website
-          <input
-            type="text"
-            name="website"
-            tabIndex={-1}
-            autoComplete="off"
-            defaultValue=""
-          />
-        </label>
-      </div>
-      {SITE_KEY ? (
-        <>
-          <Script
-            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-            strategy="afterInteractive"
-            onLoad={() => setScriptReady(true)}
-          />
-          <div id={widgetHostId} className="my-2" />
-        </>
-      ) : null}
+      {honeypot}
+      {turnstile}
     </>
   );
 
   return {
     fields,
+    honeypot,
+    turnstile,
     antiSpamPayload,
     resetTurnstile,
     turnstileRequired: Boolean(SITE_KEY),

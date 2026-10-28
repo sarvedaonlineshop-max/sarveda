@@ -49,19 +49,40 @@ export function CourseSessionsList({ sessions }: Props) {
       >
         Course Sessions
       </h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <style>{`
+        .course-session-card {
+          border: 1px solid rgba(185, 138, 62, 0.22);
+          background: var(--brand-ivory);
+          padding: 20px 18px;
+          border-radius: 12px;
+          box-shadow:
+            0 10px 24px rgba(44, 36, 32, 0.10),
+            0 0 28px rgba(185, 138, 62, 0.18);
+          transform: translateY(-1px);
+          transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+        .course-session-card:hover {
+          transform: translateY(-4px) scale(1.015);
+          box-shadow:
+            0 16px 36px rgba(44, 36, 32, 0.14),
+            0 0 36px rgba(185, 138, 62, 0.28);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .course-session-card,
+          .course-session-card:hover {
+            transform: none;
+            transition: none;
+          }
+        }
+      `}</style>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "6px 4px" }}>
         {list.map((session) => {
           const teacher = session.teacherName?.trim();
           const when = formatSessionWhen(session);
           return (
             <article
               key={`${session.sessionId}-${session.name}`}
-              className="min-w-0"
-              style={{
-                border: "1px solid var(--brand-cream-dark)",
-                background: "var(--brand-ivory)",
-                padding: "18px 16px"
-              }}
+              className="course-session-card min-w-0"
             >
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "baseline" }}>
                 <span

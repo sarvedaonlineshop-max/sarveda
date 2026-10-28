@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { CheckCircle2, ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -63,6 +63,7 @@ export function ContentForm({ type, itemId }: Props) {
   const [err, setErr] = useState<string | null>(null);
   const [mentorOptions, setMentorOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [saveBarReady, setSaveBarReady] = useState(false);
+  const [saveOkOpen, setSaveOkOpen] = useState(false);
 
   useEffect(() => {
     if (!isCourse) return;
@@ -116,12 +117,12 @@ export function ContentForm({ type, itemId }: Props) {
       const payload = formValuesToPayload(type, values);
       if (isNew) {
         const item = await createAdminContent(type, payload);
-        await revalidatePublicContent(type, String(item.slug ?? values.slug));
+        void revalidatePublicContent(type, String(item.slug ?? values.slug));
         router.push(`/admin/content/${type}/${item.id as string}`);
       } else {
         await updateAdminContent(type, itemId!, payload);
-        await revalidatePublicContent(type, values.slug);
-        await load();
+        void revalidatePublicContent(type, values.slug);
+        setSaveOkOpen(true);
       }
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "Save failed");
@@ -783,49 +784,96 @@ export function ContentForm({ type, itemId }: Props) {
 
       {saveBarReady
         ? createPortal(
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] md:left-[240px]">
-              <div
-                className="pointer-events-auto border-t border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-page-bg,#f7f3eb)]/95 px-4 py-3 shadow-[0_-8px_24px_rgba(44,36,32,0.08)] backdrop-blur dark:border-stone-700 dark:bg-stone-950/95 md:px-8"
-                style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
-              >
-                <div className="mx-auto flex w-full max-w-[1680px] flex-wrap gap-3">
-                  <button
-                    type="submit"
-                    form="admin-content-form"
-                    disabled={saving}
-                    className="rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
-                    style={{
-                      background: "linear-gradient(135deg, #1c352a, #2d5040)",
-                      boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
-                    }}
-                  >
-                    {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
-                  </button>
-                  {!isNew ? (
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => void onDelete()}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+            <>
+              <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] md:left-[240px]">
+                <div
+                  className="pointer-events-auto border-t border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-page-bg,#f7f3eb)]/95 px-4 py-3 shadow-[0_-8px_24px_rgba(44,36,32,0.08)] backdrop-blur dark:border-stone-700 dark:bg-stone-950/95 md:px-8"
+                  style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+                >
+                  <div className="mx-auto flex w-full max-w-[1680px] flex-wrap items-center justify-end gap-3">
+                    {!isNew ? (
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void onDelete()}
+                        className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+                      >
+                        Deactivate
+                      </button>
+                    ) : null}
+                    <Link
+                      href={`/admin/content?type=${type}`}
+                      className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
                     >
-                      Deactivate
+                      Cancel
+                    </Link>
+                    <button
+                      type="submit"
+                      form="admin-content-form"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
+                      style={{
+                        background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                        boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
+                      }}
+                    >
+                      {saving ? (
+                        <>
+                          <span
+                            className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                            aria-hidden
+                          />
+                          Saving…
+                        </>
+                      ) : isNew ? (
+                        "Create"
+                      ) : (
+                        "Save changes"
+                      )}
                     </button>
-                  ) : null}
-                  <Link
-                    href={`/admin/content?type=${type}`}
-                    className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
-                  >
-                    Cancel
-                  </Link>
+                  </div>
                 </div>
               </div>
-            </div>,
+              {saveOkOpen ? (
+                <div
+                  className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="admin-save-ok-title"
+                >
+                  <div className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-[0_18px_50px_rgba(44,36,32,0.22)]">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-7 w-7 shrink-0 text-emerald-600" aria-hidden />
+                      <div>
+                        <p
+                          id="admin-save-ok-title"
+                          className="text-base font-semibold text-stone-900"
+                        >
+                          Changes saved successfully
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+                          Changes may take 2 to 3 minutes to reflect in frontend
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-bold text-[#fffbf5]"
+                      style={{ background: "linear-gradient(135deg, #1c352a, #2d5040)" }}
+                      onClick={() => setSaveOkOpen(false)}
+                    >
+                      OK
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </>,
             document.body
           )
         : null}
