@@ -117,14 +117,21 @@ export default async function CourseDetailPage({ params }: Props) {
     dateRange && { label: "When", value: dateRange },
     durationLabel && { label: "Duration", value: durationLabel },
     extra.mode && { label: "Mode", value: extra.mode },
-    extra.venue && { label: "Venue", value: extra.venue },
+    extra.venue && !extra.venueImageUrl?.trim() && { label: "Venue", value: extra.venue },
     extra.timings && { label: "Timings", value: extra.timings }
   ].filter(Boolean) as Array<{ label: string; value: string }>;
+  const venueImage = extra.venueImageUrl?.trim() ? resolveMediaUrl(extra.venueImageUrl) ?? extra.venueImageUrl : null;
+  const venueHref = extra.venueUrl?.trim() || null;
 
   const courseRichTextCss = `
     .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 42rem; }
+    .course-rich-text h1 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.6rem,2.8vw,1.9rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.35rem,2.4vw,1.6rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.12rem,2vw,1.28rem); font-weight:700; margin-top:1.75rem; margin-bottom:0.7rem; padding-bottom:0.45rem; border-bottom:1px solid var(--brand-cream-dark); }
+    .course-rich-text h4 { color:var(--brand-forest); font-size:1.02rem; font-weight:700; margin-top:1.25rem; margin-bottom:0.5rem; }
+    .course-rich-text ul.tick-list { list-style: none; padding-left: 1.35rem; }
+    .course-rich-text ul.tick-list li { position: relative; }
+    .course-rich-text ul.tick-list li::before { content: "✓"; position: absolute; left: -1.15rem; color: var(--brand-forest); font-weight: 700; }
     .course-rich-text p { margin: 0 0 1.15rem; line-height: 1.85; }
     .course-rich-text p:last-child { margin-bottom: 0; }
     .course-rich-text .course-slot-time { display:inline-block; margin-top:0.15rem; color:var(--brand-forest); font-weight:700; font-size:14px; letter-spacing:0.01em; }
@@ -222,6 +229,52 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {venueImage || (venueHref && extra.venue?.trim()) ? (
+              <section style={{ marginBottom: "40px" }}>
+                <h2 className="font-serif" style={{ color: "var(--brand-forest)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "16px" }}>
+                  Location
+                </h2>
+                {(() => {
+                  const inner = (
+                    <>
+                      {venueImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={venueImage}
+                          alt={extra.venue?.trim() || "Course location"}
+                          className="w-full object-cover"
+                          style={{
+                            aspectRatio: "16 / 9",
+                            border: "1px solid var(--brand-cream-dark)",
+                            background: "var(--brand-ivory)"
+                          }}
+                        />
+                      ) : null}
+                      {extra.venue?.trim() ? (
+                        <p
+                          style={{
+                            color: "var(--brand-forest)",
+                            fontSize: "15px",
+                            fontWeight: 700,
+                            marginTop: venueImage ? "12px" : 0
+                          }}
+                        >
+                          {extra.venue}
+                        </p>
+                      ) : null}
+                    </>
+                  );
+                  return venueHref ? (
+                    <a href={venueHref} target="_blank" rel="noopener noreferrer" className="block hover:opacity-95">
+                      {inner}
+                    </a>
+                  ) : (
+                    inner
+                  );
+                })()}
+              </section>
+            ) : null}
 
             {layout === "CUSTOM" && showMainDescription && course.description ? (
               <div className="course-rich-text min-w-0" style={{ marginBottom: "40px" }}>

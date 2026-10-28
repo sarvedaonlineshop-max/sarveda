@@ -14,6 +14,8 @@ export type CourseLayoutTemplate = "STANDARD" | "SESSIONS" | "CURRICULUM" | "CUS
 
 export type CourseSession = {
   sessionId: string;
+  /** Public label instead of “Session 1”. */
+  header?: string | null;
   name: string;
   mentorId?: string | null;
   teacherName?: string | null;

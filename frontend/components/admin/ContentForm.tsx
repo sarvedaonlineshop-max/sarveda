@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { AccordionRichEditor } from "@/components/admin/AccordionRichEditor";
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
 import { ContentVideoUpload } from "@/components/admin/ContentVideoUpload";
 import { CourseCurriculumFields } from "@/components/admin/CourseCurriculumFields";
@@ -205,7 +206,7 @@ export function ContentForm({ type, itemId }: Props) {
   }
 
   const fieldInput = inputClass;
-  const formClass = "mx-auto w-full max-w-[1680px] space-y-5 pb-28 font-sans";
+  const formClass = "mx-auto w-full max-w-[1680px] space-y-5 pb-32 font-sans";
   const cardClass =
     "space-y-4 rounded-xl border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900";
 
@@ -425,20 +426,12 @@ export function ContentForm({ type, itemId }: Props) {
               posterUrl={values.posterUrl || values.imageUrl}
             />
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Mode">
                 <input
                   value={values.courseMode}
                   onChange={(e) => setValues((v) => ({ ...v, courseMode: e.target.value }))}
                   placeholder="Online / In-person"
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Venue / location">
-                <input
-                  value={values.courseVenue}
-                  onChange={(e) => setValues((v) => ({ ...v, courseVenue: e.target.value }))}
-                  placeholder="Zoom, Rishikesh…"
                   className={inputClass}
                 />
               </Field>
@@ -451,6 +444,48 @@ export function ContentForm({ type, itemId }: Props) {
                 />
               </Field>
             </div>
+
+            {values.layoutTemplate === "SESSIONS" ? (
+              <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-4 dark:border-stone-700 dark:bg-stone-950/40">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Location</p>
+                <p className="text-xs text-stone-500">
+                  Photo, title, and map/link. Shoppers click the photo to open the location URL.
+                </p>
+                <ContentImageUpload
+                  label="Location photo"
+                  url={values.courseVenueImageUrl}
+                  onUrlChange={(courseVenueImageUrl) => setValues((v) => ({ ...v, courseVenueImageUrl }))}
+                  folder="courses"
+                  preview="wide"
+                  hint="JPEG, PNG or WebP · max 10MB"
+                />
+                <Field label="Location title">
+                  <input
+                    value={values.courseVenue}
+                    onChange={(e) => setValues((v) => ({ ...v, courseVenue: e.target.value }))}
+                    placeholder="e.g. Mysore ashram"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Location URL">
+                  <input
+                    value={values.courseVenueUrl}
+                    onChange={(e) => setValues((v) => ({ ...v, courseVenueUrl: e.target.value }))}
+                    placeholder="https://maps.google.com/…"
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+            ) : (
+              <Field label="Venue / location">
+                <input
+                  value={values.courseVenue}
+                  onChange={(e) => setValues((v) => ({ ...v, courseVenue: e.target.value }))}
+                  placeholder="Zoom, Rishikesh…"
+                  className={inputClass}
+                />
+              </Field>
+            )}
 
             {values.layoutTemplate !== "CUSTOM" ? (
               <Field label="About the course (summary)">
@@ -473,12 +508,11 @@ export function ContentForm({ type, itemId }: Props) {
                 <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
                   Bullet list of materials, access, certificates, etc. — not the course story.
                 </p>
-                <textarea
+                <AccordionRichEditor
+                  variant="full"
                   value={values.courseIncludes}
-                  onChange={(e) => setValues((v) => ({ ...v, courseIncludes: e.target.value }))}
-                  rows={4}
-                  placeholder="Bullet list or HTML"
-                  className={`${inputClass} font-mono text-xs`}
+                  onChange={(courseIncludes) => setValues((v) => ({ ...v, courseIncludes }))}
+                  placeholder="Materials, access, certificates…"
                 />
               </Field>
             ) : null}
@@ -620,23 +654,16 @@ export function ContentForm({ type, itemId }: Props) {
           </>
         ) : null}
 
+        {isCourse && values.layoutTemplate === "SESSIONS" ? null : (
         <Field
           label={
             isCourse
-              ? values.layoutTemplate === "SESSIONS"
-                ? "Additional page content (optional)"
-                : values.layoutTemplate === "CUSTOM"
-                  ? "Custom page content (HTML)"
-                  : "Page content / description"
+              ? values.layoutTemplate === "CUSTOM"
+                ? "Custom page content (HTML)"
+                : "Page content / description"
               : contentBodyLabel(type)
           }
         >
-          {isCourse && values.layoutTemplate === "SESSIONS" ? (
-            <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-              Session details belong in the Sessions section above — not here. Use this field only
-              for intro text before the session list.
-            </p>
-          ) : null}
           <textarea
             value={values.body}
             onChange={(e) => setValues((v) => ({ ...v, body: e.target.value }))}
@@ -645,6 +672,7 @@ export function ContentForm({ type, itemId }: Props) {
             placeholder="HTML or plain text"
           />
         </Field>
+        )}
       </div>
 
       <div
@@ -743,40 +771,47 @@ export function ContentForm({ type, itemId }: Props) {
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
-          style={{
-            background: "linear-gradient(135deg, #1c352a, #2d5040)",
-            boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
-          }}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:left-[240px]">
+        <div
+          className="pointer-events-auto border-t border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-page-bg,#f7f3eb)]/95 px-4 py-3 shadow-[0_-8px_24px_rgba(44,36,32,0.08)] backdrop-blur dark:border-stone-700 dark:bg-stone-950/95 md:px-8"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
-          {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
-        </button>
-        {!isNew ? (
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void onDelete()}
-            className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
-          >
-            Deactivate
-          </button>
-        ) : null}
-        <Link
-          href={`/admin/content?type=${type}`}
-          className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
-        >
-          Cancel
-        </Link>
+          <div className="mx-auto flex w-full max-w-[1680px] flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
+              style={{
+                background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
+              }}
+            >
+              {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
+            </button>
+            {!isNew ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void onDelete()}
+                className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+              >
+                Deactivate
+              </button>
+            ) : null}
+            <Link
+              href={`/admin/content?type=${type}`}
+              className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
+            >
+              Cancel
+            </Link>
+          </div>
+        </div>
       </div>
     </form>
   );

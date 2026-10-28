@@ -208,6 +208,8 @@ function buildCourseExtra(
     | "seoKeyword"
     | "mode"
     | "venue"
+    | "venueImageUrl"
+    | "venueUrl"
     | "timings"
     | "courseIncludes"
     | "aboutTheCourse"
@@ -255,6 +257,7 @@ function buildCourseExtra(
     extra.sessions = body.sessions
       .map((s) => ({
         sessionId: s.sessionId.trim(),
+        header: s.header?.trim() || null,
         name: s.name.trim(),
         mentorId: s.mentorId?.trim() || null,
         teacherName: s.teacherName?.trim() || null,
@@ -293,6 +296,12 @@ function buildCourseExtra(
   }
   if (body.venue !== undefined) {
     extra.venue = body.venue?.trim() || null;
+  }
+  if (body.venueImageUrl !== undefined) {
+    extra.venueImageUrl = body.venueImageUrl?.trim() || null;
+  }
+  if (body.venueUrl !== undefined) {
+    extra.venueUrl = body.venueUrl?.trim() || null;
   }
   if (body.timings !== undefined) {
     extra.timings = body.timings?.trim() || null;
@@ -367,6 +376,8 @@ function courseExtraFieldsPresent(
     body.seoKeyword !== undefined ||
     body.mode !== undefined ||
     body.venue !== undefined ||
+    body.venueImageUrl !== undefined ||
+    body.venueUrl !== undefined ||
     body.timings !== undefined ||
     body.courseIncludes !== undefined ||
     body.aboutTheCourse !== undefined ||

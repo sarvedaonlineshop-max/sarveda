@@ -33,6 +33,8 @@ export type CourseExtra = {
   curriculum?: CourseCurriculumModule[];
   mode?: string | null;
   venue?: string | null;
+  venueImageUrl?: string | null;
+  venueUrl?: string | null;
   timings?: string | null;
   courseIncludes?: string | null;
   aboutTheCourse?: string | null;

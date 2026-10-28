@@ -73,7 +73,7 @@ export function CourseSessionsList({ sessions }: Props) {
                     textTransform: "uppercase"
                   }}
                 >
-                  Session {session.sessionId || "—"}
+                  {session.header?.trim() || `Session ${session.sessionId || "—"}`}
                 </span>
                 {when ? (
                   <span style={{ color: "var(--brand-muted)", fontSize: "12px" }}>
@@ -102,9 +102,17 @@ export function CourseSessionsList({ sessions }: Props) {
                 <div className="course-session-content min-w-0 break-words text-sm leading-[1.75]" style={{ color: "var(--brand-ink)" }}>
                   <style>{`
                     .course-session-content > * + * { margin-top: 0.85rem; }
+                    .course-session-content h1 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:1.6rem; font-weight:700; margin:1.2rem 0 0.6rem; }
+                    .course-session-content h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:1.35rem; font-weight:700; margin:1.1rem 0 0.5rem; }
+                    .course-session-content h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:1.15rem; font-weight:700; margin:1rem 0 0.45rem; }
+                    .course-session-content h4 { color:var(--brand-forest); font-size:1rem; font-weight:700; margin:0.85rem 0 0.4rem; }
                     .course-session-content ul, .course-session-content ol { padding-left: 1.25rem; margin: 0.75rem 0; }
+                    .course-session-content ul.tick-list { list-style: none; padding-left: 1.35rem; }
+                    .course-session-content ul.tick-list li { position: relative; }
+                    .course-session-content ul.tick-list li::before { content: "✓"; position: absolute; left: -1.15rem; color: var(--brand-forest); font-weight: 700; }
                     .course-session-content li { margin-bottom: 0.45rem; line-height: 1.75; }
                     .course-session-content p { margin-bottom: 0.9rem; line-height: 1.75; }
+                    .course-session-content a { color: var(--brand-gold); text-decoration: underline; }
                     .course-session-content br + br { display: block; content: ""; margin-top: 0.7rem; }
                     .course-session-content img, .course-session-content iframe { max-width: 100% !important; height: auto !important; }
                   `}</style>

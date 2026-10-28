@@ -84,6 +84,8 @@ export type ContentFormValues = {
   posterUrl: string;
   courseMode: string;
   courseVenue: string;
+  courseVenueImageUrl: string;
+  courseVenueUrl: string;
   courseTimings: string;
   courseIncludes: string;
   aboutTheCourse: string;
@@ -120,6 +122,8 @@ export const emptyContentForm: ContentFormValues = {
   posterUrl: "",
   courseMode: "",
   courseVenue: "",
+  courseVenueImageUrl: "",
+  courseVenueUrl: "",
   courseTimings: "",
   courseIncludes: "",
   aboutTheCourse: "",
@@ -181,6 +185,8 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
     posterUrl: "",
     courseMode: "",
     courseVenue: "",
+    courseVenueImageUrl: "",
+    courseVenueUrl: "",
     courseTimings: "",
     courseIncludes: "",
     aboutTheCourse: "",
@@ -236,8 +242,9 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
     durationHours: hours != null ? String(hours) : "",
     courseSessions:
       extra.sessions?.length
-        ? extra.sessions.map((s) => ({
+        ?         extra.sessions.map((s) => ({
             sessionId: s.sessionId ?? "",
+            header: s.header ?? "",
             name: s.name ?? "",
             mentorId: s.mentorId ?? null,
             teacherName: s.teacherName ?? "",
@@ -263,6 +270,8 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
     posterUrl: extra.posterUrl ?? "",
     courseMode: extra.mode ?? "",
     courseVenue: extra.venue ?? "",
+    courseVenueImageUrl: extra.venueImageUrl ?? "",
+    courseVenueUrl: extra.venueUrl ?? "",
     courseTimings: extra.timings ?? "",
     courseIncludes: extra.courseIncludes ?? "",
     aboutTheCourse: extra.aboutTheCourse ?? "",
@@ -353,6 +362,7 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
     base.sessions = values.courseSessions
       .map((s) => ({
         sessionId: s.sessionId.trim(),
+        header: s.header?.trim() || null,
         name: s.name.trim(),
         mentorId: s.mentorId?.trim() || null,
         teacherName: s.teacherName?.trim() || null,
@@ -377,6 +387,8 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
     base.posterUrl = values.posterUrl.trim() || null;
     base.mode = values.courseMode.trim() || null;
     base.venue = values.courseVenue.trim() || null;
+    base.venueImageUrl = values.courseVenueImageUrl.trim() || null;
+    base.venueUrl = values.courseVenueUrl.trim() || null;
     base.timings = values.courseTimings.trim() || null;
     base.courseIncludes = values.courseIncludes.trim() || null;
     base.aboutTheCourse = values.aboutTheCourse.trim() || null;
