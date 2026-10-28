@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { AccordionRichEditor } from "@/components/admin/AccordionRichEditor";
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
@@ -35,6 +36,7 @@ import {
   type ContentFormValues
 } from "@/lib/admin-content";
 import { sanitizeNonNegativeInput } from "@/lib/admin-form-numbers";
+import { revalidatePublicContent } from "@/lib/revalidate-public-content";
 
 type Props = {
   type: AdminContentType;
@@ -60,6 +62,7 @@ export function ContentForm({ type, itemId }: Props) {
   const [seoAiNote, setSeoAiNote] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mentorOptions, setMentorOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [saveBarReady, setSaveBarReady] = useState(false);
 
   useEffect(() => {
     if (!isCourse) return;
@@ -97,6 +100,10 @@ export function ContentForm({ type, itemId }: Props) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    setSaveBarReady(true);
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!values.title.trim()) {
@@ -109,9 +116,11 @@ export function ContentForm({ type, itemId }: Props) {
       const payload = formValuesToPayload(type, values);
       if (isNew) {
         const item = await createAdminContent(type, payload);
+        await revalidatePublicContent(type, String(item.slug ?? values.slug));
         router.push(`/admin/content/${type}/${item.id as string}`);
       } else {
         await updateAdminContent(type, itemId!, payload);
+        await revalidatePublicContent(type, values.slug);
         await load();
       }
     } catch (ex) {
@@ -193,6 +202,7 @@ export function ContentForm({ type, itemId }: Props) {
     setErr(null);
     try {
       await deleteAdminContent(type, itemId);
+      await revalidatePublicContent(type, values.slug);
       router.push(`/admin/content?type=${type}`);
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "Delete failed");
@@ -211,7 +221,7 @@ export function ContentForm({ type, itemId }: Props) {
     "space-y-4 rounded-xl border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900";
 
   return (
-    <form onSubmit={(e) => void onSubmit(e)} className={formClass}>
+    <form id="admin-content-form" onSubmit={(e) => void onSubmit(e)} className={formClass}>
       <div>
         <Link
           href={
@@ -771,48 +781,54 @@ export function ContentForm({ type, itemId }: Props) {
         ) : null}
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:left-[240px]">
-        <div
-          className="pointer-events-auto border-t border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-page-bg,#f7f3eb)]/95 px-4 py-3 shadow-[0_-8px_24px_rgba(44,36,32,0.08)] backdrop-blur dark:border-stone-700 dark:bg-stone-950/95 md:px-8"
-          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
-        >
-          <div className="mx-auto flex w-full max-w-[1680px] flex-wrap gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
-              style={{
-                background: "linear-gradient(135deg, #1c352a, #2d5040)",
-                boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
-              }}
-            >
-              {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
-            </button>
-            {!isNew ? (
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void onDelete()}
-                className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+      {saveBarReady
+        ? createPortal(
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] md:left-[240px]">
+              <div
+                className="pointer-events-auto border-t border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-page-bg,#f7f3eb)]/95 px-4 py-3 shadow-[0_-8px_24px_rgba(44,36,32,0.08)] backdrop-blur dark:border-stone-700 dark:bg-stone-950/95 md:px-8"
+                style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
               >
-                Deactivate
-              </button>
-            ) : null}
-            <Link
-              href={`/admin/content?type=${type}`}
-              className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
-            >
-              Cancel
-            </Link>
-          </div>
-        </div>
-      </div>
+                <div className="mx-auto flex w-full max-w-[1680px] flex-wrap gap-3">
+                  <button
+                    type="submit"
+                    form="admin-content-form"
+                    disabled={saving}
+                    className="rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
+                    style={{
+                      background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                      boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
+                    }}
+                  >
+                    {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
+                  </button>
+                  {!isNew ? (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void onDelete()}
+                      className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+                    >
+                      Deactivate
+                    </button>
+                  ) : null}
+                  <Link
+                    href={`/admin/content?type=${type}`}
+                    className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
+                  >
+                    Cancel
+                  </Link>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </form>
   );
 }

@@ -1027,8 +1027,8 @@ select:-webkit-autofill {
 }
 
 @keyframes admin-content-settle {
-  from { opacity: 0.72; transform: translateY(2px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0.72; }
+  to { opacity: 1; }
 }
 
 /* Skeletons are intentionally visible, geometric, and stable — closer to the
@@ -1228,8 +1228,8 @@ select:-webkit-autofill {
 }
 
 @keyframes admin-content-settle-v3 {
-  from { opacity: 0.58; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0.58; }
+  to { opacity: 1; }
 }
 
 /* Skeleton bars intentionally use Vercel-like contrast: obvious geometry,

@@ -27,8 +27,9 @@ import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 import { parseVideoSource } from "@/lib/video-embed";
 
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   if (skipBuildTimeStaticParams()) return [];
@@ -53,7 +54,7 @@ function prettyDate(s: string | null | undefined) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const course = await fetchCourseBySlug(params.slug, { next: { revalidate: 300 } });
+  const course = await fetchCourseBySlug(params.slug, { cache: "no-store" });
   if (!course) return { title: "Course" };
   const title = course.seoTitle || course.title;
   const description = metaDescription(course.seoDescription || course.shortDescription || course.description);
@@ -67,7 +68,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CourseDetailPage({ params }: Props) {
-  const course = await fetchCourseBySlug(params.slug, { next: { revalidate: 300 } });
+  const course = await fetchCourseBySlug(params.slug, { cache: "no-store" });
   if (!course) notFound();
 
   const extra = parseCourseExtra(course.extra);
@@ -245,7 +246,7 @@ export default async function CourseDetailPage({ params }: Props) {
                           alt={extra.venue?.trim() || "Course location"}
                           className="w-full object-cover"
                           style={{
-                            aspectRatio: "16 / 9",
+                            aspectRatio: "1 / 1",
                             border: "1px solid var(--brand-cream-dark)",
                             background: "var(--brand-ivory)"
                           }}
@@ -257,7 +258,7 @@ export default async function CourseDetailPage({ params }: Props) {
                             color: "var(--brand-forest)",
                             fontSize: "15px",
                             fontWeight: 700,
-                            marginTop: venueImage ? "12px" : 0
+                            marginTop: venueImage ? "8px" : 0
                           }}
                         >
                           {extra.venue}
@@ -265,12 +266,16 @@ export default async function CourseDetailPage({ params }: Props) {
                       ) : null}
                     </>
                   );
-                  return venueHref ? (
-                    <a href={venueHref} target="_blank" rel="noopener noreferrer" className="block hover:opacity-95">
-                      {inner}
-                    </a>
-                  ) : (
-                    inner
+                  return (
+                    <div className="w-1/4 min-w-[140px] max-w-[220px]">
+                      {venueHref ? (
+                        <a href={venueHref} target="_blank" rel="noopener noreferrer" className="block hover:opacity-95">
+                          {inner}
+                        </a>
+                      ) : (
+                        inner
+                      )}
+                    </div>
                   );
                 })()}
               </section>
