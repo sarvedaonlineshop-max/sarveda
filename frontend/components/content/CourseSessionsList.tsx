@@ -152,7 +152,7 @@ export function CourseSessionsList({ sessions }: Props) {
                     .course-session-content h4 { color:var(--brand-forest); font-size:1rem; font-weight:700; margin:0.85rem 0 0.4rem; }
                     .course-session-content ul, .course-session-content ol { padding-left: 1.25rem; margin: 0.75rem 0; }
                     .course-session-content li:empty,
-                    .course-session-content li:has(> br:only-child) { display: none; }
+                    .course-session-content li:has(br:only-child) { display: none; }
                     .course-session-content li { margin-bottom: 0.45rem; line-height: 1.75; }
                     .course-session-content p { margin-bottom: 0.9rem; line-height: 1.75; }
                     .course-session-content a { color: var(--brand-gold); text-decoration: underline; }
