@@ -586,6 +586,89 @@ export async function adminNotifications(_req: Request, res: Response, next: Nex
   }
 }
 
+function notificationPrefsPayload(user: {
+  adminOrderNotificationsEnabled: boolean;
+  adminChatNotificationsEnabled: boolean;
+}) {
+  return {
+    orderNotifications: user.adminOrderNotificationsEnabled,
+    chatNotifications: user.adminChatNotificationsEnabled
+  };
+}
+
+/** Per-admin browser alerts for orders and chats. */
+export async function getAdminNotificationPreferences(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const userId = req.authUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        adminOrderNotificationsEnabled: true,
+        adminChatNotificationsEnabled: true
+      }
+    });
+    if (!user) {
+      res.status(404).json({ success: false, error: "User not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data: notificationPrefsPayload(user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchAdminNotificationPreferences(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const userId = req.authUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+      return;
+    }
+    const body = req.body as {
+      orderNotifications?: boolean;
+      chatNotifications?: boolean;
+    };
+    if (body.orderNotifications === undefined && body.chatNotifications === undefined) {
+      res.status(400).json({
+        success: false,
+        error: "No preferences to update",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(body.orderNotifications !== undefined
+          ? { adminOrderNotificationsEnabled: body.orderNotifications }
+          : {}),
+        ...(body.chatNotifications !== undefined
+          ? { adminChatNotificationsEnabled: body.chatNotifications }
+          : {})
+      },
+      select: {
+        adminOrderNotificationsEnabled: true,
+        adminChatNotificationsEnabled: true
+      }
+    });
+    res.json({ success: true, data: notificationPrefsPayload(user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** Matches payment-timeout job (15 min). Older unpaid → Abandoned (Pending is not a desk pill). */
 const PAYMENT_PENDING_MS = 15 * 60 * 1000;
 

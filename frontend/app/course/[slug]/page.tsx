@@ -114,15 +114,20 @@ export default async function CourseDetailPage({ params }: Props) {
   const teachersSection = <CourseAboutTeachers teachers={teacherProfiles} />;
   const registrationOpen = isCourseUpcoming(course);
 
+  const venueLabel = extra.venue?.trim() || "";
+  const venueHref = extra.venueUrl?.trim() || "";
   const programmeRows = [
     teachers.length > 0 && { label: "Facilitators", value: teachers.join(", ") },
     dateRange && { label: "When", value: dateRange },
     durationLabel && { label: "Duration", value: durationLabel },
     extra.mode && { label: "Mode", value: extra.mode },
+    (venueLabel || venueHref) && {
+      label: "Location",
+      value: venueLabel || "Google Maps",
+      href: venueHref || undefined
+    },
     extra.timings && { label: "Timings", value: extra.timings }
-  ].filter(Boolean) as Array<{ label: string; value: string }>;
-  const venueLabel = extra.venue?.trim() || "";
-  const venueHref = extra.venueUrl?.trim() || "";
+  ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
 
   const courseRichTextCss = `
     .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 42rem; }
@@ -130,12 +135,7 @@ export default async function CourseDetailPage({ params }: Props) {
     .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.35rem,2.4vw,1.6rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.12rem,2vw,1.28rem); font-weight:700; margin-top:1.75rem; margin-bottom:0.7rem; padding-bottom:0.45rem; border-bottom:1px solid var(--brand-cream-dark); }
     .course-rich-text h4 { color:var(--brand-forest); font-size:1.02rem; font-weight:700; margin-top:1.25rem; margin-bottom:0.5rem; }
-    .course-rich-text .rich-features ul { list-style: disc; padding-left: 1.25rem; }
-    .course-rich-text .rich-features ul li { padding-left: 0; list-style: inherit; }
-    .course-rich-text .rich-features ul li::before { content: none; background: none; width: 0; height: 0; }
-    .course-rich-text ul.tick-list { list-style: none; padding-left: 1.35rem; }
-    .course-rich-text ul.tick-list li { position: relative; list-style: none; padding-left: 0; }
-    .course-rich-text ul.tick-list li::before { content: "✓"; background: none; width: auto; height: auto; position: absolute; left: -1.15rem; top: 0; color: var(--brand-forest); font-weight: 700; }
+    .course-rich-text li:empty { display: none; }
     .course-rich-text p { margin: 0 0 1.15rem; line-height: 1.85; }
     .course-rich-text p:last-child { margin-bottom: 0; }
     .course-rich-text .course-slot-time { display:inline-block; margin-top:0.15rem; color:var(--brand-forest); font-weight:700; font-size:14px; letter-spacing:0.01em; }
@@ -227,40 +227,25 @@ export default async function CourseDetailPage({ params }: Props) {
                   {programmeRows.map((row, i) => (
                     <div key={row.label} className="flex flex-col gap-1 py-3.5 sm:flex-row sm:items-start sm:gap-5" style={{ borderBottom: i < programmeRows.length - 1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
                       <span className="shrink-0" style={{ color:"var(--brand-muted)", fontSize:"13px", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", minWidth:"110px", paddingTop:"3px" }}>{row.label}</span>
-                      <span className="min-w-0 break-words" style={{ color:"var(--brand-ink)", fontSize:"16px", lineHeight:1.65 }}>{row.value}</span>
+                      <span className="min-w-0 break-words" style={{ color:"var(--brand-ink)", fontSize:"16px", lineHeight:1.65 }}>
+                        {row.href ? (
+                          <a href={row.href} target="_blank" rel="noopener noreferrer" style={{ color:"var(--brand-forest)", fontWeight:700, textDecoration:"underline", textUnderlineOffset:"3px" }}>
+                            {row.value}
+                          </a>
+                        ) : (
+                          row.value
+                        )}
+                        {row.href ? (
+                          <a href={row.href} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:"4px", color:"var(--brand-gold)", fontSize:"14px", fontWeight:700, textDecoration:"none" }}>
+                            (Click to open in google maps)
+                          </a>
+                        ) : null}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {venueLabel || venueHref ? (
-              <section style={{ marginBottom: "40px" }}>
-                <h2 className="font-serif" style={{ color: "var(--brand-forest)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "12px" }}>
-                  Location
-                </h2>
-                {venueHref ? (
-                  <a
-                    href={venueHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "var(--brand-forest)",
-                      fontSize: "16px",
-                      fontWeight: 700,
-                      textDecoration: "underline",
-                      textUnderlineOffset: "3px"
-                    }}
-                  >
-                    {venueLabel || "View on Google Maps"}
-                  </a>
-                ) : (
-                  <p style={{ color: "var(--brand-forest)", fontSize: "16px", fontWeight: 700, margin: 0 }}>
-                    {venueLabel}
-                  </p>
-                )}
-              </section>
-            ) : null}
 
             {layout === "CUSTOM" && showMainDescription && course.description ? (
               <div className="course-rich-text min-w-0" style={{ marginBottom: "40px" }}>

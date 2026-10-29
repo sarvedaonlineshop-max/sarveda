@@ -240,12 +240,15 @@ export async function sendPushToAdmins(
       logger.warn("fcm_admin_skip_not_configured", { title });
       return 0;
     }
+    const channel = data.type === "chat" ? "chat" : data.type === "order" ? "order" : "all";
     const users = await prisma.user.findMany({
       where: {
         role: { in: ["ADMIN", "SUPER_ADMIN"] },
         deletedAt: null,
         pushNotificationsEnabled: true,
-        fcmWebToken: { not: null }
+        fcmWebToken: { not: null },
+        ...(channel === "order" ? { adminOrderNotificationsEnabled: true } : {}),
+        ...(channel === "chat" ? { adminChatNotificationsEnabled: true } : {})
       },
       select: { email: true, fcmWebToken: true }
     });

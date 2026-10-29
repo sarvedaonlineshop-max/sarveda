@@ -111,6 +111,8 @@ router.get("/reports/export", reports.exportAdminReport);
 router.get("/reports/analytics", reports.adminReportAnalytics);
 router.get("/me/sessions", reports.adminMeSessions);
 router.get("/notifications", admin.adminNotifications);
+router.get("/notification-preferences", admin.getAdminNotificationPreferences);
+router.patch("/notification-preferences", admin.patchAdminNotificationPreferences);
 router.use("/enquiries", enquiriesAdminRoutes);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);
 router.get("/customers", admin.customersList);

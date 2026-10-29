@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "adminOrderNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "adminChatNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true;
