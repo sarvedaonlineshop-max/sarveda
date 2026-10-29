@@ -135,7 +135,8 @@ export default async function CourseDetailPage({ params }: Props) {
     .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.35rem,2.4vw,1.6rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.12rem,2vw,1.28rem); font-weight:700; margin-top:1.75rem; margin-bottom:0.7rem; padding-bottom:0.45rem; border-bottom:1px solid var(--brand-cream-dark); }
     .course-rich-text h4 { color:var(--brand-forest); font-size:1.02rem; font-weight:700; margin-top:1.25rem; margin-bottom:0.5rem; }
-    .course-rich-text li:empty { display: none; }
+    .course-rich-text li:empty,
+    .course-rich-text li:has(> br:only-child) { display: none; }
     .course-rich-text p { margin: 0 0 1.15rem; line-height: 1.85; }
     .course-rich-text p:last-child { margin-bottom: 0; }
     .course-rich-text .course-slot-time { display:inline-block; margin-top:0.15rem; color:var(--brand-forest); font-weight:700; font-size:14px; letter-spacing:0.01em; }
