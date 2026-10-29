@@ -128,9 +128,12 @@ export function CourseSessionsList({ sessions }: Props) {
                     .course-session-content h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:1.15rem; font-weight:700; margin:1rem 0 0.45rem; }
                     .course-session-content h4 { color:var(--brand-forest); font-size:1rem; font-weight:700; margin:0.85rem 0 0.4rem; }
                     .course-session-content ul, .course-session-content ol { padding-left: 1.25rem; margin: 0.75rem 0; }
+                    .course-session-content .rich-features ul { list-style: disc; padding-left: 1.25rem; }
+                    .course-session-content .rich-features ul li { padding-left: 0; list-style: inherit; }
+                    .course-session-content .rich-features ul li::before { content: none; background: none; width: 0; height: 0; }
                     .course-session-content ul.tick-list { list-style: none; padding-left: 1.35rem; }
-                    .course-session-content ul.tick-list li { position: relative; }
-                    .course-session-content ul.tick-list li::before { content: "✓"; position: absolute; left: -1.15rem; color: var(--brand-forest); font-weight: 700; }
+                    .course-session-content ul.tick-list li { position: relative; list-style: none; padding-left: 0; }
+                    .course-session-content ul.tick-list li::before { content: "✓"; background: none; width: auto; height: auto; position: absolute; left: -1.15rem; top: 0; color: var(--brand-forest); font-weight: 700; }
                     .course-session-content li { margin-bottom: 0.45rem; line-height: 1.75; }
                     .course-session-content p { margin-bottom: 0.9rem; line-height: 1.75; }
                     .course-session-content a { color: var(--brand-gold); text-decoration: underline; }

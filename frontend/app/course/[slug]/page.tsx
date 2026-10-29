@@ -119,11 +119,10 @@ export default async function CourseDetailPage({ params }: Props) {
     dateRange && { label: "When", value: dateRange },
     durationLabel && { label: "Duration", value: durationLabel },
     extra.mode && { label: "Mode", value: extra.mode },
-    extra.venue && !extra.venueImageUrl?.trim() && { label: "Venue", value: extra.venue },
     extra.timings && { label: "Timings", value: extra.timings }
   ].filter(Boolean) as Array<{ label: string; value: string }>;
-  const venueImage = extra.venueImageUrl?.trim() ? resolveMediaUrl(extra.venueImageUrl) ?? extra.venueImageUrl : null;
-  const venueHref = extra.venueUrl?.trim() || null;
+  const venueLabel = extra.venue?.trim() || "";
+  const venueHref = extra.venueUrl?.trim() || "";
 
   const courseRichTextCss = `
     .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 42rem; }
@@ -131,9 +130,12 @@ export default async function CourseDetailPage({ params }: Props) {
     .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.35rem,2.4vw,1.6rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.12rem,2vw,1.28rem); font-weight:700; margin-top:1.75rem; margin-bottom:0.7rem; padding-bottom:0.45rem; border-bottom:1px solid var(--brand-cream-dark); }
     .course-rich-text h4 { color:var(--brand-forest); font-size:1.02rem; font-weight:700; margin-top:1.25rem; margin-bottom:0.5rem; }
+    .course-rich-text .rich-features ul { list-style: disc; padding-left: 1.25rem; }
+    .course-rich-text .rich-features ul li { padding-left: 0; list-style: inherit; }
+    .course-rich-text .rich-features ul li::before { content: none; background: none; width: 0; height: 0; }
     .course-rich-text ul.tick-list { list-style: none; padding-left: 1.35rem; }
-    .course-rich-text ul.tick-list li { position: relative; }
-    .course-rich-text ul.tick-list li::before { content: "✓"; position: absolute; left: -1.15rem; color: var(--brand-forest); font-weight: 700; }
+    .course-rich-text ul.tick-list li { position: relative; list-style: none; padding-left: 0; }
+    .course-rich-text ul.tick-list li::before { content: "✓"; background: none; width: auto; height: auto; position: absolute; left: -1.15rem; top: 0; color: var(--brand-forest); font-weight: 700; }
     .course-rich-text p { margin: 0 0 1.15rem; line-height: 1.85; }
     .course-rich-text p:last-child { margin-bottom: 0; }
     .course-rich-text .course-slot-time { display:inline-block; margin-top:0.15rem; color:var(--brand-forest); font-weight:700; font-size:14px; letter-spacing:0.01em; }
@@ -232,53 +234,31 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             )}
 
-            {venueImage || (venueHref && extra.venue?.trim()) ? (
+            {venueLabel || venueHref ? (
               <section style={{ marginBottom: "40px" }}>
-                <h2 className="font-serif" style={{ color: "var(--brand-forest)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "16px" }}>
+                <h2 className="font-serif" style={{ color: "var(--brand-forest)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "12px" }}>
                   Location
                 </h2>
-                {(() => {
-                  const inner = (
-                    <>
-                      {venueImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={venueImage}
-                          alt={extra.venue?.trim() || "Course location"}
-                          className="w-full object-cover"
-                          style={{
-                            aspectRatio: "1 / 1",
-                            border: "1px solid var(--brand-cream-dark)",
-                            background: "var(--brand-ivory)"
-                          }}
-                        />
-                      ) : null}
-                      {extra.venue?.trim() ? (
-                        <p
-                          style={{
-                            color: "var(--brand-forest)",
-                            fontSize: "15px",
-                            fontWeight: 700,
-                            marginTop: venueImage ? "8px" : 0
-                          }}
-                        >
-                          {extra.venue}
-                        </p>
-                      ) : null}
-                    </>
-                  );
-                  return (
-                    <div className="w-1/4 min-w-[140px] max-w-[220px]">
-                      {venueHref ? (
-                        <a href={venueHref} target="_blank" rel="noopener noreferrer" className="block hover:opacity-95">
-                          {inner}
-                        </a>
-                      ) : (
-                        inner
-                      )}
-                    </div>
-                  );
-                })()}
+                {venueHref ? (
+                  <a
+                    href={venueHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "var(--brand-forest)",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      textDecoration: "underline",
+                      textUnderlineOffset: "3px"
+                    }}
+                  >
+                    {venueLabel || "View on Google Maps"}
+                  </a>
+                ) : (
+                  <p style={{ color: "var(--brand-forest)", fontSize: "16px", fontWeight: 700, margin: 0 }}>
+                    {venueLabel}
+                  </p>
+                )}
               </section>
             ) : null}
 
