@@ -6,10 +6,11 @@ const REQUIRED = [
   "JWT_SECRET",
   "RAZORPAY_KEY_ID",
   "RAZORPAY_KEY_SECRET",
-  "SHIPROCKET_EMAIL",
-  "SHIPROCKET_PASSWORD",
   "FRONTEND_URL"
 ];
+
+/** Local CRM and shop demos boot without a Shiprocket account. Live shipping still requires both. */
+const REQUIRED_IN_PRODUCTION = ["SHIPROCKET_EMAIL", "SHIPROCKET_PASSWORD"];
 
 const OPTIONAL_WARN = [
   "STRIPE_SECRET_KEY",
@@ -27,7 +28,9 @@ function envValue(key: string): string | undefined {
 }
 
 export function validateEnv(): void {
-  const missing = REQUIRED.filter((k) => !envValue(k));
+  const production = (process.env.NODE_ENV ?? "development") === "production";
+  const required = production ? [...REQUIRED, ...REQUIRED_IN_PRODUCTION] : REQUIRED;
+  const missing = required.filter((k) => !envValue(k));
   if (missing.length > 0) {
     console.error("[STARTUP] Missing required environment variables:", missing.join(", "));
     console.error("[STARTUP] Server cannot start safely. Exiting.");
@@ -43,7 +46,9 @@ export function validateEnv(): void {
     process.exit(1);
   }
 
-  const warned = OPTIONAL_WARN.filter((k) => !process.env[k]?.trim());
+  const warned = [...OPTIONAL_WARN, ...(production ? [] : REQUIRED_IN_PRODUCTION)].filter(
+    (k) => !process.env[k]?.trim()
+  );
   if (warned.length > 0) {
     console.warn(
       "[STARTUP] Optional env vars not set (some features disabled):",
