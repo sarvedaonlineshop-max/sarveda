@@ -46,7 +46,8 @@ import {
   enquiryFollowUpRef,
   outreachCustomerFirstName,
   outreachMediaKind,
-  outreachMediaTemplateName
+  outreachMediaTemplateName,
+  outreachTextTemplateName
 } from "./whatsapp-outreach";
 
 export { outreachCustomerFirstName } from "./whatsapp-outreach";
@@ -703,7 +704,7 @@ async function sendAdminOutreachOnThread(opts: {
   let sid: string | null = null;
   let bodyPreview = "";
   let templateName =
-    process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+    outreachTextTemplateName();
 
   if (files.length === 0) {
     const messageParam = trimmedMessage.slice(0, 1024);
@@ -763,7 +764,7 @@ async function sendAdminOutreachOnThread(opts: {
         const missingMediaTemplate = /template name|30024|does not exist|not found/i.test(raw);
         if (!missingMediaTemplate) throw rewriteOutreachTemplateError(err, templateName);
         const textTemplate =
-          process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+          outreachTextTemplateName();
         const text = `${caption} ${file.s3Url}`.replace(/\s+/g, " ").trim().slice(0, 1024);
         const textSid = await sendWhatsAppNamedTemplate(to, textTemplate, [nameParam, text]);
         if (i === 0) {
@@ -1157,7 +1158,7 @@ ${attachmentLinesHtml(uploaded)}
         await sendWhatsAppSessionText(phone, trimmed);
       } else {
         const templateName =
-          process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+          outreachTextTemplateName();
         const name = (thread.customerName || "there").slice(0, 60);
         await sendWhatsAppNamedTemplate(phone, templateName, [name, trimmed.slice(0, 1024)]);
       }

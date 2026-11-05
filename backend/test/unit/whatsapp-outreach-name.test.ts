@@ -4,7 +4,8 @@ import {
   enquiryFollowUpRef,
   outreachCustomerFirstName,
   outreachMediaKind,
-  outreachMediaTemplateName
+  outreachMediaTemplateName,
+  outreachTextTemplateName
 } from "../../src/modules/enquiries/whatsapp-outreach";
 
 describe("outreachCustomerFirstName", () => {
@@ -27,6 +28,21 @@ describe("outreachMediaKind", () => {
     expect(outreachMediaKind("image/jpeg", "shot.jpg")).toBe("image");
     expect(outreachMediaKind("video/mp4", "clip.mp4")).toBe("video");
     expect(outreachMediaKind("application/pdf", "quote.pdf")).toBe("document");
+  });
+});
+
+describe("outreachTextTemplateName", () => {
+  const key = "WHATSAPP_ADMIN_OUTREACH_TEMPLATE";
+
+  it("uses the utility follow-up template, including when the retired marketing name is set", () => {
+    const previous = process.env[key];
+    process.env[key] = "sarveda_support_outreach";
+    try {
+      expect(outreachTextTemplateName()).toBe("sarveda_support_followup");
+    } finally {
+      if (previous === undefined) delete process.env[key];
+      else process.env[key] = previous;
+    }
   });
 });
 

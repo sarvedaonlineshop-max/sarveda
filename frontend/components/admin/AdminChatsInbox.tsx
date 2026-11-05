@@ -392,7 +392,7 @@ export function AdminChatsInbox() {
                 </button>
               </div>
               <p className="mt-1 text-xs text-stone-500">
-                Sends Meta template <code className="text-[11px]">sarveda_support_outreach</code>{" "}
+                Sends Meta template <code className="text-[11px]">sarveda_support_followup</code>{" "}
                 (name + your message).
               </p>
               <div className="mt-4 space-y-3">

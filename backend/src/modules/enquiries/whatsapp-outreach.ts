@@ -9,6 +9,18 @@ export function outreachCustomerFirstName(
   return trimmed.split(/\s+/)[0] || "there";
 }
 
+/** Closed-window text replies. Utility, so Meta does not apply the marketing per-user limit. */
+export const OUTREACH_TEXT_TEMPLATE = "sarveda_support_followup";
+
+/** Retired Marketing template. Ignored so a leftover env value cannot keep the delivery failures. */
+const RETIRED_OUTREACH_TEXT_TEMPLATE = "sarveda_support_outreach";
+
+export function outreachTextTemplateName(): string {
+  const fromEnv = process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim();
+  if (fromEnv && fromEnv !== RETIRED_OUTREACH_TEXT_TEMPLATE) return fromEnv;
+  return OUTREACH_TEXT_TEMPLATE;
+}
+
 export type OutreachMediaKind = "image" | "video" | "document";
 
 /** Map an attachment to the WhatsApp media-header template kind. */
