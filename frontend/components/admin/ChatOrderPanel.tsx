@@ -227,7 +227,7 @@ export function ChatOrderPanel({ threadId }: { threadId: string }) {
                 });
               }}
             >
-              <p className="text-[12px] font-semibold">Save the customer's reply</p>
+              <p className="text-[12px] font-semibold">Save the customer&apos;s reply</p>
               <div className="flex gap-2">
                 <select value={rating} disabled={busy} onChange={(event) => setRating(event.target.value)} className="rounded-lg border border-[#d6dde6] px-2 py-1.5 text-[12px]">
                   {[1, 2, 3, 4, 5].map((value) => (
