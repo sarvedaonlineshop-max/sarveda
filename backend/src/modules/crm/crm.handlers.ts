@@ -847,7 +847,7 @@ export async function patchChatCustomer(req: Request, res: Response, next: NextF
   }
 }
 
-export async function patchChatOwner(req: Request, res: Response, next: NextFunction) {
+export async function patchChatPipelineOwner(req: Request, res: Response, next: NextFunction) {
   try {
     const who = actor(req);
     if (!canAssignChatOwner(who.email)) {

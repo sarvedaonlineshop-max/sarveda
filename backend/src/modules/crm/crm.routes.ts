@@ -56,7 +56,7 @@ router.get("/chat-pipeline", h.chatPipelineDesk);
 router.get("/chat-pipeline/:threadId", h.getChatPipeline);
 router.patch("/chat-pipeline/:threadId", validateBody(chatPipelineStatusSchema), h.patchChatPipeline);
 router.patch("/chat-pipeline/:threadId/category", validateBody(chatPipelineCategorySchema), h.patchChatCategory);
-router.patch("/chat-pipeline/:threadId/owner", validateBody(chatPipelineOwnerSchema), h.patchChatOwner);
+router.patch("/chat-pipeline/:threadId/owner", validateBody(chatPipelineOwnerSchema), h.patchChatPipelineOwner);
 router.patch("/chat-pipeline/:threadId/customer", validateBody(chatPipelineCustomerSchema), h.patchChatCustomer);
 router.patch("/chat-pipeline/:threadId/collaborators", validateBody(chatPipelineCollaboratorsSchema), h.patchChatCollaborators);
 router.post("/chat-pipeline/:threadId/notes", validateBody(chatPipelineNoteSchema), h.postChatNote);
