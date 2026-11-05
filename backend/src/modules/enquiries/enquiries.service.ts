@@ -406,7 +406,7 @@ export async function listEnquiryThreads(params: {
   q?: string;
 }) {
   const page = Math.max(1, params.page ?? 1);
-  const limit = Math.min(100, Math.max(1, params.limit ?? 20));
+  const limit = Math.min(2000, Math.max(1, params.limit ?? 20));
   const q = params.q?.trim();
   const tokens = q ? q.toLowerCase().split(/\s+/).filter(Boolean) : [];
   const digits = q ? q.replace(/\D/g, "") : "";

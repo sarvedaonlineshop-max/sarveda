@@ -151,7 +151,7 @@ export function AdminChatsInbox() {
     try {
       const data = await fetchAdminEnquiries({
         page: 1,
-        limit: 100,
+        limit: 2000,
         q: debouncedQ || undefined
       });
       setItems(data.items);
