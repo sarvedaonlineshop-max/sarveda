@@ -1,12 +1,16 @@
--- Additive only. An empty owner stays empty.
-ALTER TABLE "EnquiryThread" ADD COLUMN IF NOT EXISTS "crmOwnerUserId" UUID;
+ALTER TABLE "EnquiryThread" ADD COLUMN "crmOwnerUserId" UUID;
+ALTER TABLE "EnquiryThread" ADD CONSTRAINT "EnquiryThread_crmOwnerUserId_fkey" FOREIGN KEY ("crmOwnerUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+CREATE INDEX "EnquiryThread_crmOwnerUserId_crmPipeline_idx" ON "EnquiryThread"("crmOwnerUserId", "crmPipeline");
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'EnquiryThread_crmOwnerUserId_fkey') THEN
-    ALTER TABLE "EnquiryThread"
-      ADD CONSTRAINT "EnquiryThread_crmOwnerUserId_fkey"
-      FOREIGN KEY ("crmOwnerUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
-END $$;
-
-CREATE INDEX IF NOT EXISTS "EnquiryThread_crmOwnerUserId_crmPipeline_idx" ON "EnquiryThread"("crmOwnerUserId", "crmPipeline");
+UPDATE "EnquiryThread" t
+SET "crmOwnerUserId" = sub."adminUserId"
+FROM (
+  SELECT DISTINCT ON ("threadId") "threadId", "adminUserId"
+  FROM "EnquiryMessage"
+  WHERE "authorType" = 'ADMIN'
+    AND "adminUserId" IS NOT NULL
+    AND "authorName" <> 'Sarveda Assistant'
+  ORDER BY "threadId", "createdAt" DESC
+) sub
+WHERE sub."threadId" = t.id
+  AND t."crmOwnerUserId" IS NULL;
