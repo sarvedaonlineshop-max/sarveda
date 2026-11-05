@@ -37,6 +37,8 @@ const variantInputSchema = z.object({
   saleUsdCents: z.number().int().nonnegative().optional().nullable(),
   mrpGbpPence: z.number().int().nonnegative().optional().nullable(),
   saleGbpPence: z.number().int().nonnegative().optional().nullable(),
+  mrpAedFils: z.number().int().nonnegative().optional().nullable(),
+  saleAedFils: z.number().int().nonnegative().optional().nullable(),
   weightGrams: z.number().int().nonnegative().optional().nullable(),
   isDefault: z.boolean().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),

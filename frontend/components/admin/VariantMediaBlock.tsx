@@ -48,8 +48,11 @@ export function VariantMediaBlock({
   showVideo = true
 }: Props) {
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadErr, setVideoUploadErr] = useState<string | null>(null);
+  const [audioUploading, setAudioUploading] = useState(false);
+  const [audioUploadErr, setAudioUploadErr] = useState<string | null>(null);
 
   function updateImage(index: number, patch: Partial<VariantImageForm>) {
     onImagesChange(images.map((im, i) => (i === index ? { ...im, ...patch } : im)));
@@ -103,6 +106,39 @@ export function VariantMediaBlock({
     } finally {
       setVideoUploading(false);
       if (videoInputRef.current) videoInputRef.current.value = "";
+    }
+  }
+
+  async function onAudioFile(file: File) {
+    if (!onAudioUrlChange) return;
+    if (file.size > MAX_VIDEO_BYTES) {
+      setAudioUploadErr(
+        `File is ${(file.size / (1024 * 1024)).toFixed(1)}MB — max 10MB. Paste a CDN URL instead.`
+      );
+      return;
+    }
+    setAudioUploading(true);
+    setAudioUploadErr(null);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("Could not read file"));
+        reader.readAsDataURL(file);
+      });
+      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1]! : dataUrl;
+      const { url: uploaded } = await uploadAdminMedia({
+        filename: file.name,
+        contentType: file.type || "audio/mpeg",
+        base64,
+        folder: "audio"
+      });
+      onAudioUrlChange(uploaded);
+    } catch (e) {
+      setAudioUploadErr(e instanceof Error ? e.message : "Audio upload failed");
+    } finally {
+      setAudioUploading(false);
+      if (audioInputRef.current) audioInputRef.current.value = "";
     }
   }
 
@@ -193,6 +229,31 @@ export function VariantMediaBlock({
           <label className="text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
             Variant audio sample
           </label>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4,audio/aac,.mp3,.wav,.m4a,.ogg"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onAudioFile(f);
+              }}
+            />
+            <button
+              type="button"
+              disabled={audioUploading}
+              onClick={() => audioInputRef.current?.click()}
+              className="rounded-md bg-[#b98a3e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c8960a] disabled:opacity-60"
+            >
+              {audioUploading ? "Uploading…" : "Upload audio"}
+            </button>
+            <span className="text-xs text-[var(--admin-text-muted,#8a7060)]">MP3, WAV, M4A · max 10MB</span>
+          </div>
+          {audioUploadErr ? <p className="mt-1 text-xs text-red-600">{audioUploadErr}</p> : null}
+          {audioUrl ? (
+            <audio src={audioUrl} controls preload="none" className="mt-2 w-full" />
+          ) : null}
           <input
             value={audioUrl}
             onChange={(e) => onAudioUrlChange(e.target.value)}

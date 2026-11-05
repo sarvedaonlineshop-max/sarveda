@@ -252,6 +252,15 @@ function ContactInfoPanel() {
                 WhatsApp chat
               </a>
             </p>
+            <p className="mt-2 text-sm text-brand-muted">
+              Call us at:{" "}
+              <a
+                href="tel:+919535975075"
+                className="font-medium text-brand-forest underline-offset-2 hover:underline"
+              >
+                +91 95359 75075
+              </a>
+            </p>
           </ContactInfoRow>
         </div>
 
@@ -311,7 +320,7 @@ function ContactFormInner() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [confirmText, setConfirmText] = useState<string | null>(null);
-  const { fields: antiSpamFields, antiSpamPayload, resetTurnstile, turnstileReady } =
+  const { honeypot, turnstile, antiSpamPayload, resetTurnstile, turnstileReady } =
     useEnquiryAntiSpam();
 
   useEffect(() => {
@@ -399,7 +408,7 @@ function ContactFormInner() {
       onSubmit={(event) => void onSubmit(event)}
       className="relative flex min-h-0 flex-col bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:h-full lg:overflow-hidden lg:px-8 lg:py-6"
     >
-      {antiSpamFields}
+      {honeypot}
       <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-brand-ink md:text-3xl lg:text-[2rem]">
         Contact Us
       </h1>
@@ -542,6 +551,7 @@ function ContactFormInner() {
         ) : null}
       </div>
 
+      <div className="mt-4 min-w-0 w-full overflow-x-hidden">{turnstile}</div>
       <button
         type="submit"
         disabled={loading}

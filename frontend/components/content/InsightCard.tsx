@@ -46,7 +46,7 @@ export function InsightCard({ post }: Props) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-sage">
           {category}
         </p>
-        <h3 className="mt-2 font-serif text-xl font-semibold leading-snug text-brand-ink group-hover:text-brand-forest">
+        <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug text-brand-ink group-hover:text-brand-forest md:text-[1.7rem]">
           {post.title}
         </h3>
         {post.excerpt ? (

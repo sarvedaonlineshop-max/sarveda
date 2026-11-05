@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { CourseAboutTeachers } from "@/components/content/CourseAboutTeachers";
 import { CourseCurriculumList } from "@/components/content/CourseCurriculumList";
+import { CourseFaqList } from "@/components/content/CourseFaqList";
 import { CourseSessionsList } from "@/components/content/CourseSessionsList";
 import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
 import { ProductRichText } from "@/components/product/ProductRichText";
@@ -27,8 +28,9 @@ import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 import { parseVideoSource } from "@/lib/video-embed";
 
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   if (skipBuildTimeStaticParams()) return [];
@@ -53,7 +55,7 @@ function prettyDate(s: string | null | undefined) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const course = await fetchCourseBySlug(params.slug, { next: { revalidate: 300 } });
+  const course = await fetchCourseBySlug(params.slug, { cache: "no-store" });
   if (!course) return { title: "Course" };
   const title = course.seoTitle || course.title;
   const description = metaDescription(course.seoDescription || course.shortDescription || course.description);
@@ -67,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CourseDetailPage({ params }: Props) {
-  const course = await fetchCourseBySlug(params.slug, { next: { revalidate: 300 } });
+  const course = await fetchCourseBySlug(params.slug, { cache: "no-store" });
   if (!course) notFound();
 
   const extra = parseCourseExtra(course.extra);
@@ -112,19 +114,29 @@ export default async function CourseDetailPage({ params }: Props) {
   const teachersSection = <CourseAboutTeachers teachers={teacherProfiles} />;
   const registrationOpen = isCourseUpcoming(course);
 
+  const venueLabel = extra.venue?.trim() || "";
+  const venueHref = extra.venueUrl?.trim() || "";
   const programmeRows = [
     teachers.length > 0 && { label: "Facilitators", value: teachers.join(", ") },
     dateRange && { label: "When", value: dateRange },
     durationLabel && { label: "Duration", value: durationLabel },
     extra.mode && { label: "Mode", value: extra.mode },
-    extra.venue && { label: "Venue", value: extra.venue },
+    (venueLabel || venueHref) && {
+      label: "Location",
+      value: venueLabel || "Google Maps",
+      href: venueHref || undefined
+    },
     extra.timings && { label: "Timings", value: extra.timings }
-  ].filter(Boolean) as Array<{ label: string; value: string }>;
+  ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
 
   const courseRichTextCss = `
     .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 42rem; }
+    .course-rich-text h1 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.6rem,2.8vw,1.9rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h2 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.35rem,2.4vw,1.6rem); font-weight:700; margin-top:2.25rem; margin-bottom:0.85rem; letter-spacing:-0.02em; }
     .course-rich-text h3 { font-family: var(--font-fraunces,serif); color:var(--brand-forest); font-size:clamp(1.12rem,2vw,1.28rem); font-weight:700; margin-top:1.75rem; margin-bottom:0.7rem; padding-bottom:0.45rem; border-bottom:1px solid var(--brand-cream-dark); }
+    .course-rich-text h4 { color:var(--brand-forest); font-size:1.02rem; font-weight:700; margin-top:1.25rem; margin-bottom:0.5rem; }
+    .course-rich-text li:empty,
+    .course-rich-text li:has(br:only-child) { display: none; }
     .course-rich-text p { margin: 0 0 1.15rem; line-height: 1.85; }
     .course-rich-text p:last-child { margin-bottom: 0; }
     .course-rich-text .course-slot-time { display:inline-block; margin-top:0.15rem; color:var(--brand-forest); font-weight:700; font-size:14px; letter-spacing:0.01em; }
@@ -208,15 +220,28 @@ export default async function CourseDetailPage({ params }: Props) {
             ) : null}
 
             {programmeRows.length > 0 && (
-              <div className="min-w-0" style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"20px 16px", marginBottom:"40px" }}>
-                <p style={{ color:"var(--brand-gold)", fontSize:"9px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:"20px" }}>
+              <div className="min-w-0" style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"22px 18px", marginBottom:"40px" }}>
+                <p style={{ color:"var(--brand-gold)", fontSize:"12px", fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", marginBottom:"18px" }}>
                   Programme Details
                 </p>
                 <div style={{ display:"flex", flexDirection:"column", gap:"0" }}>
                   {programmeRows.map((row, i) => (
                     <div key={row.label} className="flex flex-col gap-1 py-3.5 sm:flex-row sm:items-start sm:gap-5" style={{ borderBottom: i < programmeRows.length - 1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
-                      <span className="shrink-0" style={{ color:"var(--brand-muted)", fontSize:"11px", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", minWidth:"90px", paddingTop:"2px" }}>{row.label}</span>
-                      <span className="min-w-0 break-words" style={{ color:"var(--brand-ink)", fontSize:"14px", lineHeight:1.6 }}>{row.value}</span>
+                      <span className="shrink-0" style={{ color:"var(--brand-muted)", fontSize:"13px", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", minWidth:"110px", paddingTop:"3px" }}>{row.label}</span>
+                      <span className="min-w-0 break-words" style={{ color:"var(--brand-ink)", fontSize:"16px", lineHeight:1.65 }}>
+                        {row.href ? (
+                          <a href={row.href} target="_blank" rel="noopener noreferrer" style={{ color:"var(--brand-forest)", fontWeight:700, textDecoration:"underline", textUnderlineOffset:"3px" }}>
+                            {row.value}
+                          </a>
+                        ) : (
+                          row.value
+                        )}
+                        {row.href ? (
+                          <a href={row.href} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:"4px", color:"var(--brand-gold)", fontSize:"14px", fontWeight:700, textDecoration:"none" }}>
+                            (Click to open in google maps)
+                          </a>
+                        ) : null}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -340,24 +365,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </section>
             )}
 
-            {/* FAQs */}
-            {faqs?.length ? (
-              <section style={{ marginTop:"48px" }}>
-                <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"20px" }}>
-                  Frequently Asked Questions
-                </h2>
-                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                  {faqs.map((faq) => (
-                    <div key={faq.question} style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"18px 22px" }}>
-                      <h3 style={{ color:"var(--brand-forest)", fontSize:"15px", fontWeight:700, marginBottom:"8px" }}>{faq.question}</h3>
-                      <div style={{ color:"var(--brand-muted)", fontSize:"14px", lineHeight:1.7 }}>
-                        <ProductRichText html={faq.answer} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
+            {faqs?.length ? <CourseFaqList faqs={faqs} /> : null}
 
             {teachersSection}
           </div>
@@ -374,7 +382,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   {!course.isFree && <p style={{ color:"rgba(253,246,237,0.6)", fontSize:"11px", marginTop:"2px" }}>GST inclusive</p>}
                 </div>
               )}
-              <div style={{ padding:"20px 24px" }}>
+              <div className="min-w-0 overflow-x-hidden" style={{ padding:"20px 24px" }}>
                 <CourseEnrollActions
                   item={course}
                   pathPrefix="course"

@@ -484,6 +484,10 @@ export const leadPaymentReceiptSchema = z.object({
   note: z.string().trim().max(500).optional().nullable()
 });
 
+export const chatOwnerSchema = z.object({
+  ownerUserId: z.string().uuid().nullable()
+});
+
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 export type ConvertLeadInput = z.infer<typeof convertLeadSchema>;

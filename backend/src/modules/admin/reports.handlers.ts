@@ -56,6 +56,7 @@ function loadWooDumpTopItems(): { topItems: DumpTopItem[]; units: number } {
 }
 
 const periodSchema = z.enum(["daily", "weekly", "monthly", "financial_year"]);
+const reportDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const reportTypeSchema = z.enum([
   "sales",
   "products",
@@ -102,6 +103,24 @@ export function resolveReportRange(period: ReportPeriod, now = new Date()): { fr
   const fyStartYear = m >= 4 ? y : y - 1;
   const from = new Date(`${fyStartYear}-04-01T00:00:00+05:30`);
   return { from, to, label: `fy-${fyStartYear}-${String(fyStartYear + 1).slice(2)}` };
+}
+
+/** Inclusive calendar dates in Asia/Kolkata. `to` is exclusive (the day after `toYmd`). */
+export function resolveCustomReportRange(fromYmd: string, toYmd: string): { from: Date; to: Date; label: string } {
+  const from = new Date(`${fromYmd}T00:00:00+05:30`);
+  const toStart = new Date(`${toYmd}T00:00:00+05:30`);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(toStart.getTime())) {
+    throw new Error("Choose valid start and end dates");
+  }
+  if (toStart.getTime() < from.getTime()) {
+    throw new Error("End date must be on or after the start date");
+  }
+  const to = addDaysInstant(toStart, 1);
+  const spanDays = (to.getTime() - from.getTime()) / 86_400_000;
+  if (spanDays > 366 * 5) {
+    throw new Error("Custom range cannot be longer than 5 years");
+  }
+  return { from, to, label: `${fromYmd}-to-${toYmd}` };
 }
 
 function paiseToInr(paise: number): number {
@@ -617,19 +636,21 @@ export async function exportAdminReport(req: Request, res: Response, next: NextF
     const parsed = z
       .object({
         type: reportTypeSchema,
-        period: periodSchema
+        period: periodSchema.optional(),
+        from: reportDateSchema.optional(),
+        to: reportDateSchema.optional()
       })
       .safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({
         success: false,
-        error: "type and period are required",
+        error: "type is required, with a period or a from and to date",
         code: "VALIDATION_ERROR"
       });
       return;
     }
 
-    const { type, period } = parsed.data;
+    const { type, period, from: fromYmd, to: toYmd } = parsed.data;
 
     if (type === "customers") {
       const role = req.authUser?.role;
@@ -646,7 +667,30 @@ export async function exportAdminReport(req: Request, res: Response, next: NextF
       }
     }
 
-    const { from, to, label } = resolveReportRange(period);
+    let from: Date;
+    let to: Date;
+    let label: string;
+    if (fromYmd && toYmd) {
+      try {
+        ({ from, to, label } = resolveCustomReportRange(fromYmd, toYmd));
+      } catch (err) {
+        res.status(400).json({
+          success: false,
+          error: err instanceof Error ? err.message : "Invalid date range",
+          code: "VALIDATION_ERROR"
+        });
+        return;
+      }
+    } else if (period) {
+      ({ from, to, label } = resolveReportRange(period));
+    } else {
+      res.status(400).json({
+        success: false,
+        error: "Choose a period or a custom date range",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
     let buffer: Buffer;
     let filename: string;
 

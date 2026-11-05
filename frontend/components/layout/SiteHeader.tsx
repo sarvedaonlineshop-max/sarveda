@@ -131,7 +131,7 @@ export function SiteHeader() {
         <div className="fixed inset-0 z-[60] flex flex-col md:hidden" role="dialog" aria-modal="true" aria-label="Navigation" style={{ background:"#0f1a14" }}>
           <div className="flex items-center justify-between border-b px-4 py-4" style={{ borderColor:"rgba(255,255,255,0.08)" }}>
             <div className="flex items-center gap-2">
-              <img src="/images/brand/sarveda-logo-on-dark.svg" alt="" width={18} height={36} className="h-9 w-auto object-contain" aria-hidden />
+              <img src="/images/brand/sarveda-logo-on-dark.svg" alt="" width={142} height={48} className="h-9 w-auto max-w-[11rem] object-contain object-left" aria-hidden />
               <span className="font-serif text-xl italic text-amber-400">Menu</span>
             </div>
             <button type="button" className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-stone-300 hover:text-amber-400" onClick={() => setMenuOpen(false)} aria-label="Close menu">

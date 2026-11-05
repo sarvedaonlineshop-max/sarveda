@@ -196,8 +196,13 @@ describe("resolveLegacyWooProductSlug", () => {
       "/product/teak-wood-stainless-steel-xylophone"
     );
     assert.equal(resolveProductPathToRedirect("/product/box-tanpura"), null);
+    assert.equal(resolveProductPathToRedirect("/product/new-bamboo-rainstick"), null);
     assert.equal(
       resolveProductPathToRedirect("/product/bamboo-rainstick"),
+      "/product/new-bamboo-rainstick"
+    );
+    assert.equal(
+      resolveProductPathToRedirect("/product/bamboo-rainstick-2"),
       "/product/bamboo-rainstick-wide-80cm"
     );
     assert.equal(
@@ -383,7 +388,7 @@ describe("resolveStorePathToProductRedirect", () => {
     );
     assert.equal(
       resolveStorePathToProductRedirect("/store/sound-healing-instruments/bamboo-rainstick"),
-      "/product/bamboo-rainstick-wide-80cm"
+      "/product/new-bamboo-rainstick"
     );
     assert.equal(
       resolveStorePathToProductRedirect(

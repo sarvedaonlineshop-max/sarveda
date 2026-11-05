@@ -16,10 +16,12 @@ import * as salesQuote from "./sales-quote.service";
 import * as chatPipeline from "./chat-pipeline.service";
 import * as leadPayment from "./lead-payment.service";
 import * as orderDesk from "./order-desk.service";
+import * as chatOwnerService from "./chat-owner.service";
 import { prisma } from "../../config/db";
 import {
   accountListQuerySchema,
   activityListQuerySchema,
+  chatOwnerSchema,
   contactListQuerySchema,
   convertLeadSchema,
   createAccountSchema,
@@ -675,6 +677,30 @@ export async function crmReport(_req: Request, res: Response, next: NextFunction
 export async function crmAssignees(_req: Request, res: Response, next: NextFunction) {
   try {
     res.json({ success: true, data: await summaryService.crmAssignees() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getChatOwner(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await chatOwnerService.getChatOwner(requireUuidParam(req.params.threadId, "threadId"));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchChatOwner(req: Request, res: Response, next: NextFunction) {
+  try {
+    const who = actor(req);
+    const body = parseOrThrow(chatOwnerSchema, req.body);
+    const data = await chatOwnerService.setChatOwner(
+      requireUuidParam(req.params.threadId, "threadId"),
+      body.ownerUserId,
+      { id: who.id, email: who.email }
+    );
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

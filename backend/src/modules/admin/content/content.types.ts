@@ -57,6 +57,7 @@ export type ContentCreateBody = {
   duration?: string | null;
   sessions?: Array<{
     sessionId: string;
+    header?: string | null;
     name: string;
     mentorId?: string | null;
     teacherName?: string | null;
@@ -78,6 +79,8 @@ export type ContentCreateBody = {
   posterUrl?: string | null;
   mode?: string | null;
   venue?: string | null;
+  venueImageUrl?: string | null;
+  venueUrl?: string | null;
   timings?: string | null;
   courseIncludes?: string | null;
   aboutTheCourse?: string | null;

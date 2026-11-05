@@ -61,8 +61,12 @@ function Stars({ value }: { value: number }) {
   );
 }
 
+type ReviewTab = "pending" | "history";
+
 export default function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<PendingReview[]>([]);
+  const [tab, setTab] = useState<ReviewTab>("pending");
+  const [pending, setPending] = useState<PendingReview[]>([]);
+  const [history, setHistory] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [acting, setActing] = useState<string | null>(null);
@@ -70,13 +74,20 @@ export default function AdminReviewsPage() {
   const load = useCallback(async () => {
     setErr(null);
     try {
-      const res = await fetch("/api/reviews/admin/pending", { credentials: "include" });
-      const data = (await res.json()) as { reviews?: PendingReview[]; error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Failed to load reviews");
-      setReviews(data.reviews ?? []);
+      const [pendingRes, historyRes] = await Promise.all([
+        fetch("/api/reviews/admin/pending", { credentials: "include" }),
+        fetch("/api/reviews/admin/history", { credentials: "include" })
+      ]);
+      const pendingData = (await pendingRes.json()) as { reviews?: PendingReview[]; error?: string };
+      const historyData = (await historyRes.json()) as { reviews?: PendingReview[]; error?: string };
+      if (!pendingRes.ok) throw new Error(pendingData.error ?? "Failed to load reviews");
+      if (!historyRes.ok) throw new Error(historyData.error ?? "Failed to load review history");
+      setPending(pendingData.reviews ?? []);
+      setHistory(historyData.reviews ?? []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load reviews");
-      setReviews([]);
+      setPending([]);
+      setHistory([]);
     } finally {
       setLoading(false);
     }
@@ -137,23 +148,55 @@ export default function AdminReviewsPage() {
             alignItems: "center",
             padding: "6px 12px",
             borderRadius: "999px",
-            background: reviews.length > 0 ? "#fef3c7" : "#dcfce7",
-            color: reviews.length > 0 ? "#92400e" : "#166534",
-            border: `1px solid ${reviews.length > 0 ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)"}`,
+            background: pending.length > 0 ? "#fef3c7" : "#dcfce7",
+            color: pending.length > 0 ? "#92400e" : "#166534",
+            border: `1px solid ${pending.length > 0 ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)"}`,
             fontSize: "12px",
             fontWeight: 700,
             whiteSpace: "nowrap"
           }}
         >
-          {reviews.length > 0 ? `${reviews.length} pending` : "✓ All clear"}
+          {pending.length > 0 ? `${pending.length} pending` : "✓ All clear"}
         </span>
       )
     }),
-    [reviews.length]
+    [pending.length]
   );
+
+  const reviews = tab === "pending" ? pending : history;
+  const showActions = tab === "pending";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ display: "flex", gap: "8px" }}>
+        {(
+          [
+            ["pending", `Not approved${pending.length ? ` (${pending.length})` : ""}`],
+            ["history", `History${history.length ? ` (${history.length})` : ""}`]
+          ] as const
+        ).map(([id, label]) => {
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              style={{
+                borderRadius: "999px",
+                border: active ? "1px solid #1c352a" : "1px solid #e8e2d9",
+                background: active ? "#1c352a" : "#fff",
+                color: active ? "#fff" : "#4a3f38",
+                fontSize: "13px",
+                fontWeight: 700,
+                padding: "8px 14px",
+                cursor: "pointer"
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
       {err && (
         <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
           {err}
@@ -171,7 +214,10 @@ export default function AdminReviewsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #f0ece6" }}>
-                  {["Product", "Customer", "Rating", "Review", "Date", ""].map((h) => (
+                  {(showActions
+                    ? ["Product", "Customer", "Rating", "Review", "Date", ""]
+                    : ["Product", "Customer", "Rating", "Review", "Date"]
+                  ).map((h) => (
                     <th key={h} style={thSt}>
                       {h}
                     </th>
@@ -257,6 +303,7 @@ export default function AdminReviewsPage() {
                         year: "numeric"
                       })}
                     </td>
+                    {showActions ? (
                     <td style={{ ...tdSt, whiteSpace: "nowrap" }}>
                       <button
                         type="button"
@@ -312,17 +359,20 @@ export default function AdminReviewsPage() {
                         ✗ Reject
                       </button>
                     </td>
+                    ) : null}
                   </tr>
                 ))}
                 {reviews.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "60px 40px", textAlign: "center" }}>
+                    <td colSpan={showActions ? 6 : 5} style={{ padding: "60px 40px", textAlign: "center" }}>
                       <div style={{ fontSize: "48px", marginBottom: "12px" }}>⭐</div>
                       <p style={{ fontSize: "15px", fontWeight: 700, color: "#1c352a" }}>
-                        All caught up!
+                        {tab === "pending" ? "All caught up!" : "No approved reviews yet"}
                       </p>
                       <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-                        No reviews awaiting approval right now.
+                        {tab === "pending"
+                          ? "No reviews awaiting approval right now."
+                          : "Approved reviews will be listed here."}
                       </p>
                     </td>
                   </tr>

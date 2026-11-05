@@ -142,6 +142,28 @@ function detectCountryCode(request: NextRequest): string | null {
   return detectCountryFromHeaders(request.headers);
 }
 
+const REDIRECT_CACHE_RESET = "sarveda_rr1";
+/** Stop clearing caches after this. One pass is enough to drop the stuck rainstick jump. */
+const REDIRECT_CACHE_RESET_UNTIL = Date.UTC(2026, 9, 30);
+
+function forgetStaleRedirect(request: NextRequest, response: NextResponse) {
+  if (Date.now() > REDIRECT_CACHE_RESET_UNTIL) return;
+  if (request.cookies.get(REDIRECT_CACHE_RESET)?.value === "1") return;
+  const dest = request.headers.get("sec-fetch-dest");
+  const accept = request.headers.get("accept") ?? "";
+  const isDocument = dest === "document" || (!dest && accept.includes("text/html"));
+  if (!isDocument) return;
+  response.headers.set("Clear-Site-Data", '"cache"');
+  response.cookies.set({
+    name: REDIRECT_CACHE_RESET,
+    value: "1",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  });
+}
+
 function ensurePricingZoneCookie(request: NextRequest, response: NextResponse): void {
   const existing = request.cookies.get(ZONE_COOKIE)?.value;
   const isLoggedIn = Boolean(request.cookies.get(AUTH_COOKIE)?.value);
@@ -170,6 +192,10 @@ function ensurePricingZoneCookie(request: NextRequest, response: NextResponse): 
 /** Preserve WooCommerce category URLs: /shop?category=slug → /product-category/slug */
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+
+  if (pathname.startsWith("/admin/crm/") && pathname !== "/admin/crm") {
+    return NextResponse.redirect(new URL("/admin/crm", request.url));
+  }
 
   // Staging domain retired — permanent redirect to live apex (also in next.config).
   const host = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
@@ -231,8 +257,10 @@ export async function middleware(request: NextRequest) {
     const redirectPath = resolveProductPathToRedirect(pathname, searchParams);
     if (redirectPath) {
       const target = new URL(redirectPath, publicOrigin(request));
-      const redirect = NextResponse.redirect(target, 301);
+      const temporary = redirectPath.startsWith("/product/new-bamboo-rainstick");
+      const redirect = NextResponse.redirect(target, temporary ? 302 : 301);
       ensurePricingZoneCookie(request, redirect);
+      forgetStaleRedirect(request, redirect);
       return redirect;
     }
   }
@@ -249,8 +277,10 @@ export async function middleware(request: NextRequest) {
     if (redirectPath) {
       // Always internal /product/... — never absolute external hosts.
       const target = new URL(redirectPath, publicOrigin(request));
-      const redirect = NextResponse.redirect(target, 301);
+      const temporary = redirectPath.startsWith("/product/new-bamboo-rainstick");
+      const redirect = NextResponse.redirect(target, temporary ? 302 : 301);
       ensurePricingZoneCookie(request, redirect);
+      forgetStaleRedirect(request, redirect);
       return redirect;
     }
     // Unresolved deep /store paths: pass through (rewrite may 404). Do not send to /.
@@ -295,6 +325,7 @@ export async function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
   ensurePricingZoneCookie(request, response);
+  forgetStaleRedirect(request, response);
   return response;
 }
 

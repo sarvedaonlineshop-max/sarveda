@@ -54,6 +54,8 @@ export type VariantAdminInput = {
   saleUsdCents?: number | null;
   mrpGbpPence?: number | null;
   saleGbpPence?: number | null;
+  mrpAedFils?: number | null;
+  saleAedFils?: number | null;
   weightGrams?: number | null;
   isDefault?: boolean;
   status?: "ACTIVE" | "INACTIVE";
@@ -218,6 +220,8 @@ async function syncVariants(
           saleUsdCents: v.saleUsdCents ?? null,
           mrpGbpPence: v.mrpGbpPence ?? null,
           saleGbpPence: v.saleGbpPence ?? null,
+          ...(v.mrpAedFils !== undefined ? { mrpAedFils: v.mrpAedFils ?? 0 } : {}),
+          ...(v.saleAedFils !== undefined ? { saleAedFils: v.saleAedFils ?? 0 } : {}),
           weightGrams: v.weightGrams ?? null,
           videoUrl,
           ...(audioUrl !== undefined ? { audioUrl } : {}),
@@ -269,6 +273,8 @@ async function syncVariants(
           saleUsdCents: v.saleUsdCents ?? null,
           mrpGbpPence: v.mrpGbpPence ?? null,
           saleGbpPence: v.saleGbpPence ?? null,
+          mrpAedFils: v.mrpAedFils ?? 0,
+          saleAedFils: v.saleAedFils ?? 0,
           weightGrams: v.weightGrams ?? null,
           videoUrl,
           audioUrl: audioUrl ?? null,

@@ -57,7 +57,7 @@ function PartnerLogo({ partner }: { partner: (typeof PARTNERS)[number] }) {
 function PartnerSequence({ suffix }: { suffix: string }) {
   return (
     <div
-      className={`flex shrink-0 items-center gap-2 pr-2 sm:gap-3 sm:pr-3`}
+      className="flex shrink-0 items-center gap-10 pr-10 sm:gap-16 sm:pr-16 lg:gap-20 lg:pr-20"
       aria-hidden={suffix !== "a"}
     >
       {PARTNERS.map((p) => (

@@ -39,11 +39,11 @@ import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
 import type { CategoryNode } from "@/lib/types";
 import {
   cartesianCombos,
-  comboKey,
   deriveOptionAxes,
   optionsForAxis,
   pruneVariantRows,
   realignAttributesToAxes,
+  rebuildVariantCombinations,
   slugifyAttribute,
   syncVariantAttributesToAxes,
   type OptionAxisForm,
@@ -74,6 +74,8 @@ type VariantForm = {
   saleUsd: string;
   mrpGbp: string;
   saleGbp: string;
+  mrpAed: string;
+  saleAed: string;
   weightGrams: string;
   onHand: string;
   isDefault: boolean;
@@ -139,6 +141,8 @@ function newVariant(): VariantForm {
     saleUsd: "",
     mrpGbp: "",
     saleGbp: "",
+    mrpAed: "0",
+    saleAed: "0",
     weightGrams: "0",
     onHand: "0",
     isDefault: true,
@@ -356,6 +360,8 @@ export function ProductForm({ productId }: { productId?: string }) {
             saleUsd: fromMinor(v.saleUsdCents as number | null),
             mrpGbp: fromMinor(v.mrpGbpPence as number | null),
             saleGbp: fromMinor(v.saleGbpPence as number | null),
+            mrpAed: fromMinor((v.mrpAedFils as number | null) ?? 0),
+            saleAed: fromMinor((v.saleAedFils as number | null) ?? 0),
             weightGrams: String(v.weightGrams ?? 0),
             onHand: String((v.inventory as { onHand?: number })?.onHand ?? 0),
             isDefault: Boolean(v.isDefault),
@@ -742,28 +748,61 @@ export function ProductForm({ productId }: { productId?: string }) {
     }
   }, [variants.length, selectedVariantIndex]);
 
-  function generateVariantsFromLevels() {
-    const combos = cartesianCombos(optionAxes);
-    if (!combos.length) return;
-    setProductType("VARIABLE");
-    setVariants((prev) => {
-      const byKey = new Map(
-        prev.map((v) => [comboKey(v.attributes.map((a) => a.value)), v] as const)
-      );
-      const next = combos.map((values, i) => {
-        const key = comboKey(values);
-        const existing = byKey.get(key);
-        const attributes = optionAxes.map((axis, ai) => ({
-          name: axis.name,
-          slug: axis.slug,
-          value: values[ai] ?? ""
-        }));
-        if (existing) return { ...existing, attributes };
-        return { ...newVariant(), isDefault: i === 0 && !prev.some((p) => p.isDefault), attributes };
-      });
-      if (!next.some((v) => v.isDefault) && next[0]) next[0] = { ...next[0], isDefault: true };
-      return next;
+  function ensureActiveDefault(rows: VariantForm[]): VariantForm[] {
+    if (rows.some((v) => v.isDefault && v.status === "ACTIVE")) return rows;
+    const activeIndex = rows.findIndex((v) => v.status === "ACTIVE");
+    if (activeIndex < 0) return rows.map((v) => ({ ...v, isDefault: false }));
+    return rows.map((v, idx) => ({ ...v, isDefault: idx === activeIndex }));
+  }
+
+  function queueStopSelling(ids: string[]) {
+    if (!ids.length) return;
+    setDeactivateVariantIds((prev) => Array.from(new Set([...prev, ...ids])));
+  }
+
+  function stopSellingVariant(id: string) {
+    queueStopSelling([id]);
+    setVariants((prev) =>
+      ensureActiveDefault(
+        prev.map((v) => (v.id === id ? { ...v, status: "INACTIVE", isDefault: false } : v))
+      )
+    );
+  }
+
+  function sellAgain(id: string) {
+    setDeactivateVariantIds((prev) => prev.filter((x) => x !== id));
+    setVariants((prev) => prev.map((v) => (v.id === id ? { ...v, status: "ACTIVE" } : v)));
+  }
+
+  function variantUsesOption(v: VariantForm, axisSlug: string, value: string) {
+    const needle = value.trim().toLowerCase();
+    return v.attributes.some((a) => {
+      const slug = a.slug || slugifyAttribute(a.name);
+      return slug === axisSlug && a.value.trim().toLowerCase() === needle;
     });
+  }
+
+  function stopSellingByOption(axisSlug: string, value: string) {
+    const savedIds = variants
+      .filter((v) => v.id && variantUsesOption(v, axisSlug, value))
+      .map((v) => v.id as string);
+    queueStopSelling(savedIds);
+    setVariants((prev) => {
+      const next = prev.flatMap((v) => {
+        if (!variantUsesOption(v, axisSlug, value)) return [v];
+        if (!v.id) return [];
+        return [{ ...v, status: "INACTIVE" as const, isDefault: false }];
+      });
+      return next.length ? ensureActiveDefault(next) : [newVariant()];
+    });
+  }
+
+  function generateVariantsFromLevels() {
+    if (!cartesianCombos(optionAxes).length) return;
+    const { rows, stopSellingIds } = rebuildVariantCombinations(variants, optionAxes, newVariant);
+    setProductType("VARIABLE");
+    queueStopSelling(stopSellingIds);
+    setVariants(rows);
     setSelectedVariantIndex(0);
   }
 
@@ -855,6 +894,8 @@ export function ProductForm({ productId }: { productId?: string }) {
         saleUsdCents: v.saleUsd ? toCents(v.saleUsd) : null,
         mrpGbpPence: v.mrpGbp ? toPence(v.mrpGbp) : null,
         saleGbpPence: v.saleGbp ? toPence(v.saleGbp) : null,
+        mrpAedFils: toCents(v.mrpAed || "0"),
+        saleAedFils: toCents(v.saleAed || "0"),
         weightGrams: v.weightGrams.trim() ? Math.max(50, parseInt(v.weightGrams, 10) || 0) : null,
         isDefault: v.isDefault,
         status: v.status,
@@ -1174,24 +1215,20 @@ export function ProductForm({ productId }: { productId?: string }) {
       />
       <AdminConfirmModal
         open={Boolean(deactivateConfirmId)}
-        title="Deactivate this variant?"
-        message="This queues an explicit deactivation. The variant stays active until you Save. Omitted variants are never deactivated automatically."
+        title="Stop selling this variant?"
+        message="It stays on this product as Not for sale. The shop hides it after you Save. Old orders stay linked."
         details={
           deactivateConfirmId
-            ? [
-                variants.find((v) => v.id === deactivateConfirmId)?.sku || deactivateConfirmId,
-                `After Save: ${deactivateVariantIds.includes(deactivateConfirmId) ? deactivateVariantIds.length : deactivateVariantIds.length + 1} variant(s) will be INACTIVE.`
-              ]
+            ? [variants.find((v) => v.id === deactivateConfirmId)?.sku || deactivateConfirmId]
             : []
         }
         cancelLabel="Cancel"
-        confirmLabel="Queue deactivation"
+        confirmLabel="Stop selling"
         danger
         onClose={() => setDeactivateConfirmId(null)}
         onConfirm={() => {
           if (!deactivateConfirmId) return;
-          const id = deactivateConfirmId;
-          setDeactivateVariantIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+          stopSellingVariant(deactivateConfirmId);
           setDeactivateConfirmId(null);
         }}
       />
@@ -1537,15 +1574,15 @@ export function ProductForm({ productId }: { productId?: string }) {
                   {optionMismatchCount > 0 ? (
                     <p>
                       Changing these options affects {optionMismatchCount} existing variant
-                      {optionMismatchCount === 1 ? "" : "s"}. They will NOT be deleted
-                      automatically. Review mismatched rows before deactivating them.
+                      {optionMismatchCount === 1 ? "" : "s"}. They stay on this product. Stop
+                      selling the ones that should leave the shop.
                     </p>
                   ) : null}
                   {deactivateVariantIds.length > 0 ? (
                     <p>
                       {deactivateVariantIds.length} variant
-                      {deactivateVariantIds.length === 1 ? "" : "s"} queued for explicit
-                      deactivation on Save.
+                      {deactivateVariantIds.length === 1 ? "" : "s"} will be Not for sale after
+                      Save.
                     </p>
                   ) : null}
                   {variantIssueMessages.slice(0, 4).map((msg) => (
@@ -1572,6 +1609,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 open={variantLevelsOpen}
                 onToggle={() => setVariantLevelsOpen((v) => !v)}
                 onChange={handleOptionAxesChange}
+                onStopSellingValue={stopSellingByOption}
               />
               {variantLevelsOpen ? (
                 <div className="flex flex-wrap items-center gap-3">
@@ -1585,7 +1623,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                   </button>
                   <p className="text-xs text-[var(--admin-text-muted,#8a7060)]">
                     {cartesianCombos(optionAxes).length
-                      ? `Builds ${cartesianCombos(optionAxes).length} SKU rows from the variant levels (keeps prices you already entered).`
+                      ? `Builds ${cartesianCombos(optionAxes).length} combinations and keeps every saved SKU. A saved SKU that no longer matches stays here as Not for sale.`
                       : "Add values to every variant level first, then create the rows."}
                   </p>
                 </div>
@@ -1601,7 +1639,11 @@ export function ProductForm({ productId }: { productId?: string }) {
               {showVariantTree ? (
                 <VariantTreeNav
                   axes={optionAxes}
-                  variants={variants}
+                  variants={variants.map((v) => ({
+                    attributes: v.attributes,
+                    sku: v.sku,
+                    notForSale: v.status === "INACTIVE"
+                  }))}
                   selectedIndex={selectedVariantIndex}
                   onSelect={setSelectedVariantIndex}
                 />
@@ -1610,13 +1652,18 @@ export function ProductForm({ productId }: { productId?: string }) {
             {(showVariantTree ? [selectedVariantIndex] : variants.map((_, i) => i)).map((vi) => {
               const v = variants[vi];
               if (!v) return null;
+              const notForSale = v.status === "INACTIVE";
               return (
               <div
                 key={v.id ?? `new-${vi}`}
-                className="rounded-xl border-2 border-[#1c352a]/35 bg-[var(--admin-card-bg,#fff)] p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-[#b98a3e]/45"
+                className={`rounded-xl border-2 p-5 shadow-sm transition-shadow duration-200 ${
+                  notForSale
+                    ? "border-dashed border-stone-300 bg-stone-100/80 opacity-80 dark:border-stone-600 dark:bg-stone-900/40"
+                    : "border-[#1c352a]/35 bg-[var(--admin-card-bg,#fff)] hover:shadow-md dark:border-[#b98a3e]/45"
+                }`}
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-medium text-[var(--admin-text,#2c2420)]">
+                  <p className={`font-medium ${notForSale ? "text-stone-500" : "text-[var(--admin-text,#2c2420)]"}`}>
                     {showVariantTree && v.attributes.some((a) => a.value.trim())
                       ? v.attributes
                           .filter((a) => a.value.trim())
@@ -1626,21 +1673,22 @@ export function ProductForm({ productId }: { productId?: string }) {
                     {v.isDefault ? (
                       <span className="ml-2 text-xs text-amber-700 dark:text-amber-400">(default)</span>
                     ) : null}
+                    {notForSale ? (
+                      <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                        Not for sale
+                      </span>
+                    ) : null}
                     {v.optionMismatch ? (
                       <span className="ml-2 text-xs font-semibold text-amber-800 dark:text-amber-300">
                         (options mismatch — review)
-                      </span>
-                    ) : null}
-                    {v.id && deactivateVariantIds.includes(v.id) ? (
-                      <span className="ml-2 text-xs font-semibold text-red-700 dark:text-red-400">
-                        (deactivate on save)
                       </span>
                     ) : null}
                   </p>
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="text-xs text-amber-700 hover:underline dark:text-amber-400"
+                      disabled={notForSale}
+                      className="text-xs text-amber-700 hover:underline disabled:cursor-not-allowed disabled:text-stone-400 disabled:no-underline dark:text-amber-400"
                       onClick={() =>
                         setVariants((prev) =>
                           prev.map((x, i) => ({ ...x, isDefault: i === vi }))
@@ -1651,13 +1699,23 @@ export function ProductForm({ productId }: { productId?: string }) {
                     </button>
                     {variants.length > 1 ? (
                       v.id ? (
-                        <button
-                          type="button"
-                          className="text-xs text-red-600"
-                          onClick={() => setDeactivateConfirmId(v.id!)}
-                        >
-                          Deactivate…
-                        </button>
+                        notForSale ? (
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-emerald-800 hover:underline dark:text-emerald-300"
+                            onClick={() => sellAgain(v.id!)}
+                          >
+                            Sell again
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="text-xs text-amber-800 hover:underline dark:text-amber-300"
+                            onClick={() => setDeactivateConfirmId(v.id!)}
+                          >
+                            Stop selling
+                          </button>
+                        )
                       ) : (
                         <button
                           type="button"

@@ -63,7 +63,7 @@ export function SarvedaLogo({
         height={height}
         className={
           responsive
-            ? "h-[40px] w-auto shrink-0 object-contain object-left sm:h-[48px] md:h-[56px]"
+            ? "h-12 w-auto max-w-[58vw] shrink-0 object-contain object-left sm:h-14 sm:max-w-none md:h-16"
             : "shrink-0 object-contain object-left"
         }
         style={responsive ? { width: "auto" } : { height, width }}

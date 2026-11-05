@@ -266,7 +266,7 @@ export default async function SlugContentPage({ params }: Props) {
               ) : null}
             </p>
           ) : null}
-          <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl lg:text-[2.65rem] lg:leading-[1.15]">
+          <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-brand-ink md:text-5xl lg:text-[3.25rem] lg:leading-[1.12]">
             {content.title}
           </h1>
           {content.kind !== "blog" && content.imageUrl ? (
@@ -286,7 +286,7 @@ export default async function SlugContentPage({ params }: Props) {
             <div className={content.kind === "blog" ? "mt-8" : "mt-10 max-w-prose"}>
               <ProductRichText
                 html={content.content}
-                className={content.kind === "blog" ? "insight-rich leading-[1.8]" : "leading-8"}
+                className={content.kind === "blog" ? "insight-rich rich-features leading-[1.8]" : "leading-8"}
               />
             </div>
           ) : null}

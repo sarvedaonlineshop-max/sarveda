@@ -38,7 +38,8 @@ import {
   updateLeadSchema,
   updatePipelineSchema,
   updateStageSchema,
-  updateTaskSchema
+  updateTaskSchema,
+  chatOwnerSchema
 } from "./crm.schemas";
 
 /**
@@ -73,6 +74,8 @@ router.patch("/chat-pipeline/:threadId/order-desk/feedback/consent", validateBod
 router.patch("/chat-pipeline/:threadId/order-desk/issues/:issueId", validateBody(issueUpdateSchema), h.patchOrderIssue);
 router.get("/report", h.crmReport);
 router.get("/assignees", h.crmAssignees);
+router.get("/chat-owner/:threadId", h.getChatOwner);
+router.patch("/chat-owner/:threadId", validateBody(chatOwnerSchema), h.patchChatOwner);
 router.get("/pipelines", h.listPipelines);
 router.post("/pipelines/seed-default", h.seedDefaultPipeline);
 router.post("/pipelines", validateBody(createPipelineSchema), h.createPipeline);

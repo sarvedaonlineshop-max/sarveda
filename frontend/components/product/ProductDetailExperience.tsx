@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { useCartData } from "@/components/cart/CartProvider";
 import { AccordionDescription } from "@/components/product/AccordionDescription";
 import { NotifyMeButton } from "@/components/product/NotifyMeButton";
 import { ProductAudio } from "@/components/product/ProductAudio";
@@ -19,7 +17,6 @@ import { cartAdd } from "@/lib/cart-api";
 import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
-import { formatMinorFromPaise } from "@/lib/money";
 import {
   galleryImagesForVariant,
   imageIndexForVariant,
@@ -55,9 +52,6 @@ const STICKY_TOP = "top-[var(--storefront-header-offset)]";
  */
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
-  const { items, itemCount, subtotalInPaise, currency: cartCurrency } = useCartData();
-  const hasCartRail = itemCount > 0 || items.length > 0;
-  const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
 
   const [catalog, setCatalog] = useState(product);
   const [variants, setVariants] = useState(product.variants);
@@ -362,61 +356,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         </div>
       </div>
 
-      {/* Mobile sticky purchase — floats above bottom nav */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+0.85rem+env(safe-area-inset-bottom,0px))] z-[60] px-4 lg:hidden">
-        {hasCartRail ? (
-          <Link
-            href="/checkout"
-            className="pointer-events-auto mx-auto flex min-h-[52px] w-full max-w-md items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#d4a84a] to-brand-gold px-5 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.35)_inset,0_0_28px_rgba(185,138,62,0.55),0_10px_28px_rgba(28,53,42,0.28)] ring-2 ring-[#f0d48a]/70 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.45)_inset,0_0_36px_rgba(185,138,62,0.7),0_14px_32px_rgba(28,53,42,0.32)] active:translate-y-0"
-          >
-            <span aria-hidden className="text-base leading-none">
-              🛒
-            </span>
-            <span>
-              Proceed to Buy · {formatMinorFromPaise(subtotalInPaise, cartCurrency)}
-              {cartCount > 0 ? ` (${cartCount})` : ""}
-            </span>
-            <span aria-hidden className="text-base leading-none">
-              ✨
-            </span>
-          </Link>
-        ) : (
-          <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2 rounded-2xl border border-white/40 bg-brand-ivory/90 px-3 py-2.5 shadow-[0_8px_28px_rgba(28,53,42,0.18)] backdrop-blur-md">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs text-brand-muted">{product.name}</p>
-              <p className="text-lg font-bold tracking-tight text-brand-forest">
-                {variant ? formatMinorFromPaise(saleMinor, currency) : "—"}
-              </p>
-            </div>
-            {addDisabled ? (
-              <span
-                className="min-h-[44px] flex-1 rounded-full bg-stone-200 px-4 text-center text-xs font-semibold leading-[44px] text-stone-500"
-                role="status"
-                aria-live="polite"
-              >
-                Out of stock
-              </span>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void add()}
-                  className="min-h-[44px] rounded-full border border-[#108967] px-4 text-xs font-semibold text-[#108967]"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void buyNow()}
-                  className="min-h-[44px] flex-1 rounded-full bg-[#108967] px-4 text-xs font-semibold text-white"
-                >
-                  Buy now
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
     </>
   );
 }

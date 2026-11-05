@@ -21,14 +21,16 @@ const PERIODS: Array<{ id: AdminReportPeriod; label: string }> = [
   { id: "daily", label: "Daily" },
   { id: "weekly", label: "Weekly" },
   { id: "monthly", label: "Monthly" },
-  { id: "financial_year", label: "Financial year" }
+  { id: "financial_year", label: "Financial year" },
+  { id: "custom", label: "Custom range" }
 ];
 
 const PERIOD_ICONS: Record<string, string> = {
   daily: "📅",
   weekly: "📆",
   monthly: "🗓️",
-  financial_year: "📋"
+  financial_year: "📋",
+  custom: "🗓️"
 };
 
 const REPORT_ICONS: Record<string, string> = {
@@ -101,6 +103,8 @@ const REPORTS: Array<{
 export default function AdminReportsPage() {
   const isSuper = useIsSuperAdmin();
   const [period, setPeriod] = useState<AdminReportPeriod>("monthly");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [busy, setBusy] = useState<AdminReportType | null>(null);
   const [downloadErr, setDownloadErr] = useState<string | null>(null);
 
@@ -109,10 +113,22 @@ export default function AdminReportsPage() {
       setDownloadErr("Only super admin can download customer data");
       return;
     }
+    if (period === "custom" && (!fromDate || !toDate)) {
+      setDownloadErr("Choose a start and end date");
+      return;
+    }
+    if (period === "custom" && fromDate > toDate) {
+      setDownloadErr("End date must be on or after the start date");
+      return;
+    }
     setDownloadErr(null);
     setBusy(type);
     try {
-      await downloadAdminReportExcel(type, period);
+      await downloadAdminReportExcel(
+        type,
+        period,
+        period === "custom" ? { from: fromDate, to: toDate } : undefined
+      );
     } catch (e) {
       setDownloadErr(e instanceof Error ? e.message : "Download failed");
     } finally {
@@ -208,6 +224,46 @@ export default function AdminReportsPage() {
             })}
           </div>
         </div>
+
+        {period === "custom" ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "end", marginBottom: "16px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", fontWeight: 700, color: "#4a453c" }}>
+              From
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={{
+                  border: "1px solid #e0d8ce",
+                  borderRadius: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  color: "#1c352a",
+                  background: "#fff"
+                }}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", fontWeight: 700, color: "#4a453c" }}>
+              To
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                style={{
+                  border: "1px solid #e0d8ce",
+                  borderRadius: "8px",
+                  padding: "8px 10px",
+                  fontSize: "13px",
+                  color: "#1c352a",
+                  background: "#fff"
+                }}
+              />
+            </label>
+            <p style={{ margin: 0, fontSize: "12px", color: "#8a7060", maxWidth: "280px" }}>
+              Dates are India time, from the start of the first day through the end of the last day.
+            </p>
+          </div>
+        ) : null}
 
         {downloadErr ? (
           <p

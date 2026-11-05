@@ -37,6 +37,7 @@ export const contentCreateSchema = z.object({
     .array(
       z.object({
         sessionId: z.string(),
+        header: nullableString,
         name: z.string(),
         mentorId: nullableString,
         teacherName: nullableString,
@@ -64,6 +65,8 @@ export const contentCreateSchema = z.object({
   posterUrl: nullableString,
   mode: nullableString,
   venue: nullableString,
+  venueImageUrl: nullableString,
+  venueUrl: nullableString,
   timings: nullableString,
   courseIncludes: nullableString,
   aboutTheCourse: nullableString,
