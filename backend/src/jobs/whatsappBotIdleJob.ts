@@ -1,36 +1,28 @@
 import { randomBytes } from "crypto";
-import { Queue, Worker, type Job } from "bullmq";
+import { Worker, type Job } from "bullmq";
 
 import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
 
 export const WHATSAPP_BOT_IDLE_QUEUE = "whatsapp-bot-idle";
-export const WHATSAPP_BOT_OPTION_TTL_MS = 5 * 60 * 1000;
+/** Unused menu buttons stay tappable for 30 days, then Redis drops the token. */
+export const WHATSAPP_BOT_OPTION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const KEY_PREFIX = "wa:bot:option:";
-let queue: Queue | null = null;
 let worker: Worker | null = null;
 
-function getQueue(): Queue | null {
-  const connection = getRedisConnection();
-  if (!connection) return null;
-  if (!queue) queue = new Queue(WHATSAPP_BOT_IDLE_QUEUE, { connection });
-  return queue;
-}
-
 /**
- * Create a one-use option token and schedule the inactivity response.
- * The token is embedded in every interactive id for that message.
+ * Create a one-use option token. It is embedded in every interactive id for
+ * that message and stays valid until the customer taps a button.
  */
 export async function issueWhatsAppBotOptionToken(
   threadId: string,
-  phone: string
+  _phone: string
 ): Promise<string> {
   const token = `${Date.now().toString(36)}.${randomBytes(4).toString("hex")}`;
   const connection = getRedisConnection();
-  const q = getQueue();
 
-  if (!connection || !q) {
+  if (!connection) {
     logger.warn("whatsapp_bot_option_ttl_degraded", {
       threadId,
       reason: "REDIS_URL not set"
@@ -42,17 +34,7 @@ export async function issueWhatsAppBotOptionToken(
     `${KEY_PREFIX}${token}`,
     threadId,
     "PX",
-    WHATSAPP_BOT_OPTION_TTL_MS + 60_000
-  );
-  await q.add(
-    "expire-menu",
-    { threadId, phone, token },
-    {
-      delay: WHATSAPP_BOT_OPTION_TTL_MS,
-      jobId: `wa-idle-${token}`,
-      removeOnComplete: true,
-      removeOnFail: 100
-    }
+    WHATSAPP_BOT_OPTION_TTL_MS
   );
   return token;
 }
@@ -87,15 +69,12 @@ export async function consumeWhatsAppBotOptionToken(
 }
 
 async function processIdle(job: Job<{ threadId: string; phone: string; token: string }>): Promise<void> {
-  const { threadId, phone, token } = job.data;
-  const connection = getRedisConnection();
-  if (!connection) return;
-
-  // Arjun: stop the automatic five-minute closure message. Still consume the
-  // token so stale bot buttons cannot be tapped after expiry.
-  const consumed = await consumeWhatsAppBotOptionToken(threadId, token);
-  if (!consumed) return;
-  logger.info("whatsapp_bot_menu_expired_silent", { threadId, phone });
+  // Older jobs still sit in Redis from the five-minute expiry. Do not consume
+  // the token and do not message the customer. A button works until it is tapped.
+  logger.info("whatsapp_bot_menu_expiry_skipped", {
+    jobId: job.id,
+    threadId: job.data.threadId
+  });
 }
 
 export function startWhatsAppBotIdleWorker(): void {

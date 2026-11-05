@@ -79,6 +79,16 @@ export async function notifyServiceRequestSubmitted(opts: {
     }
   );
 
+  void import("../crm/issue-register.service")
+    .then((mod) =>
+      mod.noteReturnRequested({
+        orderNumber: opts.orderNumber,
+        reasonLabel: opts.reasonLabel,
+        type: opts.type
+      })
+    )
+    .catch((err) => logger.warn("return_register_failed", { orderNumber: opts.orderNumber, err }));
+
   for (const [to, html] of [
     [opts.customerEmail, customerHtml],
     [ADMIN_CARE_EMAIL, adminHtml]

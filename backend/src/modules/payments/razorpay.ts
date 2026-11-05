@@ -175,6 +175,46 @@ export function verifyPayment(razorpayOrderId: string, razorpayPaymentId: string
   }
 }
 
+export async function createRazorpayPaymentLink(input: {
+  amountInPaise: number;
+  description: string;
+  customer: { name?: string | null; email?: string | null; phone?: string | null };
+  notes: Record<string, string>;
+}): Promise<{ id: string; url: string }> {
+  const rzp = getClient();
+  const api = rzp as unknown as {
+    paymentLink: {
+      create: (body: Record<string, unknown>) => Promise<{ id: string; short_url?: string }>;
+    };
+  };
+  let link: { id: string; short_url?: string };
+  try {
+    link = await api.paymentLink.create({
+      amount: input.amountInPaise,
+      currency: "INR",
+      description: input.description.slice(0, 255),
+      customer: {
+        name: input.customer.name || undefined,
+        email: input.customer.email || undefined,
+        contact: input.customer.phone || undefined
+      },
+      notify: { sms: false, email: false },
+      reminder_enable: false,
+      notes: input.notes
+    });
+  } catch (err) {
+    throw mapRazorpayCreateError(err);
+  }
+  if (!link.short_url) {
+    throw Object.assign(new Error("Payment link was not created"), {
+      statusCode: 502,
+      code: "PAYMENT_LINK_FAILED",
+      userMessage: "The payment link could not be created. Try again in a moment."
+    });
+  }
+  return { id: link.id, url: link.short_url };
+}
+
 type RazorpayOrderPaymentsResponse = { items?: Array<Record<string, unknown>> };
 
 /** List payments for a Razorpay order (callback-based SDK wrapped as Promise). */

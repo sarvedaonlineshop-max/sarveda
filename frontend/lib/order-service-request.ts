@@ -787,6 +787,7 @@ export async function adminFetchReturnCaseByNumber(caseNumber: string) {
     paymentProvider: string | null;
     stage: string;
     stageLabel: string;
+    chatId?: string | null;
     events: Array<{
       id: string;
       eventType: string;

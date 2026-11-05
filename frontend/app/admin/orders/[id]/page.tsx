@@ -274,6 +274,7 @@ type OrderLoaded = {
   netOrderTotalInPaise?: number;
   refundedInPaise?: number;
   createdAt: string;
+  chatId?: string | null;
   items: OrderItemRow[];
   addresses: AddressRow[];
   shipments: ShipmentRow[];
@@ -603,6 +604,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       raw.netOrderTotalInPaise != null ? Number(raw.netOrderTotalInPaise) : undefined,
     refundedInPaise: raw.refundedInPaise != null ? Number(raw.refundedInPaise) : undefined,
     createdAt: String(raw.createdAt),
+    chatId: raw.chatId != null ? String(raw.chatId) : null,
     items,
     addresses,
     shipments,
@@ -1455,6 +1457,11 @@ function AdminOrderProductionView({
                   timeStyle: "short"
                 })}
               </p>
+              {order.chatId ? (
+                <Link href={`/admin/chats/${order.chatId}`} className="mt-2 inline-flex text-sm font-bold text-[#1d4e89]">
+                  Open chat
+                </Link>
+              ) : null}
             </div>
           </div>
           <div className="grid min-w-[280px] grid-cols-3 gap-3 lg:min-w-[430px]">

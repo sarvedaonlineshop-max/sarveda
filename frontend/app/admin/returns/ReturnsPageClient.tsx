@@ -14,6 +14,7 @@ type ReturnCaseRow = {
   caseNumber: string;
   orderId: string;
   orderNumber: string;
+  chatId?: string | null;
   customerEmail: string;
   type: string;
   status: string;
@@ -354,6 +355,15 @@ export default function AdminReturnsPageInner() {
                     >
                       {row.caseNumber}
                     </Link>
+                    {row.chatId ? (
+                      <Link
+                        href={`/admin/chats/${row.chatId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 block text-xs font-bold text-[#1d4e89]"
+                      >
+                        Chat
+                      </Link>
+                    ) : null}
                     {row.slaOverdue ? (
                       <span
                         style={{

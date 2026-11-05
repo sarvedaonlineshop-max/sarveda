@@ -1,7 +1,4 @@
-UPDATE "EnquiryThread" SET "crmPipeline" = 'ONGOING' WHERE "crmPipeline" = 'CONTACTED';
-UPDATE "EnquiryThread" SET "crmPipeline" = 'COMPLETED' WHERE "crmPipeline" = 'WON';
-UPDATE "EnquiryThread" SET "crmPipeline" = 'NOT_INTERESTED' WHERE "crmPipeline" = 'LOST';
-
+-- Leave stored pipeline values as they are. The app still reads CONTACTED, WON, and LOST.
 ALTER TABLE "EnquiryThread" ADD COLUMN IF NOT EXISTS "crmCategories" "CrmChatCategory"[] NOT NULL DEFAULT ARRAY[]::"CrmChatCategory"[];
 
 UPDATE "EnquiryThread"

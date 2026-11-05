@@ -486,6 +486,7 @@ export type OrdersListData = {
     itemCount: number;
     linePreview: string[];
     createdAt: string;
+    chatId?: string | null;
   }>;
   counts?: Partial<
     Record<"all" | "new" | "processed" | "confirmed" | "abandoned" | "cancelled" | "refunded", number>
@@ -500,6 +501,7 @@ export type ShipmentsListData = {
     shipmentId: string | null;
     orderId: string;
     orderNumber: string;
+    chatId?: string | null;
     email: string;
     customerName: string | null;
     city?: string | null;
@@ -3018,6 +3020,7 @@ export type EnquiryThreadListItem = {
   contextTitle: string | null;
   status: string;
   unreadByAdmin: boolean;
+  unreadCount?: number;
   lastMessageAt: string;
   createdAt: string;
   lastAdminName?: string | null;

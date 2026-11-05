@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { COUNTRIES } from "@/lib/countries";
 import { crmApi, type CrmCatalogHit, type CrmQuoteAddress, type CrmSalesQuote } from "@/lib/crm-api";
+import { currencyForDeliveryCountry, formatQuoteMoney, type QuoteCurrency } from "@/lib/quote-pricing";
 
 type Address = {
   fullName: string;
@@ -55,6 +57,8 @@ type Line = {
   quantity: number;
   unitPriceInPaise: number;
   discountPercent: number;
+  prices?: { INR: number; USD: number; AED: number };
+  priceTouched?: boolean;
 };
 
 function AddressFields({
@@ -94,12 +98,8 @@ function AddressFields({
   );
 }
 
-function rupees(paise: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0
-  }).format(paise / 100);
+function listPrice(hit: CrmCatalogHit, currency: QuoteCurrency) {
+  return hit.prices?.[currency] ?? (currency === "INR" ? hit.rateInPaise : 0);
 }
 
 export function ChatQuoteDialog({
@@ -107,6 +107,8 @@ export function ChatQuoteDialog({
   email,
   phone,
   dealId,
+  threadId,
+  suggestedCountryCode,
   existing,
   onClose,
   onSaved
@@ -115,6 +117,8 @@ export function ChatQuoteDialog({
   email?: string | null;
   phone?: string | null;
   dealId?: string | null;
+  threadId?: string | null;
+  suggestedCountryCode?: string | null;
   existing?: CrmSalesQuote | null;
   onClose: () => void;
   onSaved: (created: boolean) => void;
@@ -131,14 +135,32 @@ export function ChatQuoteDialog({
       sku: item.sku,
       quantity: item.quantity,
       unitPriceInPaise: item.unitPriceInPaise,
-      discountPercent: item.discountPercent ?? 0
+      discountPercent: item.discountPercent ?? 0,
+      priceTouched: true
     }))
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [billing, setBilling] = useState<Address>(() => fromSaved(customerName, phone, existing?.billingAddress));
-  const [shipping, setShipping] = useState<Address>(() => fromSaved(customerName, phone, existing?.shippingAddress));
+  const [shipping, setShipping] = useState<Address>(() => {
+    const saved = fromSaved(customerName, phone, existing?.shippingAddress);
+    if (existing?.shippingAddress?.country) return saved;
+    return { ...saved, country: (suggestedCountryCode || "IN").slice(0, 2).toUpperCase() };
+  });
   const [sameAsShipping, setSameAsShipping] = useState(true);
+  const [shippingMinor, setShippingMinor] = useState(existing?.shippingInPaise ?? 0);
+  const [packingMinor, setPackingMinor] = useState(existing?.packingInPaise ?? 0);
+  const [chargeNote, setChargeNote] = useState("");
+  const [packingNote, setPackingNote] = useState("");
+  const shippingTouched = useRef(Boolean(existing));
+  const packingTouched = useRef(Boolean(existing));
+  const currency = currencyForDeliveryCountry(shipping.country);
+  const countryChoices = useMemo(() => {
+    const code = (suggestedCountryCode || shipping.country || "IN").toUpperCase();
+    const hit = COUNTRIES.find((row) => row.code === code);
+    if (!hit) return COUNTRIES;
+    return [hit, ...COUNTRIES.filter((row) => row.code !== hit.code)];
+  }, [suggestedCountryCode, shipping.country]);
 
   useEffect(() => {
     const term = query.trim();
@@ -155,7 +177,47 @@ export function ChatQuoteDialog({
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const total = lines.reduce((sum, line) => sum + line.quantity * line.unitPriceInPaise, 0);
+  const lineKey = lines.map((line) => `${line.variantId ?? ""}:${line.quantity}`).join("|");
+  useEffect(() => {
+    const priced = lines.filter((line) => line.variantId);
+    if (priced.length === 0) return;
+    const timer = window.setTimeout(() => {
+      void crmApi
+        .suggestQuoteCharges({
+          country: shipping.country || "IN",
+          lines: priced.map((line) => ({ variantId: line.variantId as string, quantity: line.quantity }))
+        })
+        .then((suggestion) => {
+          setChargeNote(suggestion.note);
+          setPackingNote(suggestion.packingNote);
+          if (!shippingTouched.current) setShippingMinor(suggestion.shippingMinor);
+          if (!packingTouched.current) setPackingMinor(suggestion.packingMinor);
+        })
+        .catch(() => undefined);
+    }, 250);
+    return () => window.clearTimeout(timer);
+    // lineKey already captures variant and quantity; price edits should not refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shipping.country, lineKey]);
+
+  const merchandise = lines.reduce((sum, line) => {
+    const gross = line.quantity * line.unitPriceInPaise;
+    return sum + gross - Math.round((gross * line.discountPercent) / 100);
+  }, 0);
+  const total = merchandise + shippingMinor + packingMinor;
+
+  function setDeliveryCountry(code: string) {
+    shippingTouched.current = false;
+    packingTouched.current = false;
+    setShipping((prev) => ({ ...prev, country: code }));
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.priceTouched || !line.prices) return line;
+        const nextCurrency = currencyForDeliveryCountry(code);
+        return { ...line, unitPriceInPaise: line.prices[nextCurrency] ?? 0 };
+      })
+    );
+  }
 
   function addHit(hit: CrmCatalogHit) {
     setLines((prev) => {
@@ -177,8 +239,10 @@ export function ChatQuoteDialog({
           hsnCode: hit.hsnCode,
           taxClass: hit.taxClass,
           quantity: 1,
-          unitPriceInPaise: hit.rateInPaise,
-          discountPercent: 0
+          unitPriceInPaise: listPrice(hit, currency),
+          discountPercent: 0,
+          prices: hit.prices ?? { INR: hit.rateInPaise, USD: 0, AED: 0 },
+          priceTouched: false
         }
       ];
     });
@@ -205,6 +269,9 @@ export function ChatQuoteDialog({
       email: email || null,
       phone: phone || null,
       dealId: dealId ?? null,
+      threadId: threadId ?? null,
+      shippingInPaise: shippingMinor,
+      packingInPaise: packingMinor,
       billingAddress: { ...bill, fullName: bill.fullName || customerName || "Customer" },
       shippingAddress: { ...shipping, fullName: shipping.fullName || customerName || "Customer" },
       shippingSameAsBilling: sameAsShipping,
@@ -255,7 +322,23 @@ export function ChatQuoteDialog({
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          <label className="text-[12px] font-semibold text-[#1c352a]">Search products</label>
+          <label className="text-[12px] font-semibold text-[#1c352a]">Delivery country</label>
+          <select
+            value={shipping.country || "IN"}
+            onChange={(event) => setDeliveryCountry(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-[#1c352a]/15 bg-white px-3 py-2 text-[13px]"
+          >
+            {countryChoices.map((row) => (
+              <option key={row.code} value={row.code}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] leading-4 text-[#4a6b58]">
+            Prices follow this delivery country. India is INR, the UAE is AED, and every other country is USD. The
+            customer&apos;s phone does not change the price.
+          </p>
+          <label className="mt-4 block text-[12px] font-semibold text-[#1c352a]">Search products</label>
           <div className="relative mt-1">
             <input
               value={query}
@@ -284,7 +367,7 @@ export function ChatQuoteDialog({
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold text-[#1c352a]">{hit.itemName}</span>
                   <span className="text-[#4a6b58]">
-                    {hit.combination} · {hit.sku} · {rupees(hit.rateInPaise)}
+                    {hit.combination} · {hit.sku} · {formatQuoteMoney(listPrice(hit, currency), currency)}
                   </span>
                 </span>
                 <button
@@ -333,14 +416,16 @@ export function ChatQuoteDialog({
                     />
                   </label>
                   <label className="text-[11px] text-[#4a6b58]">
-                    Rupees
+                    {currency}
                     <input
                       value={String(line.unitPriceInPaise / 100)}
                       onChange={(event) => {
                         const paise = Math.round(Number(event.target.value) * 100);
                         if (!Number.isFinite(paise) || paise < 0) return;
                         setLines((prev) =>
-                          prev.map((row) => (row.key === line.key ? { ...row, unitPriceInPaise: paise } : row))
+                          prev.map((row) =>
+                            row.key === line.key ? { ...row, unitPriceInPaise: paise, priceTouched: true } : row
+                          )
                         );
                       }}
                       className="mt-0.5 w-24 rounded border border-[#1c352a]/15 px-2 py-1"
@@ -366,6 +451,37 @@ export function ChatQuoteDialog({
               </li>
             ))}
           </ul>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <label className="text-[11px] text-[#4a6b58]">
+              Shipping ({currency})
+              <input
+                value={String(shippingMinor / 100)}
+                onChange={(event) => {
+                  const minor = Math.round(Number(event.target.value) * 100);
+                  if (!Number.isFinite(minor) || minor < 0) return;
+                  shippingTouched.current = true;
+                  setShippingMinor(minor);
+                }}
+                className="mt-0.5 w-full rounded border border-[#1c352a]/15 bg-white px-2 py-1 text-[13px]"
+              />
+            </label>
+            <label className="text-[11px] text-[#4a6b58]">
+              Packing ({currency})
+              <input
+                value={String(packingMinor / 100)}
+                onChange={(event) => {
+                  const minor = Math.round(Number(event.target.value) * 100);
+                  if (!Number.isFinite(minor) || minor < 0) return;
+                  packingTouched.current = true;
+                  setPackingMinor(minor);
+                }}
+                className="mt-0.5 w-full rounded border border-[#1c352a]/15 bg-white px-2 py-1 text-[13px]"
+              />
+            </label>
+          </div>
+          {chargeNote ? <p className="mt-1 text-[11px] leading-4 text-[#4a6b58]">{chargeNote}</p> : null}
+          {packingNote ? <p className="mt-1 text-[11px] leading-4 text-[#4a6b58]">{packingNote}</p> : null}
+          <p className="mt-1 text-[11px] text-[#94a3b8]">GST is calculated for India deliveries when this quote is saved.</p>
           <AddressFields title="Shipping address" value={shipping} onChange={setShipping} />
           <label className="mt-3 flex items-center gap-2 text-[12px] font-semibold text-[#1c352a]">
             <input
@@ -379,7 +495,7 @@ export function ChatQuoteDialog({
           {error ? <p className="mt-3 text-[12px] text-red-700">{error}</p> : null}
         </div>
         <div className="flex items-center justify-between border-t border-[#1c352a]/10 px-4 py-3">
-          <strong className="text-[14px] text-[#1c352a]">{rupees(total)}</strong>
+          <strong className="text-[14px] text-[#1c352a]">{formatQuoteMoney(total, currency)}</strong>
           <button
             type="button"
             disabled={busy}

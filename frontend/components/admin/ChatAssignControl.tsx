@@ -1,6 +1,6 @@
 "use client";
 
-import { UserPlus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useMemo, useState, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 
@@ -164,47 +164,8 @@ export function ChatAssignControl({
         )
       : null;
 
-  const headerSlot = typeof document !== "undefined" ? document.getElementById("chat-assign-header-slot") : null;
-  const headerButton =
-    allowed && headerSlot
-      ? createPortal(
-          <button
-            type="button"
-            onClick={() => void openModal()}
-            className="inline-flex h-11 w-11 items-center justify-center text-[#faf5ec] hover:bg-white/10"
-            aria-label="Assign chat"
-            title="Assign member"
-          >
-            <UserPlus size={20} />
-          </button>,
-          headerSlot
-        )
-      : null;
-
-  const fab =
-    allowed
-      ? createPortal(
-          <button
-            type="button"
-            onClick={() => void openModal()}
-            className="fixed z-[80] inline-flex items-center gap-1.5 rounded-full bg-[#1c352a] px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(28,53,42,0.35)] ring-1 ring-black/10 hover:bg-[#244536]"
-            style={{
-              right: 12,
-              bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))"
-            }}
-            aria-label="Assign chat"
-          >
-            <UserPlus size={16} />
-            Assign
-          </button>,
-          document.body
-        )
-      : null;
-
   return (
     <>
-      {headerButton}
-      {fab}
       {modal}
       {toast ? <AssignToast text={toast} /> : null}
     </>

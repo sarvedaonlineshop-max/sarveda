@@ -95,9 +95,18 @@ export async function claimChatOwnerIfEmpty(threadId: string, ownerUserId?: stri
   });
 }
 
-/** @deprecated First reply no longer moves New → Contacted. Kept as an owner claim. */
+/** A human reply moves New to Ongoing. Later statuses stay as they are. */
 export async function markChatPipelineContacted(threadId: string, ownerUserId?: string | null) {
   await claimChatOwnerIfEmpty(threadId, ownerUserId);
+  const readAt = new Date();
+  await prisma.enquiryThread.updateMany({
+    where: { id: threadId, crmPipeline: { in: ["NEW", "CONTACTED"] } },
+    data: { crmPipeline: "ONGOING", adminLastReadAt: readAt }
+  });
+  await prisma.enquiryThread.updateMany({
+    where: { id: threadId, crmPipeline: { notIn: ["NEW", "CONTACTED"] } },
+    data: { adminLastReadAt: readAt }
+  });
 }
 
 export async function markChatPipelineFollowup(threadId: string) {
@@ -114,7 +123,7 @@ export async function markChatPipelineQuotationSent(threadId: string) {
   await prisma.enquiryThread.updateMany({
     where: {
       id: threadId,
-      crmPipeline: { in: ["NEW", "CONTACTED", "ONGOING"] }
+      crmPipeline: { in: ["NEW", "CONTACTED", "ONGOING", "FOLLOWUP"] }
     },
     data: { crmPipeline: "QUOTATION_SENT" }
   });
@@ -126,6 +135,7 @@ const pipelineSelect = {
   customerEmail: true,
   customerPhone: true,
   waPhone: true,
+  crmLocation: true,
   orderNumber: true,
   source: true,
   crmPipeline: true,
@@ -142,6 +152,7 @@ const pipelineSelect = {
     select: {
       id: true,
       body: true,
+      kind: true,
       createdAt: true,
       author: { select: { id: true, name: true } }
     }
@@ -184,35 +195,76 @@ export async function setChatPipeline(threadId: string, status: CrmChatPipeline 
 async function applyCategoryRouting(threadId: string, categories: CrmChatCategory[]) {
   const thread = await prisma.enquiryThread.findUnique({
     where: { id: threadId },
-    select: { crmOwnerUserId: true }
+    select: { crmOwnerUserId: true, crmOwnerAssigned: true }
   });
   if (!thread) return;
-  const extraIds = new Set<string>();
-  let ownerId = thread.crmOwnerUserId;
+
+  const routed: string[] = [];
   for (const category of categories) {
     const route = CATEGORY_ROUTING[category];
     if (!route) continue;
-    if (route.ownerEmail) {
-      const owner = await findStaffByEmail(route.ownerEmail);
-      if (owner) {
-        if (!ownerId) ownerId = owner.id;
-        else if (owner.id !== ownerId) extraIds.add(owner.id);
-      }
-    }
-    for (const email of route.collaboratorEmails) {
+    const emails = [route.ownerEmail, ...route.collaboratorEmails].filter((email): email is string => Boolean(email));
+    for (const email of emails) {
       const user = await findStaffByEmail(email);
-      if (user && user.id !== ownerId) extraIds.add(user.id);
+      if (user && !routed.includes(user.id)) routed.push(user.id);
     }
   }
+
+  // A Lead Owner picked from the dropdown stays. People brought in only by a
+  // category leave when that category is removed, unless another selected
+  // category still names them.
+  const manualOwner = thread.crmOwnerAssigned && thread.crmOwnerUserId ? thread.crmOwnerUserId : null;
+  const ownerId = manualOwner ?? routed[0] ?? null;
+  const collaboratorIds = routed.filter((id) => id !== ownerId);
+
+  await prisma.$transaction([
+    prisma.enquiryThread.update({
+      where: { id: threadId },
+      data: {
+        crmOwnerUserId: ownerId,
+        ...(manualOwner ? {} : { crmOwnerAssigned: false })
+      }
+    }),
+    prisma.crmChatCollaborator.deleteMany({ where: { threadId } }),
+    ...(collaboratorIds.length
+      ? [
+          prisma.crmChatCollaborator.createMany({
+            data: collaboratorIds.map((userId) => ({ threadId, userId }))
+          })
+        ]
+      : [])
+  ]);
+}
+
+export async function updateChatCustomer(
+  threadId: string,
+  input: {
+    customerName: string;
+    customerEmail?: string | null;
+    customerPhone?: string | null;
+    crmLocation?: string | null;
+  }
+) {
+  const name = input.customerName.trim();
+  if (!name) throw fail("Name is required", 400);
+  const existing = await prisma.enquiryThread.findUnique({
+    where: { id: threadId },
+    select: { id: true, customerEmail: true }
+  });
+  if (!existing) throw fail("Chat not found", 404);
+  const email = input.customerEmail?.trim() || "";
+  const phone = input.customerPhone?.trim() || null;
+  const location = input.crmLocation?.trim() || null;
   await prisma.enquiryThread.update({
     where: { id: threadId },
-    data: { crmOwnerUserId: ownerId }
+    data: {
+      customerName: name,
+      ...(email.includes("@") ? { customerEmail: email } : {}),
+      customerPhone: phone,
+      crmLocation: location
+    }
   });
-  if (extraIds.size === 0) return;
-  await prisma.crmChatCollaborator.createMany({
-    data: [...extraIds].map((userId) => ({ threadId, userId })),
-    skipDuplicates: true
-  });
+  return getChatPipeline(threadId);
 }
 
 export async function setChatCategories(threadId: string, categories: CrmChatCategory[]) {
@@ -341,16 +393,48 @@ export async function setChatCollaborators(threadId: string, userIds: string[]) 
   return getChatPipeline(threadId);
 }
 
-export async function addChatNote(threadId: string, body: string, authorUserId: string) {
+export async function addChatNote(
+  threadId: string,
+  body: string,
+  authorUserId: string,
+  kind: "NOTE" | "CALL" = "NOTE"
+) {
   const text = body.trim();
   if (!text) throw fail("Write a note first", 400);
   if (text.length > 4000) throw fail("Note is too long", 400);
-  const thread = await prisma.enquiryThread.findUnique({ where: { id: threadId }, select: { id: true } });
+  const thread = await prisma.enquiryThread.findUnique({
+    where: { id: threadId },
+    select: { id: true, customerName: true }
+  });
   if (!thread) throw fail("Chat not found", 404);
   await prisma.crmChatNote.create({
-    data: { threadId, body: text, authorUserId }
+    data: { threadId, body: text, authorUserId, kind }
   });
+  await notifyMentions(threadId, thread.customerName, text, authorUserId);
   return getChatPipeline(threadId);
+}
+
+async function notifyMentions(threadId: string, customerName: string, body: string, authorUserId: string) {
+  const tokens = [...body.matchAll(/@([a-z0-9._+-]+)/gi)].map((match) => match[1].toLowerCase());
+  if (tokens.length === 0) return;
+  const people = await prisma.user.findMany({
+    where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, deletedAt: null, id: { not: authorUserId } },
+    select: { id: true, email: true, name: true }
+  });
+  const mentioned = people.filter((person) => {
+    const local = person.email.split("@")[0]?.toLowerCase();
+    const name = (person.name || "").toLowerCase().replace(/\s+/g, "");
+    return tokens.some((token) => token === local || token === name);
+  });
+  if (mentioned.length === 0) return;
+  const { pushStaff } = await import("./staff-notify");
+  await pushStaff(
+    mentioned.map((person) => person.email),
+    "Mentioned in a chat",
+    `${customerName}: ${body}`.slice(0, 180),
+    { type: "chat", chatId: threadId, link: `/admin/chats/${threadId}` },
+    { ignoreOrderPref: true }
+  );
 }
 
 export async function chatPipelineBoard(input: {

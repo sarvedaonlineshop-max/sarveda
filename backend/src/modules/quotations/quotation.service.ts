@@ -147,6 +147,7 @@ function buildPersistPayload(body: QuotationUpsertBody) {
   const computed = computeQuotationTotals({
     lines,
     shippingInPaise: body.shippingInPaise ?? 0,
+    packingInPaise: body.packingInPaise ?? 0,
     headerDiscountInPaise: body.discountInPaise ?? 0,
     currency: body.currency ?? "INR",
     shippingAddress
@@ -190,6 +191,7 @@ export async function createQuotation(body: QuotationUpsertBody): Promise<Quotat
             subtotalInPaise: payload.computed.subtotalInPaise,
             discountInPaise: payload.computed.discountInPaise,
             shippingInPaise: payload.computed.shippingInPaise,
+            packingInPaise: payload.computed.packingInPaise,
             taxInPaise: payload.computed.taxInPaise,
             grandTotalInPaise: payload.computed.grandTotalInPaise,
             taxPreviewMode: payload.computed.taxPreviewMode,
@@ -264,6 +266,7 @@ export async function updateQuotation(
         subtotalInPaise: payload.computed.subtotalInPaise,
         discountInPaise: payload.computed.discountInPaise,
         shippingInPaise: payload.computed.shippingInPaise,
+        packingInPaise: payload.computed.packingInPaise,
         taxInPaise: payload.computed.taxInPaise,
         grandTotalInPaise: payload.computed.grandTotalInPaise,
         taxPreviewMode: payload.computed.taxPreviewMode,
@@ -418,6 +421,7 @@ function toPdfInput(
     subtotalInPaise: q.subtotalInPaise,
     discountInPaise: q.discountInPaise,
     shippingInPaise: q.shippingInPaise,
+    packingInPaise: q.packingInPaise,
     taxInPaise: q.taxInPaise,
     cgstInPaise: q.cgstInPaise,
     sgstInPaise: q.sgstInPaise,

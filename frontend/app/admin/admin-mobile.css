@@ -7,7 +7,8 @@
     --admin-mobile-gap: 12px;
   }
 
-  [data-admin-mobile="true"] .admin-motion-root > div > div.flex.flex-col.min-h-screen {
+  [data-admin-mobile="true"] .admin-motion-root > div > div.flex.flex-col.min-h-screen,
+  [data-admin-mobile="true"] .admin-motion-root > div > div.flex.flex-col.h-dvh {
     padding-left: 0 !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -65,6 +66,29 @@
     min-width: 0 !important;
     padding: 14px 12px 88px !important;
     overflow-x: clip;
+  }
+
+  [data-admin-path="/admin/crm"] main.admin-workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100dvh - 72px) !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 72px) !important;
+    overflow: hidden !important;
+    padding-bottom: 12px !important;
+  }
+  [data-admin-path="/admin/crm"] .admin-content-enter {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+  [data-admin-path="/admin/crm"] .crm-table-scroll {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100% !important;
+    overscroll-behavior-x: contain;
   }
 
   [data-admin-mobile="true"] main > *,

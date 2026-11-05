@@ -1,20 +1,82 @@
 import type { EnquiryFollowUpStatus } from "@prisma/client";
 
 import { prisma } from "../../config/db";
-import { sendPushNotification, isFirebaseConfigured } from "../../config/firebase";
+import { sendPushToAdminUser } from "../../config/firebase";
 import { logger } from "../../config/logger";
 import { markChatPipelineFollowup } from "../crm/chat-pipeline.service";
 
-function siteBaseUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
-    "https://sarveda.com";
-  return raw.replace(/\/$/, "");
-}
-
 function adminSelect() {
   return { id: true, name: true, email: true, role: true } as const;
+}
+
+function followUpWhen(dueAt: Date): string {
+  return dueAt.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata"
+  });
+}
+
+async function assignedOwnerIds(threadId: string): Promise<string[]> {
+  const thread = await prisma.enquiryThread.findUnique({
+    where: { id: threadId },
+    select: {
+      crmOwnerUserId: true,
+      crmCollaborators: { select: { userId: true } }
+    }
+  });
+  if (!thread) return [];
+  const ids = new Set<string>();
+  if (thread.crmOwnerUserId) ids.add(thread.crmOwnerUserId);
+  for (const row of thread.crmCollaborators) ids.add(row.userId);
+  return [...ids];
+}
+
+/** Push to the lead owner and category collaborators. Chat-notification opt-out is respected. */
+async function notifyFollowUpOwners(input: {
+  threadId: string;
+  customerName: string;
+  dueAt: Date;
+  followUpId: string;
+  kind: "set" | "due";
+  fallbackAdminId?: string | null;
+}) {
+  const ids = new Set(await assignedOwnerIds(input.threadId));
+  if (ids.size === 0 && input.fallbackAdminId) ids.add(input.fallbackAdminId);
+  if (ids.size === 0) return;
+
+  const people = await prisma.user.findMany({
+    where: {
+      id: { in: [...ids] },
+      deletedAt: null,
+      adminChatNotificationsEnabled: true
+    },
+    select: { id: true, name: true, email: true }
+  });
+  if (people.length === 0) return;
+
+  const title = input.kind === "set" ? "Follow-up scheduled" : "Follow-up due";
+  const body = `${input.customerName.trim() || "Customer"} · ${followUpWhen(input.dueAt)}`.slice(0, 180);
+  await Promise.all(
+    people.map((person) =>
+      sendPushToAdminUser(person.id, title, body, {
+        type: "chat",
+        chatId: input.threadId,
+        followUpId: input.followUpId,
+        link: `/admin/chats/${input.threadId}`
+      }).catch((err: unknown) => {
+        logger.warn("enquiry_follow_up_owner_push_failed", {
+          followUpId: input.followUpId,
+          adminId: person.id,
+          email: person.email,
+          error: err instanceof Error ? err.message : String(err)
+        });
+      })
+    )
+  );
 }
 
 export async function listEnquiryAdmins() {
@@ -78,7 +140,10 @@ export async function createThreadFollowUp(input: {
   }
 
   const [thread, assignee, creator] = await Promise.all([
-    prisma.enquiryThread.findUnique({ where: { id: input.threadId }, select: { id: true } }),
+    prisma.enquiryThread.findUnique({
+      where: { id: input.threadId },
+      select: { id: true, customerName: true, crmOwnerUserId: true }
+    }),
     prisma.user.findFirst({
       where: {
         id: input.assignedAdminId,
@@ -115,7 +180,7 @@ export async function createThreadFollowUp(input: {
       threadId: input.threadId,
       notes,
       dueAt: input.dueAt,
-      assignedAdminId: input.assignedAdminId,
+      assignedAdminId: thread.crmOwnerUserId || input.assignedAdminId,
       createdByAdminId: input.createdByAdminId,
       status: "OPEN"
     },
@@ -133,6 +198,14 @@ export async function createThreadFollowUp(input: {
     assignedAdminId: row.assignedAdminId
   });
   await markChatPipelineFollowup(row.threadId);
+  await notifyFollowUpOwners({
+    threadId: row.threadId,
+    customerName: thread.customerName,
+    dueAt: row.dueAt,
+    followUpId: row.id,
+    kind: "set",
+    fallbackAdminId: row.assignedAdminId
+  });
 
   return row;
 }
@@ -215,20 +288,11 @@ export async function processDueEnquiryFollowUps(): Promise<number> {
       thread: {
         select: {
           id: true,
-          customerName: true,
-          customerEmail: true,
-          source: true
+          customerName: true
         }
       },
       assignedAdmin: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          fcmWebToken: true,
-          pushNotificationsEnabled: true,
-          deletedAt: true
-        }
+        select: { id: true }
       }
     },
     orderBy: { dueAt: "asc" }
@@ -244,44 +308,15 @@ export async function processDueEnquiryFollowUps(): Promise<number> {
     });
     if (claimed.count === 0) continue;
 
-    const admin = row.assignedAdmin;
-    const token = admin.fcmWebToken?.trim();
-    const title = "Chat follow-up";
-    const body = `${row.thread.customerName}: ${row.notes}`.slice(0, 180);
-    const link = `${siteBaseUrl()}/admin/chats/${row.threadId}`;
-
-    if (
-      isFirebaseConfigured() &&
-      token &&
-      admin.pushNotificationsEnabled &&
-      !admin.deletedAt
-    ) {
-      const ok = await sendPushNotification(
-        token,
-        title,
-        body,
-        {
-          type: "chat_follow_up",
-          chatId: row.threadId,
-          followUpId: row.id,
-          link
-        },
-        { platform: "web" }
-      );
-      if (ok) sent += 1;
-      else {
-        logger.warn("enquiry_follow_up_push_failed", {
-          followUpId: row.id,
-          adminId: admin.id
-        });
-      }
-    } else {
-      logger.warn("enquiry_follow_up_no_web_token", {
-        followUpId: row.id,
-        adminId: admin.id,
-        email: admin.email
-      });
-    }
+    await notifyFollowUpOwners({
+      threadId: row.threadId,
+      customerName: row.thread.customerName,
+      dueAt: row.dueAt,
+      followUpId: row.id,
+      kind: "due",
+      fallbackAdminId: row.assignedAdmin.id
+    });
+    sent += 1;
   }
 
   logger.info("enquiry_follow_up_due_processed", { due: due.length, sent });

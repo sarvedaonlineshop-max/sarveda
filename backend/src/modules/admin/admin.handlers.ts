@@ -5,6 +5,7 @@ import PDFDocument from "pdfkit";
 import { z } from "zod";
 
 import { prisma } from "../../config/db";
+import { latestChatByOrderNumber } from "../crm/chat-for-order";
 import { logger } from "../../config/logger";
 import {
   addDaysInstant,
@@ -502,10 +503,98 @@ export async function wooProductAnalytics(req: Request, res: Response, next: Nex
 }
 
 /** Lightweight bell feed — low stock, today's sales, recent refunds. */
-export async function adminNotifications(_req: Request, res: Response, next: NextFunction) {
+export const adminNotificationPrefsSchema = z.object({
+  orderNotifications: z.boolean().optional(),
+  chatNotifications: z.boolean().optional(),
+  quoteNotifications: z.boolean().optional()
+}).refine(
+  (body) =>
+    body.orderNotifications !== undefined ||
+    body.chatNotifications !== undefined ||
+    body.quoteNotifications !== undefined,
+  { message: "No preferences to update" }
+);
+
+export async function getAdminNotificationPreferences(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.authUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Unauthorized", code: "UNAUTHORIZED" });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        adminOrderNotificationsEnabled: true,
+        adminChatNotificationsEnabled: true,
+        adminQuoteNotificationsEnabled: true
+      }
+    });
+    res.json({
+      success: true,
+      data: {
+        orderNotifications: user?.adminOrderNotificationsEnabled ?? true,
+        chatNotifications: user?.adminChatNotificationsEnabled ?? true,
+        quoteNotifications: user?.adminQuoteNotificationsEnabled ?? true
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchAdminNotificationPreferences(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.authUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Unauthorized", code: "UNAUTHORIZED" });
+      return;
+    }
+    const body = req.body as z.infer<typeof adminNotificationPrefsSchema>;
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(body.orderNotifications !== undefined
+          ? { adminOrderNotificationsEnabled: body.orderNotifications }
+          : {}),
+        ...(body.chatNotifications !== undefined
+          ? { adminChatNotificationsEnabled: body.chatNotifications }
+          : {}),
+        ...(body.quoteNotifications !== undefined
+          ? { adminQuoteNotificationsEnabled: body.quoteNotifications }
+          : {})
+      },
+      select: {
+        adminOrderNotificationsEnabled: true,
+        adminChatNotificationsEnabled: true,
+        adminQuoteNotificationsEnabled: true
+      }
+    });
+    res.json({
+      success: true,
+      data: {
+        orderNotifications: user.adminOrderNotificationsEnabled,
+        chatNotifications: user.adminChatNotificationsEnabled,
+        quoteNotifications: user.adminQuoteNotificationsEnabled
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminNotifications(req: Request, res: Response, next: NextFunction) {
   try {
     const today = startOfDayKolkata(new Date());
     const revenueStatuses: OrderStatus[] = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"];
+
+    const prefs = req.authUser?.id
+      ? await prisma.user.findUnique({
+          where: { id: req.authUser.id },
+          select: { adminOrderNotificationsEnabled: true }
+        })
+      : null;
+    const orderNotificationsOn = prefs?.adminOrderNotificationsEnabled !== false;
 
     const [lowStockRows, soldToday, recentRefunds] = await Promise.all([
       prisma.inventory.findMany({
@@ -579,7 +668,11 @@ export async function adminNotifications(_req: Request, res: Response, next: Nex
       href: "/admin/orders"
     }));
 
-    const items = [...lowStock, ...soldNotice, ...refundNotices];
+    const items = [
+      ...lowStock,
+      ...(orderNotificationsOn ? soldNotice : []),
+      ...(orderNotificationsOn ? refundNotices : [])
+    ];
     res.json({ success: true, data: { items, unreadCount: items.length } });
   } catch (err) {
     next(err);
@@ -1240,6 +1333,8 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     ) as Record<string, number>;
     counts.all = countBuckets.reduce((sum, b) => sum + (counts[b] ?? 0), 0);
 
+    const chatByOrder = await latestChatByOrderNumber(rows.map((row) => row.orderNumber));
+
     res.json({
       success: true,
       data: {
@@ -1264,7 +1359,8 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           currency: o.currency,
           itemCount: o.items.reduce((s, i) => s + i.qtyOrdered, 0),
           linePreview: o.items.slice(0, 2).map((i) => i.nameSnapshot),
-          createdAt: o.createdAt
+          createdAt: o.createdAt,
+          chatId: chatByOrder.get(o.orderNumber) ?? null
         })),
         counts,
         pagination: {
@@ -1397,6 +1493,8 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
       0
     );
     const netOrderTotalInPaise = Math.max(0, order.grandTotalInPaise - refundedInPaise);
+    const chatByOrder = await latestChatByOrderNumber([order.orderNumber]);
+    const chatId = chatByOrder.get(order.orderNumber) ?? null;
     res.json({
       success: true,
       data: {
@@ -1405,7 +1503,8 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
           items,
           accountingEvents,
           netOrderTotalInPaise,
-          refundedInPaise
+          refundedInPaise,
+          chatId
         }
       }
     });

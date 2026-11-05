@@ -8,6 +8,8 @@ import type {
 } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
+import { latestChatByOrderNumber } from "../crm/chat-for-order";
 import { appendCaseEvent, listCaseEvents, serializeCaseEventForCustomer } from "./return-case-events.service";
 import { shippingPolicyForReason } from "./return-replacement.constants";
 import { uploadRequestPhotos } from "./order-service-request.service";
@@ -425,7 +427,13 @@ export async function listReturnCases(filters: ReturnCaseListFilters = {}) {
     };
   });
 
-  return { total, page, pageSize, rows: enriched };
+  const chats = await latestChatByOrderNumber(enriched.map((row) => row.orderNumber));
+  return {
+    total,
+    page,
+    pageSize,
+    rows: enriched.map((row) => ({ ...row, chatId: chats.get(row.orderNumber) ?? null }))
+  };
 }
 
 /** Full admin desk payload for one return case (by human case number). */
@@ -565,6 +573,25 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
   }
 
   const stage = deriveReturnCaseStage(request);
+  if (
+    !request.responsibleUserEmail &&
+    (request.type === "REFUND_AFTER_DELIVERY" || request.type === "CANCEL_BEFORE_DELIVERY")
+  ) {
+    const assigned = await prisma.orderServiceRequest
+      .update({
+        where: { id: request.id },
+        data: { responsibleUserEmail: "sowmya@sarveda.com", responsibleTeam: request.responsibleTeam ?? "CUSTOMER_CARE" }
+      })
+      .catch((err) => {
+        logger.warn("return_assign_failed", { caseNumber: request.caseNumber, err });
+        return null;
+      });
+    if (assigned) {
+      request.responsibleUserEmail = assigned.responsibleUserEmail;
+      request.responsibleTeam = assigned.responsibleTeam;
+    }
+  }
+  const chats = await latestChatByOrderNumber([request.orderNumber]);
   const policySummary = summarizeCaseShippingPolicy(
     request.items.map((i) => i.shippingRefundPolicy)
   );
@@ -626,7 +653,8 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
     paymentProvider: payment?.provider ?? null,
     stage,
     stageLabel: RETURN_CASE_STAGE_LABELS[stage],
-    events
+    events,
+    chatId: chats.get(request.orderNumber) ?? null
   };
 }
 

@@ -72,6 +72,7 @@ export async function quotationsPreviewTotals(req: Request, res: Response, next:
     const totals = computeQuotationTotals({
       lines: body.lines,
       shippingInPaise: body.shippingInPaise ?? 0,
+      packingInPaise: body.packingInPaise ?? 0,
       headerDiscountInPaise: body.discountInPaise ?? 0,
       currency: body.currency ?? "INR",
       shippingAddress: ship

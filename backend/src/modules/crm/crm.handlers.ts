@@ -14,6 +14,8 @@ import * as summaryService from "./crm-summary.service";
 import { canAssignChatOwner, canSeeAllCrm } from "./crm-team-access";
 import * as salesQuote from "./sales-quote.service";
 import * as chatPipeline from "./chat-pipeline.service";
+import * as leadPayment from "./lead-payment.service";
+import * as orderDesk from "./order-desk.service";
 import { prisma } from "../../config/db";
 import {
   accountListQuerySchema,
@@ -35,11 +37,19 @@ import {
   linkQuotationSchema,
   salesQuoteSchema,
   shareSalesQuoteSchema,
+  quoteChargesSchema,
+  quoteDecisionSchema,
   chatPipelineStatusSchema,
   chatPipelineCategorySchema,
   chatPipelineOwnerSchema,
+  chatPipelineCustomerSchema,
   chatPipelineCollaboratorsSchema,
   chatPipelineNoteSchema,
+  leadPaymentUpdateSchema,
+  leadPaymentReceiptSchema,
+  feedbackResponseSchema,
+  feedbackConsentSchema,
+  issueUpdateSchema,
   taskListQuerySchema,
   updateAccountSchema,
   updateContactSchema,
@@ -444,7 +454,7 @@ export async function createSalesQuote(req: Request, res: Response, next: NextFu
 
 export async function getSalesQuote(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await salesQuote.getSalesQuote(requireUuidParam(req.params.id));
+    const data = await salesQuote.getSalesQuote(requireUuidParam(req.params.id), actor(req));
     if (!data) {
       res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
       return;
@@ -458,7 +468,7 @@ export async function getSalesQuote(req: Request, res: Response, next: NextFunct
 export async function updateSalesQuote(req: Request, res: Response, next: NextFunction) {
   try {
     const body = parseOrThrow(salesQuoteSchema, req.body);
-    const data = await salesQuote.updateSalesQuote(requireUuidParam(req.params.id), body);
+    const data = await salesQuote.updateSalesQuote(requireUuidParam(req.params.id), body, actor(req));
     if (!data) {
       res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
       return;
@@ -476,6 +486,17 @@ export async function deleteSalesQuote(req: Request, res: Response, next: NextFu
       res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
       return;
     }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function convertSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(shareSalesQuoteSchema, req.body);
+    const { convertQuoteToOrder } = await import("./quote-order.service");
+    const data = await convertQuoteToOrder(requireUuidParam(req.params.id), body.threadId, actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -517,7 +538,70 @@ export async function quoteCatalog(req: Request, res: Response, next: NextFuncti
 export async function listSalesQuotes(req: Request, res: Response, next: NextFunction) {
   try {
     const q = typeof req.query.q === "string" ? req.query.q : "";
-    const data = await salesQuote.listSalesQuotes(q);
+    const threadId = typeof req.query.threadId === "string" ? req.query.threadId : "";
+    const data = await salesQuote.listSalesQuotes(q, threadId);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function suggestSalesQuoteCharges(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(quoteChargesSchema, req.body);
+    const data = await salesQuote.suggestSalesQuoteCharges(body.country, body.lines);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function submitSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await salesQuote.submitSalesQuote(requireUuidParam(req.params.id), actor(req));
+    if (!data) {
+      res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function decideSalesQuote(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(quoteDecisionSchema, req.body);
+    const data = await salesQuote.decideSalesQuote(
+      requireUuidParam(req.params.id),
+      body.decision,
+      body.note ?? null,
+      actor(req)
+    );
+    if (!data) {
+      res.status(404).json({ success: false, error: "Quotation not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listQuoteApprovals(req: Request, res: Response, next: NextFunction) {
+  try {
+    const raw = typeof req.query.status === "string" ? req.query.status.toUpperCase() : "PENDING";
+    const status = raw === "APPROVED" || raw === "REJECTED" || raw === "ALL" ? raw : "PENDING";
+    const data = await salesQuote.listQuoteApprovals(status, actor(req));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function countQuoteApprovals(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await salesQuote.countPendingQuoteApprovals(actor(req));
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -727,6 +811,16 @@ export async function patchChatCategory(req: Request, res: Response, next: NextF
   }
 }
 
+export async function patchChatCustomer(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(chatPipelineCustomerSchema, req.body);
+    const data = await chatPipeline.updateChatCustomer(requireUuidParam(req.params.threadId), body);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function patchChatOwner(req: Request, res: Response, next: NextFunction) {
   try {
     const who = actor(req);
@@ -764,9 +858,134 @@ export async function postChatNote(req: Request, res: Response, next: NextFuncti
     const data = await chatPipeline.addChatNote(
       requireUuidParam(req.params.threadId),
       body.body,
-      actor(req).id
+      actor(req).id,
+      body.kind ?? "NOTE"
     );
     res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getLeadPayment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await leadPayment.getLeadPayment(requireUuidParam(req.params.threadId), actor(req));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateLeadPayment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(leadPaymentUpdateSchema, req.body);
+    const data = await leadPayment.updateLeadPayment(requireUuidParam(req.params.threadId), actor(req), {
+      method: body.method,
+      dueDate: body.dueDate ?? null
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function recordLeadReceipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(leadPaymentReceiptSchema, req.body);
+    const data = await leadPayment.recordLeadReceipt(requireUuidParam(req.params.threadId), actor(req), body);
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function verifyLeadReceipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await leadPayment.verifyLeadReceipt(
+      requireUuidParam(req.params.threadId),
+      requireUuidParam(req.params.receiptId),
+      actor(req)
+    );
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function rejectLeadReceipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await leadPayment.rejectLeadReceipt(
+      requireUuidParam(req.params.threadId),
+      requireUuidParam(req.params.receiptId),
+      actor(req)
+    );
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function shareLeadPaymentLink(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await leadPayment.shareLeadPaymentLink(requireUuidParam(req.params.threadId), actor(req));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getOrderDesk(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await orderDesk.getOrderDesk(requireUuidParam(req.params.threadId));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function sendOrderFeedback(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await orderDesk.sendDeliveryFeedback(requireUuidParam(req.params.threadId), actor(req));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function recordOrderFeedback(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(feedbackResponseSchema, req.body);
+    const data = await orderDesk.recordDeliveryFeedback(requireUuidParam(req.params.threadId), actor(req), body);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resolveOrderFeedback(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await orderDesk.resolveDeliveryFeedback(requireUuidParam(req.params.threadId));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setOrderFeedbackConsent(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(feedbackConsentSchema, req.body);
+    const data = await orderDesk.setFeedbackConsent(requireUuidParam(req.params.threadId), body.consent);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchOrderIssue(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = parseOrThrow(issueUpdateSchema, req.body);
+    const data = await orderDesk.updateOrderIssue(requireUuidParam(req.params.threadId), requireUuidParam(req.params.issueId, "issue"), body);
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

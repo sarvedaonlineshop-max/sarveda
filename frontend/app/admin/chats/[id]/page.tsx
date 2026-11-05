@@ -7,7 +7,6 @@ import {
   Download,
   FileText,
   MoreVertical,
-  Landmark,
   Paperclip,
   Pencil,
   Play,
@@ -47,10 +46,9 @@ import {
   MAX_ENQUIRY_ATTACHMENTS
 } from "@/lib/enquiry-limits";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
-import { ChatAssignControl } from "@/components/admin/ChatAssignControl";
-import { canAssignChatOwner } from "@/lib/crm-team-access";
 import { ChatCrmRail } from "@/components/admin/ChatCrmRail";
 import {
+  ADMIN_CHATS_PATCH_EVENT,
   ADMIN_CHATS_REFRESH_EVENT,
   splitPhoneForStartForm
 } from "@/components/admin/AdminChatsInbox";
@@ -970,7 +968,6 @@ function AdminChatDetailInner() {
   const [banner, setBanner] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [bankOpen, setBankOpen] = useState(false);
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
@@ -983,8 +980,6 @@ function AdminChatDetailInner() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [saleOpen, setSaleOpen] = useState(false);
   const [railTick, setRailTick] = useState(0);
-  const assignOpenRef = useRef<(() => void) | null>(null);
-  const canAssign = canAssignChatOwner(adminUser?.email);
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1077,6 +1072,11 @@ function AdminChatDetailInner() {
     try {
       const data = await fetchAdminEnquiryThread(id);
       setThread(data);
+      window.dispatchEvent(
+        new CustomEvent(ADMIN_CHATS_PATCH_EVENT, {
+          detail: { id, unreadByAdmin: false, unreadCount: 0 }
+        })
+      );
       // Force scroll after inbound media / SSE refresh (images may layout late).
       requestAnimationFrame(() => {
         scrollToBottomRef.current();
@@ -1243,7 +1243,6 @@ function AdminChatDetailInner() {
 
   async function sendCompanyPayment(kind: "qr" | "details") {
     if (!id || !thread || sending) return;
-    setBankOpen(false);
     setSending(true);
     setError(null);
     const details = [
@@ -1514,7 +1513,6 @@ function AdminChatDetailInner() {
         </button>
         <div className="relative shrink-0" ref={menuRef}>
           <div className="flex items-center gap-0.5">
-          <span id="chat-assign-header-slot" className="flex shrink-0" />
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -1531,19 +1529,6 @@ function AdminChatDetailInner() {
               role="menu"
               className="absolute right-1 top-12 z-30 min-w-[11.5rem] overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10"
             >
-              {canAssign ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    assignOpenRef.current?.();
-                  }}
-                  className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100"
-                >
-                  Assign member
-                </button>
-              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -1622,15 +1607,6 @@ function AdminChatDetailInner() {
             </span>
           </p>
         </div>
-        {canAssign ? (
-          <button
-            type="button"
-            onClick={() => assignOpenRef.current?.()}
-            className="rounded-full bg-white/15 px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/20"
-          >
-            Assign
-          </button>
-        ) : null}
         <button
           type="button"
           onClick={() => setSaleOpen(true)}
@@ -1697,15 +1673,6 @@ function AdminChatDetailInner() {
         ))}
         <div ref={bottomRef} />
       </div>
-      <ChatAssignControl
-        threadId={thread.id}
-        openRef={assignOpenRef}
-        onAssigned={() => {
-          setRailTick((n) => n + 1);
-          void load();
-        }}
-      />
-
       {/* Fixed composer — same surface as messages so it feels emerged */}
       <div
         className="admin-chat-thread-composer relative shrink-0 px-2 py-2 md:border-t md:border-[#2c2420]/20 md:px-3"
@@ -1806,37 +1773,6 @@ function AdminChatDetailInner() {
           >
             <Paperclip size={20} strokeWidth={2} />
           </button>
-          <div className="relative">
-            <button
-              type="button"
-              disabled={sending}
-              onClick={() => setBankOpen((open) => !open)}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-[#1c352a] disabled:opacity-40"
-              title="Send QR or bank details"
-              aria-label="Send QR or bank details"
-            >
-              <Landmark size={20} strokeWidth={2} />
-            </button>
-            {bankOpen ? (
-              <div className="absolute bottom-12 left-0 z-20 w-44 rounded-xl border border-[#1c352a]/10 bg-white p-1 shadow-lg">
-                <button
-                  type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-[#1c352a] hover:bg-[#f7f3ea]"
-                  onClick={() => void sendCompanyPayment("qr")}
-                >
-                  QR code
-                </button>
-                <button
-                  type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-[#1c352a] hover:bg-[#f7f3ea]"
-                  onClick={() => void sendCompanyPayment("details")}
-                >
-                  Banking details
-                </button>
-              </div>
-            ) : null}
-          </div>
-
           <textarea
             ref={inputRef}
             value={reply}
@@ -1887,6 +1823,7 @@ function AdminChatDetailInner() {
           lastOwner={lastOwner}
           refreshToken={railTick}
           onShared={() => void load()}
+          onSharePayment={(kind) => void sendCompanyPayment(kind)}
         />
       </div>
       {saleOpen ? (
@@ -1903,6 +1840,7 @@ function AdminChatDetailInner() {
               lastOwner={lastOwner}
               refreshToken={railTick}
               onShared={() => void load()}
+              onSharePayment={(kind) => void sendCompanyPayment(kind)}
             />
           </div>
         </div>

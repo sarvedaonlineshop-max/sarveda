@@ -308,6 +308,21 @@ async function recordShippingFailure(
   } catch (e) {
     logger.warn("shipping_error_persist_failed", { orderId, err: e });
   }
+  const order = await prisma.order.findFirst({
+    where: { id: orderId },
+    select: { orderNumber: true }
+  });
+  if (order) {
+    void import("../crm/issue-register.service")
+      .then((mod) =>
+        mod.noteDeliveryProblem({
+          orderId,
+          orderNumber: order.orderNumber,
+          summary: msg.slice(0, 180)
+        })
+      )
+      .catch((err) => logger.warn("shipping_failure_notify_failed", { orderId, err }));
+  }
 }
 
 export async function autoSelectAndCreate(

@@ -497,11 +497,7 @@ async function handleReplyId(turn: BotTurn, replyId: string): Promise<boolean> {
   if (!botKinds.has(kind)) return false;
 
   if (!token || !(await consumeWhatsAppBotOptionToken(threadId, token))) {
-    const body =
-      "That menu has expired or was already used.\n\n" +
-      "Send *Hi* to open a fresh menu. 🙏";
-    const sid = await sendWhatsAppText(phone, body);
-    await recordBotMessage(threadId, body, sid);
+    // A repeated tap of a button that was already used. Stay quiet.
     return true;
   }
 

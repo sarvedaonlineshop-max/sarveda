@@ -1,0 +1,1 @@
+ALTER TABLE "EnquiryThread" ADD COLUMN IF NOT EXISTS "adminLastReadAt" TIMESTAMP(3);

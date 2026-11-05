@@ -7,6 +7,7 @@ import type {
 } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 
 /**
  * Normalize courier-facing strings → DB shipment enum.
@@ -176,6 +177,7 @@ export async function persistShipmentTrackingFromCarrier(
     };
   }
 
+  const becameRto = shipmentStatus === "RTO" && shipment.status !== "RTO" && shipment.rtoAt == null;
   await prisma.shipment.update({
     where: { id: shipment.id },
     data: {
@@ -186,6 +188,18 @@ export async function persistShipmentTrackingFromCarrier(
       ...(shipmentStatus === "RTO" ? { rtoAt: shipment.rtoAt ?? new Date() } : {})
     }
   });
+  if (becameRto) {
+    void import("../crm/issue-register.service")
+      .then((mod) =>
+        mod.noteDeliveryProblem({
+          orderId: shipment.orderId,
+          orderNumber: shipment.order.orderNumber,
+          shipmentId: shipment.id,
+          summary: `RTO${shipment.awb ? ` · ${shipment.awb}` : ""}`
+        })
+      )
+      .catch((err) => logger.warn("rto_notify_failed", { shipmentId: shipment.id, err }));
+  }
 
   return rollUpOrderFromShipments(shipment.orderId);
 }

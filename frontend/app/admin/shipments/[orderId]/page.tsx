@@ -129,6 +129,7 @@ type OrderLoaded = {
     status: string;
     carrierMeta?: ShipmentCarrierMeta | null;
   }>;
+  chatId?: string | null;
 };
 export default function AdminShipmentCreateLabelPage() {
   const params = useParams();
@@ -202,6 +203,14 @@ export default function AdminShipmentCreateLabelPage() {
           <span className="hidden text-sm font-semibold text-[#a8c4b0] sm:inline">
             Order {order.orderNumber}
           </span>
+          {order.chatId ? (
+            <Link
+              href={`/admin/chats/${order.chatId}`}
+              className="rounded-xl border border-[#e8d5a8]/40 bg-white/10 px-4 py-2 text-sm font-bold text-[#faf5ec] no-underline transition-colors hover:bg-white/15"
+            >
+              Open chat
+            </Link>
+          ) : null}
           <Link
             href={`/admin/orders/${order.id}`}
             className="rounded-xl border border-[#e8d5a8]/40 bg-white/10 px-4 py-2 text-sm font-bold text-[#faf5ec] no-underline transition-colors hover:bg-white/15"

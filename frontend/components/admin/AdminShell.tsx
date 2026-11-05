@@ -13,6 +13,7 @@ import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { adminOverlayTransition } from "@/lib/admin-motion";
 import { adminTheme as t } from "@/lib/admin-theme";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
+import { deskOnlyAdminHome, isDeskOnlyAdmin, isDeskOnlyAdminPath } from "@/lib/desk-only-access";
 import { isReportsOnlyAdmin, reportsOnlyAdminHome } from "@/lib/reports-only-access";
 
 const THEME_KEY = "sarveda-admin-theme";
@@ -34,6 +35,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/orders": "Orders",
   "/admin/shipments": "Shipments",
   "/admin/returns": "Returns",
+  "/admin/quotations": "Quotations",
   "/admin/returns/analytics": "Returns Intel",
   "/admin/chats": "Chats",
   "/admin/crm": "CRM",
@@ -86,11 +88,17 @@ function AdminShellInner({
   const router = useRouter();
   const adminUser = useAdminUser();
   const reportsOnly = isReportsOnlyAdmin(adminUser?.email);
+  const deskOnly = isDeskOnlyAdmin(adminUser?.email);
   useEffect(() => {
-    if (!reportsOnly) return;
-    if (pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")) return;
-    router.replace(reportsOnlyAdminHome());
-  }, [reportsOnly, pathname, router]);
+    if (reportsOnly) {
+      if (pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")) return;
+      router.replace(reportsOnlyAdminHome());
+      return;
+    }
+    if (!deskOnly) return;
+    if (isDeskOnlyAdminPath(pathname)) return;
+    router.replace(deskOnlyAdminHome());
+  }, [reportsOnly, deskOnly, pathname, router]);
   const pageTitle = getPageTitle(pathname);
   const { isNavigating, beginNavigation } = useAdminNav();
   const headerSlot = useAdminHeaderSlot()?.slot ?? null;
@@ -208,7 +216,12 @@ function AdminShellInner({
           />
         </aside>
 
-        <div style={{ paddingLeft: "240px" }} className="md:pl-[240px] pl-0 flex flex-col min-h-screen">
+        <div
+          style={{ paddingLeft: "240px" }}
+          className={`md:pl-[240px] pl-0 flex flex-col ${
+            pathname.startsWith("/admin/crm") ? "h-dvh overflow-hidden" : "min-h-screen"
+          }`}
+        >
           <header
             style={{
               position: "sticky",
@@ -473,7 +486,11 @@ function AdminShellInner({
           </header>
 
           <main
-            className="admin-workspace"
+            className={`admin-workspace${
+              pathname.startsWith("/admin/chats") || pathname.startsWith("/admin/crm")
+                ? " flex min-h-0 flex-col overflow-hidden"
+                : ""
+            }`}
             style={{
               flex: 1,
               padding:
@@ -481,7 +498,9 @@ function AdminShellInner({
                 pathname.startsWith("/admin/tasks") ||
                 pathname.startsWith("/admin/profile")
                   ? "0"
-                  : "24px 30px 48px",
+                  : pathname.startsWith("/admin/crm")
+                    ? "16px 20px 20px"
+                    : "24px 30px 48px",
               position: "relative"
             }}
           >
@@ -496,7 +515,7 @@ function AdminShellInner({
                       ? "/admin/profile"
                       : pathname
               }
-              className="admin-content-enter"
+              className={`admin-content-enter${pathname.startsWith("/admin/crm") ? " flex min-h-0 flex-1 flex-col" : ""}`}
               style={{
                 width: "100%",
                 maxWidth: "none"

@@ -49,6 +49,8 @@ model User {
   adminOrderNotificationsEnabled Boolean             @default(true)
   /// Admin browser alerts for new chats and customer replies. Per admin, default on.
   adminChatNotificationsEnabled  Boolean             @default(true)
+  /// WhatsApp and browser alerts when a quotation is submitted for approval.
+  adminQuoteNotificationsEnabled Boolean             @default(true)
   blogComments              BlogComment[]
   accountClosureRequests    AccountClosureRequest[]
   accountClosureApprovals   AccountClosureApproval[]
@@ -894,6 +896,8 @@ model Quotation {
   subtotalInPaise   Int
   discountInPaise   Int             @default(0)
   shippingInPaise   Int             @default(0)
+  /// Separate packing charge, same minor unit as currency. Suggested as 0 until a rate exists.
+  packingInPaise    Int             @default(0)
   taxInPaise        Int             @default(0)
   grandTotalInPaise Int
   /// INTRA_STATE | INTER_STATE | UNAVAILABLE | NOT_APPLICABLE
@@ -913,15 +917,26 @@ model Quotation {
   cancelledAt       DateTime?
   convertedAt       DateTime?
   proformaIssuedAt  DateTime?
+  /// NONE | PENDING | APPROVED | REJECTED. Chat quotes must be APPROVED before they are shared.
+  approvalStatus    String          @default("NONE")
+  approvalNote      String?         @db.Text
+  submittedAt       DateTime?
+  decidedAt         DateTime?
+  decidedByEmail    String?
+  /// Chat this quote was created from. Plain id so accounting quotes stay unlinked.
+  enquiryThreadId   String?         @db.Uuid
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   customer          User?           @relation(fields: [customerId], references: [id])
   convertedOrder    Order?          @relation("QuotationConvertedOrder", fields: [convertedOrderId], references: [id])
   items             QuotationItem[]
+  revisions         QuotationRevision[]
   crmDeals          CrmDeal[]
   crmActivities     CrmActivity[]
 
   @@index([status])
+  @@index([approvalStatus])
+  @@index([enquiryThreadId])
   @@index([createdAt])
   @@index([customerName])
   @@index([email])
@@ -951,6 +966,23 @@ model QuotationItem {
 
   @@index([quotationId])
   @@index([variantId])
+}
+
+/// Append-only quotation approval and edit history.
+model QuotationRevision {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quotationId  String    @db.Uuid
+  revision     Int
+  /// CREATED | UPDATED | SUBMITTED | APPROVED | REJECTED | SENT
+  action       String
+  note         String?   @db.Text
+  actorEmail   String?
+  actorName    String?
+  snapshot     Json
+  createdAt    DateTime  @default(now())
+  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId, revision])
 }
 
 /// Informational marketing attribution snapshot — never drives money, stock, or payments.
@@ -2491,6 +2523,8 @@ model EnquiryThread {
   userId                String?                 @db.Uuid
   status                EnquiryThreadStatus     @default(OPEN)
   unreadByAdmin         Boolean                 @default(true)
+  /// When an admin last opened or replied. Unread badge counts customer messages after this.
+  adminLastReadAt       DateTime?
   lastMessageAt         DateTime                @default(now())
   /// WhatsApp inbox: customer number in E.164; set only for source WHATSAPP.
   waPhone               String?
@@ -2506,6 +2540,8 @@ model EnquiryThread {
   crmOwner              User?                   @relation("CrmChatOwner", fields: [crmOwnerUserId], references: [id], onDelete: SetNull)
   /// True when Partha/Arjun assigned the owner. False if empty or first-reply claim.
   crmOwnerAssigned      Boolean                 @default(false)
+  /// City and country shown on the Lead panel. Editable, separate from the phone country.
+  crmLocation           String?
   crmCollaborators      CrmChatCollaborator[]
   crmNotes              CrmChatNote[]
   createdAt             DateTime                @default(now())
@@ -2564,6 +2600,8 @@ model CrmChatNote {
   id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   threadId     String         @db.Uuid
   body         String
+  /// NOTE or CALL. Calls stay on the Lead tab with the other notes.
+  kind         String         @default("NOTE")
   authorUserId String?        @db.Uuid
   createdAt    DateTime       @default(now())
   thread       EnquiryThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
@@ -4447,6 +4485,80 @@ model CrmTask {
   @@index([dealId])
   @@index([contactId])
   @@index([accountId])
+}
+
+model CrmDeliveryFeedback {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId         String    @unique @db.Uuid
+  enquiryThreadId String?   @db.Uuid
+  status          String    @default("SCHEDULED")
+  scheduledFor    DateTime
+  sentAt          DateTime?
+  rating          Int?
+  response        String?
+  consent         Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+}
+
+model CrmIssue {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind             String
+  sourceKey        String   @unique
+  orderId          String?  @db.Uuid
+  orderNumber      String?
+  enquiryThreadId  String?  @db.Uuid
+  sku              String?
+  productName      String?
+  supplier         String?
+  ownerEmail       String?
+  summary          String
+  correctiveAction String?
+  status           String   @default("OPEN")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([enquiryThreadId])
+  @@index([status])
+}
+
+model CrmLeadPayment {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  enquiryThreadId String   @unique @db.Uuid
+  quotationId     String?  @db.Uuid
+  orderId         String?  @db.Uuid
+  method          String   @default("PREPAID")
+  currency        String   @default("INR")
+  totalInPaise    Int
+  dueAt           DateTime?
+  paymentLinkUrl  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  receipts        CrmLeadPaymentReceipt[]
+
+  @@index([orderId])
+  @@index([quotationId])
+}
+
+model CrmLeadPaymentReceipt {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadPaymentId   String    @db.Uuid
+  amountInPaise   Int
+  channel         String
+  status          String
+  reference       String?
+  note            String?
+  recordedByEmail String?
+  verifiedByEmail String?
+  verifiedAt      DateTime?
+  orderPaymentId  String?   @unique @db.Uuid
+  createdAt       DateTime  @default(now())
+  leadPayment     CrmLeadPayment @relation(fields: [leadPaymentId], references: [id], onDelete: Cascade)
+
+  @@index([leadPaymentId, createdAt])
 }
 
 model CrmSequence {

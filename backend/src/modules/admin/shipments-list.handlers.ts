@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import type { Prisma, ShipmentStatus } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { latestChatByOrderNumber } from "../crm/chat-for-order";
 import { liveAdminOrderWhere } from "./live-order-filter";
 
 type ShipmentBucket =
@@ -365,10 +366,12 @@ export async function shipmentsList(req: Request, res: Response, next: NextFunct
         rto: countParts[7] as number
       };
 
+      const readyItems = rows.map(mapReadyRow);
+      const readyChats = await latestChatByOrderNumber(readyItems.map((row) => row.orderNumber));
       res.json({
         success: true,
         data: {
-          items: rows.map(mapReadyRow),
+          items: readyItems.map((row) => ({ ...row, chatId: readyChats.get(row.orderNumber) ?? null })),
           counts,
           pagination: {
             page,
@@ -410,10 +413,12 @@ export async function shipmentsList(req: Request, res: Response, next: NextFunct
       rto: countParts[7] as number
     };
 
+    const shipmentItems = rows.map(mapShipmentRow);
+    const shipmentChats = await latestChatByOrderNumber(shipmentItems.map((row) => row.orderNumber));
     res.json({
       success: true,
       data: {
-        items: rows.map(mapShipmentRow),
+        items: shipmentItems.map((row) => ({ ...row, chatId: shipmentChats.get(row.orderNumber) ?? null })),
         counts,
         pagination: {
           page,

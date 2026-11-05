@@ -1,11 +1,21 @@
-CREATE TYPE "CrmChatPipeline" AS ENUM ('NEW', 'CONTACTED', 'ONGOING', 'FOLLOWUP', 'WON', 'LOST', 'UNQUALIFIED');
-CREATE TYPE "CrmChatCategory" AS ENUM ('PRODUCTS', 'COURSES', 'DELIVERY', 'PAYMENT', 'REFUND', 'B2B', 'OTHERS');
+-- Additive only. Do not rewrite existing chat rows.
+DO $$ BEGIN
+  CREATE TYPE "CrmChatPipeline" AS ENUM ('NEW', 'CONTACTED', 'ONGOING', 'FOLLOWUP', 'WON', 'LOST', 'UNQUALIFIED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE "EnquiryThread" ADD COLUMN "crmPipeline" "CrmChatPipeline" NOT NULL DEFAULT 'NEW';
-ALTER TABLE "EnquiryThread" ADD COLUMN "crmCategory" "CrmChatCategory";
-CREATE INDEX "EnquiryThread_crmPipeline_idx" ON "EnquiryThread"("crmPipeline");
+DO $$ BEGIN
+  CREATE TYPE "CrmChatCategory" AS ENUM ('PRODUCTS', 'COURSES', 'DELIVERY', 'PAYMENT', 'REFUND', 'B2B', 'OTHERS');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TABLE "CrmChatNote" (
+ALTER TABLE "EnquiryThread" ADD COLUMN IF NOT EXISTS "crmPipeline" "CrmChatPipeline" NOT NULL DEFAULT 'NEW';
+ALTER TABLE "EnquiryThread" ADD COLUMN IF NOT EXISTS "crmCategory" "CrmChatCategory";
+CREATE INDEX IF NOT EXISTS "EnquiryThread_crmPipeline_idx" ON "EnquiryThread"("crmPipeline");
+
+CREATE TABLE IF NOT EXISTS "CrmChatNote" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
   "threadId" UUID NOT NULL,
   "body" TEXT NOT NULL,
@@ -13,28 +23,13 @@ CREATE TABLE "CrmChatNote" (
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "CrmChatNote_pkey" PRIMARY KEY ("id")
 );
-CREATE INDEX "CrmChatNote_threadId_createdAt_idx" ON "CrmChatNote"("threadId", "createdAt");
-ALTER TABLE "CrmChatNote" ADD CONSTRAINT "CrmChatNote_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "EnquiryThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "CrmChatNote" ADD CONSTRAINT "CrmChatNote_authorUserId_fkey" FOREIGN KEY ("authorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+CREATE INDEX IF NOT EXISTS "CrmChatNote_threadId_createdAt_idx" ON "CrmChatNote"("threadId", "createdAt");
 
-UPDATE "EnquiryThread" t
-SET "crmPipeline" = 'CONTACTED'
-WHERE EXISTS (
-  SELECT 1 FROM "EnquiryMessage" m
-  WHERE m."threadId" = t.id
-    AND m."authorType" = 'ADMIN'
-    AND m."authorName" <> 'Sarveda Assistant'
-);
-
-UPDATE "EnquiryThread" t
-SET "crmPipeline" = CASE l.status
-  WHEN 'QUALIFIED' THEN 'ONGOING'::"CrmChatPipeline"
-  WHEN 'UNQUALIFIED' THEN 'UNQUALIFIED'::"CrmChatPipeline"
-  WHEN 'CONVERTED' THEN 'WON'::"CrmChatPipeline"
-  WHEN 'LOST' THEN 'LOST'::"CrmChatPipeline"
-  WHEN 'CONTACTED' THEN 'CONTACTED'::"CrmChatPipeline"
-  ELSE t."crmPipeline"
-END
-FROM "CrmLead" l
-WHERE l."enquiryThreadId" = t.id
-  AND l.status IN ('QUALIFIED', 'UNQUALIFIED', 'CONVERTED', 'LOST', 'CONTACTED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CrmChatNote_threadId_fkey') THEN
+    ALTER TABLE "CrmChatNote" ADD CONSTRAINT "CrmChatNote_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "EnquiryThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CrmChatNote_authorUserId_fkey') THEN
+    ALTER TABLE "CrmChatNote" ADD CONSTRAINT "CrmChatNote_authorUserId_fkey" FOREIGN KEY ("authorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

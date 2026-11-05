@@ -170,6 +170,21 @@ function asString(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
+/** WhatsApp reaction. An empty emoji means the customer removed the reaction. */
+export function reactionFromContent(content: AnyRecord | null): { emoji: string; targetSid: string | null } | null {
+  if (!content) return null;
+  const type = asString(content.type)?.toLowerCase() ?? "";
+  const reaction = asRecord(content.reaction);
+  if (type !== "reaction" && !reaction) return null;
+  const emoji = asString(reaction?.emoji) ?? asString(content.emoji) ?? "";
+  const targetSid =
+    asString(reaction?.message_id) ??
+    asString(reaction?.messageId) ??
+    asString(reaction?.sid) ??
+    null;
+  return { emoji, targetSid };
+}
+
 /** Human-readable body from an Exotel/Meta-style content object. */
 function extractMedia(content: AnyRecord | null): {
   mediaType: "image" | "video" | "audio" | "document" | "sticker";
@@ -230,6 +245,11 @@ function extractBody(content: AnyRecord | null, fallback: AnyRecord): string {
     if (media.caption) parts.push(media.caption);
     if (media.link) parts.push(media.link);
     return parts.join(" ");
+  }
+
+  const reaction = reactionFromContent(content);
+  if (reaction) {
+    return reaction.emoji ? `Reacted ${reaction.emoji}` : "Removed a reaction";
   }
 
   const location = asRecord(content.location);
@@ -476,6 +496,7 @@ type ParsedInbound = {
   profileName: string | null;
   body: string;
   replyId: string | null;
+  reaction: { emoji: string; targetSid: string | null } | null;
   media: {
     mediaType: "image" | "video" | "audio" | "document" | "sticker";
     caption: string | null;
@@ -544,6 +565,7 @@ function parseCallbackItem(item: AnyRecord): ParsedInbound | ParsedStatus | null
   const profile = asRecord(item.profile);
   const profileName = asString(item.profile_name) ?? asString(profile?.name);
   const content = asRecord(item.content);
+  const reaction = reactionFromContent(content);
   const body = extractBody(content, item);
   if (!body) return null;
 
@@ -554,6 +576,7 @@ function parseCallbackItem(item: AnyRecord): ParsedInbound | ParsedStatus | null
     profileName,
     body,
     replyId: extractReplyId(content),
+    reaction,
     media: extractMedia(content)
   };
 }
@@ -612,13 +635,23 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
     });
   }
 
+  let body = msg.body;
+  if (msg.reaction?.targetSid) {
+    const target = await prisma.enquiryMessage.findFirst({
+      where: { waMessageSid: msg.reaction.targetSid },
+      select: { body: true }
+    });
+    const snippet = target?.body?.replace(/\s+/g, " ").trim();
+    if (snippet) body = `${body} to “${snippet.slice(0, 80)}”`;
+  }
+
   const created = await prisma.enquiryMessage.create({
     data: {
       threadId: thread.id,
       authorType: "CUSTOMER",
       authorName: displayName,
       authorEmail: email,
-      body: msg.body,
+      body,
       waMessageSid: msg.sid
     },
     select: { id: true }
@@ -629,7 +662,7 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
     .then(({ sendPushToAdmins }) =>
       sendPushToAdmins(
         "New WhatsApp chat",
-        `${displayName}: ${(msg.body || "New message").slice(0, 140)}`,
+        `${displayName}: ${(body || "New message").slice(0, 140)}`,
         {
           type: "chat",
           chatId: thread.id,
@@ -720,14 +753,46 @@ async function applyStatusUpdate(update: ParsedStatus): Promise<void> {
   }
   const message = await prisma.enquiryMessage.findUnique({
     where: { waMessageSid: update.sid },
-    select: { threadId: true }
+    select: { threadId: true, waStatus: true }
   });
+  // Never downgrade a terminal success (delivered/read) to an earlier state on out-of-order DLRs.
+  const current = String(message?.waStatus || "").toLowerCase();
+  const next = String(update.status || "").toLowerCase();
+  const rank: Record<string, number> = {
+    queued: 1,
+    sent: 2,
+    delivered: 3,
+    read: 4,
+    failed: 5
+  };
+  if (message && (current === "delivered" || current === "read") && next !== "failed" && (rank[next] || 0) < (rank[current] || 0)) {
+    logger.info("whatsapp_status_ignored_downgrade", {
+      sid: update.sid,
+      current,
+      ignored: next
+    });
+    return;
+  }
+
+  const data: { waStatus: string; waStatusDetail?: string | null } = { waStatus: update.status };
+  if (update.status === "failed") {
+    data.waStatusDetail = (update.detail || "WhatsApp could not deliver this message").slice(0, 500);
+  } else if (update.detail) {
+    data.waStatusDetail = update.detail.slice(0, 500);
+  } else if (update.status === "delivered" || update.status === "read") {
+    data.waStatusDetail = null;
+  }
+
   const result = await prisma.enquiryMessage.updateMany({
     where: { waMessageSid: update.sid },
-    data: { waStatus: update.status }
+    data
   });
   if (result.count > 0) {
-    logger.info("whatsapp_status_updated", { sid: update.sid, status: update.status });
+    logger.info("whatsapp_status_updated", {
+      sid: update.sid,
+      status: update.status,
+      detail: update.detail ?? null
+    });
     if (message) publishEnquiryEvent({ type: "message_changed", threadId: message.threadId });
   }
 }
@@ -755,7 +820,7 @@ export async function processExotelWhatsAppCallback(payload: unknown): Promise<v
       }
       if (parsed.kind === "message") {
         const stored = await upsertInboundMessage(parsed);
-        if (stored && isExotelConfigured()) {
+        if (stored && isExotelConfigured() && !parsed.reaction) {
           await enqueueBotTurn({
             threadId: stored.threadId,
             phone: parsed.from,

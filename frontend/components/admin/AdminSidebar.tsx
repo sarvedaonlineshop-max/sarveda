@@ -31,10 +31,14 @@ import { isServersDashboardEmail } from "@/lib/servers-access";
 import { AdminAccountingSidebarTree, isAccountingWorkspacePath } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
+import { AdminProfileSidebarLink } from "@/components/admin/AdminProfileSidebarLink";
 import { AdminReturnsSidebarLink } from "@/components/admin/AdminReturnsSidebarLink";
+import { AdminQuotationsSidebarLink } from "@/components/admin/AdminQuotationsSidebarLink";
 import { AdminShipmentsSidebarLink } from "@/components/admin/AdminShipmentsSidebarLink";
+import { AdminTasksSidebarLink } from "@/components/admin/AdminTasksSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
+import { deskOnlyAdminHome, isDeskOnlyAdmin } from "@/lib/desk-only-access";
 import { isReportsOnlyAdmin, reportsOnlyAdminHome } from "@/lib/reports-only-access";
 import { adminTheme as t } from "@/lib/admin-theme";
 import {
@@ -210,6 +214,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const isSuper = useIsSuperAdmin();
   const adminUser = useAdminUser();
   const reportsOnly = isReportsOnlyAdmin(adminUser?.email);
+  const deskOnly = isDeskOnlyAdmin(adminUser?.email);
   const accountingEnabled =
     accountingFlagOn && isAccountingEmailAllowed(adminUser?.email);
   const opsNav: NavItem[] = [
@@ -238,6 +243,17 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     );
   }
 
+  if (deskOnly) {
+    return (
+      <NavGroup label="Main Menu">
+        <AdminChatsSidebarLink onNavigate={onNavigate} placedNextToShipments />
+        <AdminQuotationsSidebarLink onNavigate={onNavigate} />
+        <AdminTasksSidebarLink onNavigate={onNavigate} />
+        <AdminProfileSidebarLink onNavigate={onNavigate} />
+      </NavGroup>
+    );
+  }
+
   if (accountingDesk) {
     return (
       <>
@@ -262,6 +278,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <AdminOrdersSidebarLink onNavigate={onNavigate} />
         <AdminShipmentsSidebarLink onNavigate={onNavigate} />
         <AdminReturnsSidebarLink onNavigate={onNavigate} />
+        <AdminQuotationsSidebarLink onNavigate={onNavigate} />
         {primaryNav.slice(1, 6).map((item) => (
           <NavLink
             key={item.href}
@@ -392,7 +409,9 @@ export function AdminSidebar({
   preferDarkMain: boolean;
   onToggleMainTheme: () => void;
 }) {
-  const reportsHome = isReportsOnlyAdmin(useAdminUser()?.email);
+  const adminEmail = useAdminUser()?.email;
+  const reportsHome = isReportsOnlyAdmin(adminEmail);
+  const deskHome = isDeskOnlyAdmin(adminEmail);
   return (
     <div
       className="flex h-full flex-col"
@@ -400,7 +419,7 @@ export function AdminSidebar({
     >
       <div style={{ padding: "14px 12px 12px", borderBottom: "1px solid rgba(185,138,62,0.15)" }}>
         <Link
-          href={reportsHome ? reportsOnlyAdminHome() : "/admin"}
+          href={reportsHome ? reportsOnlyAdminHome() : deskHome ? deskOnlyAdminHome() : "/admin"}
           onClick={onNavigate}
           style={{ display: "block", textDecoration: "none", width: "100%" }}
           aria-label="Sarveda admin home"
@@ -432,6 +451,7 @@ export function AdminSidebar({
 
       <div style={{ padding: "12px 10px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
           {/* Theme locked to light */}
+          {deskHome ? null : (
           <Link
           href="/store"
           onClick={onNavigate}
@@ -456,6 +476,7 @@ export function AdminSidebar({
         >
           ← Storefront
         </Link>
+          )}
         <button
           type="button"
           style={{

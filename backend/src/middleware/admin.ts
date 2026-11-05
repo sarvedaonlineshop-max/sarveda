@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../config/db";
+import { deskOnlyRequestAllowed, isDeskOnlyAdminEmail } from "../modules/auth/desk-only-access";
 import { AUTH_COOKIE_NAME, verifyAccessToken } from "../utils/jwt";
 
 /** Store-reports-only admins. Keep in sync with frontend/lib/reports-only-access.ts */
@@ -60,6 +61,16 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
       return res.status(403).json({
         success: false,
         error: "This account can only download store reports",
+        code: "FORBIDDEN"
+      });
+    }
+    if (
+      isDeskOnlyAdminEmail(user.email) &&
+      !deskOnlyRequestAllowed(req.method, req.originalUrl ?? req.url ?? "")
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "This account can only use chats, quotations, tasks, and profile",
         code: "FORBIDDEN"
       });
     }

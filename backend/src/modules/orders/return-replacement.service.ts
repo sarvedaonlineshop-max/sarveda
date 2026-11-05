@@ -397,6 +397,8 @@ export async function submitReturnReplacementRequest(opts: {
         type: "REFUND_AFTER_DELIVERY",
         channel: "WEBSITE",
         requestIntent: "REFUND",
+        responsibleUserEmail: "sowmya@sarveda.com",
+        responsibleTeam: "CUSTOMER_CARE",
         reasonCode: parsedItems.length === 1 ? parsedItems[0].reasonCode : "multi",
         reasonLabel: summaryLabel,
         message: opts.message?.trim() || null,

@@ -33,6 +33,10 @@ import { paypalWebhookHandler } from "./modules/payments/paypal.webhook";
 import { delhiveryWebhookHandler } from "./modules/shipping/delhivery.webhook";
 import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
 import { whatsappWebhookHandler } from "./modules/whatsapp/whatsapp.webhook";
+import {
+  instagramWebhookHandler,
+  instagramWebhookVerifyHandler
+} from "./modules/instagram/instagram.webhook";
 import { whatsappFlowEndpointHandler } from "./modules/whatsapp/whatsapp-flow.endpoint";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
@@ -185,6 +189,19 @@ app.post("/api/zoho/webhook", express.json(), (req: Request, res: Response, next
 // Exotel WhatsApp inbound messages + delivery receipts (token-authenticated)
 app.post("/api/whatsapp/webhook", express.json({ limit: "2mb" }), (req: Request, res: Response, next: NextFunction) => {
   void whatsappWebhookHandler(req, res).catch(next);
+});
+
+// Meta Instagram DMs. Raw body is required so the X-Hub-Signature-256 check matches Meta's bytes.
+const instagramWebhookRaw = express.raw({ type: "application/json", limit: "2mb" });
+const instagramWebhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 180,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.get("/api/instagram/webhook", instagramWebhookLimiter, instagramWebhookVerifyHandler);
+app.post("/api/instagram/webhook", instagramWebhookLimiter, instagramWebhookRaw, (req, res, next) => {
+  void instagramWebhookHandler(req, res).catch(next);
 });
 
 // Meta WhatsApp Flow data-exchange endpoint (RSA/AES encrypted by Meta).

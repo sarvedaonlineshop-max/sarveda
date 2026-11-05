@@ -117,6 +117,19 @@ describe("quotation totals / GST preview", () => {
     expect(t.grandTotalInPaise).toBe(10000);
   });
 
+  it("adds packing on top of the merchandise total", () => {
+    const t = computeQuotationTotals({
+      lines: [{ productName: "X", quantity: 1, unitPriceInPaise: 10000, discountInPaise: 0 }],
+      shippingInPaise: 200,
+      packingInPaise: 300,
+      headerDiscountInPaise: 0,
+      currency: "INR",
+      shippingAddress: baseBody().shippingAddress
+    });
+    expect(t.packingInPaise).toBe(300);
+    expect(t.grandTotalInPaise).toBe(10500);
+  });
+
   it("strips angle brackets from names", () => {
     const t = computeQuotationTotals({
       lines: [

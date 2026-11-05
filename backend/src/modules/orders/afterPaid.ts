@@ -68,6 +68,9 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
   }
 
   notifyAdminsNewOrder(orderId);
+  void import("../crm/order-desk.service")
+    .then((mod) => mod.notifyOrderConfirmed(orderId))
+    .catch((err) => logger.error("warehouse_order_notify_failed", { orderId, err }));
 
   void ensureOrderInvoicePdf(orderId).catch((err) => {
     logger.error("after_order_paid_invoice_failed", { orderId, err });

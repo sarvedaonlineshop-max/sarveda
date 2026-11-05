@@ -524,6 +524,15 @@ export default function AdminShipmentsPage() {
                         >
                           {row.orderNumber}
                         </Link>
+                        {row.chatId ? (
+                          <Link
+                            href={`/admin/chats/${row.chatId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1 block text-xs font-bold text-[#1d4e89]"
+                          >
+                            Chat
+                          </Link>
+                        ) : null}
                       </td>
                       <td style={tdSt}>
                         {row.customerName ? (

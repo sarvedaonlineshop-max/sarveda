@@ -20,7 +20,7 @@ export const CHAT_PIPELINE_LABELS: Record<ChatPipelineStatus, string> = {
   UNQUALIFIED: "Unqualified"
 };
 
-/** Colours from Arjun's spec. */
+/** Solid colours for the chat-list strip and short label. */
 export const CHAT_PIPELINE_COLORS: Record<ChatPipelineStatus, { bg: string; text: string }> = {
   NEW: { bg: "#2563eb", text: "#ffffff" },
   ONGOING: { bg: "#14b8a6", text: "#ffffff" },
@@ -29,6 +29,27 @@ export const CHAT_PIPELINE_COLORS: Record<ChatPipelineStatus, { bg: string; text
   COMPLETED: { bg: "#16a34a", text: "#ffffff" },
   NOT_INTERESTED: { bg: "#f9a8d4", text: "#9d174d" },
   UNQUALIFIED: { bg: "#9ca3af", text: "#ffffff" }
+};
+
+/** Soft pills used in the Lead panel dropdown, matching the sample. */
+export const CHAT_PIPELINE_PILLS: Record<ChatPipelineStatus, { bg: string; text: string }> = {
+  NEW: { bg: "#dbeafe", text: "#2563eb" },
+  ONGOING: { bg: "#ccfbf1", text: "#0f766e" },
+  QUOTATION_SENT: { bg: "#fff1e6", text: "#f97316" },
+  FOLLOWUP: { bg: "#fef3c7", text: "#a16207" },
+  COMPLETED: { bg: "#dcfce7", text: "#15803d" },
+  NOT_INTERESTED: { bg: "#fce7f3", text: "#9d174d" },
+  UNQUALIFIED: { bg: "#f3f4f6", text: "#6b7280" }
+};
+
+export const CHAT_PIPELINE_MENU_LABELS: Record<ChatPipelineStatus, string> = {
+  NEW: "New",
+  ONGOING: "Ongoing",
+  QUOTATION_SENT: "Quotation",
+  FOLLOWUP: "Follow-up",
+  COMPLETED: "Completed",
+  NOT_INTERESTED: "Not Interested",
+  UNQUALIFIED: "Unqualified"
 };
 
 export const CHAT_CATEGORIES = [
@@ -78,17 +99,65 @@ export function chatPipelineLabel(status: string | null | undefined): string {
   return CHAT_PIPELINE_LABELS[normalizeChatPipeline(status)];
 }
 
+/** Short list labels from the CRM sample (QUOTE, ONGO, FU, NI, UNQ). */
+export const CHAT_PIPELINE_SHORT: Record<ChatPipelineStatus, string> = {
+  NEW: "NEW",
+  ONGOING: "ONGO",
+  QUOTATION_SENT: "QUOTE",
+  FOLLOWUP: "FU",
+  COMPLETED: "DONE",
+  NOT_INTERESTED: "NI",
+  UNQUALIFIED: "UNQ"
+};
+
+export function chatPipelineShort(status: string | null | undefined): string {
+  return CHAT_PIPELINE_SHORT[normalizeChatPipeline(status)];
+}
+
 export function chatCategoryLabel(value: string | null | undefined): string {
   const row = CHAT_CATEGORIES.find(([id]) => id === value);
   return row?.[1] ?? value ?? "";
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
 }
 
 export function defaultFollowUpLocalValue(): string {
   const next = new Date();
   next.setDate(next.getDate() + 1);
   next.setHours(10, 0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`;
+  return `${next.getFullYear()}-${pad2(next.getMonth() + 1)}-${pad2(next.getDate())}T${pad2(next.getHours())}:${pad2(next.getMinutes())}`;
+}
+
+export function splitFollowUpLocal(value: string): { date: string; time: string } {
+  const [date, time = "10:00"] = value.split("T");
+  return { date, time: time.slice(0, 5) };
+}
+
+export function joinFollowUpLocal(date: string, time: string): string {
+  return `${date}T${time.slice(0, 5)}`;
+}
+
+export function formatFollowUpDate(date: string): string {
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) return "";
+  return `${day}/${month}/${year}`;
+}
+
+export function formatFollowUpTime(time: string): string {
+  const [hourRaw, minuteRaw = "00"] = time.split(":");
+  let hour = Number(hourRaw);
+  if (!Number.isFinite(hour)) return "10:00 AM";
+  const suffix = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+  return `${hour}:${minuteRaw.padStart(2, "0")} ${suffix}`;
+}
+
+export function followUpLocalFromDate(value: string | Date): string {
+  const when = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(when.getTime())) return defaultFollowUpLocalValue();
+  return `${when.getFullYear()}-${pad2(when.getMonth() + 1)}-${pad2(when.getDate())}T${pad2(when.getHours())}:${pad2(when.getMinutes())}`;
 }
 
 const BOT_AUTHOR = "Sarveda Assistant";

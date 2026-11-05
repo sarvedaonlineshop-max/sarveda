@@ -148,8 +148,12 @@ export async function latestServiceRequestForOrder(
 }
 
 export async function pendingServiceRequestCount(): Promise<number> {
+  // Same cases the Returns desk lists. Order-change requests stay on the order, not this badge.
   return prisma.orderServiceRequest.count({
-    where: { status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED"] } }
+    where: {
+      status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED"] },
+      type: { in: ["REFUND_AFTER_DELIVERY", "CANCEL_BEFORE_DELIVERY"] }
+    }
   });
 }
 
@@ -368,6 +372,8 @@ export async function submitServiceRequest(opts: {
       customerEmail: email,
       type: opts.type,
       channel: "WEBSITE",
+      responsibleUserEmail: "sowmya@sarveda.com",
+      responsibleTeam: "CUSTOMER_CARE",
       reasonCode: summaryCode,
       reasonLabel: summaryLabel,
       message: opts.message?.trim() || null,
@@ -520,6 +526,8 @@ export async function adminCreatePreDispatchCancellation(opts: {
       customerEmail,
       type: "CANCEL_BEFORE_DELIVERY",
       channel: "MANUAL",
+      responsibleUserEmail: "sowmya@sarveda.com",
+      responsibleTeam: "CUSTOMER_CARE",
       reasonCode: opts.reasonCode,
       reasonLabel: summaryLabel,
       message: note || `Opened by admin (${adminEmail}) before dispatch`,

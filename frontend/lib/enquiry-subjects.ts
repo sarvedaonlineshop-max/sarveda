@@ -26,7 +26,8 @@ export type EnquirySource =
   | "COURSE"
   | "EVENT"
   | "INSIGHTS"
-  | "WHATSAPP";
+  | "WHATSAPP"
+  | "INSTAGRAM";
 
 export const ENQUIRY_SOURCE_LABELS: Record<EnquirySource, string> = {
   CONTACT: "Contact",
@@ -34,7 +35,8 @@ export const ENQUIRY_SOURCE_LABELS: Record<EnquirySource, string> = {
   COURSE: "Course",
   EVENT: "Event",
   INSIGHTS: "Insights",
-  WHATSAPP: "WhatsApp"
+  WHATSAPP: "WhatsApp",
+  INSTAGRAM: "Instagram"
 };
 
 export const ACCEPTED_ENQUIRY_FILE_TYPES =

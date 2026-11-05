@@ -372,7 +372,10 @@ export const salesQuoteSchema = z
     lines: z.array(salesQuoteLineSchema).max(40).optional(),
     billingAddress: quoteAddressSchema.optional(),
     shippingAddress: quoteAddressSchema.optional(),
-    shippingSameAsBilling: z.boolean().optional()
+    shippingSameAsBilling: z.boolean().optional(),
+    shippingInPaise: z.number().int().min(0).max(50_000_000).optional(),
+    packingInPaise: z.number().int().min(0).max(50_000_000).optional(),
+    threadId: z.string().uuid().optional().nullable()
   })
   .refine((body) => (body.lines?.length ?? 0) > 0 || Boolean(body.itemName && (body.amountInPaise ?? 0) >= 100), {
     message: "Add at least one product"
@@ -380,6 +383,23 @@ export const salesQuoteSchema = z
 
 export const shareSalesQuoteSchema = z.object({
   threadId: z.string().uuid()
+});
+
+export const quoteChargesSchema = z.object({
+  country: z.string().trim().min(2).max(8),
+  lines: z
+    .array(
+      z.object({
+        variantId: z.string().uuid(),
+        quantity: z.number().int().min(1).max(100_000)
+      })
+    )
+    .max(40)
+});
+
+export const quoteDecisionSchema = z.object({
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  note: z.string().trim().max(1000).optional().nullable()
 });
 
 const chatPipelineStatusEnum = z.enum([
@@ -422,8 +442,46 @@ export const chatPipelineCollaboratorsSchema = z.object({
   userIds: z.array(z.string().uuid()).max(20)
 });
 
+export const chatPipelineCustomerSchema = z.object({
+  customerName: z.string().trim().min(1).max(120),
+  customerEmail: z.string().trim().max(180).optional().nullable(),
+  customerPhone: z.string().trim().max(20).optional().nullable(),
+  crmLocation: z.string().trim().max(120).optional().nullable()
+});
+
 export const chatPipelineNoteSchema = z.object({
-  body: z.string().trim().min(1).max(4000)
+  body: z.string().trim().min(1).max(4000),
+  kind: z.enum(["NOTE", "CALL"]).optional()
+});
+
+export const feedbackResponseSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  response: z.string().trim().max(2000).optional().nullable()
+});
+
+export const feedbackConsentSchema = z.object({
+  consent: z.boolean()
+});
+
+export const issueUpdateSchema = z.object({
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"]).optional(),
+  correctiveAction: z.string().trim().max(2000).optional().nullable()
+});
+
+export const leadPaymentUpdateSchema = z.object({
+  method: z.enum(["PREPAID", "PARTIAL", "COD", "CREDIT"]),
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional()
+});
+
+export const leadPaymentReceiptSchema = z.object({
+  amountInPaise: z.number().int().positive(),
+  channel: z.enum(["BANK_UPI", "COD_COLLECTION", "COD_SETTLEMENT"]),
+  reference: z.string().trim().max(120).optional().nullable(),
+  note: z.string().trim().max(500).optional().nullable()
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

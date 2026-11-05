@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MessageSquarePlus, RefreshCw, Search, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Filter, MessageSquarePlus, RefreshCw, Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -17,11 +17,12 @@ import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoade
 import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subjects";
 import { whatsAppPreviewLabel } from "@/lib/whatsapp-message-body";
 import {
+  CHAT_CATEGORIES,
   CHAT_CATEGORY_COLORS,
   CHAT_PIPELINE_COLORS,
   CHAT_PIPELINE_STATUSES,
   chatCategoryLabel,
-  chatPipelineLabel,
+  chatPipelineShort,
   normalizeChatPipeline,
   ownerTagColor,
   type ChatCategory
@@ -29,7 +30,13 @@ import {
 
 const LEAD_STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
-  ...CHAT_PIPELINE_STATUSES.map((value) => ({ value, label: chatPipelineLabel(value) }))
+  { value: "NEW", label: "New" },
+  { value: "ONGOING", label: "Ongoing" },
+  { value: "QUOTATION_SENT", label: "Quotation" },
+  { value: "FOLLOWUP", label: "Follow Up" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "NOT_INTERESTED", label: "Not Interested" },
+  { value: "UNQUALIFIED", label: "Unqualified" }
 ];
 
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
@@ -47,6 +54,7 @@ const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
 ];
 
 export const ADMIN_CHATS_REFRESH_EVENT = "sarveda-admin-chats-refresh";
+export const ADMIN_CHATS_PATCH_EVENT = "sarveda-admin-chats-patch";
 export const ADMIN_CHATS_START_EVENT = "sarveda-admin-chats-start";
 
 export type AdminChatsStartDetail = {
@@ -75,17 +83,20 @@ export function openAdminStartWhatsAppChat(detail: AdminChatsStartDetail = {}) {
   window.dispatchEvent(new CustomEvent(ADMIN_CHATS_START_EVENT, { detail }));
 }
 
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function formatWhen(iso: string) {
   const d = new Date(iso);
-  const now = new Date();
-  const sameDay =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
-  if (sameDay) {
-    return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  if (Number.isNaN(d.getTime())) return "";
+  const dayDiff = Math.round((startOfDay(new Date()).getTime() - startOfDay(d).getTime()) / 86_400_000);
+  if (dayDiff <= 0) {
+    return d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   }
-  return d.toLocaleString("en-IN", { day: "numeric", month: "short" });
+  if (dayDiff === 1) return "Yesterday";
+  if (dayDiff < 7) return d.toLocaleDateString("en-IN", { weekday: "long" });
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
 function previewText(thread: EnquiryThreadListItem) {
@@ -107,6 +118,10 @@ export function AdminChatsInbox() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStatus, setLeadStatus] = useState("");
+  const [filterMenu, setFilterMenu] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"recent" | "oldest">("recent");
   const [leadStatusCounts, setLeadStatusCounts] = useState<Record<string, number>>({ ALL: 0 });
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -160,10 +175,34 @@ export function AdminChatsInbox() {
 
   useEffect(() => {
     const onRefresh = () => void load();
+    const onPatch = (event: Event) => {
+      const row = (event as CustomEvent<EnquiryThreadListItem>).detail;
+      if (!row?.id) return;
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === row.id
+            ? {
+                ...item,
+                customerName: row.customerName || item.customerName,
+                customerEmail: row.customerEmail ?? item.customerEmail,
+                customerPhone: row.customerPhone ?? item.customerPhone,
+                crmPipeline: row.crmPipeline ?? item.crmPipeline,
+                crmCategory: row.crmCategory === undefined ? item.crmCategory : row.crmCategory,
+                crmCategories: row.crmCategories ?? item.crmCategories,
+                crmOwner: row.crmOwner === undefined ? item.crmOwner : row.crmOwner,
+                unreadByAdmin: typeof row.unreadByAdmin === "boolean" ? row.unreadByAdmin : item.unreadByAdmin,
+                unreadCount: typeof row.unreadCount === "number" ? row.unreadCount : item.unreadCount
+              }
+            : item
+        )
+      );
+    };
     window.addEventListener(ADMIN_CHATS_REFRESH_EVENT, onRefresh);
+    window.addEventListener(ADMIN_CHATS_PATCH_EVENT, onPatch);
     const timer = setInterval(() => void load(), 45_000);
     return () => {
       window.removeEventListener(ADMIN_CHATS_REFRESH_EVENT, onRefresh);
+      window.removeEventListener(ADMIN_CHATS_PATCH_EVENT, onPatch);
       clearInterval(timer);
     };
   }, [load]);
@@ -183,38 +222,66 @@ export function AdminChatsInbox() {
     return () => window.removeEventListener(ADMIN_CHATS_START_EVENT, onStart);
   }, []);
 
+  useEffect(() => {
+    if (!filterMenu) return;
+    function onPointer(event: MouseEvent) {
+      if (!filterMenuRef.current?.contains(event.target as Node)) setFilterMenu(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
+  }, [filterMenu]);
+
   const filtered = useMemo(() => {
     const byStatus = leadStatus
       ? items.filter((t) => normalizeChatPipeline(t.crmPipeline) === leadStatus)
       : [...items];
+    const byCategory = categoryFilter
+      ? byStatus.filter((t) => {
+          const cats = t.crmCategories?.length
+            ? t.crmCategories
+            : t.crmCategory
+              ? [t.crmCategory]
+              : [];
+          return cats.includes(categoryFilter);
+        })
+      : byStatus;
     const needle = q.trim().toLowerCase();
-    if (!needle) return byStatus;
+    const tokens = needle.split(/\s+/).filter(Boolean);
     const needleDigits = needle.replace(/\D/g, "");
-    return byStatus.filter((t) => {
-      const phoneDigits = (t.customerPhone ?? "").replace(/\D/g, "");
-      const waDigits = (t.waPhone ?? "").replace(/\D/g, "");
-      if (
-        needleDigits.length >= 3 &&
-        (phoneDigits.includes(needleDigits) || waDigits.includes(needleDigits))
-      ) {
-        return true;
-      }
-      const hay = [
-        t.customerName,
-        t.customerEmail,
-        t.customerPhone,
-        t.waPhone,
-        t.orderNumber,
-        t.contextTitle,
-        previewText(t),
-        ENQUIRY_SOURCE_LABELS[t.source as EnquirySource] ?? t.source
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(needle);
+    const serverMatched = needle.length > 0 && needle === debouncedQ.trim().toLowerCase();
+    const searched =
+      !needle || serverMatched
+        ? byCategory
+        : byCategory.filter((t) => {
+            const phoneDigits = (t.customerPhone ?? "").replace(/\D/g, "");
+            const waDigits = (t.waPhone ?? "").replace(/\D/g, "");
+            if (
+              needleDigits.length >= 3 &&
+              (phoneDigits.includes(needleDigits) || waDigits.includes(needleDigits))
+            ) {
+              return true;
+            }
+            const hay = [
+              t.customerName,
+              t.customerEmail,
+              t.customerPhone,
+              t.waPhone,
+              t.orderNumber,
+              t.contextTitle,
+              previewText(t),
+              ENQUIRY_SOURCE_LABELS[t.source as EnquirySource] ?? t.source
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase();
+            return tokens.every((token) => hay.includes(token));
+          });
+    return [...searched].sort((a, b) => {
+      const av = new Date(a.lastMessageAt ?? 0).getTime();
+      const bv = new Date(b.lastMessageAt ?? 0).getTime();
+      return sortBy === "oldest" ? av - bv : bv - av;
     });
-  }, [items, q, leadStatus]);
+  }, [items, q, debouncedQ, leadStatus, categoryFilter, sortBy]);
 
   const onListView = pathname === "/admin/chats" || pathname === "/admin/chats/";
 
@@ -434,13 +501,12 @@ export function AdminChatsInbox() {
       : null;
 
   return (
-    <div className="admin-chat-list-root relative flex h-full min-h-0 flex-col overflow-hidden bg-[#f0ebe3]">
-      <div className="admin-chat-list-chrome shrink-0 bg-[#efe8dc] px-3 pt-3 md:border-b md:border-[#d9d1c4] md:py-3">
+    <div className="admin-chat-list-root relative flex h-full min-h-0 flex-col overflow-hidden bg-white">
+      <div className="admin-chat-list-chrome shrink-0 bg-white px-3 pt-3 md:border-b md:border-[#e7edf3] md:py-3">
         {/* Desktop keeps the in-card title + actions; mobile moves them to the top nav. */}
         <div className="mb-3 hidden items-center justify-between gap-2 md:flex">
           <div>
             <h1 className="text-[17px] font-semibold text-[#1c352a]">Chats</h1>
-            <p className="text-[11px] text-stone-500">Customer enquiries</p>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -467,27 +533,65 @@ export function AdminChatsInbox() {
           </div>
         </div>
 
-        <div className="relative">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3.5 top-1/2 z-[1] -translate-y-1/2 text-stone-400"
-          />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search chats or contacts"
-            className="w-full rounded-full border-0 bg-[#ebe6de] py-2.5 pl-10 pr-10 text-[15px] text-stone-800 outline-none shadow-[inset_0_1px_2px_rgba(44,36,32,0.12),0_1px_0_rgba(255,255,255,0.55)] placeholder:text-stone-400 focus:bg-white focus:shadow-[inset_0_1px_2px_rgba(44,36,32,0.08),0_0_0_2px_rgba(61,139,79,0.28)] md:rounded-lg md:bg-white md:py-2 md:text-sm md:shadow-none md:ring-1 md:ring-[#d9d1c4] md:focus:ring-[#25d366]"
-          />
-          {q.trim() ? (
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 min-w-0 flex-1 items-center rounded-xl border border-[#e2e8f0] bg-white">
+            <Search size={16} className="ml-3 shrink-0 text-[#94a3b8]" aria-hidden />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search name, phone or message..."
+              className="h-9 min-w-0 flex-1 border-0 bg-transparent px-2 text-[13px] leading-9 text-[#1c352a] shadow-none outline-none placeholder:text-[#94a3b8] focus:!border-0 focus:!shadow-none focus:!outline-none focus-visible:!border-0 focus-visible:!shadow-none focus-visible:!outline-none"
+            />
+            {q.trim() ? (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                className="mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-stone-800"
+                aria-label="Clear search"
+              >
+                <X size={14} strokeWidth={2.25} />
+              </button>
+            ) : (
+              <span className="w-2 shrink-0" aria-hidden />
+            )}
+          </div>
+          <div className="relative" ref={filterMenuRef}>
             <button
               type="button"
-              onClick={() => setQ("")}
-              className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-stone-500 hover:bg-black/5 hover:text-stone-800"
-              aria-label="Clear search"
+              aria-label="Filter by lead status"
+              aria-expanded={filterMenu}
+              onClick={() => setFilterMenu((open) => !open)}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-white text-black ${
+                leadStatus ? "border-black" : "border-[#e2e8f0]"
+              }`}
             >
-              <X size={16} strokeWidth={2.25} />
+              <Filter size={16} strokeWidth={2.25} className="text-black" />
             </button>
-          ) : null}
+            {filterMenu ? (
+              <div className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-xl border border-[#e2e8f0] bg-white py-1 shadow-lg">
+                {LEAD_STATUS_FILTERS.map((f) => {
+                  const active = leadStatus === f.value;
+                  const count = f.value === "" ? leadStatusCounts.ALL ?? 0 : leadStatusCounts[f.value] ?? 0;
+                  return (
+                    <button
+                      key={f.value || "all"}
+                      type="button"
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-[13px] ${
+                        active ? "bg-[#f1f5f9] font-semibold text-[#1c352a]" : "text-[#334155] hover:bg-[#f8fafc]"
+                      }`}
+                      onClick={() => {
+                        setLeadStatus(f.value);
+                        setFilterMenu(false);
+                      }}
+                    >
+                      <span>{f.label}</span>
+                      <span className="text-[12px] text-[#64748b]">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="admin-mobile-pill-row flex flex-wrap gap-1.5 py-3.5 md:mt-2.5 md:py-0">
@@ -496,25 +600,46 @@ export function AdminChatsInbox() {
             const tone =
               f.value && f.value in CHAT_PIPELINE_COLORS
                 ? CHAT_PIPELINE_COLORS[f.value as keyof typeof CHAT_PIPELINE_COLORS]
-                : { bg: "#3d8b4f", text: "#fff" };
+                : { bg: "#3d8b4f", text: "#ffffff" };
             const count = f.value === "" ? leadStatusCounts.ALL ?? 0 : leadStatusCounts[f.value] ?? 0;
             return (
               <button
                 key={f.value || "all"}
                 type="button"
                 onClick={() => setLeadStatus(f.value)}
-                className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
-                  active ? "shadow-[0_1px_2px_rgba(28,53,42,0.18)]" : "ring-1 ring-[#d9d1c4]"
+                className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition ${
+                  active ? "ring-2 ring-offset-1 ring-[#1c352a]/40" : ""
                 }`}
-                style={{
-                  background: active ? tone.bg : "#fff",
-                  color: active ? tone.text : tone.bg
-                }}
+                style={{ background: tone.bg, color: tone.text }}
               >
                 {f.label} ({count})
               </button>
             );
           })}
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <select
+            aria-label="Category"
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value)}
+            className="min-w-0 rounded-lg border border-[#d9d1c4] bg-white px-2 py-1.5 text-[12px] text-[#1c352a] outline-none"
+          >
+            <option value="">All categories</option>
+            {CHAT_CATEGORIES.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Sort"
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value === "oldest" ? "oldest" : "recent")}
+            className="min-w-0 rounded-lg border border-[#d9d1c4] bg-white px-2 py-1.5 text-[12px] text-[#1c352a] outline-none"
+          >
+            <option value="recent">Last message</option>
+            <option value="oldest">Oldest</option>
+          </select>
         </div>
       </div>
 
@@ -547,7 +672,6 @@ export function AdminChatsInbox() {
               const ownerName =
                 thread.crmOwner?.name?.trim() ||
                 thread.crmOwner?.email?.split("@")[0] ||
-                thread.lastAdminName?.trim() ||
                 null;
               const cats = (thread.crmCategories?.length
                 ? thread.crmCategories
@@ -555,71 +679,70 @@ export function AdminChatsInbox() {
                   ? [thread.crmCategory]
                   : []) as ChatCategory[];
               return (
-                <li key={thread.id}>
+                <li key={thread.id} className="border-b border-[#eef2f6]">
                   <Link
                     href={`/admin/chats/${thread.id}`}
-                    className={`flex gap-3 border-b border-[#e8e2d9] px-3 py-3 transition ${
-                      selected ? "bg-[#e7e0d4]" : "hover:bg-[#e9e3d8]/80"
-                    } ${thread.unreadByAdmin && !selected ? "bg-[#faf6ee]" : ""}`}
-                    style={{ borderLeft: `3px solid ${tone.bg}` }}
+                    className={`flex min-w-0 gap-2.5 px-3 py-3 font-sans transition ${
+                      selected ? "bg-[#e8f3ff]" : "bg-white hover:bg-[#f8fafc]"
+                    }`}
+                    style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span
-                          className={`truncate text-[16px] leading-tight md:text-[15px] ${
-                            thread.unreadByAdmin
-                              ? "font-semibold text-[#1c352a]"
-                              : "font-normal text-stone-800"
-                          }`}
-                        >
+                    <span
+                      className="my-1 w-1 shrink-0 self-stretch rounded-full"
+                      style={{ background: tone.bg }}
+                      aria-hidden
+                    />
+                    <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2">
+                      <span
+                        className="row-span-2 flex items-center justify-center self-stretch rounded-lg px-2 text-[11px] font-bold uppercase leading-none tracking-wide"
+                        style={{ background: tone.bg, color: tone.text, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+                      >
+                        {chatPipelineShort(pipeline)}
+                      </span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[14px] font-semibold leading-5 text-[#1f2937]">
                           {thread.customerName}
                         </span>
-                        <time className="shrink-0 text-[12px] text-stone-400 md:text-[11px]">
+                        <time className="shrink-0 text-[11px] font-normal leading-5 text-[#b0b8c4]">
                           {formatWhen(thread.lastMessageAt)}
                         </time>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1.5">
-                        <span
-                          className={`truncate text-[14px] leading-snug md:text-[13px] ${
-                            thread.unreadByAdmin
-                              ? "font-medium text-stone-700"
-                              : "text-stone-500"
-                          }`}
-                        >
+                      <div className="mt-1.5 flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[12px] font-normal leading-5 text-[#8b95a3]">
                           {previewText(thread)}
                         </span>
-                        {thread.unreadByAdmin ? (
-                          <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#25d366]" />
-                        ) : null}
-                      </div>
-                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
-                        <span
-                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-                          style={{ background: tone.bg, color: tone.text }}
-                        >
-                          {chatPipelineLabel(pipeline)}
-                        </span>
-                        {ownerName ? (
-                          <span
-                            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                            style={{
-                              color: ownerTagColor(thread.crmOwner?.id || ownerName),
-                              border: `1px solid ${ownerTagColor(thread.crmOwner?.id || ownerName)}`
-                            }}
-                          >
-                            {ownerName}
+                        {(thread.unreadCount ?? 0) > 0 ? (
+                          <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#ef4444] px-1 text-[10px] font-bold leading-none text-white">
+                            {(thread.unreadCount ?? 0) > 99 ? "99+" : thread.unreadCount}
                           </span>
                         ) : null}
-                        {cats.map((cat) => (
-                          <span
-                            key={cat}
-                            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-                            style={{ background: CHAT_CATEGORY_COLORS[cat] ?? "#57534e" }}
-                          >
-                            {chatCategoryLabel(cat)}
-                          </span>
-                        ))}
                       </div>
+                      {cats.length > 0 || ownerName ? (
+                        <div className="col-start-2 mt-2 flex min-w-0 items-center gap-1.5">
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                            {cats.map((cat) => (
+                              <span
+                                key={cat}
+                                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                                style={{ background: CHAT_CATEGORY_COLORS[cat] ?? "#57534e" }}
+                              >
+                                {chatCategoryLabel(cat)}
+                              </span>
+                            ))}
+                          </div>
+                          {ownerName ? (
+                            <span
+                              className="ml-auto shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold"
+                              style={{
+                                color: ownerTagColor(thread.crmOwner?.id || ownerName),
+                                border: `1px solid ${ownerTagColor(thread.crmOwner?.id || ownerName)}`
+                              }}
+                            >
+                              {ownerName}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   </Link>
                 </li>

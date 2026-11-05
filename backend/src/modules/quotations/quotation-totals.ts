@@ -23,6 +23,7 @@ export type ComputedQuoteTotals = {
   subtotalInPaise: number;
   discountInPaise: number;
   shippingInPaise: number;
+  packingInPaise: number;
   taxInPaise: number;
   grandTotalInPaise: number;
   taxPreviewMode: "INTRA_STATE" | "INTER_STATE" | "UNAVAILABLE" | "NOT_APPLICABLE";
@@ -46,6 +47,7 @@ export function sanitizeQuoteText(s: string | null | undefined, max: number): st
 export function computeQuotationTotals(opts: {
   lines: QuotationLineInput[];
   shippingInPaise: number;
+  packingInPaise?: number;
   headerDiscountInPaise: number;
   currency: string;
   shippingAddress: QuotationAddress;
@@ -110,9 +112,10 @@ export function computeQuotationTotals(opts: {
   const headerDiscount = Math.max(0, Math.floor(opts.headerDiscountInPaise));
   const discountInPaise = lineDiscountSum + headerDiscount;
   const shippingInPaise = Math.max(0, Math.floor(opts.shippingInPaise));
+  const packingInPaise = Math.max(0, Math.floor(opts.packingInPaise ?? 0));
   const linesNet = lines.reduce((s, l) => s + l.lineTotalInPaise, 0);
   const afterHeaderDiscount = Math.max(0, linesNet - headerDiscount);
-  const grandTotalInPaise = afterHeaderDiscount + shippingInPaise;
+  const grandTotalInPaise = afterHeaderDiscount + shippingInPaise + packingInPaise;
   const taxInPaise = lines.reduce((s, l) => s + l.taxInPaise, 0);
 
   let cgstInPaise = 0;
@@ -130,6 +133,7 @@ export function computeQuotationTotals(opts: {
     subtotalInPaise,
     discountInPaise,
     shippingInPaise,
+    packingInPaise,
     taxInPaise,
     grandTotalInPaise,
     taxPreviewMode,

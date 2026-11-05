@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 
+import { AdminNotificationPrefs } from "@/components/admin/AdminNotificationPrefs";
 import { useAdminPageHeader } from "@/components/admin/useAdminPageHeader";
 
 // ── Types ──────────────────────────────────────────────
@@ -6547,6 +6548,8 @@ export default function TasksApp({
               </button>
             </form>
           </div>
+
+          {embedInAdmin ? <AdminNotificationPrefs /> : null}
 
           {/* Change password */}
           <div style={{

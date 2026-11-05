@@ -12,7 +12,8 @@ export const SOURCE_LABELS: Record<EnquirySource, string> = {
   COURSE: "Course enquiry",
   EVENT: "Event enquiry",
   INSIGHTS: "Insights",
-  WHATSAPP: "WhatsApp"
+  WHATSAPP: "WhatsApp",
+  INSTAGRAM: "Instagram"
 };
 
 export const SUBJECT_LABELS: Record<EnquirySubjectCategory, string> = {

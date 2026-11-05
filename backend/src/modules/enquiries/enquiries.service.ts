@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { Prisma } from "@prisma/client";
 import type {
   EnquiryMessageAuthor,
   EnquirySource,
@@ -401,27 +402,38 @@ export async function listEnquiryThreads(params: {
   unreadOnly?: boolean;
   source?: EnquirySource;
   leadStatus?: EnquiryLeadStatus;
-  /** Search name, email, phone, order number, context */
+  /** Search name, email, phone, order, context, and any message. Each word can sit anywhere. */
   q?: string;
 }) {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const q = params.q?.trim();
+  const tokens = q ? q.toLowerCase().split(/\s+/).filter(Boolean) : [];
   const digits = q ? q.replace(/\D/g, "") : "";
+  const tokenWhere = (token: string) => ({
+    OR: [
+      { customerName: { contains: token, mode: "insensitive" as const } },
+      { customerEmail: { contains: token, mode: "insensitive" as const } },
+      { customerPhone: { contains: token, mode: "insensitive" as const } },
+      { waPhone: { contains: token, mode: "insensitive" as const } },
+      { orderNumber: { contains: token, mode: "insensitive" as const } },
+      { contextTitle: { contains: token, mode: "insensitive" as const } },
+      { messages: { some: { body: { contains: token, mode: "insensitive" as const } } } }
+    ]
+  });
   const searchWhere =
-    q && q.length > 0
+    tokens.length > 0
       ? {
           OR: [
-            { customerName: { contains: q, mode: "insensitive" as const } },
-            { customerEmail: { contains: q, mode: "insensitive" as const } },
-            { customerPhone: { contains: q, mode: "insensitive" as const } },
-            { waPhone: { contains: q, mode: "insensitive" as const } },
-            { orderNumber: { contains: q, mode: "insensitive" as const } },
-            { contextTitle: { contains: q, mode: "insensitive" as const } },
+            { AND: tokens.map(tokenWhere) },
             ...(digits.length >= 3
               ? [
-                  { customerPhone: { contains: digits } },
-                  { waPhone: { contains: digits } }
+                  {
+                    OR: [
+                      { customerPhone: { contains: digits } },
+                      { waPhone: { contains: digits } }
+                    ]
+                  }
                 ]
               : [])
           ]
@@ -520,9 +532,41 @@ export async function listEnquiryThreads(params: {
         });
   const openFollowUpThreads = new Set(openFollowUpRows.map((r) => r.threadId));
 
+  const unreadThreads = items.filter((t) => t.unreadByAdmin);
+  const unreadCountByThread = new Map<string, number>();
+  if (unreadThreads.length > 0) {
+    const idList = Prisma.join(unreadThreads.map((t) => Prisma.sql`${t.id}::uuid`));
+    try {
+      const unreadRows = await prisma.$queryRaw<Array<{ threadId: string; count: number }>>(Prisma.sql`
+        SELECT m."threadId" AS "threadId", COUNT(*)::int AS "count"
+        FROM "EnquiryMessage" m
+        INNER JOIN "EnquiryThread" t ON t.id = m."threadId"
+        LEFT JOIN (
+          SELECT "threadId", MAX("createdAt") AS "lastAdminAt"
+          FROM "EnquiryMessage"
+          WHERE "authorType" = 'ADMIN'::"EnquiryMessageAuthor"
+            AND "authorName" <> ${WA_BOT_AUTHOR}
+            AND "threadId" IN (${idList})
+          GROUP BY "threadId"
+        ) a ON a."threadId" = t.id
+        WHERE m."threadId" IN (${idList})
+          AND t."unreadByAdmin" = true
+          AND m."authorType" = 'CUSTOMER'::"EnquiryMessageAuthor"
+          AND m."createdAt" > COALESCE(t."adminLastReadAt", a."lastAdminAt", TIMESTAMP '1970-01-01')
+        GROUP BY m."threadId"
+      `);
+      for (const row of unreadRows) unreadCountByThread.set(row.threadId, Number(row.count) || 0);
+    } catch (err) {
+      logger.warn("enquiry_unread_count_failed", {
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+
   return {
     items: items.map((t) => ({
       ...t,
+      unreadCount: t.unreadByAdmin ? Math.max(1, unreadCountByThread.get(t.id) ?? 0) : 0,
       lastAdminName: lastAdminByThread.get(t.id) ?? null,
       hasOpenFollowUp: openFollowUpThreads.has(t.id),
       leadStatus: resolveEnquiryLeadStatus({
@@ -567,7 +611,7 @@ export async function getEnquiryThread(id: string) {
 
   await prisma.enquiryThread.update({
     where: { id },
-    data: { unreadByAdmin: false }
+    data: { unreadByAdmin: false, adminLastReadAt: new Date() }
   });
 
   const [humanAdmin, openFollowUp] = await Promise.all([

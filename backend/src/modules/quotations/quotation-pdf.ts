@@ -40,6 +40,7 @@ export type QuotationPdfInput = {
   subtotalInPaise: number;
   discountInPaise: number;
   shippingInPaise: number;
+  packingInPaise?: number;
   taxInPaise: number;
   cgstInPaise: number;
   sgstInPaise: number;
@@ -67,6 +68,9 @@ function sellerBlock() {
 
 function resolveLogoPath(): string | null {
   const candidates = [
+    path.join(process.cwd(), "../frontend/public/images/brand/sarveda-logo.png"),
+    path.join(process.cwd(), "frontend/public/images/brand/sarveda-logo.png"),
+    path.join(__dirname, "../../../frontend/public/images/brand/sarveda-logo.png"),
     path.join(__dirname, "../../assets/labels/sarveda-logo-with-name.png"),
     path.join(process.cwd(), "assets/labels/sarveda-logo-with-name.png"),
     path.join(process.cwd(), "backend/assets/labels/sarveda-logo-with-name.png")
@@ -121,7 +125,7 @@ export function buildQuotationPdf(input: QuotationPdfInput): Promise<Buffer> {
     let y = doc.page.margins.top;
     if (logo) {
       try {
-        doc.image(logo, left, y, { width: 120, height: 40 });
+        doc.image(logo, left, y, { height: 36 });
       } catch {
         doc.fontSize(12).fillColor(TEXT_BODY).text(seller.name, left, y);
       }
@@ -275,6 +279,7 @@ export function buildQuotationPdf(input: QuotationPdfInput): Promise<Buffer> {
     addSum("Subtotal", fmt(input.subtotalInPaise, input.currency));
     if (input.discountInPaise > 0) addSum("Discount", `−${fmt(input.discountInPaise, input.currency)}`);
     if (input.shippingInPaise > 0) addSum("Shipping", fmt(input.shippingInPaise, input.currency));
+    if ((input.packingInPaise ?? 0) > 0) addSum("Packing", fmt(input.packingInPaise ?? 0, input.currency));
     if (input.taxPreviewMode === "INTRA_STATE") {
       addSum("Estimated CGST", fmt(input.cgstInPaise, input.currency));
       addSum("Estimated SGST", fmt(input.sgstInPaise, input.currency));
@@ -296,15 +301,22 @@ export function buildQuotationPdf(input: QuotationPdfInput): Promise<Buffer> {
       doc.font("Helvetica").fillColor(TEXT_BODY).text(input.notes, { width: pageWidth });
     }
 
-    doc
-      .fontSize(7)
-      .fillColor(TEXT_MUTED)
-      .text(
-        "Computer-generated commercial document. Not a GST tax invoice / not an accounting entry.",
-        left,
-        doc.page.height - 48,
-        { width: pageWidth, align: "center" }
-      );
+    const footer = "Computer-generated commercial document. Not a GST tax invoice / not an accounting entry.";
+    const footerY = doc.page.height - 32;
+    if (doc.y > footerY - 16) {
+      doc.moveDown(0.6);
+      doc.fontSize(7).fillColor(TEXT_MUTED).text(footer, left, doc.y, { width: pageWidth, align: "center" });
+    } else {
+      const previousBottom = doc.page.margins.bottom;
+      doc.page.margins.bottom = 0;
+      doc.fontSize(7).fillColor(TEXT_MUTED).text(footer, left, footerY, {
+        width: pageWidth,
+        align: "center",
+        lineBreak: false,
+        height: 12
+      });
+      doc.page.margins.bottom = previousBottom;
+    }
 
     doc.end();
   });

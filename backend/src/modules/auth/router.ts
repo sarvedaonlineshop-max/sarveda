@@ -430,6 +430,20 @@ authRouter.post(
       return;
     }
     const isWeb = platform === "web";
+    // One browser token belongs to the admin who is logged in now.
+    // Otherwise an order alert for another account on this computer still appears
+    // after this admin turns notifications off.
+    if (isWeb) {
+      await prisma.user.updateMany({
+        where: { fcmWebToken: token, NOT: { id: req.authUser!.id } },
+        data: { fcmWebToken: null }
+      });
+    } else {
+      await prisma.user.updateMany({
+        where: { fcmToken: token, NOT: { id: req.authUser!.id } },
+        data: { fcmToken: null }
+      });
+    }
     await prisma.user.update({
       where: { id: req.authUser!.id },
       data: isWeb ? { fcmWebToken: token } : { fcmToken: token }

@@ -37,6 +37,7 @@ export const quotationUpsertSchema = z
     shippingSameAsBilling: z.boolean().optional().default(false),
     currency: z.string().min(3).max(3).default("INR"),
     shippingInPaise: z.number().int().min(0).max(50_000_000).optional().default(0),
+    packingInPaise: z.number().int().min(0).max(50_000_000).optional().default(0),
     discountInPaise: z.number().int().min(0).max(50_000_000).optional().default(0),
     validUntil: z.string().datetime().optional().nullable().or(z.string().max(40).optional().nullable()),
     terms: z.string().max(8000).optional().nullable(),

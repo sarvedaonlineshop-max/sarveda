@@ -18,11 +18,19 @@ import {
   linkQuotationSchema,
   salesQuoteSchema,
   shareSalesQuoteSchema,
+  quoteChargesSchema,
+  quoteDecisionSchema,
   chatPipelineStatusSchema,
   chatPipelineCategorySchema,
   chatPipelineOwnerSchema,
   chatPipelineCollaboratorsSchema,
   chatPipelineNoteSchema,
+  leadPaymentUpdateSchema,
+  leadPaymentReceiptSchema,
+  feedbackResponseSchema,
+  feedbackConsentSchema,
+  issueUpdateSchema,
+  chatPipelineCustomerSchema,
   updateAccountSchema,
   updateContactSchema,
   updateDealProductSchema,
@@ -48,8 +56,21 @@ router.get("/chat-pipeline/:threadId", h.getChatPipeline);
 router.patch("/chat-pipeline/:threadId", validateBody(chatPipelineStatusSchema), h.patchChatPipeline);
 router.patch("/chat-pipeline/:threadId/category", validateBody(chatPipelineCategorySchema), h.patchChatCategory);
 router.patch("/chat-pipeline/:threadId/owner", validateBody(chatPipelineOwnerSchema), h.patchChatOwner);
+router.patch("/chat-pipeline/:threadId/customer", validateBody(chatPipelineCustomerSchema), h.patchChatCustomer);
 router.patch("/chat-pipeline/:threadId/collaborators", validateBody(chatPipelineCollaboratorsSchema), h.patchChatCollaborators);
 router.post("/chat-pipeline/:threadId/notes", validateBody(chatPipelineNoteSchema), h.postChatNote);
+router.get("/chat-pipeline/:threadId/payment", h.getLeadPayment);
+router.patch("/chat-pipeline/:threadId/payment", validateBody(leadPaymentUpdateSchema), h.updateLeadPayment);
+router.post("/chat-pipeline/:threadId/payment/receipts", validateBody(leadPaymentReceiptSchema), h.recordLeadReceipt);
+router.post("/chat-pipeline/:threadId/payment/receipts/:receiptId/verify", h.verifyLeadReceipt);
+router.post("/chat-pipeline/:threadId/payment/receipts/:receiptId/reject", h.rejectLeadReceipt);
+router.post("/chat-pipeline/:threadId/payment/link", h.shareLeadPaymentLink);
+router.get("/chat-pipeline/:threadId/order-desk", h.getOrderDesk);
+router.post("/chat-pipeline/:threadId/order-desk/feedback/send", h.sendOrderFeedback);
+router.post("/chat-pipeline/:threadId/order-desk/feedback/response", validateBody(feedbackResponseSchema), h.recordOrderFeedback);
+router.post("/chat-pipeline/:threadId/order-desk/feedback/resolve", h.resolveOrderFeedback);
+router.patch("/chat-pipeline/:threadId/order-desk/feedback/consent", validateBody(feedbackConsentSchema), h.setOrderFeedbackConsent);
+router.patch("/chat-pipeline/:threadId/order-desk/issues/:issueId", validateBody(issueUpdateSchema), h.patchOrderIssue);
 router.get("/report", h.crmReport);
 router.get("/assignees", h.crmAssignees);
 router.get("/pipelines", h.listPipelines);
@@ -87,9 +108,15 @@ router.patch("/contacts/:id", validateBody(updateContactSchema), h.updateContact
 router.get("/desk", h.myDesk);
 router.get("/quote-catalog", h.quoteCatalog);
 router.get("/sales-quotes", h.listSalesQuotes);
+router.get("/sales-quotes/approvals/count", h.countQuoteApprovals);
+router.get("/sales-quotes/approvals", h.listQuoteApprovals);
+router.post("/sales-quotes/charges", validateBody(quoteChargesSchema), h.suggestSalesQuoteCharges);
 router.post("/sales-quotes", validateBody(salesQuoteSchema), h.createSalesQuote);
 router.get("/sales-quotes/:id/pdf", h.downloadSalesQuote);
 router.post("/sales-quotes/:id/share", validateBody(shareSalesQuoteSchema), h.shareSalesQuote);
+router.post("/sales-quotes/:id/order", validateBody(shareSalesQuoteSchema), h.convertSalesQuote);
+router.post("/sales-quotes/:id/submit", h.submitSalesQuote);
+router.post("/sales-quotes/:id/decision", validateBody(quoteDecisionSchema), h.decideSalesQuote);
 router.get("/sales-quotes/:id", h.getSalesQuote);
 router.put("/sales-quotes/:id", validateBody(salesQuoteSchema), h.updateSalesQuote);
 router.delete("/sales-quotes/:id", h.deleteSalesQuote);
