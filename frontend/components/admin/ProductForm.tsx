@@ -1159,7 +1159,8 @@ export function ProductForm({ productId }: { productId?: string }) {
 
   const variantIssueMessages = useMemo(() => {
     const msgs: string[] = [];
-    if (!skuFamily) msgs.push("Choose an SKU family on the General step first.");
+    const missingSku = variants.some((v) => !v.sku.trim());
+    if (!skuFamily && missingSku) msgs.push("Choose an SKU family on the General step first.");
     const errors = validateTab("variants");
     for (const m of Object.values(errors)) {
       if (m && !msgs.includes(m)) msgs.push(m);
