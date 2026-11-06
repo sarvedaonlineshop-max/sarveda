@@ -370,7 +370,14 @@ export async function update(req: Request, res: Response, next: NextFunction) {
         body.seoDescription !== undefined ? body.seoDescription : existing.seoDescription,
       seoKeyword: body.seoKeyword !== undefined ? body.seoKeyword : existing.seoKeyword,
       skuFamily:
-        body.skuFamily !== undefined ? body.skuFamily || null : existing.skuFamily,
+        body.skuFamily !== undefined
+          ? body.skuFamily || null
+          : existing.skuFamily === "MI" ||
+              existing.skuFamily === "YO" ||
+              existing.skuFamily === "ME" ||
+              existing.skuFamily === "OTHER"
+            ? existing.skuFamily
+            : null,
       categoryIds:
         body.categoryIds ??
         existing.categories.map((c: { category: { id: string } }) => c.category.id),
