@@ -102,6 +102,7 @@ export type ProductAdminSaveInput = {
   seoTitle?: string | null;
   seoDescription?: string | null;
   seoKeyword?: string | null;
+  skuFamily?: "MI" | "YO" | "ME" | "OTHER" | null;
   categoryIds?: string[];
   variantAxisOrder?: string[];
   variantOptionValueOrder?: Record<string, string[]>;
@@ -472,6 +473,7 @@ export async function saveProductAdmin(
         seoTitle: input.seoTitle ?? undefined,
         seoDescription: input.seoDescription ?? undefined,
         seoKeyword: input.seoKeyword ?? undefined,
+        skuFamily: input.skuFamily !== undefined ? input.skuFamily || null : undefined,
         categories: input.categoryIds
           ? {
               deleteMany: {},
@@ -521,6 +523,7 @@ export async function saveProductAdmin(
       seoTitle: input.seoTitle ?? undefined,
       seoDescription: input.seoDescription ?? undefined,
       seoKeyword: input.seoKeyword ?? undefined,
+      skuFamily: input.skuFamily || null,
       categories: input.categoryIds?.length
         ? { create: input.categoryIds.map((categoryId) => ({ categoryId })) }
         : undefined

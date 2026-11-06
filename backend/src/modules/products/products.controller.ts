@@ -237,6 +237,7 @@ function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): Produc
     seoTitle: body.seoTitle,
     seoDescription: body.seoDescription,
     seoKeyword: body.seoKeyword,
+    skuFamily: body.skuFamily,
     categoryIds: body.categoryIds,
     variantAxisOrder: body.variantAxisOrder,
     variantOptionValueOrder: body.variantOptionValueOrder,
@@ -368,6 +369,8 @@ export async function update(req: Request, res: Response, next: NextFunction) {
       seoDescription:
         body.seoDescription !== undefined ? body.seoDescription : existing.seoDescription,
       seoKeyword: body.seoKeyword !== undefined ? body.seoKeyword : existing.seoKeyword,
+      skuFamily:
+        body.skuFamily !== undefined ? body.skuFamily || null : existing.skuFamily,
       categoryIds:
         body.categoryIds ??
         existing.categories.map((c: { category: { id: string } }) => c.category.id),

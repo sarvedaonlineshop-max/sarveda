@@ -16,6 +16,7 @@ import {
 import {
   generateUniqueSkus,
   inferSkuFamilyFromSkus,
+  isSkuFamilyCode,
   readStoredSkuFamily,
   SKU_FAMILY_OPTIONS,
   writeStoredSkuFamily,
@@ -403,8 +404,13 @@ export function ProductForm({ productId }: { productId?: string }) {
       setVariants(loadedVariants);
       setDeactivateVariantIds([]);
       setDeactivateConfirmId(null);
+      const savedFamily = String((p as { skuFamily?: string | null }).skuFamily ?? "");
       const remembered = productId ? readStoredSkuFamily(productId) : "";
-      setSkuFamily(remembered || inferSkuFamilyFromSkus(loadedVariants.map((v) => v.sku)));
+      setSkuFamily(
+        (isSkuFamilyCode(savedFamily) ? savedFamily : "") ||
+          remembered ||
+          inferSkuFamilyFromSkus(loadedVariants.map((v) => v.sku))
+      );
         const axes = deriveOptionAxes(loadedVariants, savedAxisOrder, savedValueOrder);
         setOptionAxes(
           axes.length > 0 ? axes : [{ name: "Size", slug: "size", values: [] }]
@@ -863,6 +869,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       seoTitle: seoTitle.trim() || null,
       seoDescription: seoDescription.trim() || null,
       seoKeyword: seoKeyword.trim() || null,
+      skuFamily: skuFamily || null,
       categoryIds: Array.from(selectedCats),
       variantAxisOrder: optionAxes.map((a) => a.slug).filter(Boolean),
       variantOptionValueOrder: (() => {

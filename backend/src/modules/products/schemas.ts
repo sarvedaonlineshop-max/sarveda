@@ -79,6 +79,7 @@ export const createProductSchema = z.object({
   seoTitle: z.string().max(500).optional().nullable(),
   seoDescription: z.string().max(2000).optional().nullable(),
   seoKeyword: z.string().max(500).optional().nullable(),
+  skuFamily: z.enum(["MI", "YO", "ME", "OTHER"]).optional().nullable(),
   wooCommerceId: z.number().int().positive().optional().nullable(),
   categoryIds: z.array(z.string().uuid()).optional(),
   variantAxisOrder: z.array(z.string().min(1).max(120)).optional(),

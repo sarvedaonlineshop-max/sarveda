@@ -193,6 +193,8 @@ model Product {
   seoTitle                String?
   seoDescription          String?
   seoKeyword              String?
+  /// Last SKU family chosen in admin (MI, YO, ME, OTHER). Independent of existing SKU text.
+  skuFamily               String?
   wooCommerceId           Int?                @unique
   // Global catalog order for /shop and unfiltered lists (admin drag-reorder).
   sortOrder               Int                 @default(0)
