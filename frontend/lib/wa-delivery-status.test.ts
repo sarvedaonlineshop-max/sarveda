@@ -10,12 +10,12 @@ describe("resolveWaDeliveryState", () => {
     );
   });
 
-  it("marks aging sent as pending then undelivered", () => {
+  it("keeps an accepted send as waiting, not a failure", () => {
     expect(
       resolveWaDeliveryState("sent", new Date(t0).toISOString(), t0 + WA_PENDING_MS + 1)
     ).toBe("pending");
     expect(resolveWaDeliveryState("sent", new Date(t0).toISOString(), t0 + WA_STALE_MS + 1)).toBe(
-      "undelivered"
+      "accepted"
     );
   });
 

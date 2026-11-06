@@ -204,7 +204,7 @@ function WaTicks({
   createdAt: string;
   detail?: string | null;
 }) {
-  // Re-render as pending/undelivered thresholds pass without waiting for SSE.
+  // Re-render as the waiting labels age, without waiting for a status webhook.
   const [, setTick] = useState(0);
   useEffect(() => {
     const s = String(status || "").toLowerCase();
@@ -214,21 +214,29 @@ function WaTicks({
   }, [status, createdAt]);
 
   const state = resolveWaDeliveryState(status, createdAt);
-  const reason =
-    (detail || "").trim() ||
-    "WhatsApp accepted the send, but the customer phone never confirmed delivery.";
+  const failureDetail = (detail || "").trim();
 
-  if (state === "failed" || state === "undelivered") {
+  if (state === "failed") {
     return (
       <span
         className="ml-1 max-w-[16rem] text-right text-[10px] font-bold uppercase tracking-wide text-red-600"
-        title={reason}
+        title={failureDetail || "WhatsApp reported this message as failed."}
       >
-        {/30043|message limit/i.test(reason)
+        {/30043|message limit/i.test(failureDetail)
           ? "Not delivered · ask them to reply"
-          : /30024|does not exist/i.test(reason)
+          : /30024|does not exist/i.test(failureDetail)
             ? "Not delivered · file template missing"
             : "Not delivered"}
+      </span>
+    );
+  }
+  if (state === "accepted") {
+    return (
+      <span
+        className="ml-1 max-w-[16rem] text-right text-[10px] font-bold uppercase tracking-wide text-amber-700"
+        title="WhatsApp accepted this message. The phone has not confirmed it yet. This is not a failed send."
+      >
+        Sent · phone not confirmed
       </span>
     );
   }
@@ -246,7 +254,7 @@ function WaTicks({
     return (
       <span
         className="ml-1 text-[10px] font-bold uppercase tracking-wide text-amber-700"
-        title={`${reason} If this stays amber, ask the customer to reply “Hi” or resend via outreach.`}
+        title="WhatsApp has the message. Waiting for the phone to confirm delivery."
       >
         Not on phone yet
       </span>
@@ -1057,7 +1065,7 @@ function AdminChatDetailInner() {
     }
     if (notice === "outreach") {
       setBanner(
-        "Outreach template accepted by WhatsApp. Watch the ticks — gray/amber means not on their phone yet; red “Not delivered” means it failed."
+        "Outreach template accepted by WhatsApp. Amber means the phone has not confirmed yet. Red “Not delivered” means WhatsApp reported a failure."
       );
     } else {
       setBanner(notice);
@@ -1222,7 +1230,7 @@ function AdminChatDetailInner() {
         );
         if (closedWindow) {
           setBanner(
-            "Outreach template accepted by WhatsApp. Watch ticks: blue = on phone; amber/red = not delivered."
+            "Outreach template accepted by WhatsApp. Amber means the phone has not confirmed yet. Red means WhatsApp reported a failure."
           );
         }
       }
@@ -1266,7 +1274,7 @@ function AdminChatDetailInner() {
       } else {
         await replyAdminEnquiryThread(id, details, []);
         if (!windowOpen && thread.source === "WHATSAPP") {
-          setBanner("Sent as a WhatsApp template. If it stays not delivered, the customer needs to reply once before another message can go out.");
+          setBanner("Sent as a WhatsApp template. If it stays “phone not confirmed”, the customer needs to reply once before another free message can go out.");
         }
       }
       await load();

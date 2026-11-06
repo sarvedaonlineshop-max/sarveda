@@ -5,15 +5,16 @@ export const WA_STALE_MS = 15 * 60 * 1000;
 export type WaDeliveryState =
   | "sending"
   | "pending"
-  | "undelivered"
+  | "accepted"
   | "failed"
   | "delivered"
   | "read"
   | "unknown";
 
 /**
- * API "sent/accepted" ≠ delivered to the phone. After a short wait we surface
- * pending / not-delivered so admins do not assume success from gray ticks.
+ * "sent" means WhatsApp accepted the message. It is not a failure.
+ * Only an explicit provider failure is "failed". A phone that never
+ * confirms delivery stays "accepted".
  */
 export function resolveWaDeliveryState(
   status: string | null | undefined,
@@ -28,7 +29,7 @@ export function resolveWaDeliveryState(
   if (s === "queued" || s === "sent" || !s) {
     if (age < WA_PENDING_MS) return "sending";
     if (age < WA_STALE_MS) return "pending";
-    return "undelivered";
+    return "accepted";
   }
   return "unknown";
 }
