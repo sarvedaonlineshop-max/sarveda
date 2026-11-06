@@ -200,6 +200,7 @@ router.patch(
   admin.patchOrderAddress
 );
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
+router.post("/orders/:id/reconcile-stripe", admin.reconcileStripeOrder);
 router.post(
   "/orders/:orderId/cancel-case",
   validateBody(

@@ -4,6 +4,7 @@ import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
 import { prisma } from "../config/db";
 import { cancelUnpaidOrderWithRelease } from "../modules/orders/orders.service";
+import { syncStripeCapturedPayment } from "../modules/payments/stripe.sync";
 
 export const PAYMENT_TIMEOUT_QUEUE = "payment-timeout";
 const DELAY_MS = 15 * 60 * 1000;
@@ -32,6 +33,8 @@ export async function schedulePaymentTimeout(orderId: string): Promise<void> {
     {
       delay: DELAY_MS,
       jobId: `payment-timeout-${orderId}`,
+      attempts: 4,
+      backoff: { type: "exponential", delay: 30_000 },
       removeOnComplete: true,
       removeOnFail: 100
     }
@@ -49,6 +52,22 @@ async function processTimeout(job: Job<{ orderId: string }>): Promise<void> {
     logger.warn("payment_timeout_skipped_cod", { orderId });
     return;
   }
+
+  const stripePayment = await prisma.payment.findFirst({
+    where: { orderId, provider: "STRIPE" },
+    select: { id: true }
+  });
+  if (stripePayment) {
+    const synced = await syncStripeCapturedPayment(orderId);
+    if (synced.updated || synced.alreadyPaid) {
+      logger.info("payment_timeout_stripe_already_captured", { orderId, updated: synced.updated });
+      return;
+    }
+    if (synced.stripeUnreachable || synced.reason === "Stripe is not configured") {
+      throw new Error("Stripe could not be reached before abandoning the checkout");
+    }
+  }
+
   const changed = await cancelUnpaidOrderWithRelease(
     orderId,
     "Payment not completed within 15 minutes — stock released",

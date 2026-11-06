@@ -1085,6 +1085,22 @@ export function reconcileAdminOrderRazorpay(orderId: string) {
   );
 }
 
+export type ReconcileStripeResult = {
+  updated: boolean;
+  alreadyPaid?: boolean;
+  reason?: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+  stripePaymentIntentId?: string;
+};
+
+export function reconcileAdminOrderStripe(orderId: string) {
+  return adminFetch<ReconcileStripeResult>(
+    `/api/admin/orders/${encodeURIComponent(orderId)}/reconcile-stripe`,
+    { method: "POST", body: "{}" }
+  );
+}
+
 export function adminSyncOrderShipments(orderId: string) {
   return adminFetch<{
     results: Array<{ awb: string; ok: boolean; error?: string; code?: string; data?: unknown }>;

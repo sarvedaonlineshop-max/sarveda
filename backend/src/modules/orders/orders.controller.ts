@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 
 import { addCartItem, getCartPayload, resolveCartContext, setCartItemQuantity } from "../cart/cart.service";
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 import { downloadPdfFromS3, s3KeyFromStoredUrl } from "../../config/s3";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import {
@@ -479,6 +480,37 @@ export async function getByOrderNumber(req: Request, res: Response, next: NextFu
     if (!allowed) {
       res.status(403).json({ success: false, error: "Forbidden", code: "FORBIDDEN" });
       return;
+    }
+
+    const waitingOnStripe =
+      order.status === "PENDING_PAYMENT" &&
+      order.payments.some((row) => row.provider === "STRIPE" && row.status !== "CAPTURED");
+    if (waitingOnStripe) {
+      try {
+        const { syncStripeCapturedPayment } = await import("../payments/stripe.sync");
+        const synced = await syncStripeCapturedPayment(order.id);
+        if (synced.updated) {
+          const fresh = await prisma.order.findUnique({
+            where: { orderNumber },
+            include: {
+              items: true,
+              addresses: true,
+              payments: true,
+              invoice: true,
+              shipments: { orderBy: { createdAt: "desc" } }
+            }
+          });
+          if (fresh && !fresh.deletedAt) {
+            res.json({ success: true, data: { order: serializePublicOrderView(fresh) } });
+            return;
+          }
+        }
+      } catch (err) {
+        logger.warn("stripe_sync_on_order_view_failed", {
+          orderNumber,
+          err: err instanceof Error ? err.message : String(err)
+        });
+      }
     }
 
     res.json({

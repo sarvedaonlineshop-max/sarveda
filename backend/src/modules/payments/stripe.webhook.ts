@@ -19,13 +19,26 @@ function paymentIntentIdFrom(
 }
 
 export async function processStripeEvent(event: Stripe.Event): Promise<void> {
-  if (event.type === "checkout.session.completed") {
+  if (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded"
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
     await handleStripeCheckoutSuccess({
       paymentIntentId: paymentIntentIdFrom(session.payment_intent),
       checkoutSessionId: session.id,
       metadata: session.metadata,
       paymentStatus: session.payment_status
+    });
+    return;
+  }
+
+  if (event.type === "checkout.session.async_payment_failed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await handleStripePaymentFailed({
+      paymentIntentId: paymentIntentIdFrom(session.payment_intent),
+      checkoutSessionId: session.id,
+      metadata: session.metadata
     });
     return;
   }
@@ -154,6 +167,8 @@ export async function stripeWebhookHandler(req: Request, res: Response): Promise
     await processStripeEvent(event);
   } catch (err) {
     logger.error("stripe_webhook_handler_error", { err, type: event.type });
+    res.status(500).json({ received: false });
+    return;
   }
 
   res.status(200).json({ received: true });

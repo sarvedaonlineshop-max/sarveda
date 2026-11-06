@@ -41,6 +41,7 @@ import {
   patchAdminOrderPreferredCourier,
   patchAdminOrderStatus,
   reconcileAdminOrderRazorpay,
+  reconcileAdminOrderStripe,
   type AdminPickupLocationRow,
   type DelhiveryShipBox
 } from "@/lib/admin-api";
@@ -2690,6 +2691,26 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+  async function handleReconcileStripe() {
+    if (!id) return;
+    setReconcileBusy(true);
+    try {
+      const r = await reconcileAdminOrderStripe(id);
+      await load();
+      if (r.updated) {
+        pushToast("Stripe payment captured. The order is marked paid.");
+      } else if (r.alreadyPaid) {
+        pushToast("Stripe already shows this order as paid.");
+      } else {
+        pushToast(r.reason ?? "No captured Stripe payment found yet.");
+      }
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Stripe sync failed", true);
+    } finally {
+      setReconcileBusy(false);
+    }
+  }
+
   if (err && !order) {
     return (
       <div>
@@ -2721,6 +2742,7 @@ export default function AdminOrderDetailPage() {
   }
 
   const hasRazorpay = (order.payments ?? []).some((p) => p.provider === "RAZORPAY");
+  const hasStripe = (order.payments ?? []).some((p) => p.provider === "STRIPE");
   const shipUi = carrierActionsEnabled(order);
   const awbRows = allOrderAwbRows(order.shipments);
   const forwardShipment = primaryForwardShipment(order.shipments);
@@ -3539,6 +3561,16 @@ export default function AdminOrderDetailPage() {
                 className="rounded-lg border border-amber-700/40 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500/50 dark:text-amber-200"
               >
                 {reconcileBusy ? "Checking Razorpay…" : "Sync payment (Razorpay)"}
+              </button>
+            ) : null}
+            {hasStripe ? (
+              <button
+                type="button"
+                disabled={reconcileBusy}
+                onClick={() => void handleReconcileStripe()}
+                className="rounded-lg border border-amber-700/40 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500/50 dark:text-amber-200"
+              >
+                {reconcileBusy ? "Checking Stripe…" : "Sync payment (Stripe)"}
               </button>
             ) : null}
           </div>

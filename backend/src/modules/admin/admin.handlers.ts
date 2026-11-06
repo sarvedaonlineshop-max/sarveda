@@ -2906,6 +2906,47 @@ export async function reconcileRazorpayOrder(req: Request, res: Response, next: 
   }
 }
 
+export async function reconcileStripeOrder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const row = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      include: { payments: { where: { provider: "STRIPE" }, take: 1 } }
+    });
+    if (!row) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (row.payments.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "This order has no Stripe payment",
+        code: "NO_STRIPE_PAYMENT"
+      });
+      return;
+    }
+    const { syncStripeCapturedPayment } = await import("../payments/stripe.sync");
+    const synced = await syncStripeCapturedPayment(id);
+    if (synced.stripeUnreachable) {
+      res.status(502).json({ success: false, error: synced.reason, code: "STRIPE_API" });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        updated: synced.updated,
+        alreadyPaid: synced.alreadyPaid ?? false,
+        reason: synced.reason,
+        orderStatus: synced.orderStatus,
+        paymentStatus: synced.paymentStatus,
+        stripePaymentIntentId: synced.paymentIntentId
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** Payment reconciliation summary for admin (order vs payment row mismatches). */
 export async function paymentsReconciliation(req: Request, res: Response, next: NextFunction) {
   try {

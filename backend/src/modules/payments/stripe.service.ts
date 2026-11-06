@@ -78,6 +78,21 @@ async function handleStripeLateSuccessForUnpayableOrder(opts: {
     paymentIntentId: opts.paymentIntentId
   });
 
+  if (opts.orderStatus === "CANCELLED") {
+    const { syncStripeCapturedPayment } = await import("./stripe.sync");
+    const restored = await syncStripeCapturedPayment(opts.orderId);
+    if (restored.updated || restored.alreadyPaid) {
+      return {
+        orderNumber: opts.orderNumber,
+        applied: Boolean(restored.updated),
+        reason: restored.alreadyPaid ? "ALREADY_PAID" : "RESTORED_AFTER_TIMEOUT"
+      };
+    }
+    if (restored.stripeUnreachable) {
+      throw new Error("Stripe could not be reached while handling a paid checkout on a cancelled order");
+    }
+  }
+
   const refund = await refundStripePaymentIntentForLateSuccess({
     paymentIntentId: opts.paymentIntentId,
     orderId: opts.orderId,

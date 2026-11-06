@@ -24,8 +24,8 @@ export default function AdminReconciliationPage() {
       icon: "💳",
       subtitle: (
         <>
-          Compare order payment status with gateway payment rows. Use per-order Razorpay sync on
-          mismatches.
+          Compare order payment status with gateway payment rows. Use per-order Razorpay or Stripe
+          sync on mismatches.
         </>
       )
     }),
