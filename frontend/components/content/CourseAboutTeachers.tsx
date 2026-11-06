@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { ProductRichText } from "@/components/product/ProductRichText";
 import type { CourseTeacher } from "@/lib/content-meta";
+import { COURSE_TEACHERS_SECTION_ID, courseTeacherAnchor } from "@/lib/course-teacher-anchor";
 
 type Props = {
   teachers: CourseTeacher[];
@@ -14,7 +15,7 @@ export function CourseAboutTeachers({ teachers }: Props) {
   if (list.length === 0) return null;
 
   return (
-    <section style={{ marginTop: "48px", marginBottom: "40px" }}>
+    <section id={COURSE_TEACHERS_SECTION_ID} style={{ marginTop: "48px", marginBottom: "40px", scrollMarginTop: "96px" }}>
       <h2
         className="font-serif"
         style={{
@@ -30,7 +31,9 @@ export function CourseAboutTeachers({ teachers }: Props) {
         {list.map((teacher) => (
           <article
             key={teacher.name}
+            id={courseTeacherAnchor(teacher.name)}
             className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8"
+            style={{ scrollMarginTop: "96px" }}
           >
             <div
               className="relative shrink-0 overflow-hidden rounded-full"

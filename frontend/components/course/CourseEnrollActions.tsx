@@ -187,37 +187,35 @@ export function CourseEnrollActions({
           </div>
 
           {showEnquire && pathPrefix === "course" ? (
-            <div className={`space-y-3 ${embedded ? "mt-4 border-t border-stone-200 pt-4" : "mt-4"}`}>
-              <p className="text-xs text-stone-500">
-                Or email us — your enquiry is saved and sent to care@sarveda.com
-              </p>
+            <div className={`min-w-0 space-y-3 ${embedded ? "mt-4 border-t border-stone-200 pt-4" : "mt-4"}`}>
               {emailSent ? (
                 <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
               ) : (
-                <div className="relative min-w-0 space-y-3 overflow-x-hidden">
+                <div className="relative min-w-0 max-w-full space-y-3">
                   {honeypot}
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Your email address"
-                    className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
+                    className="box-border block w-full min-w-0 max-w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
                   />
                   <textarea
                     value={enquiryMessage}
                     onChange={(e) => setEnquiryMessage(e.target.value)}
                     rows={3}
                     placeholder="Your questions about this course…"
-                    className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
+                    className="box-border block w-full min-w-0 max-w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
                   />
                   {turnstile}
                   <button
                     type="button"
                     onClick={() => void sendEmailEnquiry()}
                     disabled={emailSending}
-                    className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 transition hover:border-amber-400 hover:bg-amber-50 disabled:opacity-60"
+                    className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-6 text-sm font-semibold text-[#fffbf5] transition hover:opacity-90 disabled:opacity-60"
+                    style={{ background: "var(--brand-forest)" }}
                   >
-                    {emailSending ? "Sending…" : "Email enquiry"}
+                    {emailSending ? "Sending…" : "Submit enquiry"}
                   </button>
                 </div>
               )}
@@ -226,7 +224,7 @@ export function CourseEnrollActions({
             <EventEmailEnquiry title={course.title} slug={course.slug} courseUrl={courseUrl} />
           ) : null}
 
-          {course.enrollmentMode === "BOTH" && showPay ? (
+          {course.enrollmentMode === "BOTH" && showPay && pathPrefix !== "course" ? (
             <p className="mt-3 text-xs text-stone-500">
               Prefer to speak with us first? Use WhatsApp or email — we are happy to help before you pay.
             </p>
@@ -234,7 +232,7 @@ export function CourseEnrollActions({
 
           {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
 
-          {showPay ? (
+          {showPay && pathPrefix !== "course" ? (
             <p className="mt-3 text-xs text-stone-500">
               Sign in before checkout to see your course or event under Profile → Courses & events.
             </p>

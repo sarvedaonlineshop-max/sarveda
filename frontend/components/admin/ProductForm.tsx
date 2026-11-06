@@ -15,7 +15,10 @@ import {
 } from "@/lib/admin-api";
 import {
   generateUniqueSkus,
+  inferSkuFamilyFromSkus,
+  readStoredSkuFamily,
   SKU_FAMILY_OPTIONS,
+  writeStoredSkuFamily,
   type SkuFamilyCode
 } from "@/lib/sku-generate";
 import { formatAccordionSection, htmlForAccordionEditor } from "@/lib/accordion-format";
@@ -400,18 +403,8 @@ export function ProductForm({ productId }: { productId?: string }) {
       setVariants(loadedVariants);
       setDeactivateVariantIds([]);
       setDeactivateConfirmId(null);
-      const prefixes = loadedVariants
-        .map((v) => v.sku.split("-")[0]?.toUpperCase() ?? "")
-        .filter(Boolean);
-        if (
-          prefixes.length > 0 &&
-          prefixes.every((p) => p === prefixes[0]) &&
-          (prefixes[0] === "MI" || prefixes[0] === "YO" || prefixes[0] === "ME")
-        ) {
-          setSkuFamily(prefixes[0] as SkuFamilyCode);
-        } else {
-          setSkuFamily("");
-        }
+      const remembered = productId ? readStoredSkuFamily(productId) : "";
+      setSkuFamily(remembered || inferSkuFamilyFromSkus(loadedVariants.map((v) => v.sku)));
         const axes = deriveOptionAxes(loadedVariants, savedAxisOrder, savedValueOrder);
         setOptionAxes(
           axes.length > 0 ? axes : [{ name: "Size", slug: "size", values: [] }]
@@ -1094,6 +1087,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         const { product } = await postAdminProduct(payload);
         sessionStorage.removeItem(DRAFT_KEY);
         const id = String(product.id);
+        writeStoredSkuFamily(id, skuFamily);
         setStatus(nextStatus);
         setPublishIssues(null);
         setToast({
@@ -1107,6 +1101,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         router.replace(`/admin/products/${id}`);
         router.refresh();
       } else {
+        writeStoredSkuFamily(productId!, skuFamily);
         await putAdminProduct(productId!, payload);
         setStatus(nextStatus);
         await loadProduct();

@@ -8,6 +8,7 @@ import { CourseCurriculumList } from "@/components/content/CourseCurriculumList"
 import { CourseFaqList } from "@/components/content/CourseFaqList";
 import { CourseSessionsList } from "@/components/content/CourseSessionsList";
 import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
+import { CourseFacilitatorNames } from "@/components/course/CourseFacilitatorNames";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourseBySlug, fetchCourseSlugs, skipBuildTimeStaticParams } from "@/lib/api";
@@ -26,7 +27,7 @@ import { resolveMediaUrl } from "@/lib/media-cdn";
 import { breadcrumbJsonLd, courseJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
-import { parseVideoSource } from "@/lib/video-embed";
+import { parseVideoSource, type VideoSource } from "@/lib/video-embed";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -229,7 +230,15 @@ export default async function CourseDetailPage({ params }: Props) {
                     <div key={row.label} className="flex flex-col gap-1 py-3.5 sm:flex-row sm:items-start sm:gap-5" style={{ borderBottom: i < programmeRows.length - 1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
                       <span className="shrink-0" style={{ color:"var(--brand-muted)", fontSize:"13px", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", minWidth:"110px", paddingTop:"3px" }}>{row.label}</span>
                       <span className="min-w-0 break-words" style={{ color:"var(--brand-ink)", fontSize:"16px", lineHeight:1.65 }}>
-                        {row.href ? (
+                        {row.label === "Facilitators" ? (
+                          <CourseFacilitatorNames
+                            teachers={
+                              teacherProfiles.length > 0
+                                ? teacherProfiles
+                                : teachers.map((name) => ({ name }))
+                            }
+                          />
+                        ) : row.href ? (
                           <a href={row.href} target="_blank" rel="noopener noreferrer" style={{ color:"var(--brand-forest)", fontWeight:700, textDecoration:"underline", textUnderlineOffset:"3px" }}>
                             {row.value}
                           </a>
@@ -264,8 +273,13 @@ export default async function CourseDetailPage({ params }: Props) {
                   <style>{courseRichTextCss}</style>
                   <ProductRichText html={extra.aboutTheCourse} />
                 </div>
+                <CoursePreviewVideo source={videoSource} title={course.title} posterUrl={posterUrl} />
               </section>
             )}
+
+            {!(layout !== "CUSTOM" && extra.aboutTheCourse?.trim()) ? (
+              <CoursePreviewVideo source={videoSource} title={course.title} posterUrl={posterUrl} spaced />
+            ) : null}
 
             {layout === "SESSIONS" && sessionRows.length > 0 ? (
               <CourseSessionsList sessions={sessionRows} />
@@ -309,30 +323,6 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </section>
             )}
-
-            {/* Video — uploaded file plays natively; YouTube/Vimeo stay as embeds */}
-            {videoSource ? (
-              <div className="mb-10 overflow-hidden bg-black" style={{ aspectRatio:"16/9", border:"1px solid var(--brand-cream-dark)" }}>
-                {videoSource.type === "file" ? (
-                  <video
-                    src={resolveMediaUrl(videoSource.url) ?? videoSource.url}
-                    poster={posterUrl ?? undefined}
-                    className="h-full w-full object-cover"
-                    controls
-                    playsInline
-                    preload="metadata"
-                  />
-                ) : (
-                  <iframe
-                    src={videoSource.embedUrl}
-                    title={`${course.title} preview`}
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                )}
-              </div>
-            ) : null}
 
             {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
             {layout !== "CUSTOM" && showMainDescription && course.description && (
@@ -382,7 +372,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   {!course.isFree && <p style={{ color:"rgba(253,246,237,0.6)", fontSize:"11px", marginTop:"2px" }}>GST inclusive</p>}
                 </div>
               )}
-              <div className="min-w-0 overflow-x-hidden" style={{ padding:"20px 24px" }}>
+              <div className="min-w-0" style={{ padding:"20px 24px" }}>
                 <CourseEnrollActions
                   item={course}
                   pathPrefix="course"
@@ -397,6 +387,45 @@ export default async function CourseDetailPage({ params }: Props) {
           </aside>
         </div>
       </main>
+    </div>
+  );
+}
+
+function CoursePreviewVideo({
+  source,
+  title,
+  posterUrl,
+  spaced = false
+}: {
+  source: VideoSource | null;
+  title: string;
+  posterUrl: string | null;
+  spaced?: boolean;
+}) {
+  if (!source) return null;
+  return (
+    <div
+      className={spaced ? "mb-10 overflow-hidden bg-black" : "mt-6 overflow-hidden bg-black"}
+      style={{ aspectRatio: "16/9", border: "1px solid var(--brand-cream-dark)" }}
+    >
+      {source.type === "file" ? (
+        <video
+          src={resolveMediaUrl(source.url) ?? source.url}
+          poster={posterUrl ?? undefined}
+          className="h-full w-full object-cover"
+          controls
+          playsInline
+          preload="metadata"
+        />
+      ) : (
+        <iframe
+          src={source.embedUrl}
+          title={`${title} preview`}
+          className="h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      )}
     </div>
   );
 }

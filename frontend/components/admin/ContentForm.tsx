@@ -431,12 +431,6 @@ export function ContentForm({ type, itemId }: Props) {
               </Field>
             </div>
 
-            <ContentVideoUpload
-              url={values.videoUrl}
-              onUrlChange={(videoUrl) => setValues((v) => ({ ...v, videoUrl }))}
-              posterUrl={values.posterUrl || values.imageUrl}
-            />
-
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Mode">
                 <input
@@ -510,8 +504,25 @@ export function ContentForm({ type, itemId }: Props) {
                   onChange={(aboutTheCourse) => setValues((v) => ({ ...v, aboutTheCourse }))}
                   placeholder="Overview, headings, lists, links…"
                 />
+                <div className="mt-4">
+                  <ContentVideoUpload
+                    url={values.videoUrl}
+                    onUrlChange={(videoUrl) => setValues((v) => ({ ...v, videoUrl }))}
+                    posterUrl={values.posterUrl || values.imageUrl}
+                    label="Course video"
+                  />
+                  <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+                    Shown directly under the About the course text on the course page.
+                  </p>
+                </div>
               </Field>
-            ) : null}
+            ) : (
+              <ContentVideoUpload
+                url={values.videoUrl}
+                onUrlChange={(videoUrl) => setValues((v) => ({ ...v, videoUrl }))}
+                posterUrl={values.posterUrl || values.imageUrl}
+              />
+            )}
 
             {values.layoutTemplate !== "CUSTOM" ? (
               <Field label="What&apos;s included">

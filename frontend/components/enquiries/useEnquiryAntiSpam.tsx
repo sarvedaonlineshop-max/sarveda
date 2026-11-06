@@ -92,7 +92,11 @@ export function useEnquiryAntiSpam() {
   }
 
   const honeypot = (
-    <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
+    <div
+      className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
+      style={{ clip: "rect(0, 0, 0, 0)", clipPath: "inset(50%)" }}
+      aria-hidden="true"
+    >
       <label>
         Website
         <input

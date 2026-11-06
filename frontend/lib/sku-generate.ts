@@ -8,6 +8,45 @@ export const SKU_FAMILY_OPTIONS: { value: SkuFamilyCode; label: string }[] = [
   { value: "OTHER", label: "Others" }
 ];
 
+export function isSkuFamilyCode(value: string): value is SkuFamilyCode {
+  return value === "MI" || value === "YO" || value === "ME" || value === "OTHER";
+}
+
+function skuFamilyStorageKey(productId: string): string {
+  return `sarveda-sku-family:${productId}`;
+}
+
+/** Family chosen on the last save. The product record has no family column, so the browser keeps it. */
+export function readStoredSkuFamily(productId: string): SkuFamilyCode | "" {
+  if (typeof window === "undefined") return "";
+  try {
+    const value = localStorage.getItem(skuFamilyStorageKey(productId)) ?? "";
+    return isSkuFamilyCode(value) ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+export function writeStoredSkuFamily(productId: string, family: SkuFamilyCode | ""): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!family) localStorage.removeItem(skuFamilyStorageKey(productId));
+    else localStorage.setItem(skuFamilyStorageKey(productId), family);
+  } catch {
+    /* private mode */
+  }
+}
+
+/** Uniform MI / YO / ME prefix across every SKU. Others and mixed catalogues return blank. */
+export function inferSkuFamilyFromSkus(skus: string[]): SkuFamilyCode | "" {
+  const prefixes = skus
+    .map((sku) => sku.split("-")[0]?.toUpperCase() ?? "")
+    .filter(Boolean);
+  if (prefixes.length === 0 || !prefixes.every((prefix) => prefix === prefixes[0])) return "";
+  const prefix = prefixes[0] ?? "";
+  return prefix === "MI" || prefix === "YO" || prefix === "ME" ? prefix : "";
+}
+
 const STOP = new Set(["a", "an", "the", "of", "and", "for", "to", "in", "on", "with"]);
 
 function alnumUpper(s: string): string {
