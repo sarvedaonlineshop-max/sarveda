@@ -12,12 +12,12 @@ export default function AdminChatsLayout({ children }: { children: React.ReactNo
 
   return (
     <div
-      className={`admin-chats-shell flex h-[calc(100vh-72px)] min-h-0 w-full flex-1 overflow-hidden bg-[#efe8dc] md:bg-[#f7f3eb] ${
+      className={`admin-chats-shell @container/chats flex h-[calc(100vh-72px)] min-h-0 w-full flex-1 overflow-hidden bg-[#efe8dc] md:bg-[#f7f3eb] ${
         onThread ? "admin-chat-thread-shell" : "admin-chat-list-shell"
       }`}
     >
       <aside
-        className={`min-h-0 w-full shrink-0 flex-col md:flex md:w-[460px] md:border-r md:border-[#2c2420]/25 lg:w-[520px] xl:w-[560px] ${
+        className={`min-h-0 w-full shrink-0 flex-col md:flex md:w-[clamp(280px,30cqw,400px)] md:border-r md:border-[#2c2420]/25 ${
           onThread ? "hidden" : "flex h-full"
         }`}
       >

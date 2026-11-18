@@ -388,7 +388,7 @@ export function ChatCrmRail({
     <>
     {confirmDialog}
     {submitDialog}
-    <aside className="flex h-full min-h-0 w-[min(100vw,440px)] shrink-0 flex-col overflow-hidden border-l border-[#1c352a]/15 bg-[#f4eee4] text-[#1c352a] lg:w-[440px]">
+    <aside className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden border-l border-[#1c352a]/15 bg-[#f4eee4] text-[#1c352a]">
       <div className="flex shrink-0 border-b border-[#e2e8f0] bg-white">
         {(["lead", "order"] as const).map((item) => (
           <button

@@ -1555,7 +1555,7 @@ function AdminChatDetailInner() {
                   setMenuOpen(false);
                   setSaleOpen(true);
                 }}
-                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100 lg:hidden"
+                className="block w-full px-4 py-3 text-left text-[15px] text-stone-800 hover:bg-stone-100 @min-[960px]/chats:hidden"
               >
                 Lead
               </button>
@@ -1618,7 +1618,7 @@ function AdminChatDetailInner() {
         <button
           type="button"
           onClick={() => setSaleOpen(true)}
-          className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/10 lg:hidden"
+          className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#faf5ec] hover:bg-white/10 @min-[960px]/chats:hidden"
         >
           Lead
         </button>
@@ -1820,7 +1820,7 @@ function AdminChatDetailInner() {
         ) : null}
       </div>
       </div>
-      <div className="hidden h-full lg:flex">
+      <div className="hidden h-full w-[clamp(280px,28cqw,380px)] shrink-0 @min-[960px]/chats:flex">
         <ChatCrmRail
           threadId={thread.id}
           customerName={displayName}
@@ -1835,9 +1835,9 @@ function AdminChatDetailInner() {
         />
       </div>
       {saleOpen ? (
-        <div className="absolute inset-0 z-40 lg:hidden">
+        <div className="absolute inset-0 z-40 @min-[960px]/chats:hidden">
           <button type="button" className="absolute inset-0 bg-black/30" aria-label="Close sale panel" onClick={() => setSaleOpen(false)} />
-          <div className="absolute bottom-0 right-0 top-0">
+          <div className="absolute bottom-0 right-0 top-0 w-[min(100%,400px)]">
             <ChatCrmRail
               threadId={thread.id}
               customerName={displayName}
