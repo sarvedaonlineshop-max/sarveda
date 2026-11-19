@@ -129,8 +129,8 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "sarveda-ishana-or-black-gold-bowl": "singing-bowls-flower-of-life-with-sacred-symbols",
   "natural-bamboo-xylophone-with-5-keys": "teak-wood-stainless-steel-xylophone",
   "caxixi": "coconut-rattle",
-  "wooden-slide-whistle": "bird-flute",
-  "mini-bamboo-slide-whistle": "bird-flute",
+  // Woo 46495 Mini Bamboo Slide Whistle. Not the clay Bird Flute (Woo 45754).
+  "wooden-slide-whistle": "mini-bamboo-slide-whistle",
 };
 
 /**
@@ -217,6 +217,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "large-tuning-fork",
   "macrame-yoga-mat-straps",
   "mayura-morchang-set",
+  "mini-bamboo-slide-whistle",
   "mini-coconut-shakers-3-types",
   "mini-flat-maracas",
   "native-american-style-flute-handcrafted-wooden-melody-maker",

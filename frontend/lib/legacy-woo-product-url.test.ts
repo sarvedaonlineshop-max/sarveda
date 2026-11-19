@@ -188,6 +188,23 @@ describe("resolveLegacyWooProductSlug", () => {
     );
     assert.equal(resolveProductPathToRedirect("/product/caxixi"), "/product/coconut-rattle");
     assert.equal(
+      resolveProductPathToRedirect("/product/wooden-slide-whistle"),
+      "/product/mini-bamboo-slide-whistle"
+    );
+    assert.equal(resolveProductPathToRedirect("/product/mini-bamboo-slide-whistle"), null);
+    assert.equal(
+      resolveStorePathToProductRedirect(
+        "/store/sound-musical-instruments/kids/mini-bamboo-slide-whistle/"
+      ),
+      "/product/mini-bamboo-slide-whistle"
+    );
+    assert.equal(
+      resolveStorePathToProductRedirect(
+        "/store/sound-musical-instruments/kids/wooden-slide-whistle/"
+      ),
+      "/product/mini-bamboo-slide-whistle"
+    );
+    assert.equal(
       resolveProductPathToRedirect("/product/koshi-chimes"),
       "/product/elemental-chimes-new"
     );
