@@ -213,6 +213,36 @@ describe("resolveLegacyWooProductSlug", () => {
       resolveProductPathToRedirect("/product/copper-bottle-plain-curved"),
       "/product/copper-bottle-vintage-plain-curved"
     );
+    assert.equal(resolveProductPathToRedirect("/product/wooden-slide-whistle"), null);
+    assert.equal(resolveProductPathToRedirect("/product/bird-flute"), null);
+    assert.equal(
+      resolveProductPathToRedirect("/product/mini-bamboo-slide-whistle"),
+      "/product/wooden-slide-whistle"
+    );
+  });
+
+  it("does not send Wooden Slide Whistle to Bird Flute", () => {
+    assert.equal(LEGACY_WOO_LEAF_ALIASES["wooden-slide-whistle"], undefined);
+    assert.ok(LEGACY_WOO_KNOWN_PRODUCT_SLUGS.has("wooden-slide-whistle"));
+    const live = resolveLegacyWooProductSlug("wooden-slide-whistle");
+    assert.equal(live.ok, true);
+    if (live.ok) {
+      assert.equal(live.slug, "wooden-slide-whistle");
+      assert.equal(live.via, "exact");
+    }
+    assert.equal(
+      resolveStorePathToProductRedirect(
+        "/store/sound-musical-instruments/kids/wooden-slide-whistle/"
+      ),
+      "/product/wooden-slide-whistle"
+    );
+    assert.equal(LEGACY_WOO_LEAF_ALIASES["mini-bamboo-slide-whistle"], "wooden-slide-whistle");
+    const woo = resolveLegacyWooProductSlug("mini-bamboo-slide-whistle");
+    assert.equal(woo.ok, true);
+    if (woo.ok) {
+      assert.equal(woo.slug, "wooden-slide-whistle");
+      assert.equal(woo.via, "alias");
+    }
   });
 
   it("rejects unsafe leaf input", () => {
