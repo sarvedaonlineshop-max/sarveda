@@ -6,7 +6,7 @@ Workbook: [`Sarveda_Development_Fee_Quote_Till_2026-11-20.xlsx`](./Sarveda_Devel
 
 Accounting-only split (13 items, **each line ÷ 10** → ₹1,75,800): [`Sarveda_Accounting_Module_Fee_Split_2026-11-20.xlsx`](./Sarveda_Accounting_Module_Fee_Split_2026-11-20.xlsx)
 
-Everything except accounting: [`Sarveda_Other_Modules_Fee_Split_2026-11-20.xlsx`](./Sarveda_Other_Modules_Fee_Split_2026-11-20.xlsx)
+Everything except accounting (**each line ÷ 10** → ₹6,74,200): [`Sarveda_Other_Modules_Fee_Split_2026-11-20.xlsx`](./Sarveda_Other_Modules_Fee_Split_2026-11-20.xlsx)
 
 - **Quoted (this invoice):** ₹85,00,000 + 18% GST = **₹1,00,30,000**
 - **Already received:** ₹0

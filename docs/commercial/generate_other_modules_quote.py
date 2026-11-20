@@ -62,7 +62,7 @@ def is_accounting(code: str, workstream: str) -> bool:
 
 def build() -> None:
     rows = [
-        (m[0], m[1], m[2], m[3], m[4], quoted, m[5])
+        (m[0], m[1], m[2], m[3], m[4], quoted // 10, m[5] // 10)
         for m, quoted in zip(src.MODULES, src.QUOTED_AMOUNTS)
         if not is_accounting(m[0], m[1])
     ]
@@ -96,11 +96,12 @@ def build() -> None:
     cover["B2"] = "SARVEDA"
     cover["B2"].font = Font(name="Calibri", size=14, bold=True, color="B08968")
     cover.merge_cells("B3:E3")
-    cover["B3"] = "Other modules — fee split (accounting excluded)"
+    cover["B3"] = "Other modules — fee split (accounting excluded, each line ÷ 10)"
     cover["B3"].font = Font(name="Calibri", size=18, bold=True, color=GREEN)
     cover.merge_cells("B4:E4")
     cover["B4"] = (
-        "Native accounting was sent separately to the owner. This workbook is everything else in the catch-up quote SRV-DEV-2026-001."
+        "Native accounting was sent separately. This workbook is everything else. "
+        "Every quoted and market line is 1/10 of the earlier ₹67.42 lakh split (now ~₹6.74 lakh)."
     )
     cover["B4"].font = font_muted
     cover["B4"].alignment = wrap
@@ -150,8 +151,8 @@ def build() -> None:
 
     cover.merge_cells("B14:E16")
     cover["B14"] = (
-        "Do not add this total to the accounting sheet if that sheet was already sent at a revised (÷10) rate — "
-        "the two workbooks are separate bills. Amazon monthly Lightsail/S3 is still not in either workbook."
+        "Both this sheet and the accounting sheet are now at ÷10. "
+        "Do not add either total back onto the original ₹85 lakh workbook. Amazon monthly Lightsail/S3 is not in these files."
     )
     cover["B14"].alignment = wrap
     cover["B14"].font = font_body
@@ -171,7 +172,7 @@ def build() -> None:
     sm.column_dimensions["F"].width = 14
 
     sm.merge_cells("A1:F1")
-    sm["A1"] = "Other modules by workstream  ·  accounting excluded"
+    sm["A1"] = "Other modules by workstream  ·  accounting excluded  ·  each line ÷ 10"
     sm["A1"].font = Font(name="Calibri", size=14, bold=True, color=WHITE)
     sm["A1"].fill = fill_green
     sm.merge_cells("A2:F2")
@@ -239,7 +240,7 @@ def build() -> None:
 
     chart = BarChart()
     chart.type = "bar"
-    chart.title = "Other modules by workstream (quoted INR, ex-GST)"
+    chart.title = "Other modules by workstream (quoted INR, each line ÷ 10)"
     chart.style = 10
     chart.y_axis.numFmt = "₹#,##,##0"
     chart.legend = None
@@ -274,7 +275,7 @@ def build() -> None:
     mods.merge_cells("A2:G2")
     mods["A2"] = (
         "J1–J13 (GL, GST reports, banking, FIFO, Zoho, etc.) are not in this file. "
-        "Edit column F if Accounts negotiates; summary formulas follow."
+        "Column F is the revised quoted fee (original ÷ 10). Edit F if Accounts negotiates; summary formulas follow."
     )
     mods["A2"].font = font_muted
     mods["A2"].alignment = wrap
