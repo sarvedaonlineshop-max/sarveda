@@ -11,7 +11,7 @@
  *
  * Yoast product-sitemap leaves still MANUAL_REVIEW (no single proven native target):
  * crystal-bowl-o-rings-support-rings.
- * overtone-flute and overtone-flute-2 are live products at those slugs.
+ * overtone-flute, overtone-flute-2, and wooden-slide-whistle are live products at those slugs.
  */
 
 /** Explicit audited Woo leaf → current Product.slug (renames only; leaf ≠ slug ignoring case). */
@@ -129,8 +129,8 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "sarveda-ishana-or-black-gold-bowl": "singing-bowls-flower-of-life-with-sacred-symbols",
   "natural-bamboo-xylophone-with-5-keys": "teak-wood-stainless-steel-xylophone",
   "caxixi": "coconut-rattle",
-  "wooden-slide-whistle": "bird-flute",
-  "mini-bamboo-slide-whistle": "bird-flute",
+  // Woo kids leaf; live PDP is Wooden Slide Whistle (SKU MI-WSW), not Bird Flute.
+  "mini-bamboo-slide-whistle": "wooden-slide-whistle",
 };
 
 /**
@@ -279,6 +279,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "wooden-hand-taal-khartal",
   "wooden-mallets-for-singing-bowls",
   "wooden-maracas-shakers-plain-dot-painted",
+  "wooden-slide-whistle",
   "wooden-stand-for-tuning-forks",
   "wooden-tambourines",
   "yoga-belt-strap",
